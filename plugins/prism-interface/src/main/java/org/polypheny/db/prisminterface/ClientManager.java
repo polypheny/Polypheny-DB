@@ -102,7 +102,8 @@ class ClientManager {
                 transactionManager,
                 namespace,
                 monitoringPage,
-                isAutocommit
+                isAutocommit,
+                connectionRequest.getMinorApiVersion()
         );
         clients.put( uuid, client );
         if ( log.isTraceEnabled() ) {

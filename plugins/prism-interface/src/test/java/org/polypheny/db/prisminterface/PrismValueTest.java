@@ -24,6 +24,8 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Time;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
@@ -37,14 +39,23 @@ import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
+import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
+import org.polypheny.db.type.entity.graph.PolyGraph;
+import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.numerical.PolyLong;
+import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
+import org.polypheny.prism.ProtoEdge;
+import org.polypheny.prism.ProtoGraph;
+import org.polypheny.prism.ProtoNode;
 import org.polypheny.prism.ProtoValue;
 import org.polypheny.prism.ProtoValue.ValueCase;
 
@@ -189,6 +200,42 @@ public class PrismValueTest {
         assertEquals( ValueCase.NULL, serialized.getDocument().getEntriesOrThrow( "3rd" )
                 .getDocument().getEntriesOrThrow( "nested" ).getValueCase() );
         assertEquals( document, PrismValueDeserializer.deserializeProtoValue( serialized ) );
+    }
+
+
+    @Test
+    public void graphValuesKeepTheirTypesInsideNestedContainers() {
+        PolyNode start = new PolyNode( PolyString.of( "start" ),
+                PolyDictionary.ofDict( Map.of( PolyString.of( "name" ), PolyString.of( "first" ) ) ),
+                List.of( PolyString.of( "Point" ) ), PolyString.of( "a" ) );
+        PolyNode end = new PolyNode( PolyString.of( "end" ), new PolyDictionary(),
+                List.of( PolyString.of( "Point" ) ), null );
+        PolyEdge edge = new PolyEdge( PolyString.of( "link" ),
+                PolyDictionary.ofDict( Map.of( PolyString.of( "weight" ), PolyInteger.of( 4 ) ) ),
+                List.of( PolyString.of( "LINK" ) ), start.id, end.id, EdgeDirection.RIGHT_TO_LEFT, PolyString.of( "r" ) );
+        PolyGraph graph = new PolyGraph( PolyMap.of( Map.of( start.id, start, end.id, end ) ), PolyMap.of( Map.of( edge.id, edge ) ) );
+        PolyList<PolyValue> graphValues = PolyList.of( graph, start, edge, PolyNull.NULL );
+
+        ProtoValue cell = PolyValueSerializer.serialize( new PolyDocument( PolyString.of( "items" ), graphValues ) );
+        List<ProtoValue> items = cell.getDocument().getEntriesOrThrow( "items" ).getList().getValuesList();
+
+        assertEquals( List.of( ValueCase.GRAPH, ValueCase.NODE, ValueCase.EDGE, ValueCase.NULL ),
+                items.stream().map( ProtoValue::getValueCase ).toList() );
+        ProtoGraph contents = items.get( 0 ).getGraph();
+        assertEquals( 2, contents.getNodesCount() );
+        assertEquals( Set.of( "start", "end" ), Set.copyOf( contents.getNodesList().stream().map( ProtoNode::getId ).toList() ) );
+        assertEquals( 1, contents.getEdgesCount() );
+        ProtoNode node = items.get( 1 ).getNode();
+        assertEquals( "a", node.getName() );
+        assertEquals( "first", node.getPropertiesOrThrow( "name" ).getString().getString() );
+        ProtoEdge relationship = items.get( 2 ).getEdge();
+        assertEquals( relationship, contents.getEdges( 0 ) );
+        assertEquals( "link", relationship.getId() );
+        assertEquals( "r", relationship.getName() );
+        assertEquals( "start", relationship.getLeft() );
+        assertEquals( "end", relationship.getRight() );
+        assertEquals( ProtoEdge.Direction.RIGHT_TO_LEFT, relationship.getDirection() );
+        assertEquals( 4, relationship.getPropertiesOrThrow( "weight" ).getInteger().getInteger() );
     }
 
 
