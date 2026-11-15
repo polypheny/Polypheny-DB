@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,7 +79,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
     @Getter
     private final Map<Integer, Map<Integer, List<ParameterValue>>> docs;
 
-    private final List<OperatorName> excluded = List.of( OperatorName.MQL_REGEX_MATCH, OperatorName.MQL_QUERY_VALUE );
+    private final List<OperatorName> excluded = List.of( OperatorName.MQL_REGEX_MATCH, OperatorName.MQL_QUERY_VALUE, OperatorName.MQL_GEO_WITHIN, OperatorName.MQL_GEO_INTERSECTS, OperatorName.MQL_GEO_DISTANCE, OperatorName.MQL_NEAR, OperatorName.MQL_NEAR_SPHERE, OperatorName.MQL_GEO_NEAR );
 
     @Getter
     private final List<AlgDataType> types;
@@ -184,7 +184,8 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                 project.getTraitSet(),
                 project.getInput(),
                 Pair.zip( new ArrayList<>( oProject.includes.keySet() ), newProjects ).stream().collect( Collectors.toMap( e -> e.left, e -> e.right ) ),
-                project.excludes
+                project.excludes,
+                project.adds
         );
     }
 
@@ -378,7 +379,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
 
     @Override
     public AlgNode visit( LogicalDocumentModify initial ) {
-        LogicalDocumentModify modify = super.visit( initial ).unwrap( LogicalDocumentModify.class ).orElseThrow();
+        LogicalDocumentModify modify = super.visit( initial ).unwrapOrThrow( LogicalDocumentModify.class );
         List<RexNode> newSourceExpression = new ArrayList<>();
         for ( RexNode node : modify.getUpdates().values() ) {
             newSourceExpression.add( node.accept( this ) );
@@ -390,7 +391,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
             boolean firstRow = true;
             Map<Integer, Integer> idxMapping = new HashMap<>();
             this.batchSize = ((LogicalDocumentValues) input).documents.size();
-            for ( PolyValue node : input.unwrap( LogicalDocumentValues.class ).orElseThrow().documents ) {
+            for ( PolyValue node : input.unwrapOrThrow( LogicalDocumentValues.class ).documents ) {
                 int i = 0;
                 int idx;
 
@@ -407,7 +408,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                 }
                 if ( !values.containsKey( idx ) ) {
                     types.add( type );
-                    values.put( idx, new ArrayList<>( input.unwrap( LogicalDocumentValues.class ).orElseThrow().documents.size() ) );
+                    values.put( idx, new ArrayList<>( input.unwrapOrThrow( LogicalDocumentValues.class ).documents.size() ) );
                 }
                 values.get( idx ).add( new ParameterValue( idx, type, node ) );
 

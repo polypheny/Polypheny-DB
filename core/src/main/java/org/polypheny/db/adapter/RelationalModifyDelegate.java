@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,8 +112,8 @@ public class RelationalModifyDelegate extends RelationalScanDelegate implements 
     @Override
     public List<PhysicalEntity> createCollection( Context context, LogicalCollection logical, AllocationCollection allocation ) {
         PhysicalTable physical = Scannable.createSubstitutionTable( modifiable, context, logical, allocation, "_doc_", List.of(
-                new ColumnContext( DocumentType.DOCUMENT_ID, null, PolyType.TEXT, false ),
-                new ColumnContext( DocumentType.DOCUMENT_DATA, null, PolyType.TEXT, true ) ), 1 );
+                new ColumnContext( DocumentType.DOCUMENT_ID, null, PolyType.TEXT, false, true ),
+                new ColumnContext( DocumentType.DOCUMENT_DATA, null, PolyType.TEXT, true, true ) ), 1 );
         catalog.addPhysical( allocation, physical );
 
         return List.of( physical );

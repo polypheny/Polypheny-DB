@@ -251,7 +251,7 @@ public class ViewManager {
                 return expandViewNode( other );
             } else */
             if ( doesSubstituteOrderBy && other instanceof LogicalRelScan ) {
-                LogicalTable catalogTable = other.getEntity().unwrap( LogicalTable.class ).orElseThrow();
+                LogicalTable catalogTable = other.getEntity().unwrapOrThrow( LogicalTable.class );
                 if ( catalogTable.entityType == EntityType.MATERIALIZED_VIEW && ((LogicalMaterializedView) catalogTable).isOrdered() ) {
                     return orderMaterialized( other );
                 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,16 +47,15 @@ import org.polypheny.db.util.Pair;
 public class Translator extends RexVisitorImpl<String> {
 
 
+    private static final List<OperatorName> binaries = Arrays.stream( OperatorName.values() )
+            .filter( o -> o.getClazz() == BinaryOperator.class )
+            .toList();
     private final List<AlgDataTypeField> afterFields;
     private final Map<String, String> mapping;
     private final NeoRelationalImplementor implementor;
     private final List<AlgDataTypeField> beforeFields;
     private final String mappingLabel;
     private final boolean useBrackets;
-
-    private static final List<OperatorName> binaries = Arrays.stream( OperatorName.values() )
-            .filter( o -> o.getClazz() == BinaryOperator.class )
-            .toList();
 
 
     public Translator(
@@ -168,7 +167,7 @@ public class Translator extends RexVisitorImpl<String> {
 
 
     private String getFinalFunction( RexCall call, List<String> ops ) {
-        Function1<List<String>, String> getter = NeoUtil.getOpAsNeo( call.op.getOperatorName(), call.operands, call.type );
+        Function1<List<String>, String> getter = NeoUtil.getOpAsNeo( call.op.getOperatorName(), call.operands, call.type, this.beforeFields );
         assert getter != null : "Function is not supported by the Neo4j adapter.";
         String adjusted = getter.apply( IntStream.range( 0, ops.size() ).mapToObj( i -> call.operands.get( i ).getType().getPolyType() == PolyType.DECIMAL ? "toFloat(" + ops.get( i ) + ")" : ops.get( i ) ).toList() );
         if ( useBrackets ) {
@@ -235,7 +234,7 @@ public class Translator extends RexVisitorImpl<String> {
 
     private String handleSetProperty( RexCall call ) {
         String identifier = call.operands.get( 0 ).accept( this );
-        String key = call.operands.get( 1 ).unwrap( RexLiteral.class ).orElseThrow().value.asString().value;
+        String key = call.operands.get( 1 ).unwrapOrThrow( RexLiteral.class ).value.asString().value;
         RexLiteral rex = (RexLiteral) call.operands.get( 2 );
         String literal = NeoUtil.rexAsString( rex, null, true );
         if ( PolyType.STRING_TYPES.contains( rex.getType().getPolyType() ) ) {

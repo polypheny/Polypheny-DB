@@ -17,9 +17,7 @@
 package org.polypheny.db.prisminterface.statementProcessing;
 
 import org.apache.commons.lang3.time.StopWatch;
-import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.catalog.logistic.DataModel;
-import org.polypheny.db.prisminterface.PIServiceException;
 import org.polypheny.db.prisminterface.statements.PIStatement;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.StatementResult;
@@ -38,26 +36,8 @@ public abstract class Executor {
     }
 
 
-    protected void throwOnIllegalState( PIStatement piStatement ) throws PIServiceException {
-        DataModel statementDataModel = piStatement.getLanguage().dataModel();
-
-        if ( statementDataModel != getDataModel() ) {
-            String message = String.format(
-                    "The results of type %s returned by this statement can't be retrieved by a %s retriever.",
-                    statementDataModel.name().toLowerCase(),
-                    getDataModel().name().toLowerCase()
-            );
-            throw new PIServiceException( message );
-        }
-
-        if ( piStatement.getStatement() == null ) {
-            throw new PIServiceException( "Statement is not linked to a polypheny statement" );
-        }
-
-        PolyImplementation implementation = piStatement.getImplementation();
-        if ( implementation == null ) {
-            throw new PIServiceException( "Can't retrieve results form an unexecuted statement." );
-        }
+    protected boolean hasInvalidNamespaceType( PIStatement piStatement ) {
+        return piStatement.getLanguage().dataModel() != getDataModel();
     }
 
 
@@ -65,7 +45,7 @@ public abstract class Executor {
 
     abstract StatementResult executeAndGetResult( PIStatement piStatement );
 
-    abstract StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) throws Exception;
+    abstract StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize );
 
     abstract Frame fetch( PIStatement piStatement, int fetchSize );
 

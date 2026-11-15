@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalDefaultValue;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -67,10 +68,10 @@ import org.polypheny.db.sql.language.validate.PolyphenyDbSqlValidator;
 import org.polypheny.db.sql.sql2alg.SqlToAlgConverter;
 import org.polypheny.db.sql.sql2alg.StandardConvertletTable;
 import org.polypheny.db.tools.AlgBuilder;
-import org.polypheny.db.transaction.Lock.LockMode;
-import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockablesRegistry;
 import org.polypheny.db.util.Casing;
 import org.polypheny.db.util.Conformance;
 import org.polypheny.db.util.DeadlockException;
@@ -84,8 +85,6 @@ public class SqlProcessor extends Processor {
 
     private static final ParserConfig parserConfig;
 
-    private PolyphenyDbSqlValidator validator;
-
 
     static {
         SqlParser.ConfigBuilder configConfigBuilder = Parser.configBuilder();
@@ -93,6 +92,9 @@ public class SqlProcessor extends Processor {
         configConfigBuilder.setQuotedCasing( Casing.UNCHANGED );
         parserConfig = configConfigBuilder.build();
     }
+
+
+    private PolyphenyDbSqlValidator validator;
 
 
     public SqlProcessor() {
@@ -165,7 +167,7 @@ public class SqlProcessor extends Processor {
         } catch ( Exception e ) {
             log.error( "Exception while validating query", e );
             String message = e.getLocalizedMessage();
-            throw new GenericRuntimeException( "Exception while validating query:" + (message == null ? "unrecoverable error" : message) );
+            throw new GenericRuntimeException( "Exception while validating query: " + (message == null ? "unrecoverable error" : message) );
         }
         stopWatch.stop();
         if ( log.isTraceEnabled() ) {
@@ -222,14 +224,11 @@ public class SqlProcessor extends Processor {
 
 
     @Override
-    public void unlock( Statement statement ) {
-        LockManager.INSTANCE.unlock( statement.getTransaction() );
-    }
-
-
-    @Override
-    public void lock( Statement statement ) throws DeadlockException {
-        LockManager.INSTANCE.lock( LockMode.EXCLUSIVE, statement.getTransaction() );
+    protected void lock( Transaction transaction, ParsedQueryContext context ) throws DeadlockException {
+        // exclusive lock
+        //TODO: TH check what this is used for...
+        LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( context.getNamespaceId() ).orElseThrow();
+        transaction.acquireLockable( LockablesRegistry.INSTANCE.getOrCreateLockable( namespace ), LockType.EXCLUSIVE );
     }
 
 
@@ -259,6 +258,10 @@ public class SqlProcessor extends Processor {
             DataModel dataModel = Catalog.snapshot().getNamespace( catalogTable.namespaceId ).orElseThrow().dataModel;
 
             catalogTable = getTable( transaction, (SqlIdentifier) insert.getTargetTable() );
+
+            if ( !(insert.getSource() instanceof SqlBasicCall) ) {
+                return;
+            }
 
             SqlNodeList newColumnList = new SqlNodeList( ParserPos.ZERO );
             int size = catalogTable.getColumns().size();

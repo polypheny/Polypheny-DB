@@ -19,98 +19,79 @@ package org.polypheny.db.prisminterface;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.Iterator;
+import java.sql.Statement;
+import java.sql.Types;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper.JdbcConnection;
-import org.polypheny.jdbc.PolyConnection;
-import org.polypheny.jdbc.multimodel.PolyRow;
-import org.polypheny.jdbc.multimodel.PolyStatement;
-import org.polypheny.jdbc.multimodel.RelationalColumnMetadata;
-import org.polypheny.jdbc.multimodel.RelationalMetadata;
-import org.polypheny.jdbc.multimodel.RelationalResult;
 
 public class SqlTest {
 
     @BeforeAll
     public static void setup() throws SQLException {
-        try ( Connection connection = new JdbcConnection( true ).getConnection() ) {
-            if ( !connection.isWrapperFor( PolyConnection.class ) ) {
-                fail( "Driver must support unwrapping to PolyConnection" );
-            }
-            PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createPolyStatement();
-            polyStatement.execute( "public", "sql", "DROP NAMESPACE IF EXISTS sqltest" );
-            polyStatement.execute( "public", "sql", "CREATE RELATIONAL NAMESPACE sqltest" );
-            polyStatement.execute( "sqltest", "sql", "CREATE TABLE sqltest.test_table (id INT PRIMARY KEY, name VARCHAR(50))" );
-            polyStatement.execute( "sqltest", "sql", "INSERT INTO sqltest.test_table (id, name) VALUES (1, 'Alice')" );
-            polyStatement.execute( "sqltest", "sql", "INSERT INTO sqltest.test_table (id, name) VALUES (2, 'Bob')" );
+        try ( Connection connection = new JdbcConnection( true ).getConnection(); Statement statement = connection.createStatement() ) {
+            statement.execute( "DROP NAMESPACE IF EXISTS prism_sql_test" );
+            statement.execute( "CREATE RELATIONAL NAMESPACE prism_sql_test" );
+            statement.execute( "CREATE TABLE prism_sql_test.test_table (id INTEGER NOT NULL, name VARCHAR(50), PRIMARY KEY (id))" );
+            statement.execute( "INSERT INTO prism_sql_test.test_table (id, name) VALUES (1, 'Alice'), (2, 'Bob')" );
+        }
+    }
+
+
+    @AfterAll
+    public static void tearDown() throws SQLException {
+        try ( Connection connection = new JdbcConnection( true ).getConnection(); Statement statement = connection.createStatement() ) {
+            statement.execute( "DROP NAMESPACE IF EXISTS prism_sql_test" );
         }
     }
 
 
     @Test
     public void sqlSelectTest() throws SQLException {
-        try ( Connection connection = new JdbcConnection( true ).getConnection() ) {
-            if ( !connection.isWrapperFor( PolyConnection.class ) ) {
-                fail( "Driver must support unwrapping to PolyConnection" );
-            }
-            PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createPolyStatement();
-            RelationalResult result = polyStatement.execute( "sqltest", "sql", "SELECT * FROM test_table" ).unwrap( RelationalResult.class );
-            Iterator<PolyRow> rows = result.unwrap( RelationalResult.class ).iterator();
-            assertTrue( rows.hasNext() );
-            PolyRow row = rows.next();
+        try ( Connection connection = new JdbcConnection( true ).getConnection(); Statement statement = connection.createStatement();
+                ResultSet rows = statement.executeQuery( "SELECT id, name FROM prism_sql_test.test_table ORDER BY id" ) ) {
+            assertTrue( rows.next() );
+            assertEquals( 1, rows.getInt( "id" ) );
+            assertEquals( "Alice", rows.getString( "name" ) );
+            assertEquals( 1, rows.getInt( 1 ) );
+            assertEquals( "Alice", rows.getString( 2 ) );
 
-            assertEquals( 1, row.get( "id" ).asInt() );
-            assertEquals( "Alice", row.get( "name" ).asString() );
-
-            assertEquals( 1, row.get( 0 ).asInt() );
-            assertEquals( "Alice", row.get( 1 ).asString() );
-
-            assertTrue( rows.hasNext() );
-            row = rows.next();
-
-            assertEquals( 2, row.get( "id" ).asInt() );
-            assertEquals( "Bob", row.get( "name" ).asString() );
-
-            assertEquals( 2, row.get( 0 ).asInt() );
-            assertEquals( "Bob", row.get( 1 ).asString() );
+            assertTrue( rows.next() );
+            assertEquals( 2, rows.getInt( "id" ) );
+            assertEquals( "Bob", rows.getString( "name" ) );
+            assertEquals( 2, rows.getInt( 1 ) );
+            assertEquals( "Bob", rows.getString( 2 ) );
+            assertFalse( rows.next() );
         }
     }
 
 
     @Test
     public void sqlSelectMetadataTest() throws SQLException {
-        try ( Connection connection = new JdbcConnection( true ).getConnection() ) {
-            if ( !connection.isWrapperFor( PolyConnection.class ) ) {
-                fail( "Driver must support unwrapping to PolyConnection" );
-            }
-            PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createPolyStatement();
-            RelationalMetadata relationalMetadata = polyStatement.execute( "sqltest", "sql", "SELECT * FROM test_table" ).unwrap( RelationalResult.class ).getMetadata();
-            assertEquals( 2, relationalMetadata.getColumnCount() );
+        try ( Connection connection = new JdbcConnection( true ).getConnection(); Statement statement = connection.createStatement();
+                ResultSet rows = statement.executeQuery( "SELECT id, name FROM prism_sql_test.test_table" ) ) {
+            ResultSetMetaData metadata = rows.getMetaData();
+            assertEquals( 2, metadata.getColumnCount() );
 
-            RelationalColumnMetadata relationalColumnMetadata1 = relationalMetadata.getColumnMeta( 0 );
-            assertEquals( 0, relationalColumnMetadata1.getColumnIndex() );
-            assertFalse( relationalColumnMetadata1.isNullable() ); // false as this is the primary key
-            assertEquals( 10, relationalColumnMetadata1.getLength() );
-            assertEquals( "id", relationalColumnMetadata1.getColumnLabel() );
-            assertEquals( "id", relationalColumnMetadata1.getColumnName() );
-            assertEquals( 10, relationalColumnMetadata1.getPrecision() );
-            assertEquals( "INTEGER", relationalColumnMetadata1.getProtocolTypeName() );
-            assertEquals( 0, relationalColumnMetadata1.getScale() );
+            assertEquals( ResultSetMetaData.columnNoNulls, metadata.isNullable( 1 ) );
+            assertEquals( 10, metadata.getColumnDisplaySize( 1 ) );
+            assertEquals( "id", metadata.getColumnLabel( 1 ) );
+            assertEquals( "id", metadata.getColumnName( 1 ) );
+            assertEquals( 10, metadata.getPrecision( 1 ) );
+            assertEquals( Types.INTEGER, metadata.getColumnType( 1 ) );
 
-            RelationalColumnMetadata relationalColumnMetadata2 = relationalMetadata.getColumnMeta( 1 );
-            assertEquals( 1, relationalColumnMetadata2.getColumnIndex() );
-            assertTrue( relationalColumnMetadata2.isNullable() );
-            assertEquals( 50, relationalColumnMetadata2.getLength() );
-            assertEquals( "name", relationalColumnMetadata2.getColumnLabel() );
-            assertEquals( "name", relationalColumnMetadata2.getColumnName() );
-            assertEquals( 50, relationalColumnMetadata2.getPrecision() );
-            assertEquals( "VARCHAR", relationalColumnMetadata2.getProtocolTypeName() );
-            assertEquals( -2147483648, relationalColumnMetadata2.getScale() );
+            assertEquals( ResultSetMetaData.columnNullable, metadata.isNullable( 2 ) );
+            assertEquals( 50, metadata.getColumnDisplaySize( 2 ) );
+            assertEquals( "name", metadata.getColumnLabel( 2 ) );
+            assertEquals( "name", metadata.getColumnName( 2 ) );
+            assertEquals( 50, metadata.getPrecision( 2 ) );
+            assertEquals( Types.VARCHAR, metadata.getColumnType( 2 ) );
         }
     }
 

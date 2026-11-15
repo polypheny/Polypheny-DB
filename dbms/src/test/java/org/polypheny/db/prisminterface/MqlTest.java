@@ -18,17 +18,19 @@ package org.polypheny.db.prisminterface;
 
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Iterator;
+import java.util.HashMap;
+import java.util.Map;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.jdbc.PolyConnection;
+import org.polypheny.jdbc.PrismInterfaceServiceException;
 import org.polypheny.jdbc.multimodel.DocumentResult;
 import org.polypheny.jdbc.multimodel.PolyStatement;
 import org.polypheny.jdbc.types.PolyDocument;
@@ -38,16 +40,22 @@ public class MqlTest {
     @BeforeAll
     public static void setup() throws SQLException {
         try ( Connection connection = new JdbcConnection( true ).getConnection() ) {
-            if ( !connection.isWrapperFor( PolyConnection.class ) ) {
-                fail( "Driver must support unwrapping to PolyConnection" );
-            }
             PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createPolyStatement();
 
-            polyStatement.execute( "public", "sql", "DROP NAMESPACE IF EXISTS mongotest" );
-            polyStatement.execute( "public", "sql", "CREATE DOCUMENT NAMESPACE mongotest" );
-            polyStatement.execute( "mongotest", "mongo", "db.createCollection(test_collection)" );
-            polyStatement.execute( "mongotest", "mongo", "db.test_collection.insert({ \"_id\": 1, \"name\": \"Alice\" })" );
-            polyStatement.execute( "mongotest", "mongo", "db.test_collection.insert({ \"_id\": 2, \"name\": \"Bob\" })" );
+            polyStatement.execute( "public", "sql", "DROP NAMESPACE IF EXISTS prism_mql_test" );
+            polyStatement.execute( "public", "sql", "CREATE DOCUMENT NAMESPACE prism_mql_test" );
+            polyStatement.execute( "prism_mql_test", "mongo", "db.createCollection(\"test_collection\")" );
+            polyStatement.execute( "prism_mql_test", "mongo", "db.test_collection.insert({ \"rank\": 1, \"name\": \"Alice\" })" );
+            polyStatement.execute( "prism_mql_test", "mongo", "db.test_collection.insert({ \"rank\": 2, \"name\": \"Bob\" })" );
+        }
+    }
+
+
+    @AfterAll
+    public static void tearDown() throws SQLException {
+        try ( Connection connection = new JdbcConnection( true ).getConnection() ) {
+            connection.unwrap( PolyConnection.class ).createPolyStatement()
+                    .execute( "public", "sql", "DROP NAMESPACE IF EXISTS prism_mql_test" );
         }
     }
 
@@ -55,26 +63,23 @@ public class MqlTest {
     @Test
     public void mongoSelectTest() throws SQLException {
         try ( Connection connection = new JdbcConnection( true ).getConnection() ) {
-            if ( !connection.isWrapperFor( PolyConnection.class ) ) {
-                fail( "Driver must support unwrapping to PolyConnection" );
-            }
             PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createPolyStatement();
-            DocumentResult result = polyStatement.execute( "mongotest", "mongo", "db.test_collection.find({})" ).unwrap( DocumentResult.class );
-            Iterator<PolyDocument> documents = result.iterator();
+            DocumentResult result = polyStatement.execute( "prism_mql_test", "mongo", "db.test_collection.find({})" ).unwrap( DocumentResult.class );
+            Map<Integer, String> documents = new HashMap<>();
+            for ( PolyDocument document : result ) {
+                assertNull( documents.put( document.get( "rank" ).asInt(), document.get( "name" ).asString() ) );
+            }
+            assertEquals( Map.of( 1, "Alice", 2, "Bob" ), documents );
+        }
+    }
 
-            assertTrue( documents.hasNext() );
-            PolyDocument document = documents.next();
 
-            assertEquals( 1, document.get( "_id" ).asInt() );
-            assertEquals( "Alice", document.get( "name" ).asString() );
-
-            assertTrue( documents.hasNext() );
-            document = documents.next();
-
-            assertEquals( 2, document.get( "_id" ).asInt() );
-            assertEquals( "Bob", document.get( "name" ).asString() );
-
-            assertFalse( documents.hasNext() );
+    @Test
+    public void rejectsAutomaticallyGeneratedCollectionCreation() throws SQLException {
+        try ( Connection connection = new JdbcConnection( true ).getConnection() ) {
+            PolyStatement polyStatement = connection.unwrap( PolyConnection.class ).createPolyStatement();
+            assertThrows( PrismInterfaceServiceException.class,
+                    () -> polyStatement.execute( "prism_mql_test", "mongo", "db.missing_collection.find()" ) );
         }
     }
 

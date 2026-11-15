@@ -334,12 +334,12 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     private static long getLogicalId( Scan<?> scan ) {
-        return scan.entity.isLogical() ? scan.entity.id : scan.entity.unwrap( AllocationEntity.class ).orElseThrow().getLogicalId();
+        return scan.entity.isLogical() ? scan.entity.id : scan.entity.unwrapOrThrow( AllocationEntity.class ).getLogicalId();
     }
 
 
     private static long getLogicalId( Modify<?> modify ) {
-        return modify.entity.isLogical() ? modify.entity.id : modify.entity.unwrap( AllocationEntity.class ).orElseThrow().getLogicalId();
+        return modify.entity.isLogical() ? modify.entity.id : modify.entity.unwrapOrThrow( AllocationEntity.class ).getLogicalId();
     }
 
 
@@ -463,7 +463,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
             return;
         }
 
-        handleIfPartitioned( filter, table.unwrap( LogicalTable.class ).orElseThrow() );
+        handleIfPartitioned( filter, table.unwrap( LogicalTable.class ).get() );
     }
 
 

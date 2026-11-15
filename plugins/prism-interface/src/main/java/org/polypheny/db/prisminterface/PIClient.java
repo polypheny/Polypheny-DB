@@ -19,9 +19,9 @@ package org.polypheny.db.prisminterface;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
-import org.polypheny.db.prisminterface.metaRetrieval.PIClientInfoProperties;
 import org.polypheny.db.prisminterface.statements.StatementManager;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
@@ -72,9 +72,18 @@ public class PIClient {
 
     public Transaction getOrCreateNewTransaction() {
         if ( hasNoTransaction() ) {
-            currentTransaction = transactionManager.startTransaction( catalogUser.id, namespace.id, false, "PrismInterface" );
+            currentTransaction = transactionManager.startTransaction( catalogUser.id, namespace.id, null, "PrismInterface" );
         }
         return currentTransaction;
+    }
+
+
+    /**
+     * Creates a read transaction owned by a metadata request, without changing the
+     * connection's transaction. The caller must complete this transaction.
+     */
+    Transaction createMetadataTransaction( long namespaceId ) {
+        return transactionManager.startTransaction( catalogUser.id, namespaceId, null, "PrismInterface metadata" );
     }
 
 
@@ -105,13 +114,13 @@ public class PIClient {
     }
 
 
-    public void rollbackCurrentTransaction() throws PIServiceException {
+    public void rollbackCurrentTransaction( @Nullable String reason ) throws PIServiceException {
         if ( hasNoTransaction() ) {
             return;
         }
         try {
             currentTransaction.getCancelFlag().set( true );
-            currentTransaction.rollback();
+            currentTransaction.rollback( reason );
         } catch ( TransactionException e ) {
             throw new PIServiceException( "Rollback of current transaction failed: " + e.getLocalizedMessage() );
         } finally {
@@ -130,9 +139,9 @@ public class PIClient {
     }
 
 
-    void prepareForDisposal() {
+    void prepareForDisposal( @Nullable String reason ) {
         statementManager.closeAll();
-        rollbackCurrentTransaction();
+        rollbackCurrentTransaction( reason );
         monitoringPage.removeStatementManager( statementManager );
     }
 

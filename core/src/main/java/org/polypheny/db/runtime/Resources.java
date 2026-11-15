@@ -68,6 +68,7 @@ import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 
 /**
@@ -839,7 +840,7 @@ public class Resources {
     /**
      * Thrown when a default value is needed but a property does not have one.
      */
-    public static class NoDefaultValueException extends RuntimeException {
+    public static class NoDefaultValueException extends GenericRuntimeException {
 
         NoDefaultValueException( String message ) {
             super( message );

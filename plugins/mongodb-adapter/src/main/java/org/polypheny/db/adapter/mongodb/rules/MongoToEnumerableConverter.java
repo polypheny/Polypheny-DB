@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,6 +60,26 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
     }
 
 
+    /**
+     * E.g. {@code constantArrayList("x", "y")} returns "Arrays.asList('x', 'y')".
+     *
+     * @param values List of values
+     * @param clazz Type of values
+     * @return expression
+     */
+    protected static <T> MethodCallExpression constantArrayList( List<T> values, Class clazz ) {
+        return Expressions.call( BuiltInMethod.ARRAYS_AS_LIST.method, Expressions.newArrayInit( clazz, constantList( values ) ) );
+    }
+
+
+    /**
+     * E.g. {@code constantList("x", "y")} returns {@code {ConstantExpression("x"), ConstantExpression("y")}}.
+     */
+    protected static <T> List<Expression> constantList( List<T> values ) {
+        return Lists.transform( values, Expressions::constant );
+    }
+
+
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return new MongoToEnumerableConverter( getCluster(), traitSet, AbstractAlgNode.sole( inputs ) );
@@ -96,6 +116,7 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
 
         Expression enumerable;
         if ( !mongoImplementor.isDML() ) {
+            final Expression ddls = list.append( list.newName( "ddls" ), constantArrayList( mongoImplementor.indexAndIndexType, String.class ) );
             final Expression logicalCols = list.append(
                     "logical",
                     constantArrayList(
@@ -103,7 +124,7 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
             final Expression preProjects = list.append( "prePro", constantArrayList( mongoImplementor.getPreProjects(), String.class ) );
             enumerable = list.append(
                     list.newName( "enumerable" ),
-                    Expressions.call( table, MongoMethod.MONGO_QUERYABLE_AGGREGATE.method, tupleTypes, ops, preProjects, logicalCols ) );
+                    Expressions.call( table, MongoMethod.MONGO_QUERYABLE_AGGREGATE.method, tupleTypes, ops, preProjects, logicalCols, ddls ) );
         } else {
             final Expression operations = list.append( list.newName( "operations" ), constantArrayList( mongoImplementor.getOperations(), String.class ) );
             final Expression operation = list.append( list.newName( "operation" ), Expressions.constant( mongoImplementor.getOperation(), Operation.class ) );
@@ -120,26 +141,6 @@ public class MongoToEnumerableConverter extends ConverterImpl implements Enumera
         Hook.QUERY_PLAN.run( opList );
         list.add( Expressions.return_( null, enumerable ) );
         return implementor.result( physType, list.toBlock() );
-    }
-
-
-    /**
-     * E.g. {@code constantArrayList("x", "y")} returns "Arrays.asList('x', 'y')".
-     *
-     * @param values List of values
-     * @param clazz Type of values
-     * @return expression
-     */
-    protected static <T> MethodCallExpression constantArrayList( List<T> values, Class clazz ) {
-        return Expressions.call( BuiltInMethod.ARRAYS_AS_LIST.method, Expressions.newArrayInit( clazz, constantList( values ) ) );
-    }
-
-
-    /**
-     * E.g. {@code constantList("x", "y")} returns {@code {ConstantExpression("x"), ConstantExpression("y")}}.
-     */
-    protected static <T> List<Expression> constantList( List<T> values ) {
-        return Lists.transform( values, Expressions::constant );
     }
 
 }

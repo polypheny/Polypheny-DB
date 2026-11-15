@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,20 @@ public interface NeoGraphRules {
             NeoGraphMatchRule.INSTANCE
     };
 
+    static boolean supports( LpgProject r ) {
+        NeoSupportVisitor visitor = new NeoSupportVisitor();
+        for ( RexNode project : r.getProjects() ) {
+            project.accept( visitor );
+        }
+        return visitor.isSupports();
+    }
+
+    static boolean supports( LpgFilter r ) {
+        NeoSupportVisitor visitor = new NeoSupportVisitor();
+        r.getCondition().accept( visitor );
+        return visitor.isSupports();
+    }
+
 
     abstract class NeoConverterRule extends ConverterRule {
 
@@ -103,14 +117,6 @@ public interface NeoGraphRules {
 
     }
 
-    static boolean supports( LpgProject r ) {
-        NeoSupportVisitor visitor = new NeoSupportVisitor();
-        for ( RexNode project : r.getProjects() ) {
-            project.accept( visitor );
-        }
-        return visitor.isSupports();
-    }
-
 
     class NeoGraphProjectRule extends NeoConverterRule {
 
@@ -138,7 +144,7 @@ public interface NeoGraphRules {
 
     class NeoGraphFilterRule extends NeoConverterRule {
 
-        public static NeoGraphFilterRule INSTANCE = new NeoGraphFilterRule( LpgFilter.class, r -> true, "NeoGraphFilterRule" );
+        public static NeoGraphFilterRule INSTANCE = new NeoGraphFilterRule( LpgFilter.class, NeoGraphRules::supports, "NeoGraphFilterRule" );
 
 
         private <R extends AlgNode> NeoGraphFilterRule( Class<R> clazz, Predicate<? super R> supports, String description ) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,12 +53,6 @@ public class CypherExpression extends CypherNode {
     }
 
 
-    @Override
-    public CypherKind getCypherKind() {
-        return CypherKind.EXPRESSION;
-    }
-
-
     public CypherExpression( ParserPos pos, ExpressionType type, CypherVariable variable, CypherExpression expression, CypherExpression where ) {
         super( pos );
         this.type = type;
@@ -75,7 +69,18 @@ public class CypherExpression extends CypherNode {
     }
 
 
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.EXPRESSION;
+    }
+
+
     public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
+        if ( this instanceof CypherFunctionInvocation func ) {
+            // var is null in case of function call
+            return Pair.of( PolyString.of( null ), func.getRexCall( context, type ) );
+        }
+
         OperatorName operatorName = switch ( this.type ) {
             // EveryPathPattern
             //return pattern.getPatternMatch( context );
@@ -125,13 +130,13 @@ public class CypherExpression extends CypherNode {
     }
 
 
-    public enum ExpressionType {
-        ALL, NONE, SINGLE, PATTERN, ANY, VARIABLE, AGGREGATE, DEFAULT, LITERAL
+    public PolyValue getComparable() {
+        throw new UnsupportedOperationException();
     }
 
 
-    public PolyValue getComparable() {
-        throw new UnsupportedOperationException();
+    public enum ExpressionType {
+        ALL, NONE, SINGLE, PATTERN, ANY, VARIABLE, AGGREGATE, DEFAULT, LITERAL
     }
 
 }

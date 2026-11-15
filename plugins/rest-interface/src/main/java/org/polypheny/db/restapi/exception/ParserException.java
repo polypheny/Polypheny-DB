@@ -18,17 +18,19 @@ package org.polypheny.db.restapi.exception;
 
 
 import lombok.Getter;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.restapi.ParserErrorCode;
 
 
 @Getter
-public class ParserException extends RuntimeException {
+public class ParserException extends GenericRuntimeException {
 
     private final ParserErrorCode errorCode;
     private final String violatingInput;
 
 
     public ParserException( ParserErrorCode errorCode, String violatingInput ) {
+        super( "Parser Exception: ", errorCode.name );
         this.errorCode = errorCode;
         this.violatingInput = violatingInput;
     }

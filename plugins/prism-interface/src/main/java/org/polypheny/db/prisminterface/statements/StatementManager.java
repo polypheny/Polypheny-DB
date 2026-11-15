@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.prisminterface.PIClient;
@@ -158,8 +159,8 @@ public class StatementManager {
     }
 
 
-    public void closeBatch( PIUnparameterizedStatementBatch toClose ) {
-        toClose.getStatements().forEach( s -> closeStatementOrBatch( s.getId() ) );
+    private void closeBatch( PIUnparameterizedStatementBatch toClose ) {
+        toClose.getStatements().forEach( s -> closeStatement( s.getId() ) );
     }
 
 
@@ -180,7 +181,14 @@ public class StatementManager {
             closeBatch( batchToClose );
             return;
         }
-        closeStatement( statementId );
+        PIStatement statement = openStatements.get( statementId );
+        try {
+            if ( statement != null && statement.getLanguage().dataModel() == DataModel.GRAPH ) {
+                statement.closeResultsAndCommitIfAuto();
+            }
+        } finally {
+            closeStatement( statementId );
+        }
     }
 
 
@@ -192,11 +200,15 @@ public class StatementManager {
         if ( statement == null ) {
             throw new PIServiceException( "A statement with id " + statementId + " does not exist for that client" );
         }
+        return statement;
+    }
+
+
+    private void rebindPreparedStatement( PIPreparedStatement statement ) {
         Statement s = statement.getStatement();
         if ( s != null && s.getTransaction().getId() != client.getOrCreateNewTransaction().getId() ) {
             statement.setStatement( client.getCurrentTransaction().createStatement() );
         }
-        return statement;
     }
 
 
@@ -205,6 +217,7 @@ public class StatementManager {
         if ( !(statement instanceof PIPreparedNamedStatement prepared) ) {
             throw new PIServiceException( "A named prepared statement with id " + statementId + " does not exist for that client" );
         }
+        rebindPreparedStatement( prepared );
         return prepared;
     }
 
@@ -214,6 +227,7 @@ public class StatementManager {
         if ( !(statement instanceof PIPreparedIndexedStatement prepared) ) {
             throw new PIServiceException( "A prepared indexed statement with id " + statementId + " does not exist for that client" );
         }
+        rebindPreparedStatement( prepared );
         return prepared;
     }
 

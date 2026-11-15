@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,13 @@ package org.polypheny.db.ddl;
 
 import java.util.Map;
 import org.apache.calcite.linq4j.function.Deterministic;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.iface.QueryInterfaceManager;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.util.RunMode;
 
@@ -35,7 +38,7 @@ public class DefaultInserter {
     /**
      * Fills the catalog database with default data, skips if data is already inserted
      */
-    public static void resetData( DdlManager ddlManager, RunMode mode ) {
+    public static void resetData( Transaction transaction, DdlManager ddlManager, RunMode mode ) {
         final Catalog catalog = Catalog.getInstance();
         restoreUsers( catalog );
 
@@ -43,21 +46,19 @@ public class DefaultInserter {
         // init schema
 
         if ( catalog.getSnapshot().getNamespace( DEFAULT_NAMESPACE ).isEmpty() ) {
-            catalog.createNamespace( "public", DataModel.getDefault(), false );
+            catalog.createNamespace( "public", DataModel.getDefault(), false, false );
         }
 
         //////////////
         // init adapters
 
-        restoreAdapters( ddlManager, catalog, mode );
+        restoreAdapters( transaction, ddlManager, catalog, mode );
 
-        catalog.executeCommitActions();
-        catalog.commit();
-
+        transaction.commit();
     }
 
 
-    private static void restoreAdapters( DdlManager ddlManager, Catalog catalog, RunMode mode ) {
+    private static void restoreAdapters( Transaction transaction, DdlManager ddlManager, Catalog catalog, RunMode mode ) {
         if ( !catalog.getAdapters().isEmpty() ) {
             catalog.commit();
             return;
@@ -66,7 +67,7 @@ public class DefaultInserter {
         catalog.updateSnapshot();
 
         // Deploy default store (HSQLDB)
-        AdapterTemplate storeTemplate = Catalog.snapshot().getAdapterTemplate( Catalog.defaultStore.getAdapterName(), AdapterType.STORE ).orElseThrow();
+        AdapterTemplate storeTemplate = AdapterManager.getAdapterTemplate( Catalog.defaultStore.getAdapterName(), AdapterType.STORE );
         ddlManager.createStore( "hsqldb", Catalog.defaultStore.getAdapterName(), AdapterType.STORE, storeTemplate.getDefaultSettings(), storeTemplate.getDefaultMode() );
 
         if ( mode == RunMode.TEST ) {
@@ -74,10 +75,8 @@ public class DefaultInserter {
         }
 
         // Deploy default source (CSV with HR data)
-        AdapterTemplate sourceTemplate = Catalog.snapshot().getAdapterTemplate( Catalog.defaultSource.getAdapterName(), AdapterType.SOURCE ).orElseThrow();
-        ddlManager.createSource( "hr", Catalog.defaultSource.getAdapterName(), Catalog.defaultNamespaceId, AdapterType.SOURCE, sourceTemplate.getDefaultSettings(), sourceTemplate.getDefaultMode() );
-
-
+        AdapterTemplate sourceTemplate = AdapterManager.getAdapterTemplate( Catalog.defaultSource.getAdapterName(), AdapterType.SOURCE );
+        ddlManager.createSource( transaction, "hr", Catalog.defaultSource.getAdapterName(), Catalog.defaultNamespaceId, AdapterType.SOURCE, sourceTemplate.getDefaultSettings(), sourceTemplate.getDefaultMode() );
     }
 
 
@@ -103,9 +102,9 @@ public class DefaultInserter {
         if ( !catalog.getInterfaces().isEmpty() ) {
             return;
         }
-        catalog.getInterfaceTemplates().values().forEach( i -> Catalog.getInstance().createQueryInterface( i.interfaceType().toLowerCase(), i.interfaceType(), i.getDefaultSettings() ) );
+        QueryInterfaceManager.getInstance().getInterfaceTemplates().values().forEach( i -> Catalog.getInstance().createQueryInterface( i.interfaceType().toLowerCase(), i.interfaceType(), i.getDefaultSettings() ) );
         // TODO: This is ugly, both because it is racy, and depends on a string (which might be changed)
-        if ( catalog.getInterfaceTemplates().values().stream().anyMatch( t -> t.interfaceType().equals( "Prism Interface (Unix transport)" ) ) ) {
+        if ( QueryInterfaceManager.getInstance().getInterfaceTemplates().values().stream().anyMatch( t -> t.interfaceType().equals( "Prism Interface (Unix transport)" ) ) ) {
             catalog.createQueryInterface(
                     "prism interface (unix transport @ .polypheny)",
                     "Prism Interface (Unix transport)",
@@ -113,7 +112,6 @@ public class DefaultInserter {
             );
         }
         catalog.commit();
-
     }
 
 }

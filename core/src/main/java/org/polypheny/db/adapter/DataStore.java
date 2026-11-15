@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,7 @@
 package org.polypheny.db.adapter;
 
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSerializer;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -27,16 +26,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
-import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.logistic.IndexCategory;
 
 @Slf4j
 public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> implements Modifiable, ExtensionPoint {
 
+    protected final transient Catalog catalog = Catalog.getInstance();
     @Getter
     private final boolean persistent;
-
-    protected final transient Catalog catalog = Catalog.getInstance();
 
 
     public DataStore( final long adapterId, final String uniqueName, final Map<String, String> settings, final DeployMode mode, final boolean persistent, S storeCatalog ) {
@@ -54,7 +52,27 @@ public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> imp
     public abstract List<FunctionalIndexInfo> getFunctionalIndexes( LogicalTable catalogTable );
 
 
-    public record IndexMethodModel( String name, String displayName ) {
+    public record IndexMethodModel(
+            @JsonProperty String name,
+            @JsonProperty String displayName,
+            @JsonProperty IndexCategory category,
+            @JsonProperty List<IndexParameterModel> parameters
+    ) {
+
+        public IndexMethodModel( String name, String displayName ) {
+            this( name, displayName, IndexCategory.REGULAR, List.of() );
+        }
+
+    }
+
+
+    public record IndexParameterModel(
+            @JsonProperty String name,
+            @JsonProperty String displayName,
+            @JsonProperty String type,          //INTEGER, BOOLEAN, ENUM
+            @JsonProperty List<String> options,
+            @JsonProperty String defaultValue
+    ) {
 
     }
 
@@ -69,28 +87,6 @@ public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> imp
             return columnNames;
         }
 
-    }
-
-
-    public static JsonSerializer<DataStore<?>> getSerializer() {
-        //see https://futurestud.io/tutorials/gson-advanced-custom-serialization-part-1
-        return ( src, typeOfSrc, context ) -> {
-            JsonObject jsonStore = new JsonObject();
-            jsonStore.addProperty( "adapterId", src.getAdapterId() );
-            jsonStore.add( "adapterSettings", context.serialize( AbstractAdapterSetting.serializeSettings( src.getAvailableSettings( src.getClass() ), src.getCurrentSettings() ) ) );
-            jsonStore.add( "settings", context.serialize( src.getCurrentSettings() ) );
-            jsonStore.addProperty( "adapterName", src.getAdapterName() );
-            jsonStore.addProperty( "uniqueName", src.getUniqueName() );
-            jsonStore.addProperty( "type", src.getAdapterType().name() );
-            jsonStore.add( "persistent", context.serialize( src.isPersistent() ) );
-            jsonStore.add( "availableIndexMethods", context.serialize( src.getAvailableIndexMethods() ) );
-            return jsonStore;
-        };
-    }
-
-
-    private AdapterType getAdapterType() {
-        return AdapterType.STORE;
     }
 
 }

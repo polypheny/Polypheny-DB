@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
     public static final String DOCUMENT_ID = "_id";
     public static final String DOCUMENT_DATA = "_data";
+    public static final String DOCUMENT_FIELD = "d";
 
     public StructKind structKind;
 
@@ -94,7 +95,7 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
 
     public static AlgDataType ofDoc() {
-        return new DocumentType( List.of( new AlgDataTypeFieldImpl( -1L, "d", 0, DocumentType.ofId() ) ) );
+        return new DocumentType( List.of( new AlgDataTypeFieldImpl( -1L, DOCUMENT_FIELD, 0, DocumentType.ofId() ) ) );
     }
 
 
@@ -105,7 +106,7 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
 
     public static AlgDataType ofCrossRelational() {
         return new AlgRecordType( List.of(
-                new AlgDataTypeFieldImpl( -1L, "d", 0, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.DOCUMENT ) )
+                new AlgDataTypeFieldImpl( -1L, DOCUMENT_FIELD, 0, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.DOCUMENT ) )
         ) );
     }
 

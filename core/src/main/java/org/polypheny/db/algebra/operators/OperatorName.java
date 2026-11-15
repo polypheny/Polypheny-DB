@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1577,6 +1577,25 @@ public enum OperatorName {
      */
     ST_GEOMETRYN( Function.class ),
 
+    //------------------------------------------------------------
+    //                  VECTOR DISTANCE FUNCTIONS
+    //------------------------------------------------------------
+
+    L2_DISTANCE( Function.class ),
+
+    L1_DISTANCE( Function.class ),
+
+    COSINE_DISTANCE( Function.class ),
+
+    HAMMING_DISTANCE( Function.class ),
+
+    JACCARD_DISTANCE( Function.class ),
+
+    INNER_PRODUCT_DISTANCE( Function.class ),
+
+    // Cypher specific operator
+    VECTOR_DISTANCE( Function.class ),
+
     //-------------------------------------------------------------
     //                   SET OPERATORS
     //-------------------------------------------------------------
@@ -1629,11 +1648,25 @@ public enum OperatorName {
 
     MQL_MERGE( LangFunctionOperator.class ),
 
+    MQL_MERGE_ADD( LangFunctionOperator.class ),
+
     MQL_PROJECT_INCLUDES( LangFunctionOperator.class ),
 
     MQL_REPLACE_ROOT( LangFunctionOperator.class ),
 
     MQL_NOT_UNSET( LangFunctionOperator.class ),
+
+    MQL_GEO_INTERSECTS( LangFunctionOperator.class ),
+
+    MQL_GEO_WITHIN( LangFunctionOperator.class ),
+
+    MQL_GEO_DISTANCE( LangFunctionOperator.class ),
+
+    MQL_NEAR( LangFunctionOperator.class ),
+
+    MQL_NEAR_SPHERE( LangFunctionOperator.class ),
+
+    MQL_GEO_NEAR( LangFunctionOperator.class ),
 
     //-------------------------------------------------------------
     //                   OPENCYPHER OPERATORS
@@ -1699,7 +1732,6 @@ public enum OperatorName {
 
     CYPHER_LIKE( LangFunctionOperator.class ),
 
-    CYPHER_GRAPH_ONLY_LABEL( LangFunctionOperator.class ),
 
     CYPHER_GEO_DISTANCE( LangFunctionOperator.class ),
 
@@ -1708,6 +1740,14 @@ public enum OperatorName {
     CYPHER_GEO_INTERSECTS( LangFunctionOperator.class ),
 
     CYPHER_GEO_WITHIN( LangFunctionOperator.class ),
+
+    CYPHER_POINT( LangFunctionOperator.class ),
+
+    CYPHER_WITHIN_BBOX( LangFunctionOperator.class ),
+
+    CYPHER_WITHIN_GEOMETRY( LangFunctionOperator.class ),
+
+    DISTANCE_NEO4J( LangFunctionOperator.class ),
 
     // CROSS MODEL FUNCTION
 
@@ -1722,14 +1762,6 @@ public enum OperatorName {
     EXTRACT_NAME( LangFunctionOperator.class );
 
 
-    private final Class<? extends Operator> clazz;
-
-
-    OperatorName( Class<? extends Operator> clazz ) {
-        this.clazz = clazz;
-    }
-
-
     final public static List<OperatorName> MQL_OPERATORS = Arrays.asList(
             MQL_EQUALS,
             MQL_GT,
@@ -1737,4 +1769,10 @@ public enum OperatorName {
             MQL_LT,
             MQL_LTE
     );
+    private final Class<? extends Operator> clazz;
+
+
+    OperatorName( Class<? extends Operator> clazz ) {
+        this.clazz = clazz;
+    }
 }

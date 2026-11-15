@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.adapter.mongodb.MongoConvention;
 import org.polypheny.db.adapter.mongodb.MongoEntity;
 import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgFieldCollation.Direction;
 import org.polypheny.db.algebra.AlgFieldCollation.NullDirection;
 import org.polypheny.db.algebra.AlgNode;
@@ -67,6 +68,7 @@ import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.schema.document.DocumentRules;
 import org.polypheny.db.schema.types.ModifiableTable;
@@ -86,13 +88,7 @@ import org.slf4j.Logger;
  */
 public class MongoRules {
 
-    private MongoRules() {
-    }
-
-
-    protected static final Logger LOGGER = PolyphenyDbTrace.getPlannerTracer();
     public static final MongoConvention convention = MongoConvention.INSTANCE;
-
     @Getter
     public static final AlgOptRule[] RULES = {
             MongoToEnumerableConverterRule.INSTANCE,
@@ -109,6 +105,10 @@ public class MongoRules {
             MongoDocumentsRule.INSTANCE,
             MongoDocumentModificationRule.INSTANCE
     };
+    protected static final Logger LOGGER = PolyphenyDbTrace.getPlannerTracer();
+
+    private MongoRules() {
+    }
 
 
     /**
@@ -214,6 +214,19 @@ public class MongoRules {
     }
 
 
+    private static boolean containsIncompatible( SingleAlg alg ) {
+        MongoExcludeVisitor visitor = new MongoExcludeVisitor();
+        alg.accept( new RexShuttle() {
+            @Override
+            public RexNode visitCall( RexCall call ) {
+                call.accept( visitor );
+                return call;
+            }
+        } );
+        return visitor.isContainsIncompatible();
+    }
+
+
     /**
      * Base class for planner rules that convert a relational expression to MongoDB calling convention.
      */
@@ -255,6 +268,16 @@ public class MongoRules {
         @Override
         public AlgNode convert( AlgNode alg ) {
             final Sort sort = (Sort) alg;
+
+            for ( AlgFieldCollation field : sort.collation.getFieldCollations() ) {
+                // mongodb sorts nulls first for ascending (or desc, nulls last), so this requires expensive precalcs,
+                if ( field.nullDirection == NullDirection.LAST && field.direction == Direction.ASCENDING ) {
+                    return null;
+                } else if ( field.direction == Direction.DESCENDING && field.nullDirection == NullDirection.FIRST ) {
+                    return null;
+                }
+            }
+
             final AlgTraitSet traitSet = sort.getTraitSet().replace( out ).replace( sort.getCollation() );
             return new MongoSort(
                     alg.getCluster(),
@@ -423,21 +446,10 @@ public class MongoRules {
                     traitSet,
                     convert( project.getInput(), out ),
                     project.includes,
-                    project.excludes );
+                    project.excludes,
+                    project.adds );
         }
 
-    }
-
-
-    private static boolean containsIncompatible( SingleAlg alg ) {
-        MongoExcludeVisitor visitor = new MongoExcludeVisitor();
-        for ( RexNode node : alg.getChildExps() ) {
-            node.accept( visitor );
-            if ( visitor.isContainsIncompatible() ) {
-                return true;
-            }
-        }
-        return false;
     }
 
 
@@ -470,10 +482,17 @@ public class MongoRules {
                     || call.operands.stream().anyMatch( o -> o.isA( Kind.QUERY ) )
                     || operator.getOperatorName() == OperatorName.COT
                     || operator.getOperatorName() == OperatorName.TRIM
+                    || operator.getOperatorName() == OperatorName.IS_NULL
                     || operator.getOperatorName() == OperatorName.INITCAP
                     || operator.getOperatorName() == OperatorName.SUBSTRING
                     || operator.getOperatorName() == OperatorName.FLOOR
                     || operator.getOperatorName() == OperatorName.DISTANCE
+                    || operator.getOperatorName() == OperatorName.L1_DISTANCE
+                    || operator.getOperatorName() == OperatorName.L2_DISTANCE
+                    || operator.getOperatorName() == OperatorName.INNER_PRODUCT_DISTANCE
+                    || operator.getOperatorName() == OperatorName.COSINE_DISTANCE
+                    || operator.getOperatorName() == OperatorName.HAMMING_DISTANCE
+                    || operator.getOperatorName() == OperatorName.JACCARD_DISTANCE
                     || (operator.getOperatorName() == OperatorName.CAST && call.operands.get( 0 ).getType().getPolyType() == PolyType.DATE)
                     || operator instanceof SqlDatetimeSubtractionOperator
                     || operator instanceof SqlDatetimePlusOperator ) {
@@ -578,6 +597,31 @@ public class MongoRules {
         }
 
 
+        @Override
+        public AlgNode convert( AlgNode alg ) {
+            final RelModify<?> modify = (RelModify<?>) alg;
+            Optional<ModifiableTable> oModifiableTable = modify.getEntity().unwrap( ModifiableTable.class );
+            if ( oModifiableTable.isEmpty() ) {
+                return null;
+            }
+            Optional<MongoEntity> oMongo = modify.getEntity().unwrap( MongoEntity.class );
+            if ( oMongo.isEmpty() ) {
+                return null;
+            }
+
+            final AlgTraitSet traitSet = modify.getTraitSet().replace( out );
+            return new MongoTableModify(
+                    modify.getCluster(),
+                    traitSet,
+                    oMongo.get(),
+                    AlgOptRule.convert( modify.getInput(), traitSet ),
+                    modify.getOperation(),
+                    modify.getUpdateColumns(),
+                    modify.getSourceExpressions(),
+                    modify.isFlattened() );
+        }
+
+
         @Getter
         private static class ScanChecker extends AlgShuttleImpl {
 
@@ -617,31 +661,6 @@ public class MongoRules {
                 return super.visit( other );
             }
 
-        }
-
-
-        @Override
-        public AlgNode convert( AlgNode alg ) {
-            final RelModify<?> modify = (RelModify<?>) alg;
-            Optional<ModifiableTable> oModifiableTable = modify.getEntity().unwrap( ModifiableTable.class );
-            if ( oModifiableTable.isEmpty() ) {
-                return null;
-            }
-            Optional<MongoEntity> oMongo = modify.getEntity().unwrap( MongoEntity.class );
-            if ( oMongo.isEmpty() ) {
-                return null;
-            }
-
-            final AlgTraitSet traitSet = modify.getTraitSet().replace( out );
-            return new MongoTableModify(
-                    modify.getCluster(),
-                    traitSet,
-                    oMongo.get(),
-                    AlgOptRule.convert( modify.getInput(), traitSet ),
-                    modify.getOperation(),
-                    modify.getUpdateColumns(),
-                    modify.getSourceExpressions(),
-                    modify.isFlattened() );
         }
 
     }

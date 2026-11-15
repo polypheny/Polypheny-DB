@@ -61,13 +61,14 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.tools.AlgBuilder;
-import org.polypheny.db.transaction.Lock.LockMode;
-import org.polypheny.db.transaction.LockManager;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockablesRegistry;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
@@ -276,11 +277,11 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      */
     public void prepareToUpdate( long materializedId ) {
         Catalog catalog = Catalog.getInstance();
-        LogicalTable entity = catalog.getSnapshot().getLogicalEntity( materializedId ).map( e -> e.unwrap( LogicalTable.class ).orElseThrow() ).orElseThrow();
+        LogicalTable entity = catalog.getSnapshot().getLogicalEntity( materializedId ).flatMap( e -> e.unwrap( LogicalTable.class ) ).orElseThrow();
 
         Transaction transaction = getTransactionManager().startTransaction(
                 Catalog.defaultUserId,
-                false,
+                null,
                 "Materialized View" );
 
         try {
@@ -291,7 +292,9 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                 return;
             }
 
-            LockManager.INSTANCE.lock( LockMode.EXCLUSIVE, statement.getTransaction() );
+            Lockable lmvLockable = LockablesRegistry.INSTANCE.getOrCreateLockable( optionalEntity.get() );
+            transaction.acquireLockable( lmvLockable, LockType.EXCLUSIVE );
+
         } catch ( DeadlockException e ) {
             throw new GenericRuntimeException( "DeadLock while locking for materialized view update", e );
         }
@@ -313,7 +316,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         DataMigrator dataMigrator = transaction.getDataMigrator();
         for ( AllocationEntity allocation : transaction.getSnapshot().alloc().getFromLogical( materializedView.id ) ) {
             Statement sourceStatement = transaction.createStatement();
-            prepareSourceAlg( sourceStatement, materializedView.getAlgCollation(), algRoot.alg );
+            prepareSourceAlg( sourceStatement, Catalog.snapshot().rel().getCollationInfo( materializedView.id ), algRoot.alg );
             Statement targetStatement = transaction.createStatement();
 
             if ( allocation.unwrap( AllocationTable.class ).isPresent() ) {
@@ -346,7 +349,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         List<AllocationColumn> columnPlacements = new ArrayList<>();
 
         if ( Catalog.snapshot().getLogicalEntity( materializedId ).isPresent() && materializedInfo.containsKey( materializedId ) ) {
-            LogicalMaterializedView materializedView = Catalog.snapshot().getLogicalEntity( materializedId ).map( e -> e.unwrap( LogicalMaterializedView.class ).orElseThrow() ).orElseThrow();
+            LogicalMaterializedView materializedView = Catalog.snapshot().getLogicalEntity( materializedId ).flatMap( e -> e.unwrap( LogicalMaterializedView.class ) ).orElseThrow();
 
             Catalog.snapshot().rel().getColumns( materializedId );
 
@@ -380,7 +383,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                     transaction,
                     List.of(),
                     AlgRoot.of( Catalog.snapshot().rel().getNodeInfo( materializedId ), Kind.SELECT ),
-                    Catalog.snapshot().rel().getTable( materializedId ).orElseThrow().unwrap( LogicalMaterializedView.class ).orElseThrow() );
+                    Catalog.snapshot().rel().getTable( materializedId ).orElseThrow().unwrapOrThrow( LogicalMaterializedView.class ) );
         }
     }
 
@@ -390,15 +393,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
             // Locks are released within commit
             transaction.commit();
         } catch ( TransactionException e ) {
-            log.error( "Caught exception while executing a query from the console", e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", e );
-            }
-        } finally {
-            // Release lock
-            LockManager.INSTANCE.unlock( transaction );
+            transaction.rollback( "Caught exception while executing a query from the console. " + e );
         }
     }
 

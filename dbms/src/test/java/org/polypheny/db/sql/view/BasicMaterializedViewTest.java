@@ -1066,7 +1066,7 @@ public class BasicMaterializedViewTest {
 
 
     @Test
-    // we have to add these additional commits as this can lead to deadlocks atm, due to the locking approach employed struggeling with really slow stores(e.g. cottontail)
+    // we have to add these additional commits as this can lead to deadlocks atm, due to the locking approach employed struggling with really slow stores(e.g. neo4j)
     public void testUpdateFreshnessIntervals() throws SQLException {
         try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
             Connection connection = polyphenyDbConnection.getConnection();
@@ -1307,6 +1307,46 @@ public class BasicMaterializedViewTest {
                     statement.executeUpdate( "DROP VIEW viewTestEmpDep" );
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
                     statement.executeUpdate( "DROP TABLE viewTestDepTable" );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testMaterializedViewRollback() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
+
+                try {
+                    statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );
+                    statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp1 AS SELECT * FROM viewTestEmpTable" );
+
+                    statement.executeUpdate( VIEW_TEST_EMP_TABLE_DATA_SQL );
+                    // Rollback the catalog to test that views are correctly restored
+                    connection.rollback();
+
+                    statement.executeUpdate( VIEW_TEST_EMP_TABLE_DATA_SQL );
+                    statement.executeUpdate( "ALTER MATERIALIZED VIEW viewTestEmp FRESHNESS MANUAL" );
+                    connection.commit();
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT empId,firstName,lastName,depId FROM viewTestEmp ORDER BY empid" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Max", "Muster", 1 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3 }
+                            )
+                    );
+
+                    // Drop the materialized views
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp" );
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp1" );
+                } finally {
+                    statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
+                    dropTables( statement );
                 }
             }
         }

@@ -38,9 +38,9 @@ public class MatchTest extends CypherTestTemplate {
     }
 
 
-    ///////////////////////////////////////////////
-    ///////// MATCH
-    ///////////////////////////////////////////////
+    /// ////////////////////////////////////////////
+    /// ////// MATCH
+    /// ////////////////////////////////////////////
     @Test
     public void simpleMatchTest() {
         GraphResult res = execute( "MATCH (n) RETURN n" );
@@ -109,9 +109,10 @@ public class MatchTest extends CypherTestTemplate {
 
     }
 
-    ///////////////////////////////////////////////
-    ///////// PROJECT
-    ///////////////////////////////////////////////
+
+    /// ////////////////////////////////////////////
+    /// ////// PROJECT
+    /// ////////////////////////////////////////////
 
 
     @Test
@@ -142,9 +143,10 @@ public class MatchTest extends CypherTestTemplate {
         assert is( res, Type.ANY, 1 );
     }
 
-    ///////////////////////////////////////////////
-    ///////// EDGE
-    ///////////////////////////////////////////////
+
+    /// ////////////////////////////////////////////
+    /// ////// EDGE
+    /// ////////////////////////////////////////////
 
 
     @Test
@@ -183,7 +185,7 @@ public class MatchTest extends CypherTestTemplate {
         execute( SINGLE_EDGE_1 );
         execute( SINGLE_EDGE_2 );
         GraphResult res = execute( "MATCH (n:Person)-[r:KNOWS {since: 1994}]->() RETURN n" );
-        assert containsNodes( res, true, TestEdge.from( List.of( "Person" ), Pair.of( "name", "Max" ) ) );
+        assert containsNodes( res, true, TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) ) );
     }
 
 
@@ -194,7 +196,7 @@ public class MatchTest extends CypherTestTemplate {
         execute( MULTIPLE_HOP_EDGE );
 
         GraphResult res = execute( "MATCH (n)-[]->()-[]-() RETURN n" );
-        containsNodes( res, true, TestEdge.from( List.of( "Person" ) ) );
+        containsNodes( res, true, TestNode.from( List.of( "Person" ) ) );
 
         res = execute( "MATCH ()-[r:FRIEND_OF {since:2000}]->()-[]-() RETURN r" );
         assertEdge( res, 0 );
@@ -236,9 +238,10 @@ public class MatchTest extends CypherTestTemplate {
                 Row.of( TestNode.from( List.of( "Animal" ), Pair.of( "name", "Kira" ) ) ) );
     }
 
-    ///////////////////////////////////////////////
-    ///////// MIXED
-    ///////////////////////////////////////////////
+
+    /// ////////////////////////////////////////////
+    /// ////// MIXED
+    /// ////////////////////////////////////////////
 
 
     @Test
@@ -257,9 +260,10 @@ public class MatchTest extends CypherTestTemplate {
 
     }
 
-    ///////////////////////////////////////////////
-    ///////// "CROSS PRODUCT" MATCH
-    ///////////////////////////////////////////////
+
+    /// ////////////////////////////////////////////
+    /// ////// "CROSS PRODUCT" MATCH
+    /// ////////////////////////////////////////////
 
 
     @Test
@@ -338,9 +342,10 @@ public class MatchTest extends CypherTestTemplate {
                 Row.of( HANS, HANS, HANS ) );
     }
 
-    ///////////////////////////////////////////////
-    ///////// PATH
-    ///////////////////////////////////////////////
+
+    /// ////////////////////////////////////////////
+    /// ////// PATH
+    /// ////////////////////////////////////////////
 
 
     @Test

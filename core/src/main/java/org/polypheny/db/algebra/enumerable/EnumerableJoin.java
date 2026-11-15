@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,9 @@ package org.polypheny.db.algebra.enumerable;
 
 
 import com.google.common.collect.ImmutableList;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -50,6 +52,9 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.arguments.IntArg;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
@@ -57,6 +62,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.Triple;
 import org.polypheny.db.util.Util;
 
 
@@ -88,6 +94,18 @@ public class EnumerableJoin extends EquiJoin implements EnumerableAlg {
     }
 
 
+    public static EnumerableJoin create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        Triple<RexNode, Set<CorrelationId>, JoinAlgType> extracted = extractArgs( args );
+        ImmutableList<Integer> leftKeys = ImmutableList.copyOf( args.getListArg( "leftKeys", IntArg.class ).map( IntArg::getArg ) );
+        ImmutableList<Integer> rightKeys = ImmutableList.copyOf( args.getListArg( "rightKeys", IntArg.class ).map( IntArg::getArg ) );
+        try {
+            return create( children.get( 0 ), children.get( 1 ), extracted.left, leftKeys, rightKeys, extracted.middle, extracted.right );
+        } catch ( InvalidAlgException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+
     @Override
     public EnumerableJoin copy( AlgTraitSet traitSet, RexNode condition, AlgNode left, AlgNode right, JoinAlgType joinType, boolean semiJoinDone ) {
         final JoinInfo joinInfo = JoinInfo.of( left, right, condition );
@@ -103,8 +121,11 @@ public class EnumerableJoin extends EquiJoin implements EnumerableAlg {
 
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
-        double rowCount = mq.getTupleCount( this );
-
+        Optional<Double> count = mq.getTupleCount( this );
+        if ( count.isEmpty() ) {
+            return planner.getCostFactory().makeInfiniteCost();
+        }
+        double rowCount = count.orElse( null );
         // Joins can be flipped, and for many algorithms, both versions are viable and have the same cost.
         // To make the results stable between versions of the planner, make one of the versions slightly more expensive.
         if ( Objects.requireNonNull( joinType ) == JoinAlgType.RIGHT ) {
@@ -180,6 +201,14 @@ public class EnumerableJoin extends EquiJoin implements EnumerableAlg {
                                                 .append( Expressions.constant( joinType.generatesNullsOnRight() ) )
                                                 .append( Expressions.constant( null ) ) ) )
                         .toBlock() );
+    }
+
+
+    @Override
+    public PolyAlgArgs bindArguments() {
+        PolyAlgArgs args = super.bindArguments();
+        return args.put( "leftKeys", new ListArg<>( leftKeys, IntArg::new ) )
+                .put( "rightKeys", new ListArg<>( rightKeys, IntArg::new ) );
     }
 
 }

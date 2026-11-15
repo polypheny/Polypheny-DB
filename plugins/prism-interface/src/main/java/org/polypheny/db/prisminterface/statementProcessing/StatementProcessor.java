@@ -16,15 +16,19 @@
 
 package org.polypheny.db.prisminterface.statementProcessing;
 
+import com.google.common.collect.ImmutableMap;
 import java.util.List;
+import java.util.Map;
+import lombok.SneakyThrows;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prisminterface.PIServiceException;
-import org.polypheny.db.prisminterface.metaRetrieval.RelationalMetaRetriever;
+import org.polypheny.db.prisminterface.relational.RelationalMetaRetriever;
 import org.polypheny.db.prisminterface.statements.PIPreparedStatement;
 import org.polypheny.db.prisminterface.statements.PIStatement;
 import org.polypheny.db.processing.ImplementationContext;
@@ -32,7 +36,6 @@ import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.util.Pair;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.StatementResult;
@@ -41,21 +44,30 @@ public class StatementProcessor {
 
     private static final String ORIGIN = "prism-interface";
 
-    private static final RelationalExecutor relationalExecutor = new RelationalExecutor();
-    private static final GraphExecutor graphExecutor = new GraphExecutor();
-    private static final DocumentExecutor documentExecutor = new DocumentExecutor();
+    private static final Map<DataModel, Executor> RESULT_RETRIEVERS =
+            ImmutableMap.<DataModel, Executor>builder()
+                    .put( DataModel.RELATIONAL, new RelationalExecutor() )
+                    .put( DataModel.DOCUMENT, new DocumentExecutor() )
+                    .put( DataModel.GRAPH, new GraphExecutor() )
+                    .build();
 
 
+    // @SneakyThrows is needed for rethrowing implementation.get( 0 ).getException() without
+    // having to annotate everything with "throws Throwable" or wrapping it in another Exception
+    @SneakyThrows
     public static void implement( PIStatement piStatement ) {
         Statement statement = piStatement.getStatement();
         if ( statement == null ) {
-            throw new PIServiceException( "Statement is not linked to a PolyphenyStatement" );
+            throw new PIServiceException( "Statement is not linked to a PolyphenyStatement",
+                    "I9003",
+                    9003
+            );
         }
         QueryContext context = QueryContext.builder()
                 .query( piStatement.getQuery() )
                 .language( piStatement.getLanguage() )
                 .namespaceId( piStatement.getNamespace().id )
-                .transactions( List.of( piStatement.getTransaction() ) )
+                .transactionManager( piStatement.getTransaction().getTransactionManager() )
                 .origin( ORIGIN )
                 .build();
         List<ImplementationContext> implementations = LanguageManager.getINSTANCE().anyPrepareQuery( context, statement );
@@ -63,49 +75,64 @@ public class StatementProcessor {
             // we remove additional transaction which where opened for auto generation todo adjust if interface supports it
             implementations.stream()
                     .filter( i -> !i.getStatement().getTransaction().getXid().equals( piStatement.getStatement().getTransaction().getXid() ) )
-                    .forEach( i -> {
-                        try {
-                            i.getStatement().getTransaction().rollback();
-                        } catch ( TransactionException e ) {
-                            throw new GenericRuntimeException( e );
-                        }
-                    } );
+                    .forEach( i -> i.getStatement().getTransaction().rollback( "Closing auto-generated transactions" ) );
 
             throw new GenericRuntimeException( "This query relies on an auto-generated subquery, which is not supported by this interface. Transaction was rolled backed." );
         }
 
         if ( implementations.get( 0 ).getImplementation() == null ) {
-            throw new GenericRuntimeException( implementations.get( 0 ).getException().orElseThrow() );
+            throw implementations.get( 0 ).getException().orElseThrow();
         }
         piStatement.setImplementation( implementations.get( 0 ).getImplementation() );
     }
 
 
     public static StatementResult executeAndGetResult( PIStatement piStatement ) {
-        return getExecutor( piStatement ).executeAndGetResult( piStatement );
+        Executor executor = RESULT_RETRIEVERS.get( piStatement.getLanguage().dataModel() );
+        if ( executor == null ) {
+            throw new PIServiceException( "No result retriever registered for namespace type "
+                    + piStatement.getLanguage().dataModel(),
+                    "I9004",
+                    9004
+            );
+        }
+        return executor.executeAndGetResult( piStatement );
     }
 
 
     public static StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) {
-        Executor executor = getExecutor( piStatement );
-        try {
-            return executor.executeAndGetResult( piStatement, fetchSize );
-        } catch ( Exception e ) {
-            throw new GenericRuntimeException( e ); // TODO: check if this is still needed, or if executeAndGetResult throws another exception by now
+        Executor executor = RESULT_RETRIEVERS.get( piStatement.getLanguage().dataModel() );
+        if ( executor == null ) {
+            throw new PIServiceException( "No result retriever registered for namespace type "
+                    + piStatement.getLanguage().dataModel(),
+                    "I9004",
+                    9004
+            );
         }
+        return executor.executeAndGetResult( piStatement, fetchSize );
     }
 
 
     public static Frame fetch( PIStatement piStatement, int fetchSize ) {
-        Executor executor = getExecutor( piStatement );
+        Executor executor = RESULT_RETRIEVERS.get( piStatement.getLanguage().dataModel() );
+        if ( executor == null ) {
+            throw new PIServiceException( "No result retriever registered for namespace type "
+                    + piStatement.getLanguage().dataModel(),
+                    "I9004",
+                    9004
+            );
+        }
         return executor.fetch( piStatement, fetchSize );
     }
 
 
     public static void prepare( PIPreparedStatement piStatement ) {
+        QueryLanguage queryLanguage = piStatement.getLanguage();
+        if ( queryLanguage.dataModel() == DataModel.GRAPH ) {
+            throw new PIServiceException( "Prepared Cypher statements are not supported by Prism" );
+        }
         Transaction transaction = piStatement.getClient().getOrCreateNewTransaction();
         String query = piStatement.getQuery();
-        QueryLanguage queryLanguage = piStatement.getLanguage();
 
         Processor queryProcessor = transaction.getProcessor( queryLanguage );
         Node parsed = queryProcessor.parse( query ).get( 0 );
@@ -115,15 +142,6 @@ public class StatementProcessor {
         AlgDataType parameterRowType = queryProcessor.getParameterRowType( validated.left );
         piStatement.setParameterMetas( RelationalMetaRetriever.retrieveParameterMetas( parameterRowType ) );
         piStatement.setParameterPolyTypes( parameterRowType.getFields().stream().map( AlgDataTypeField::getType ).toList() );
-    }
-
-
-    private static Executor getExecutor( PIStatement piStatement ) {
-        return switch ( piStatement.getLanguage().dataModel() ) {
-            case RELATIONAL -> relationalExecutor;
-            case GRAPH -> graphExecutor;
-            case DOCUMENT -> documentExecutor;
-        };
     }
 
 }

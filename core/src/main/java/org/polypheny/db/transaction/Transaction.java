@@ -20,6 +20,8 @@ package org.polypheny.db.transaction;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
@@ -27,10 +29,11 @@ import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.Processor;
+import org.polypheny.db.transaction.QueryAnalyzer.TransactionAnalyzer;
+import org.polypheny.db.transaction.locking.Lockable;
 
 
 public interface Transaction {
@@ -43,9 +46,20 @@ public interface Transaction {
 
     LogicalUser getUser();
 
+    void attachCommitAction( Runnable action );
+
+    void attachCommitConstraint( Supplier<Boolean> constraintChecker, String description );
+
     void commit() throws TransactionException;
 
-    void rollback() throws TransactionException;
+    /**
+     * Rolls back the transaction
+     * Null for user initiated
+     *
+     * @param reason the reason to cancel the transaction.
+     * @throws TransactionException if the rollback was not successful.
+     */
+    void rollback( @Nullable String reason ) throws TransactionException;
 
     void registerInvolvedAdapter( Adapter<?> adapter );
 
@@ -55,15 +69,17 @@ public interface Transaction {
 
     boolean isActive();
 
+    boolean isRolledBack();
+
     JavaTypeFactory getTypeFactory();
 
     Processor getProcessor( QueryLanguage language );
 
     boolean isAnalyze();
 
-    void setAnalyze( boolean analyze );
+    TransactionAnalyzer getAnalyzer();
 
-    InformationManager getQueryAnalyzer();
+    QueryAnalyzer getQueryAnalyzer();
 
     AtomicBoolean getCancelFlag();
 
@@ -89,19 +105,13 @@ public interface Transaction {
 
     void addNewConstraint( long entityId, LogicalConstraint constraint );
 
-    void removeNewConstraint( long entityId, LogicalConstraint constraint );
-
-    void setAcceptsOutdated( boolean acceptsOutdated );
-
-    boolean acceptsOutdated();
-
-    AccessMode getAccessMode();
-
-    void updateAccessMode( AccessMode accessCandidate );
-
     TransactionManager getTransactionManager();
 
     List<LogicalConstraint> getUsedConstraints( long id );
+
+    void releaseAllLocks();
+
+    void acquireLockable( Lockable lockable, Lockable.LockType lockType );
 
     /**
      * Flavor, how multimedia results should be returned from a store.

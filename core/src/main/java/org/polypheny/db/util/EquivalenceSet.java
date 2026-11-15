@@ -42,6 +42,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
 
@@ -169,7 +170,7 @@ public class EquivalenceSet<E extends Comparable<E>> {
      * Returns the number of equivalence classes in this equivalence set.
      */
     public int classCount() {
-        return new HashSet<>( parents.values() ).size();
+        return Set.copyOf( parents.values() ).size();
     }
 
 }

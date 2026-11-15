@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,8 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 import io.javalin.http.staticfiles.Location;
-import io.javalin.plugin.json.JavalinJackson;
+import io.javalin.json.JavalinJackson;
+import io.javalin.plugin.bundled.CorsPluginConfig.CorsRule;
 import io.javalin.websocket.WsConfig;
 import java.io.BufferedReader;
 import java.io.File;
@@ -63,24 +64,6 @@ import org.polypheny.db.webui.models.results.RelationalResult;
 @Slf4j
 public class HttpServer implements Runnable {
 
-    private final TransactionManager transactionManager;
-    private final Authenticator authenticator;
-
-    private static HttpServer INSTANCE = null;
-    @Getter
-    private WebSocket webSocketHandler;
-    @Setter
-    private boolean isReady = false;
-
-
-    public static HttpServer getInstance() {
-        if ( INSTANCE == null ) {
-            throw new GenericRuntimeException( "HttpServer is not yet created." );
-        }
-        return INSTANCE;
-    }
-
-
     public static final ObjectMapper mapper = new ObjectMapper() {
         {
             setSerializationInclusion( JsonInclude.Include.NON_NULL );
@@ -93,19 +76,108 @@ public class HttpServer implements Runnable {
             writerWithDefaultPrettyPrinter();
         }
     };
-
+    private static HttpServer INSTANCE = null;
+    private final TransactionManager transactionManager;
+    private final Authenticator authenticator;
     @Getter
     private final Javalin server = Javalin.create( config -> {
         File finalUi = handleUiFiles();
 
-        config.jsonMapper( new JavalinJackson( mapper ) );
-        config.enableCorsForAllOrigins();
-        config.addStaticFiles( staticFileConfig -> {
+        config.jsonMapper( new JavalinJackson( mapper, false ) );
+        config.bundledPlugins.enableCors( cors -> cors.addRule( CorsRule::anyHost ) );
+        config.staticFiles.add( staticFileConfig -> {
             staticFileConfig.directory = finalUi.getAbsolutePath();
             staticFileConfig.location = Location.EXTERNAL;
             staticFileConfig.hostedPath = "/";
         } );
     } ).start( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
+    @Getter
+    private WebSocket webSocketHandler;
+    @Setter
+    private boolean isReady = false;
+    private Crud crud;
+
+
+    public HttpServer( TransactionManager manager, final Authenticator authenticator ) {
+        this.transactionManager = manager;
+        this.authenticator = authenticator;
+    }
+
+
+    public static HttpServer getInstance() {
+        if ( INSTANCE == null ) {
+            throw new GenericRuntimeException( "HttpServer is not yet created." );
+        }
+        return INSTANCE;
+    }
+
+
+    private static void attachDockerRoutes( Javalin webuiServer, Crud crud ) {
+        webuiServer.post( "/docker/instances/create", crud::createDockerInstance );
+
+        webuiServer.get( "/docker/instances", crud::getDockerInstances );
+
+        webuiServer.get( "/docker/instances/{dockerId}", crud::getDockerInstance );
+
+        webuiServer.patch( "/docker/instances/{dockerId}", crud::updateDockerInstance );
+
+        webuiServer.post( "/docker/instances/{dockerId}/reconnect", crud::reconnectToDockerInstance );
+
+        webuiServer.post( "/docker/instances/{dockerId}/ping", crud::pingDockerInstance );
+
+        webuiServer.delete( "/docker/instances/{dockerId}", crud::deleteDockerInstance );
+
+        webuiServer.get( "/docker/auto", crud::getAutoDockerStatus );
+
+        webuiServer.post( "/docker/auto", crud::doAutoHandshake );
+
+        webuiServer.get( "/docker/handshakes", crud::getHandshakes );
+
+        webuiServer.get( "/docker/handshakes/{id}", crud::getHandshake );
+
+        webuiServer.post( "/docker/handshakes/{id}/restart", crud::restartHandshake );
+
+        webuiServer.post( "/docker/handshakes/{id}/cancel", crud::cancelHandshake );
+
+        webuiServer.delete( "/docker/handshakes/{id}", crud::deleteHandshake );
+
+        webuiServer.get( "/docker/settings", crud::getDockerSettings );
+
+        webuiServer.patch( "/docker/settings", crud::updateDockerSettings );
+    }
+
+
+    private static void attachStatisticRoutes( Javalin webuiServer, Crud crud ) {
+        webuiServer.post( "/allStatistics", crud.statisticCrud::getStatistics );
+
+        webuiServer.post( "/getTableStatistics", crud.statisticCrud::getTableStatistics );
+
+        webuiServer.post( "/getDashboardInformation", crud.statisticCrud::getDashboardInformation );
+
+        webuiServer.post( "/getDashboardDiagram", crud.statisticCrud::getDashboardDiagram );
+    }
+
+
+    private static void attachPartnerRoutes( Javalin webuiServer, Crud crud ) {
+        webuiServer.get( "/auth/deregister", crud.authCrud::deregister );
+    }
+
+
+    private static void attachCatalogMetaRoutes( Javalin webuiServer, Crud crud ) {
+        webuiServer.post( "/getSchemaTree", crud.catalogCrud::getSchemaTree );
+
+        webuiServer.post( "/getSnapshot", crud.catalogCrud::getSnapshot );
+
+        webuiServer.get( "/getTypeSchemas", crud.catalogCrud::getTypeNamespaces );
+
+        webuiServer.post( "/getNamespaces", crud.catalogCrud::getNamespaces );
+
+        webuiServer.get( "/getCurrentSnapshot", crud.catalogCrud::getCurrentSnapshot );
+
+        webuiServer.get( "/getAssetsDefinition", crud.catalogCrud::getAssetsDefinition );
+
+        webuiServer.get( "/getAlgebraNodes", crud.catalogCrud::getAlgebraNodes );
+    }
 
 
     private @NotNull File handleUiFiles() {
@@ -135,15 +207,6 @@ public class HttpServer implements Runnable {
         }
 
         return uiPath;
-    }
-
-
-    private Crud crud;
-
-
-    public HttpServer( TransactionManager manager, final Authenticator authenticator ) {
-        this.transactionManager = manager;
-        this.authenticator = authenticator;
     }
 
 
@@ -229,7 +292,7 @@ public class HttpServer implements Runnable {
 
         attachStatisticRoutes( webuiServer, crud );
 
-        attachPluginRoutes( webuiServer, crud );
+        webuiServer.get( "/getAvailablePlugins", crud::getAvailablePlugins );
 
         attachDockerRoutes( webuiServer, crud );
 
@@ -249,6 +312,10 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/getAvailableSourceColumns", crud::getAvailableSourceColumns );
 
+        webuiServer.post( "/refreshSelectedSources", crud::refreshSelectedSources );
+
+        webuiServer.post( "/refreshSourcesForQuery", crud::refreshSourcesForQuery );
+
         webuiServer.post( "/updateColumn", crud::updateColumn );
 
         webuiServer.post( "/getMaterializedInfo", crud::getMaterializedInfo );
@@ -263,9 +330,21 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/renameTable", crud::renameTable );
 
+        webuiServer.post( "/renameCollection", crud::renameCollection );
+
         webuiServer.post( "/dropTruncateTable", crud::dropTruncateTable );
 
         webuiServer.post( "/createTable", crud::createTable );
+
+        webuiServer.post( "/createIndependentSourceMaterialization", crud::createIndependentSourceMaterialization );
+
+        webuiServer.post( "/createSynchronizedSourceMaterialization", crud::createSynchronizedSourceMaterialization );
+
+        webuiServer.post( "/createIndependentSourceCollectionMaterialization", crud::createIndependentSourceCollectionMaterialization );
+
+        webuiServer.post( "/createSynchronizedSourceCollectionMaterialization", crud::createSynchronizedSourceCollectionMaterialization );
+
+        webuiServer.post( "/dropSynchronizedSourceMaterialization", crud::dropSynchronizedSourceMaterialization );
 
         webuiServer.get( "/getGeneratedNames", crud::getGeneratedNames );
 
@@ -353,85 +432,12 @@ public class HttpServer implements Runnable {
 
         webuiServer.get( "/product", ctx -> ctx.result( "Polypheny-DB" ) );
 
+        webuiServer.get( "/getPolyAlgRegistry", crud::getPolyAlgRegistry );
+
+        webuiServer.post( "/buildPolyPlan", crud::buildPlanFromPolyAlg );
+
         webuiServer.get( "/isReady", ctx -> ctx.result( String.valueOf( isReady ) ) );
 
-    }
-
-
-    private static void attachDockerRoutes( Javalin webuiServer, Crud crud ) {
-        webuiServer.post( "/docker/instances/create", crud::createDockerInstance );
-
-        webuiServer.get( "/docker/instances", crud::getDockerInstances );
-
-        webuiServer.get( "/docker/instances/{dockerId}", crud::getDockerInstance );
-
-        webuiServer.patch( "/docker/instances/{dockerId}", crud::updateDockerInstance );
-
-        webuiServer.post( "/docker/instances/{dockerId}/reconnect", crud::reconnectToDockerInstance );
-
-        webuiServer.post( "/docker/instances/{dockerId}/ping", crud::pingDockerInstance );
-
-        webuiServer.delete( "/docker/instances/{dockerId}", crud::deleteDockerInstance );
-
-        webuiServer.get( "/docker/auto", crud::getAutoDockerStatus );
-
-        webuiServer.post( "/docker/auto", crud::doAutoHandshake );
-
-        webuiServer.get( "/docker/handshakes", crud::getHandshakes );
-
-        webuiServer.get( "/docker/handshakes/{id}", crud::getHandshake );
-
-        webuiServer.post( "/docker/handshakes/{id}/restart", crud::restartHandshake );
-
-        webuiServer.post( "/docker/handshakes/{id}/cancel", crud::cancelHandshake );
-
-        webuiServer.delete( "/docker/handshakes/{id}", crud::deleteHandshake );
-
-        webuiServer.get( "/docker/settings", crud::getDockerSettings );
-
-        webuiServer.patch( "/docker/settings", crud::updateDockerSettings );
-    }
-
-
-    private static void attachPluginRoutes( Javalin webuiServer, Crud crud ) {
-        webuiServer.post( "/loadPlugins", crud::loadPlugins );
-
-        webuiServer.post( "/unloadPlugin", crud::unloadPlugin );
-
-        webuiServer.get( "/getAvailablePlugins", crud::getAvailablePlugins );
-    }
-
-
-    private static void attachStatisticRoutes( Javalin webuiServer, Crud crud ) {
-        webuiServer.post( "/allStatistics", crud.statisticCrud::getStatistics );
-
-        webuiServer.post( "/getTableStatistics", crud.statisticCrud::getTableStatistics );
-
-        webuiServer.post( "/getDashboardInformation", crud.statisticCrud::getDashboardInformation );
-
-        webuiServer.post( "/getDashboardDiagram", crud.statisticCrud::getDashboardDiagram );
-    }
-
-
-    private static void attachPartnerRoutes( Javalin webuiServer, Crud crud ) {
-        webuiServer.get( "/auth/deregister", crud.authCrud::deregister );
-    }
-
-
-    private static void attachCatalogMetaRoutes( Javalin webuiServer, Crud crud ) {
-        webuiServer.post( "/getSchemaTree", crud.catalogCrud::getSchemaTree );
-
-        webuiServer.post( "/getSnapshot", crud.catalogCrud::getSnapshot );
-
-        webuiServer.get( "/getTypeSchemas", crud.catalogCrud::getTypeNamespaces );
-
-        webuiServer.post( "/getNamespaces", crud.catalogCrud::getNamespaces );
-
-        webuiServer.get( "/getCurrentSnapshot", crud.catalogCrud::getCurrentSnapshot );
-
-        webuiServer.get( "/getAssetsDefinition", crud.catalogCrud::getAssetsDefinition );
-
-        webuiServer.get( "/getAlgebraNodes", crud.catalogCrud::getAlgebraNodes );
     }
 
 

@@ -39,6 +39,9 @@ import org.polypheny.db.sql.language.SqlOperator;
 import org.polypheny.db.sql.language.SqlSpecialOperator;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockableUtils;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -106,7 +109,7 @@ public class SqlAlterAdaptersAdd extends SqlAlter {
         if ( type == AdapterType.STORE ) {
             DdlManager.getInstance().createStore( uniqueName, adapterName, type, configMap, mode );
         } else if ( type == AdapterType.SOURCE ) {
-            DdlManager.getInstance().createSource( uniqueName, adapterName, Catalog.defaultNamespaceId, type, configMap, mode );
+            DdlManager.getInstance().createSource( statement.getTransaction(), uniqueName, adapterName, Catalog.defaultNamespaceId, type, configMap, mode );
         } else {
             log.error( "Unknown adapter type: {}", type );
             throw new GenericRuntimeException( "Unknown adapter type: " + type );
@@ -122,6 +125,12 @@ public class SqlAlterAdaptersAdd extends SqlAlter {
             str = StringUtils.chop( str );
         }
         return str;
+    }
+
+
+    @Override
+    public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
+        return LockableUtils.getMapOfGlobalLockable( LockType.EXCLUSIVE );
     }
 
 }

@@ -75,10 +75,6 @@ allprojects {
             url "https://clojars.org/repo/"
         }
         maven {
-            // DBIS Nexus
-            url "https://dbis-nexus.dmi.unibas.ch/repository/maven2/"
-        }
-        maven {
             url "https://oss.sonatype.org/content/repositories/snapshots/"
         }
     }
@@ -115,6 +111,17 @@ allprojects {
         shouldRunAfter(tasks.named('test'))
     }
     integrationTests.dependsOn(testClasses)
+
+    // matrix tests exclude tests which rely on docker during testing due to different platform requirements
+    tasks.register('platformTests', Test) {
+        description = 'Runs platform tests.'
+        group = 'verification'
+        useJUnitPlatform {
+            excludeTags("docker")
+        }
+        shouldRunAfter(tasks.named('test'))
+    }
+    platformTests.dependsOn(testClasses)
 
     testlogger {
         theme 'standard'

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,8 +24,8 @@ import org.polypheny.db.adapter.annotations.AdapterSettingString;
 public class AbstractAdapterSettingString extends AbstractAdapterSetting {
 
 
-    public AbstractAdapterSettingString( String name, boolean canBeNull, String subOf, boolean required, boolean modifiable, String defaultValue, List<DeploySetting> modes, int position ) {
-        super( AdapterSettingType.STRING, name, canBeNull, subOf, required, modifiable, modes, defaultValue, position );
+    public AbstractAdapterSettingString( String name, boolean canBeNull, String subOf, boolean required, boolean modifiable, String defaultValue, List<DeploySetting> modes, int position, String description ) {
+        super( AdapterSettingType.STRING, name, canBeNull, subOf, required, modifiable, modes, defaultValue, position, description );
     }
 
 
@@ -38,13 +38,21 @@ public class AbstractAdapterSettingString extends AbstractAdapterSetting {
                 annotation.modifiable(),
                 annotation.defaultValue(),
                 Arrays.asList( annotation.appliesTo() ),
-                annotation.position() );
+                annotation.position(),
+                annotation.description()
+        );
     }
 
 
     @Override
     public String getValue() {
         return defaultValue;
+    }
+
+
+    @Override
+    public void validate( String s ) {
+        // Always true
     }
 
 }

@@ -79,8 +79,8 @@ public class PolyEdge extends GraphPropertyHolder {
             @JsonProperty("id") PolyString id,
             @JsonProperty("properties") @NonNull PolyDictionary properties,
             @JsonProperty("labels") List<PolyString> labels,
-            @JsonProperty("source") PolyString left,
-            @JsonProperty("target") PolyString right,
+            @JsonProperty("left") PolyString left,
+            @JsonProperty("right") PolyString right,
             @JsonProperty("direction") EdgeDirection direction,
             @JsonProperty("variableName") PolyString variableName ) {
         super( id, PolyType.EDGE, properties, labels, variableName );
@@ -200,7 +200,7 @@ public class PolyEdge extends GraphPropertyHolder {
         return "{\"id\":" + id.toQuotedJson() +
                 ", \"properties\":" + properties.toJson() +
                 ", \"labels\":" + labels.toJson() +
-                ", \"source\":" + left.toQuotedJson() +
+                ", \"source\":" + left.toQuotedJson() + // UI expects source & target
                 ", \"target\":" + right.toQuotedJson() +
                 ", \"direction\":\"" + direction.name() + "\"" +
                 "}";
@@ -285,6 +285,5 @@ public class PolyEdge extends GraphPropertyHolder {
         }
 
     }
-
 
 }

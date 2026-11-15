@@ -260,7 +260,7 @@ public interface Modifiable extends Scannable {
 
 
     static Modify<?> getModify( Entity table, AlgNode input, Operation operation, List<String> updateList, List<RexNode> sourceList ) {
-        return table.unwrap( ModifiableTable.class ).orElseThrow().toModificationTable( input.getCluster(), input.getTraitSet(), table, input, operation, updateList, sourceList );
+        return table.unwrapOrThrow( ModifiableTable.class ).toModificationTable( input.getCluster(), input.getTraitSet(), table, input, operation, updateList, sourceList );
     }
 
 
@@ -349,7 +349,7 @@ public interface Modifiable extends Scannable {
 
             builder.project( DocumentType.ofRelational().getFields().stream().map( f -> new RexDynamicParam( f.getType(), f.getIndex() ) ).toList(), DocumentType.ofRelational().getFieldNames() );
 
-            AlgNode collector = oTable.orElseThrow().unwrap( ModifiableTable.class ).orElseThrow().toModificationTable(
+            AlgNode collector = oTable.orElseThrow().unwrapOrThrow( ModifiableTable.class ).toModificationTable(
                     modify.getCluster(),
                     modify.getTraitSet(),
                     oTable.get(),
@@ -367,7 +367,7 @@ public interface Modifiable extends Scannable {
             LogicalStreamer.attachFilter( oTable.get(), builder, provider.getCluster().getRexBuilder(), List.of( 0 ) );
 
             AlgNode collector = builder.build();
-            collector = oTable.get().unwrap( ModifiableTable.class ).orElseThrow().toModificationTable(
+            collector = oTable.get().unwrapOrThrow( ModifiableTable.class ).toModificationTable(
                     modify.getCluster(),
                     modify.getTraitSet(),
                     oTable.get(),

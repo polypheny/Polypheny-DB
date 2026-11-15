@@ -71,7 +71,12 @@ public class RexFieldCollation extends Pair<RexNode, ImmutableSet<Kind>> {
 
     @Override
     public String toString() {
-        final String s = left.toString();
+        return toString( null );
+    }
+
+
+    public String toString( RexVisitor<String> visitor ) {
+        final String s = visitor == null ? left.toString() : left.accept( visitor );
         if ( right.isEmpty() ) {
             return s;
         }

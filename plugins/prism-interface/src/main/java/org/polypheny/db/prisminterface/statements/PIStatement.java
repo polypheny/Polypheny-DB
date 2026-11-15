@@ -68,6 +68,15 @@ public abstract class PIStatement {
     }
 
 
+    public void closeResultsAndCommitIfAuto() {
+        boolean ownsOpenResult = iterator != null && getTransaction() == client.getCurrentTransaction();
+        closeResults();
+        if ( ownsOpenResult ) {
+            client.commitCurrentTransactionIfAuto();
+        }
+    }
+
+
     public abstract void close();
 
     public abstract PolyImplementation getImplementation();

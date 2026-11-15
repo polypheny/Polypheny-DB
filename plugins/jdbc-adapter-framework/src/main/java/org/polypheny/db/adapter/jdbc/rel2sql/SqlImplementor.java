@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -114,6 +114,7 @@ import org.polypheny.db.sql.language.validate.SqlValidatorUtil;
 import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
+import org.polypheny.db.type.VectorType;
 import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Util;
@@ -139,19 +140,6 @@ public abstract class SqlImplementor {
     }
 
 
-    public abstract Result visitChild( int i, AlgNode e );
-
-
-    public void addSelect( List<SqlNode> selectList, SqlNode node, AlgDataType rowType ) {
-        String name = rowType.getFieldNames().get( selectList.size() );
-        String alias = SqlValidatorUtil.getAlias( node, -1 );
-        if ( alias == null || !alias.equals( name ) ) {
-            node = (SqlNode) OperatorRegistry.get( OperatorName.AS ).createCall( POS, node, new SqlIdentifier( name, POS ) );
-        }
-        selectList.add( node );
-    }
-
-
     /**
      * Returns whether a list of expressions projects all fields, in order, from the input, with the same names.
      */
@@ -168,26 +156,6 @@ public abstract class SqlImplementor {
             }
         }
         return i == program.getInputRowType().getFieldCount();
-    }
-
-
-    public Result setOpToSql( SqlSetOperator operator, AlgNode alg ) {
-        SqlNode node = null;
-        for ( Ord<AlgNode> input : Ord.zip( alg.getInputs() ) ) {
-            final Result result = visitChild( input.i, input.e );
-            if ( node == null ) {
-                node = input.getValue().unwrap( JdbcScan.class ).map( i -> result.asSelect( i.getEntity().getNodeList() ) )
-                        .orElse( result.asSelect() );
-            } else {
-                if ( input.getValue().unwrap( JdbcScan.class ).isPresent() ) {
-                    node = (SqlNode) operator.createCall( POS, node, result.asSelect( input.getValue().unwrap( JdbcScan.class ).get().getEntity().getNodeList() ) );
-                } else {
-                    node = (SqlNode) operator.createCall( POS, node, result.asSelect() );
-                }
-            }
-        }
-        final List<Clause> clauses = Expressions.list( Clause.SET_OP );
-        return result( node, clauses, alg, null );
     }
 
 
@@ -241,8 +209,8 @@ public abstract class SqlImplementor {
             case LESS_THAN:
             case LESS_THAN_OR_EQUAL:
                 node = stripCastFromString( node );
-                operands = node.unwrap( RexCall.class ).orElseThrow().getOperands();
-                op = (SqlOperator) node.unwrap( RexCall.class ).orElseThrow().getOperator();
+                operands = node.unwrapOrThrow( RexCall.class ).getOperands();
+                op = (SqlOperator) node.unwrap( RexCall.class ).get().getOperator();
                 if ( operands.size() == 2
                         && operands.get( 0 ) instanceof RexIndexRef op0
                         && operands.get( 1 ) instanceof RexIndexRef op1 ) {
@@ -345,6 +313,48 @@ public abstract class SqlImplementor {
     }
 
 
+    private static int computeFieldCount( Map<String, AlgDataType> aliases ) {
+        int x = 0;
+        for ( AlgDataType type : aliases.values() ) {
+            x += type.getFieldCount();
+        }
+        return x;
+    }
+
+
+    public abstract Result visitChild( int i, AlgNode e );
+
+
+    public void addSelect( List<SqlNode> selectList, SqlNode node, AlgDataType rowType ) {
+        String name = rowType.getFieldNames().get( selectList.size() );
+        String alias = SqlValidatorUtil.getAlias( node, -1 );
+        if ( alias == null || !alias.equals( name ) ) {
+            node = (SqlNode) OperatorRegistry.get( OperatorName.AS ).createCall( POS, node, new SqlIdentifier( name, POS ) );
+        }
+        selectList.add( node );
+    }
+
+
+    public Result setOpToSql( SqlSetOperator operator, AlgNode alg ) {
+        SqlNode node = null;
+        for ( Ord<AlgNode> input : Ord.zip( alg.getInputs() ) ) {
+            final Result result = visitChild( input.i, input.e );
+            if ( node == null ) {
+                node = input.getValue().unwrap( JdbcScan.class ).map( i -> result.asSelect( i.getEntity().getNodeList() ) )
+                        .orElse( result.asSelect() );
+            } else {
+                if ( input.getValue().unwrap( JdbcScan.class ).isPresent() ) {
+                    node = (SqlNode) operator.createCall( POS, node, result.asSelect( input.getValue().unwrap( JdbcScan.class ).get().getEntity().getNodeList() ) );
+                } else {
+                    node = (SqlNode) operator.createCall( POS, node, result.asSelect() );
+                }
+            }
+        }
+        final List<Clause> clauses = Expressions.list( Clause.SET_OP );
+        return result( node, clauses, alg, null );
+    }
+
+
     /**
      * Creates a result based on a single algebra expression.
      */
@@ -421,6 +431,30 @@ public abstract class SqlImplementor {
                 null,
                 null,
                 null );
+    }
+
+
+    public Context aliasContext( Map<String, AlgDataType> aliases, boolean qualified ) {
+        return new AliasContext( dialect, aliases, qualified );
+    }
+
+
+    public Context joinContext( Context leftContext, Context rightContext ) {
+        return new JoinContext( dialect, leftContext, rightContext );
+    }
+
+
+    public Context matchRecognizeContext( Context context ) {
+        return new MatchRecognizeContext( dialect, ((AliasContext) context).aliases );
+    }
+
+
+    /**
+     * Clauses in a SQL query. Ordered by evaluation order.
+     * SELECT is set only when there is a NON-TRIVIAL SELECT clause.
+     */
+    public enum Clause {
+        FROM, WHERE, GROUP_BY, HAVING, SELECT, SET_OP, ORDER_BY, FETCH, OFFSET
     }
 
 
@@ -517,9 +551,9 @@ public abstract class SqlImplementor {
                             return SqlLiteral.createCharString( literal.value.asString().value, POS );
                         case NUMERIC:
                         case EXACT_NUMERIC:
-                            return SqlLiteral.createExactNumeric( literal.value.asBigDecimal().value.toString(), POS );
+                            return SqlLiteral.createExactNumeric( literal.value.asNumber().bigDecimalValue().toString(), POS );
                         case APPROXIMATE_NUMERIC:
-                            return SqlLiteral.createApproxNumeric( literal.value.asBigDecimal().value.toString(), POS );
+                            return SqlLiteral.createApproxNumeric( literal.value.asNumber().bigDecimalValue().toString(), POS );
                         case BOOLEAN:
                             return SqlLiteral.createBoolean( literal.value.asBoolean().value, POS );
                         case INTERVAL_YEAR_MONTH:
@@ -534,6 +568,12 @@ public abstract class SqlImplementor {
                         case BINARY:
                             return SqlBinaryStringLiteral.createBinaryString( literal.value.asBinary(), POS );
                         case ARRAY:
+                            if ( literal.getType() instanceof VectorType vectorType ) {
+                                SqlNode vectorNode = dialect.getVectorLiteral( vectorType, literal.getValue().asList(), POS );
+                                if ( vectorNode != null ) {
+                                    return vectorNode;
+                                }
+                            }
                             if ( dialect.supportsNestedArrays() ) {
                                 List<PolyValue> array = literal.getValue().asList();
                                 return SqlLiteral.createArray( array, literal.getType(), POS );
@@ -891,30 +931,6 @@ public abstract class SqlImplementor {
     }
 
 
-    private static int computeFieldCount( Map<String, AlgDataType> aliases ) {
-        int x = 0;
-        for ( AlgDataType type : aliases.values() ) {
-            x += type.getFieldCount();
-        }
-        return x;
-    }
-
-
-    public Context aliasContext( Map<String, AlgDataType> aliases, boolean qualified ) {
-        return new AliasContext( dialect, aliases, qualified );
-    }
-
-
-    public Context joinContext( Context leftContext, Context rightContext ) {
-        return new JoinContext( dialect, leftContext, rightContext );
-    }
-
-
-    public Context matchRecognizeContext( Context context ) {
-        return new MatchRecognizeContext( dialect, ((AliasContext) context).aliases );
-    }
-
-
     /**
      * Context for translating MATCH_RECOGNIZE clause
      */
@@ -1026,10 +1042,10 @@ public abstract class SqlImplementor {
     public class Result {
 
         final SqlNode node;
+        final Expressions.FluentList<Clause> clauses;
         private final String neededAlias;
         private final AlgDataType neededType;
         private final Map<String, AlgDataType> aliases;
-        final Expressions.FluentList<Clause> clauses;
 
 
         public Result( SqlNode node, Collection<Clause> clauses, String neededAlias, AlgDataType neededType, Map<String, AlgDataType> aliases ) {
@@ -1238,10 +1254,10 @@ public abstract class SqlImplementor {
      */
     public class Builder {
 
-        private final AlgNode alg;
+        public final Context context;
         final List<Clause> clauses;
         final SqlSelect select;
-        public final Context context;
+        private final AlgNode alg;
         private final Map<String, AlgDataType> aliases;
 
 
@@ -1304,15 +1320,6 @@ public abstract class SqlImplementor {
             return SqlImplementor.this.result( select, clauses, alg, aliases );
         }
 
-    }
-
-
-    /**
-     * Clauses in a SQL query. Ordered by evaluation order.
-     * SELECT is set only when there is a NON-TRIVIAL SELECT clause.
-     */
-    public enum Clause {
-        FROM, WHERE, GROUP_BY, HAVING, SELECT, SET_OP, ORDER_BY, FETCH, OFFSET
     }
 
 }

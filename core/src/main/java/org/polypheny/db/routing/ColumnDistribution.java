@@ -17,6 +17,7 @@
 package org.polypheny.db.routing;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -375,7 +376,7 @@ public final class ColumnDistribution implements FieldDistribution {
                 }
 
             }
-            columns.sort( ( a, b ) -> (int) (a.columnId - b.columnId) );
+            columns.sort( Comparator.comparingLong( a -> a.columnId ) );
             return columns;
         }
 

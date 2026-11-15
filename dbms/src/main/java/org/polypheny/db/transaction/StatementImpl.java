@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,15 +27,13 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationDuration;
-import org.polypheny.db.information.InformationGroup;
-import org.polypheny.db.information.InformationManager;
-import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.prepare.ContextImpl;
 import org.polypheny.db.processing.DataContextImpl;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.processing.QueryProviderImpl;
 import org.polypheny.db.processing.VolcanoQueryProcessor;
+import org.polypheny.db.transaction.QueryAnalyzer.StatementAnalyzer;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.FileInputHandle;
 
@@ -46,23 +44,25 @@ public class StatementImpl implements Statement {
     @Getter
     private final long id;
     @Getter
-    private final TransactionImpl transaction;
+    private final Transaction transaction;
     private final List<FileInputHandle> fileInputHandles = new ArrayList<>();
 
     private QueryProcessor queryProcessor;
     private DataContext dataContext;
     private ContextImpl prepareContext;
-    private InformationDuration processingDuration;
-    private InformationDuration routingDuration;
-    private InformationDuration overviewDuration;
-    private InformationPage executionTimePage;
 
     private StatementEvent statementEvent;
 
+    @Getter
+    private final StatementAnalyzer analyzer;
 
-    StatementImpl( TransactionImpl transaction ) {
+
+    StatementImpl( Transaction transaction ) {
         this.id = STATEMENT_COUNTER.getAndIncrement();
         this.transaction = transaction;
+        this.analyzer = transaction.getAnalyzer() == null ?
+                null :
+                transaction.getAnalyzer().createStatementAnalyzer( this );
     }
 
 
@@ -114,28 +114,19 @@ public class StatementImpl implements Statement {
 
     @Override
     public InformationDuration getProcessingDuration() {
-        if ( processingDuration == null ) {
-            processingDuration = initDuration( "Query Processing", 2 );
-        }
-        return processingDuration;
+        return analyzer.getDuration( "Query Processing", 2 );
     }
 
 
     @Override
     public InformationDuration getRoutingDuration() {
-        if ( routingDuration == null ) {
-            routingDuration = initDuration( "Query Routing", 3 );
-        }
-        return routingDuration;
+        return analyzer.getDuration( "Query Routing", 3 );
     }
 
 
     @Override
     public InformationDuration getOverviewDuration() {
-        if ( overviewDuration == null ) {
-            overviewDuration = initDuration( "Overview", 1 );
-        }
-        return overviewDuration;
+        return analyzer.getDuration( "Overview", 1 );
     }
 
 
@@ -146,23 +137,20 @@ public class StatementImpl implements Statement {
 
 
     @Override
-    public void setMonitoringEvent( StatementEvent event ) {
-        this.statementEvent = event;
+    public boolean isAnalyze() {
+        return analyzer != null;
     }
 
 
-    private InformationDuration initDuration( String title, int order ) {
-        InformationManager im = transaction.getQueryAnalyzer();
-        if ( executionTimePage == null ) {
-            executionTimePage = new InformationPage( "Execution Time", "Query processing & execution time" );
-            im.addPage( executionTimePage );
-        }
-        InformationGroup group = new InformationGroup( executionTimePage, title );
-        group.setOrder( order );
-        im.addGroup( group );
-        InformationDuration duration = new InformationDuration( group );
-        im.registerInformation( duration );
-        return duration;
+    @Override
+    public long getIndex() {
+        return id;
+    }
+
+
+    @Override
+    public void setMonitoringEvent( StatementEvent event ) {
+        this.statementEvent = event;
     }
 
 

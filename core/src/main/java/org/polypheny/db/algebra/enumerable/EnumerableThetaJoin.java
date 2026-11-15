@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ package org.polypheny.db.algebra.enumerable;
 
 
 import com.google.common.collect.ImmutableList;
+import java.util.Optional;
 import java.util.Set;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -96,7 +97,12 @@ public class EnumerableThetaJoin extends Join implements EnumerableAlg {
 
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
-        double rowCount = mq.getTupleCount( this );
+        Optional<Double> count = mq.getTupleCount( this );
+        if ( count.isEmpty() ) {
+            return planner.getCostFactory().makeInfiniteCost();
+        }
+
+        double rowCount = count.get();
 
         // Joins can be flipped, and for many algorithms, both versions are viable and have the same cost. To make the results stable between versions of the planner,
         // make one of the versions slightly more expensive.

@@ -22,6 +22,9 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.cypher.helper.TestEdge;
 import org.polypheny.db.cypher.helper.TestNode;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.graph.PolyPath;
+import org.polypheny.db.type.entity.graph.PolyPath.PolySegment;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
 
@@ -135,6 +138,41 @@ public class DmlInsertTest extends CypherTestTemplate {
 
 
     @Test
+    public void insertSingleHopPathReturnPathTest() {
+        execute( "CREATE (:PERSON {name: 'tim'})-[:KNOWS {since:'two weeks'}]-> (:PERSON {name:'tom'})" );
+        GraphResult res = execute( "MATCH p = ()-[]->() RETURN p" );
+        PolyPath p = PolyValue.fromTypedJson( res.getData()[0][0], PolyPath.class );
+        assert p.getSegments().size() == 1;
+        assert p.getNodes().size() == 2;
+        assert p.getEdges().size() == 1;
+        PolySegment s = p.getSegments().get( 0 );
+        assert TestNode.from( List.of( "PERSON" ), Pair.of( "name", "tim" ) ).matches( p.getNodes().stream().filter( n -> n.id == s.sourceId ).findFirst().orElseThrow(), true );
+        assert TestEdge.from( List.of( "KNOWS" ), Pair.of( "since", "two weeks" ) ).matches( p.getEdges().stream().filter( e -> e.id == s.edgeId ).findFirst().orElseThrow(), true );
+        assert TestNode.from( List.of( "PERSON" ), Pair.of( "name", "tom" ) ).matches( p.getNodes().stream().filter( n -> n.id == s.targetId ).findFirst().orElseThrow(), true );
+    }
+
+
+    @Test
+    public void insertSingleHopPathReturnPathTest2() {
+        execute( "CREATE (p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira', age:3, type:'dog'})" );
+        GraphResult res = execute( "MATCH p = ()-[]->() RETURN p" );
+        PolyPath p = PolyValue.fromTypedJson( res.getData()[0][0], PolyPath.class );
+        assert p.getSegments().size() == 1;
+        assert p.getNodes().size() == 2;
+        assert p.getEdges().size() == 1;
+        PolySegment s = p.getSegments().get( 0 );
+        assert TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) ).matches( p.getNodes().stream().filter( n -> n.id == s.sourceId ).findFirst().orElseThrow(), true );
+        assert TestEdge.from( List.of( "OWNER_OF" ) ).matches( p.getEdges().stream().filter( e -> e.id == s.edgeId ).findFirst().orElseThrow(), true );
+        assert TestNode.from(
+                List.of( "Animal" ),
+                Pair.of( "name", "Kira" ),
+                Pair.of( "age", 3 ),
+                Pair.of( "type", "dog" )
+        ).matches( p.getNodes().stream().filter( n -> n.id == s.targetId ).findFirst().orElseThrow(), true );
+    }
+
+
+    @Test
     public void insertMultipleHopPathTest() {
         execute( "CREATE (n:Person)-[f:FRIEND_OF]->(p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira'})" );
 
@@ -229,7 +267,6 @@ public class DmlInsertTest extends CypherTestTemplate {
         assert containsRows( res, true, true,
                 Row.of( TestEdge.from( List.of( "KNOWS" ) ) ),
                 Row.of( TestEdge.from( List.of( "KNOWS" ) ) ) );
-
     }
 
 }

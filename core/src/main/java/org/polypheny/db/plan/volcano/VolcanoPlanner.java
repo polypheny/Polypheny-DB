@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1089,7 +1089,7 @@ public class VolcanoPlanner extends AbstractAlgPlanner {
                         pw.print( ", importance=" + importance );
                     }
                     AlgMetadataQuery mq = alg.getCluster().getMetadataQuery();
-                    pw.print( ", rowcount=" + mq.getTupleCount( alg ) );
+                    pw.print( ", rowcount=" + mq.getTupleCount( alg ).map( Object::toString ).orElse( "INFINITY" ) );
                     pw.println( ", cumulative cost=" + getCost( alg, mq ) );
                 }
             }
@@ -1100,7 +1100,7 @@ public class VolcanoPlanner extends AbstractAlgPlanner {
 
     /**
      * Re-computes the digest of a {@link AlgNode}.
-     *
+     * <p>
      * Since an algebra expression's digest contains the identifiers of its children, this method needs to be called
      * when the child has been renamed, for example if the child's set merges with another.
      *

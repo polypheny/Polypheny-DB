@@ -17,7 +17,9 @@
 package org.polypheny.db.algebra.exceptions;
 
 
-public class ConstraintViolationException extends RuntimeException {
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+
+public class ConstraintViolationException extends GenericRuntimeException {
 
     public ConstraintViolationException( final String message ) {
         super( message );

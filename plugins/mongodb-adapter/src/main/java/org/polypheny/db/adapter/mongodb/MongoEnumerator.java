@@ -39,6 +39,8 @@ import com.mongodb.client.gridfs.GridFSBucket;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.function.Function;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.function.Function1;
@@ -178,7 +180,24 @@ class MongoEnumerator implements Enumerator<PolyValue[]> {
                 }
             }
             case BOOLEAN -> PolyBoolean.of( o.asBoolean().getValue() );
-            case TEXT, CHAR, VARCHAR -> PolyString.of( o.asString().getValue() );
+            case TEXT, CHAR, VARCHAR -> {
+                if ( o.isString() ) {
+                    yield PolyString.of( o.asString().getValue() );
+                } else if ( o.isDocument() ) {
+                    BsonDocument doc = o.asDocument();
+                    Set<Entry<String, BsonValue>> entries = doc.entrySet();
+                    if ( entries.size() != 1 ) {
+                        throw new NotImplementedException( "Expected exactly one key in BSON document to string" );
+                    }
+                    Entry<String, BsonValue> s = entries.stream().findFirst().get();
+                    if ( !s.getKey().equals( "$literal" ) ) {
+                        throw new NotImplementedException( String.format( "Expected exactly one key '$literal' not '%s' in BSON document to string", s.getKey() ) );
+                    }
+                    yield PolyString.of( s.getValue().asString().getValue() );
+                } else {
+                    throw new NotImplementedException( String.format( "Cannot convert BSON object of type %s to string", o.getBsonType() ) );
+                }
+            }
             case DECIMAL -> {
                 if ( o.isNumber() ) {
                     yield PolyBigDecimal.of( o.asNumber().doubleValue() );

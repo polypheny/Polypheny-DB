@@ -180,9 +180,15 @@ public class PrismValueTest {
         PolyDocument document = new PolyDocument();
         document.put( new PolyString( "1st" ), new PolyBoolean( false ) );
         document.put( new PolyString( "2nd" ), PolyBinary.of( new byte[]{ 0, 1, 2, 3, 4 } ) );
-        document.put( new PolyString( "3rd" ), new PolyDate( 47952743435L ) );
-        PolyValueSerializer.serialize( document );
+        document.put( new PolyString( "3rd" ), new PolyDocument( new PolyString( "nested" ), PolyNull.NULL ) );
 
+        ProtoValue serialized = PolyValueSerializer.serialize( document );
+
+        assertEquals( ValueCase.DOCUMENT, serialized.getValueCase() );
+        assertEquals( 3, serialized.getDocument().getEntriesCount() );
+        assertEquals( ValueCase.NULL, serialized.getDocument().getEntriesOrThrow( "3rd" )
+                .getDocument().getEntriesOrThrow( "nested" ).getValueCase() );
+        assertEquals( document, PrismValueDeserializer.deserializeProtoValue( serialized ) );
     }
 
 

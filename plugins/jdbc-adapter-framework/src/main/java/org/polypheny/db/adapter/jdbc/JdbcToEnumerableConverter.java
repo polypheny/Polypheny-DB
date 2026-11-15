@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.TimeZone;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -63,10 +64,12 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterImpl;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
+import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.enumerable.JavaTupleFormat;
 import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
@@ -85,6 +88,7 @@ import org.polypheny.db.sql.language.SqlDialect.CalendarPolicy;
 import org.polypheny.db.sql.language.util.SqlString;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.VectorType;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyDefaults;
@@ -112,10 +116,6 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
     public static final Calendar utc = Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) );
 
     public static final Calendar local = Calendar.getInstance( TemporalFunctions.LOCAL_TZ );
-
-    private static final Expression UTC_EXPRESSION = Expressions.field( null, JdbcToEnumerableConverter.class, "utc" );
-
-    private static final Expression LOCAL_EXPRESSION = Expressions.field( null, JdbcToEnumerableConverter.class, "local" );
     public static final Method JDBC_SCHEMA_GET_CONNECTION_HANDLER_METHOD = Types.lookupMethod(
             JdbcSchema.class,
             "getConnectionHandler",
@@ -142,10 +142,122 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             "createEnricher",
             Integer[].class,
             DataContext.class );
+    private static final Expression UTC_EXPRESSION = Expressions.field( null, JdbcToEnumerableConverter.class, "utc" );
+    private static final Expression LOCAL_EXPRESSION = Expressions.field( null, JdbcToEnumerableConverter.class, "local" );
 
 
     protected JdbcToEnumerableConverter( AlgCluster cluster, AlgTraitSet traits, AlgNode input ) {
         super( cluster, ConventionTraitDef.INSTANCE, traits, input );
+    }
+
+
+    public static AlgNode create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        return new JdbcToEnumerableConverter( cluster, children.get( 0 ).getTraitSet().replace( EnumerableConvention.INSTANCE ), children.get( 0 ) );
+    }
+
+
+    @NonNull
+    private static Expression getPreprocessArrayExpression( ParameterExpression resultSet_, int i, SqlDialect dialect, AlgDataType fieldType ) {
+        Optional<Expression> arrayRetrieval = dialect.getCustomArrayRetrievalExpression( resultSet_, i, fieldType );
+        if ( fieldType instanceof VectorType && arrayRetrieval.isPresent() ) {
+            Expression parsed = arrayRetrieval.get();
+            return Expressions.condition(
+                    Expressions.call( resultSet_, "wasNull" ),
+                    Expressions.constant( null ),
+                    parsed );
+        }
+        if ( (dialect.supportsArrays() && (fieldType.unwrapOrThrow( ArrayType.class ).getDimension() == 1 || dialect.supportsNestedArrays())) ) {
+            ParameterExpression argument = Expressions.parameter( Object.class );
+
+            AlgDataType componentType = fieldType.getComponentType();
+            int depth = 1;
+            while ( componentType.getComponentType() != null ) {
+                componentType = componentType.getComponentType();
+                depth++;
+            }
+
+            return Expressions.call(
+                    BuiltInMethod.JDBC_DEEP_ARRAY_TO_POLY_LIST.method,
+                    Expressions.call( resultSet_, "getArray", Expressions.constant( i + 1 ) ),
+                    Expressions.lambda( getOfPolyExpression( componentType, argument, resultSet_, i, dialect ), argument ),
+                    Expressions.constant( depth )
+            );
+        }
+        return Expressions.call(
+                BuiltInMethod.PARSE_ARRAY_FROM_TEXT.method,
+                Expressions.call( resultSet_, "getString", Expressions.constant( i + 1 ) )
+        );
+
+    }
+
+
+    private static Expression getOfPolyExpression( AlgDataType fieldType, Expression source, ParameterExpression resultSet_, int i, SqlDialect dialect ) {
+        final Expression poly;
+        String methodName = fieldType.isNullable() ? "ofNullable" : "of";
+        switch ( fieldType.getPolyType() ) {
+            case BIGINT:
+                poly = Expressions.call( PolyLong.class, methodName, Expressions.convert_( source, Number.class ) );
+                break;
+            case VARCHAR:
+            case CHAR:
+                poly = Expressions.call( PolyString.class, methodName, Expressions.convert_( source, String.class ) );
+                break;
+            case SMALLINT:
+            case TINYINT:
+            case INTEGER:
+                poly = Expressions.call( PolyInteger.class, methodName, Expressions.convert_( source, Number.class ) );
+                break;
+            case BOOLEAN:
+                poly = Expressions.call( PolyBoolean.class, methodName, Expressions.convert_( source, Boolean.class ) );
+                break;
+            case FLOAT:
+            case REAL:
+                poly = Expressions.call( PolyFloat.class, methodName, Expressions.convert_( source, Number.class ) );
+                break;
+            case DOUBLE:
+                poly = Expressions.call( PolyDouble.class, methodName, Expressions.convert_( source, Number.class ) );
+                break;
+            case TIME:
+                poly = Expressions.call( PolyTime.class, methodName, Expressions.convert_( source, Time.class ) );
+                break;
+            case TIMESTAMP:
+                UnaryExpression timestamp = Expressions.convert_( source, Timestamp.class );
+                poly = Expressions.call( PolyTimestamp.class, methodName, timestamp );
+                break;
+            case DATE:
+                Expression date = Expressions.convert_( source, Date.class );
+                poly = Expressions.call( PolyDate.class, methodName, date );
+                break;
+            case DECIMAL:
+                poly = Expressions.call( PolyBigDecimal.class, methodName, Expressions.convert_( source, Number.class ), Expressions.constant( fieldType.getPrecision() ), Expressions.constant( fieldType.getScale() ) );
+                break;
+            case ARRAY:
+                poly = Expressions.call( PolyList.class, methodName, source );
+                break;
+            case VARBINARY:
+                if ( dialect.supportsComplexBinary() ) {
+                    poly = Expressions.call( PolyBinary.class, methodName, Expressions.convert_( source, byte[].class ) );
+                } else {
+                    poly = dialect.handleRetrieval( fieldType, source, resultSet_, i + 1 );
+                }
+                break;
+            case TEXT:
+                poly = dialect.handleRetrieval( fieldType, source, resultSet_, i + 1 );
+                break;
+            case FILE:
+            case AUDIO:
+            case IMAGE:
+            case VIDEO:
+                poly = dialect.handleRetrieval( fieldType, source, resultSet_, i + 1 );
+                break;
+            case GEOMETRY:
+                poly = dialect.handleRetrieval( fieldType, source, resultSet_, i + 1 );
+                break;
+            default:
+                log.warn( "potentially unhandled polyValue" );
+                poly = source;
+        }
+        return poly;
     }
 
 
@@ -340,103 +452,6 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
         }
 
 
-    }
-
-
-    @NonNull
-    private static Expression getPreprocessArrayExpression( ParameterExpression resultSet_, int i, SqlDialect dialect, AlgDataType fieldType ) {
-        if ( (dialect.supportsArrays() && (fieldType.unwrap( ArrayType.class ).orElseThrow().getDimension() == 1 || dialect.supportsNestedArrays())) ) {
-            ParameterExpression argument = Expressions.parameter( Object.class );
-
-            AlgDataType componentType = fieldType.getComponentType();
-            int depth = 1;
-            while ( componentType.getComponentType() != null ) {
-                componentType = componentType.getComponentType();
-                depth++;
-            }
-
-            return Expressions.call(
-                    BuiltInMethod.JDBC_DEEP_ARRAY_TO_POLY_LIST.method,
-                    Expressions.call( resultSet_, "getArray", Expressions.constant( i + 1 ) ),
-                    Expressions.lambda( getOfPolyExpression( componentType, argument, resultSet_, i, dialect ), argument ),
-                    Expressions.constant( depth )
-            );
-        }
-        return Expressions.call(
-                BuiltInMethod.PARSE_ARRAY_FROM_TEXT.method,
-                Expressions.call( resultSet_, "getString", Expressions.constant( i + 1 ) )
-        );
-
-    }
-
-
-    private static Expression getOfPolyExpression( AlgDataType fieldType, Expression source, ParameterExpression resultSet_, int i, SqlDialect dialect ) {
-        final Expression poly;
-        String methodName = fieldType.isNullable() ? "ofNullable" : "of";
-        switch ( fieldType.getPolyType() ) {
-            case BIGINT:
-                poly = Expressions.call( PolyLong.class, methodName, Expressions.convert_( source, Number.class ) );
-                break;
-            case VARCHAR:
-            case CHAR:
-                poly = Expressions.call( PolyString.class, methodName, Expressions.convert_( source, String.class ) );
-                break;
-            case SMALLINT:
-            case TINYINT:
-            case INTEGER:
-                poly = Expressions.call( PolyInteger.class, methodName, Expressions.convert_( source, Number.class ) );
-                break;
-            case BOOLEAN:
-                poly = Expressions.call( PolyBoolean.class, methodName, Expressions.convert_( source, Boolean.class ) );
-                break;
-            case FLOAT:
-            case REAL:
-                poly = Expressions.call( PolyFloat.class, methodName, Expressions.convert_( source, Number.class ) );
-                break;
-            case DOUBLE:
-                poly = Expressions.call( PolyDouble.class, methodName, Expressions.convert_( source, Number.class ) );
-                break;
-            case TIME:
-                poly = Expressions.call( PolyTime.class, methodName, Expressions.convert_( source, Time.class ) );
-                break;
-            case TIMESTAMP:
-                UnaryExpression timestamp = Expressions.convert_( source, Timestamp.class );
-                poly = Expressions.call( PolyTimestamp.class, methodName, timestamp );
-                break;
-            case DATE:
-                Expression date = Expressions.convert_( source, Date.class );
-                poly = Expressions.call( PolyDate.class, methodName, date );
-                break;
-            case DECIMAL:
-                poly = Expressions.call( PolyBigDecimal.class, methodName, Expressions.convert_( source, Number.class ), Expressions.constant( fieldType.getPrecision() ), Expressions.constant( fieldType.getScale() ) );
-                break;
-            case ARRAY:
-                poly = Expressions.call( PolyList.class, methodName, source );
-                break;
-            case VARBINARY:
-                if ( dialect.supportsComplexBinary() ) {
-                    poly = Expressions.call( PolyBinary.class, methodName, Expressions.convert_( source, byte[].class ) );
-                } else {
-                    poly = dialect.handleRetrieval( fieldType, source, resultSet_, i + 1 );
-                }
-                break;
-            case TEXT:
-                poly = dialect.handleRetrieval( fieldType, source, resultSet_, i + 1 );
-                break;
-            case FILE:
-            case AUDIO:
-            case IMAGE:
-            case VIDEO:
-                poly = dialect.handleRetrieval( fieldType, source, resultSet_, i + 1 );
-                break;
-            case GEOMETRY:
-                poly = dialect.handleRetrieval( fieldType, source, resultSet_, i + 1 );
-                break;
-            default:
-                log.warn( "potentially unhandled polyValue" );
-                poly = source;
-        }
-        return poly;
     }
 
 

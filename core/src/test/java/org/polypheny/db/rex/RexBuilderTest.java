@@ -34,6 +34,7 @@
 package org.polypheny.db.rex;
 
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -50,6 +51,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyBoolean;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.ByteString;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.DateString;
@@ -493,6 +495,24 @@ public class RexBuilderTest {
         assertEquals( "_UTF-16'foobar':VARCHAR CHARACTER SET \"UTF-16\"", literal.toString() );
         literal = builder.makeLiteral( utf8, varchar, false );
         assertEquals( "'foobar':VARCHAR", literal.toString() );
+    }
+
+
+    @Test
+    public void testTextLiteral() {
+        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+        final RexBuilder builder = new RexBuilder( typeFactory );
+
+        assertDoesNotThrow( () -> builder.makeLiteral( new PolyString( "test" ), typeFactory.createPolyType( PolyType.TEXT ), true ) );
+    }
+
+
+    @Test
+    public void testCanRemoveCastFromLiteralHandlesText() {
+        final AlgDataTypeFactory typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+        final RexBuilder builder = new RexBuilder( typeFactory );
+
+        assertDoesNotThrow( () -> builder.canRemoveCastFromLiteral( typeFactory.createPolyType( PolyType.TEXT ), new PolyString( "test" ), typeFactory.createPolyType( PolyType.CHAR, 4 ).getPolyType() ) );
     }
 
 

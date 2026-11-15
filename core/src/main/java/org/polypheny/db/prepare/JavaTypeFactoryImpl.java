@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -106,6 +106,23 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
     }
 
 
+    /**
+     * Converts a type in Java format to a SQL-oriented type.
+     */
+    public static AlgDataType toSql( final AlgDataTypeFactory typeFactory, AlgDataType type ) {
+        if ( type instanceof AlgRecordType ) {
+            return typeFactory.createStructType(
+                    type.getFields().stream().map( AlgDataTypeField::getId ).collect( Collectors.toList() ),
+                    type.getFields().stream().map( field -> toSql( typeFactory, field.getType() ) ).collect( Collectors.toList() ),
+                    type.getFieldNames() );
+        }
+        if ( type instanceof JavaType ) {
+            return typeFactory.createTypeWithNullability( typeFactory.createPolyType( type.getPolyType() ), type.isNullable() );
+        }
+        return type;
+    }
+
+
     @Override
     public AlgDataType createStructType( Class<?> type ) {
         final List<AlgDataTypeField> list = new ArrayList<>();
@@ -138,6 +155,15 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
         return klass;
     }
 
+    /*@Override
+    public Type getJavaClass( AlgDataType type ) {
+        if( type.getPolyType() == PolyType.ROW ){
+            return PolyValue[].class;
+        }
+
+        return PolyValue.classFrom( type.getPolyType() );
+    }*/
+
 
     @Override
     public AlgDataType createType( Type type ) {
@@ -149,7 +175,11 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
         }
         if ( type instanceof Types.ArrayType arrayType ) {
             final AlgDataType componentRelType = createType( arrayType.getComponentType() );
-            return createArrayType( createTypeWithNullability( componentRelType, arrayType.componentIsNullable() ), arrayType.maximumCardinality() );
+            if ( arrayType.componentIsNullable() ) {
+                return createArrayType( createTypeWithNullability( componentRelType, arrayType.componentIsNullable() ), arrayType.maximumCardinality() );
+            } else {
+                return createVectorType( createTypeWithNullability( componentRelType, arrayType.componentIsNullable() ), arrayType.maximumCardinality() );
+            }
         }
         if ( type instanceof Types.MapType mapType ) {
             final AlgDataType keyRelType = createType( mapType.getKeyType() );
@@ -181,15 +211,6 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
             return createStructType( clazz );
         }
     }
-
-    /*@Override
-    public Type getJavaClass( AlgDataType type ) {
-        if( type.getPolyType() == PolyType.ROW ){
-            return PolyValue[].class;
-        }
-
-        return PolyValue.classFrom( type.getPolyType() );
-    }*/
 
 
     @Override
@@ -270,23 +291,6 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
     @Override
     public AlgDataType toSql( AlgDataType type ) {
         return toSql( this, type );
-    }
-
-
-    /**
-     * Converts a type in Java format to a SQL-oriented type.
-     */
-    public static AlgDataType toSql( final AlgDataTypeFactory typeFactory, AlgDataType type ) {
-        if ( type instanceof AlgRecordType ) {
-            return typeFactory.createStructType(
-                    type.getFields().stream().map( AlgDataTypeField::getId ).collect( Collectors.toList() ),
-                    type.getFields().stream().map( field -> toSql( typeFactory, field.getType() ) ).collect( Collectors.toList() ),
-                    type.getFieldNames() );
-        }
-        if ( type instanceof JavaType ) {
-            return typeFactory.createTypeWithNullability( typeFactory.createPolyType( type.getPolyType() ), type.isNullable() );
-        }
-        return type;
     }
 
 

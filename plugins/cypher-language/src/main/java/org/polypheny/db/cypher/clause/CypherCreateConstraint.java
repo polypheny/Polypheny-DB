@@ -17,6 +17,7 @@
 package org.polypheny.db.cypher.clause;
 
 import java.util.List;
+import java.util.Map;
 import lombok.Getter;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.ConstraintType;
@@ -31,6 +32,8 @@ import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
 
 
 @Getter
@@ -77,6 +80,12 @@ public class CypherCreateConstraint extends CypherSchemaCommand implements Execu
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
         throw new GenericRuntimeException( "Constraints are not supported yet for graph data." );
+    }
+
+
+    @Override
+    public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
+        return Map.of();
     }
 
 }

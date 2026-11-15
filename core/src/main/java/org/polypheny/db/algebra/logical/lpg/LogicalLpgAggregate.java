@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,10 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.core.lpg.LpgAggregate;
+import org.polypheny.db.algebra.polyalg.arguments.LaxAggArg;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -36,6 +40,22 @@ public class LogicalLpgAggregate extends LpgAggregate {
     }
 
 
+    public static LogicalLpgAggregate create( final AlgNode input, @NotNull List<RexNameRef> groups, List<LaxAggregateCall> aggCalls ) {
+        AlgCluster cluster = input.getCluster();
+        AlgTraitSet traitSet = input.getTraitSet();
+        AlgDataType type = deriveTupleType( cluster, input.getTupleType(), groups, aggCalls );
+        return new LogicalLpgAggregate( cluster, traitSet, input, groups, aggCalls, type );
+    }
+
+
+    public static LogicalLpgAggregate create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        ListArg<RexArg> groups = args.getListArg( "groups", RexArg.class );
+        ListArg<LaxAggArg> aggs = args.getListArg( "aggs", LaxAggArg.class );
+
+        return create( children.get( 0 ), groups.map( r -> (RexNameRef) r.getNode() ), aggs.map( LaxAggArg::getAgg ) );
+    }
+
+
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return new LogicalLpgAggregate( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), groups, aggCalls, rowType );
@@ -45,6 +65,16 @@ public class LogicalLpgAggregate extends LpgAggregate {
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );
+    }
+
+
+    @Override
+    public PolyAlgArgs bindArguments() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+
+        args.put( "groups", new ListArg<>( groups, RexArg::new ) );
+        args.put( "aggs", new ListArg<>( aggCalls, LaxAggArg::new ) );
+        return args;
     }
 
 }

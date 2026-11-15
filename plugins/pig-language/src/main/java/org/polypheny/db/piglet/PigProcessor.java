@@ -94,13 +94,7 @@ public class PigProcessor extends Processor {
 
 
     @Override
-    public void unlock( Statement statement ) {
-        throw new GenericRuntimeException( "The PIG implementation does not support DDL or DML operations and can therefore not lock or unlock." );
-    }
-
-
-    @Override
-    public void lock( Statement statement ) throws DeadlockException {
+    protected void lock( Transaction transaction, ParsedQueryContext context ) throws DeadlockException {
         throw new GenericRuntimeException( "The PIG implementation does not support DDL or DML operations and can therefore not lock or unlock." );
     }
 

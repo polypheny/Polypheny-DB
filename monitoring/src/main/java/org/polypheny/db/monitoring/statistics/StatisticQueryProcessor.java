@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,6 +63,11 @@ public class StatisticQueryProcessor {
     }
 
 
+    private static boolean supportsStatistics( LogicalTable table ) {
+        return table.entityType != EntityType.VIEW && table.entityType != EntityType.SOURCE;
+    }
+
+
     /**
      * Handles the request for one columns stats
      *
@@ -87,7 +92,7 @@ public class StatisticQueryProcessor {
         return snapshot.getNamespaces( null )
                 .stream()
                 .filter( n -> n.dataModel == DataModel.RELATIONAL )
-                .flatMap( n -> snapshot.rel().getTables( Pattern.of( n.name ), null ).stream().filter( t -> t.entityType != EntityType.VIEW ).flatMap( t -> snapshot.rel().getColumns( t.id ).stream() ) )
+                .flatMap( n -> snapshot.rel().getTables( Pattern.of( n.name ), null ).stream().filter( StatisticQueryProcessor::supportsStatistics ).flatMap( t -> snapshot.rel().getColumns( t.id ).stream() ) )
                 .map( QueryResult::fromCatalogColumn )
                 .toList();
     }
@@ -101,7 +106,7 @@ public class StatisticQueryProcessor {
     public List<LogicalTable> getAllRelEntites() {
         Snapshot snapshot = Catalog.snapshot();
         return snapshot.getNamespaces( null ).stream().filter( n -> n.dataModel == DataModel.RELATIONAL )
-                .flatMap( n -> snapshot.rel().getTables( Pattern.of( n.name ), null ).stream().filter( t -> t.entityType != EntityType.VIEW ) ).collect( Collectors.toList() );
+                .flatMap( n -> snapshot.rel().getTables( Pattern.of( n.name ), null ).stream().filter( StatisticQueryProcessor::supportsStatistics ) ).collect( Collectors.toList() );
     }
 
 
@@ -121,15 +126,7 @@ public class StatisticQueryProcessor {
             // Locks are released within commit
             transaction.commit();
         } catch ( TransactionException e ) {
-            log.error( "Caught exception while executing a query from the console", e );
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                log.error( "Caught exception while rollback", e );
-            }
-        } finally {
-            // Release lock
-            statement.getQueryProcessor().unlock( statement );
+            transaction.rollback( "Caught exception while executing a query from the console. " + e );
         }
     }
 

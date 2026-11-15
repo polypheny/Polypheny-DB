@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -508,7 +508,16 @@ public enum BuiltInMethod {
     MQL_GET_ARRAY( MqlFunctions.class, "docGetArray", PolyValue.class ),
     MQL_EXISTS( MqlFunctions.class, "docExists", PolyValue.class, PolyValue.class, List.class ),
     MQL_MERGE( MqlFunctions.class, "mergeDocument", PolyValue.class, PolyList.class, PolyValue[].class ),
+    MQL_MERGE_ADD( MqlFunctions.class, "mergeDocumentAdd", PolyValue.class, PolyList.class, PolyValue[].class ),
     MQL_NOT_UNSET( MqlFunctions.class, "notUnset", PolyValue.class ),
+
+    // GeoFunctions
+    MQL_GEO_INTERSECTS( MqlFunctions.class, "docGeoIntersects", PolyValue.class, PolyValue.class ),
+    MQL_GEO_WITHIN( MqlFunctions.class, "docGeoWithin", PolyValue.class, PolyValue.class, PolyValue.class ),
+    MQL_GEO_DISTANCE( MqlFunctions.class, "docGeoDistance", PolyValue.class, PolyValue.class, PolyValue.class ),
+//    MQL_NEAR( MqlFunctions.class, "docNear", PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class ),
+//    MQL_NEAR_SPHERE( MqlFunctions.class, "docNearSphere", PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class ),
+//    MQL_GEO_NEAR( MqlFunctions.class, "notUnset", PolyValue.class ),
 
     MQL_PROJECT_INCLUDES( MqlFunctions.class, "projectIncludes", PolyValue.class, PolyList.class, PolyValue[].class ),
     MQL_REPLACE_ROOT( MqlFunctions.class, "replaceRoot", PolyValue.class ),
@@ -532,6 +541,11 @@ public enum BuiltInMethod {
     CYPHER_SET_LABELS( CypherFunctions.class, "setLabels", GraphPropertyHolder.class, List.class, PolyBoolean.class ),
     CYPHER_REMOVE_LABELS( CypherFunctions.class, "removeLabels", GraphPropertyHolder.class, List.class ),
     CYPHER_REMOVE_PROPERTY( CypherFunctions.class, "removeProperty", GraphPropertyHolder.class, String.class ),
+    CYPHER_POINT( CypherFunctions.class, "point", PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class ),
+    CYPHER_DISTANCE( CypherFunctions.class, "distance", PolyValue.class, PolyValue.class ),
+    CYPHER_DISTANCE_NEO4J( CypherFunctions.class, "distanceNeo4j", PolyValue.class, PolyValue.class ),
+    CYPHER_WITHIN_BBOX( CypherFunctions.class, "withinBBox", PolyValue.class, PolyValue.class, PolyValue.class ),
+    CYPHER_WITHIN_GEOMETRY( CypherFunctions.class, "withinGeometry", PolyValue.class, PolyValue.class ),
     TO_NODE( CypherFunctions.class, "toNode", Enumerable.class ),
     TO_EDGE( CypherFunctions.class, "toEdge", Enumerable.class ),
     TO_GRAPH( CypherFunctions.class, "toGraph", Enumerable.class, Enumerable.class ),
@@ -543,15 +557,10 @@ public enum BuiltInMethod {
 
     X_MODEL_ITEM( CrossModelFunctions.class, "docItem", String.class, String.class ),
     SINGLE_TO_ARRAY_ENUMERABLE( Functions.class, "singleToArray", Enumerable.class ),
-    X_MODEL_GRAPH_ONLY_LABEL( CrossModelFunctions.class, "cypherOnlyLabelGraph", PolyValue.class, PolyString.class ),
     TO_JSON( PolyValue.class, "toPolyJson" );
 
-    private static final String toIntOptional = "toIntOptional";
-    public final Method method;
-    public final Constructor<?> constructor;
-    public final Field field;
-
     public static final ImmutableMap<Method, BuiltInMethod> MAP;
+    private static final String toIntOptional = "toIntOptional";
 
 
     static {
@@ -563,6 +572,11 @@ public enum BuiltInMethod {
         }
         MAP = builder.build();
     }
+
+
+    public final Method method;
+    public final Constructor<?> constructor;
+    public final Field field;
 
 
     BuiltInMethod( Method method, Constructor<?> constructor, Field field ) {

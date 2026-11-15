@@ -19,12 +19,13 @@ package org.polypheny.db.util;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 
 /**
  * Thrown when an object, such as a view, is found to have a cylic definition.
  */
-public class CyclicDefinitionException extends RuntimeException {
+public class CyclicDefinitionException extends GenericRuntimeException {
 
     public final int depth;
     public final List<String> path;

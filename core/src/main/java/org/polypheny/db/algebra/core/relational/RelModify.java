@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,9 +27,19 @@ import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.ParamType;
+import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
+import org.polypheny.db.algebra.polyalg.arguments.EntityArg;
+import org.polypheny.db.algebra.polyalg.arguments.EnumArg;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
+import org.polypheny.db.algebra.polyalg.arguments.StringArg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -38,6 +48,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.util.Quadruple;
 
 
 /**
@@ -64,9 +75,9 @@ public abstract class RelModify<E extends Entity> extends Modify<E> implements R
     private final List<String> updateColumns;
     @Getter
     private final List<? extends RexNode> sourceExpressions;
-    private AlgDataType inputRowType;
     @Getter
     private final boolean flattened;
+    private AlgDataType inputRowType;
 
 
     /**
@@ -108,6 +119,18 @@ public abstract class RelModify<E extends Entity> extends Modify<E> implements R
             Preconditions.checkArgument( sourceExpressions == null );
         }
         this.flattened = flattened;
+    }
+
+
+    protected static Quadruple<Operation, List<String>, List<? extends RexNode>, Boolean> extractArgs( PolyAlgArgs args ) {
+        EnumArg<Operation> op = args.getEnumArg( "operation", Operation.class );
+        List<String> updateColumns = args.getListArg( "targets", StringArg.class ).map( StringArg::getArg );
+        List<? extends RexNode> sourceExpressions = args.getListArg( "sources", RexArg.class ).map( RexArg::getNode );
+        BooleanArg flattened = args.getArg( "flattened", BooleanArg.class );
+
+        updateColumns = updateColumns.isEmpty() ? null : updateColumns;
+        sourceExpressions = sourceExpressions.isEmpty() ? null : sourceExpressions;
+        return Quadruple.of( op.getArg(), updateColumns, sourceExpressions, flattened.toBool() );
     }
 
 
@@ -176,8 +199,7 @@ public abstract class RelModify<E extends Entity> extends Modify<E> implements R
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // REVIEW jvs: Just for now...
-        double rowCount = mq.getTupleCount( this );
-        return planner.getCostFactory().makeCost( rowCount, 0, 0 );
+        return mq.getTupleCount( this ).map( count -> planner.getCostFactory().makeCost( count, 0, 0 ) ).orElse( planner.getCostFactory().makeInfiniteCost() );
     }
 
 
@@ -192,6 +214,22 @@ public abstract class RelModify<E extends Entity> extends Modify<E> implements R
                 isFlattened() + "&";
     }
 
+
+    @Override
+    public PolyAlgArgs bindArguments() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+
+        if ( getUpdateColumns() != null ) {
+            args.put( "targets", new ListArg<>( getUpdateColumns(), StringArg::new ) );
+        }
+        if ( getSourceExpressions() != null ) {
+            args.put( "sources", new ListArg<>( getSourceExpressions(), RexArg::new ) );
+        }
+
+        return args.put( "table", new EntityArg( entity, Catalog.snapshot(), DataModel.RELATIONAL ) )
+                .put( "operation", new EnumArg<>( getOperation(), ParamType.MODIFY_OP_ENUM ) )
+                .put( "flattened", new BooleanArg( isFlattened() ) );
+    }
 
 }
 

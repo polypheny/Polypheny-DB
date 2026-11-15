@@ -34,8 +34,6 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
-import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgModify;
-import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgProject;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.ElementStatement;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.NeoStatement;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.OperatorStatement;
@@ -43,7 +41,6 @@ import org.polypheny.db.adapter.neo4j.util.NeoStatements.ReturnStatement;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.StatementType;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
-import org.polypheny.db.algebra.core.lpg.LpgProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.GraphType;
@@ -140,13 +137,8 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
             if ( isDml ) {
                 addRowCount( 1 );
             } else if ( statement.type == StatementType.WITH ) {
-                // can replace
-                statements.remove( statements.size() - 1 );
-                if ( getLast() instanceof NeoLpgProject ) {
-                    statements.add( return_( NeoLpgModify.buildReturnProject( (LpgProject) getLast(), getGraph().mappingLabel ) ) );
-                } else {
-                    statements.add( return_( statement.statements ) );
-                }
+                // Reuse the translated projection so its aliases remain bound.
+                statements.set( statements.size() - 1, return_( statement.statements ) );
             } else {
                 // have to add
                 statements.add( return_( getFields( last.getTupleType() ) ) );
@@ -188,6 +180,10 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
             case EDGE:
                 return edge_( field.getName() );
             case PATH:
+                // MATCH already bound a named path, even if all of its parts are anonymous.
+                if ( !field.getName().isEmpty() && !field.getName().contains( "$" ) ) {
+                    return literal_( PolyString.of( field.getName() ) );
+                }
                 PathType type = (PathType) field.getType();
                 List<ElementStatement> path = new ArrayList<>();
                 for ( AlgDataTypeField pathPart : type.getFields() ) {

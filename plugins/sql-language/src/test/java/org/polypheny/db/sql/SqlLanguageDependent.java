@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,7 @@ public class SqlLanguageDependent {
 
         TransactionManager transactionManager = testHelper.getTransactionManager();
 
-        Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Sql Test" );
+        Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, null, "Sql Test" );
 
         DdlManager manager = DdlManager.getInstance();
 
@@ -74,7 +74,7 @@ public class SqlLanguageDependent {
     private static void removeTestSchema() {
         TransactionManager transactionManager = testHelper.getTransactionManager();
 
-        Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Sql Test" );
+        Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, null, "Sql Test" );
 
         DdlManager manager = DdlManager.getInstance();
 
@@ -102,14 +102,14 @@ public class SqlLanguageDependent {
 
         TransactionManager transactionManager = testHelper.getTransactionManager();
 
-        Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Sql Test" );
+        Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, null, "Sql Test" );
 
         DdlManager manager = DdlManager.getInstance();
 
         List<FieldInformation> columns = List.of(
-                new FieldInformation( "deptno", new ColumnTypeInformation( PolyType.INTEGER, null, null, null, null, null, false ), null, null, 0 ),
-                new FieldInformation( "name", new ColumnTypeInformation( PolyType.VARCHAR, null, 20, null, null, null, false ), null, null, 1 ),
-                new FieldInformation( "loc", new ColumnTypeInformation( PolyType.VARCHAR, null, 50, null, null, null, true ), null, null, 2 )
+                new FieldInformation( "deptno", new ColumnTypeInformation( PolyType.INTEGER, null, null, null, null, null, false, true ), null, null, 0 ),
+                new FieldInformation( "name", new ColumnTypeInformation( PolyType.VARCHAR, null, 20, null, null, null, false, true ), null, null, 1 ),
+                new FieldInformation( "loc", new ColumnTypeInformation( PolyType.VARCHAR, null, 50, null, null, null, true, true ), null, null, 2 )
         );
 
         List<ConstraintInformation> constraints = List.of(
@@ -128,14 +128,14 @@ public class SqlLanguageDependent {
 
         TransactionManager transactionManager = testHelper.getTransactionManager();
 
-        Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Sql Test" );
+        Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, null, "Sql Test" );
 
         DdlManager manager = DdlManager.getInstance();
 
         List<FieldInformation> columns = List.of(
-                new FieldInformation( "deptno", new ColumnTypeInformation( PolyType.INTEGER, null, null, null, null, null, false ), null, null, 0 ),
-                new FieldInformation( "name", new ColumnTypeInformation( PolyType.VARCHAR, null, 20, null, null, null, false ), null, null, 1 ),
-                new FieldInformation( "loc", new ColumnTypeInformation( PolyType.VARCHAR, null, 50, null, null, null, true ), null, null, 2 )
+                new FieldInformation( "deptno", new ColumnTypeInformation( PolyType.INTEGER, null, null, null, null, null, false, true ), null, null, 0 ),
+                new FieldInformation( "name", new ColumnTypeInformation( PolyType.VARCHAR, null, 20, null, null, null, false, true ), null, null, 1 ),
+                new FieldInformation( "loc", new ColumnTypeInformation( PolyType.VARCHAR, null, 50, null, null, null, true, true ), null, null, 2 )
         );
 
         List<ConstraintInformation> constraints = List.of(
@@ -146,13 +146,13 @@ public class SqlLanguageDependent {
 
         // "CREATE TABLE employee( empid BIGINT NOT NULL, ename VARCHAR(20), job VARCHAR(10), mgr INTEGER, hiredate DATE, salary DECIMAL(7,2), commission DECIMAL(7,2), deptno INTEGER NOT NULL, PRIMARY KEY (empid)) "
         columns = List.of(
-                new FieldInformation( "empid", new ColumnTypeInformation( PolyType.BIGINT, null, null, null, null, null, false ), null, null, 0 ),
-                new FieldInformation( "ename", new ColumnTypeInformation( PolyType.VARCHAR, null, 20, null, null, null, true ), null, null, 1 ),
-                new FieldInformation( "job", new ColumnTypeInformation( PolyType.VARCHAR, null, 10, null, null, null, true ), null, null, 2 ),
-                new FieldInformation( "mgr", new ColumnTypeInformation( PolyType.INTEGER, null, null, null, null, null, true ), null, null, 3 ),
-                new FieldInformation( "hiredate", new ColumnTypeInformation( PolyType.DATE, null, null, null, null, null, true ), null, null, 4 ),
-                new FieldInformation( "salary", new ColumnTypeInformation( PolyType.DECIMAL, null, null, 7, 2, null, true ), null, null, 5 ),
-                new FieldInformation( "deptno", new ColumnTypeInformation( PolyType.INTEGER, null, null, null, null, null, true ), null, null, 6 )
+                new FieldInformation( "empid", new ColumnTypeInformation( PolyType.BIGINT, null, null, null, null, null, false, true ), null, null, 0 ),
+                new FieldInformation( "ename", new ColumnTypeInformation( PolyType.VARCHAR, null, 20, null, null, null, true, true ), null, null, 1 ),
+                new FieldInformation( "job", new ColumnTypeInformation( PolyType.VARCHAR, null, 10, null, null, null, true, true ), null, null, 2 ),
+                new FieldInformation( "mgr", new ColumnTypeInformation( PolyType.INTEGER, null, null, null, null, null, true, true ), null, null, 3 ),
+                new FieldInformation( "hiredate", new ColumnTypeInformation( PolyType.DATE, null, null, null, null, null, true, true ), null, null, 4 ),
+                new FieldInformation( "salary", new ColumnTypeInformation( PolyType.DECIMAL, null, null, 7, 2, null, true, true ), null, null, 5 ),
+                new FieldInformation( "deptno", new ColumnTypeInformation( PolyType.INTEGER, null, null, null, null, null, true, true ), null, null, 6 )
         );
 
         constraints = List.of(
@@ -162,10 +162,10 @@ public class SqlLanguageDependent {
         manager.createTable( Catalog.defaultNamespaceId, "emp", columns, constraints, true, null, null, transaction.createStatement() );
 
         // "CREATE TABLE contact.customer(fname VARCHAR(50) NOT NULL, PRIMARY KEY (fname))"
-        long id = manager.createNamespace( "customer", DataModel.RELATIONAL, true, false, transaction.createStatement() );
+        long id = manager.createNamespace( "customer", DataModel.RELATIONAL, true, false, false, transaction.createStatement() );
 
         columns = List.of(
-                new FieldInformation( "fname", new ColumnTypeInformation( PolyType.VARCHAR, null, 50, null, null, null, false ), null, null, 0 )
+                new FieldInformation( "fname", new ColumnTypeInformation( PolyType.VARCHAR, null, 50, null, null, null, false, true ), null, null, 0 )
         );
 
         constraints = List.of(
@@ -174,11 +174,7 @@ public class SqlLanguageDependent {
 
         manager.createTable( id, "contact", columns, constraints, true, null, null, transaction.createStatement() );
 
-        try {
-            transaction.commit();
-        } catch ( TransactionException e ) {
-            throw new RuntimeException( e );
-        }
+        transaction.commit();
     }
 
 }

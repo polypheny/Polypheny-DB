@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.polypheny.db.adapter.ConnectionMethod;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.RelationalDataSource;
 import org.polypheny.db.adapter.RelationalScanDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
@@ -56,6 +57,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.prepare.Context;
@@ -76,21 +78,21 @@ import org.polypheny.db.util.Sources;
 @AdapterSettingString(name = "sheetName", description = "default to read the first sheet", defaultValue = "", required = false)
 @AdapterSettingInteger(name = "maxStringLength", defaultValue = 255, position = 2,
         description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")
-public class ExcelSource extends DataSource<RelAdapterCatalog> {
+public class ExcelSource extends DataSource<RelAdapterCatalog> implements RelationalDataSource {
 
     @Delegate(excludes = Excludes.class)
     private final RelationalScanDelegate delegate;
     private final ConnectionMethod connectionMethod;
+    private final int maxStringLength;
+    public String sheetName;
     private URL excelDir;
     @Getter
     private ExcelNamespace currentNamespace;
-    private final int maxStringLength;
     private Map<String, List<ExportedColumn>> exportedColumnCache;
-    public String sheetName;
 
 
     public ExcelSource( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
-        super( storeId, uniqueName, settings, mode, true, new RelAdapterCatalog( storeId ) );
+        super( storeId, uniqueName, settings, mode, true, new RelAdapterCatalog( storeId ), Set.of( DataModel.RELATIONAL ) );
 
         this.connectionMethod = settings.containsKey( "method" ) ? ConnectionMethod.from( settings.get( "method" ) ) : ConnectionMethod.UPLOAD;
         // Validate maxStringLength setting
@@ -322,6 +324,7 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> {
                                     dimension,
                                     cardinality,
                                     false,
+                                    true,
                                     fileName,
                                     physicalTableName,
                                     name,
@@ -347,7 +350,7 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> {
 
     private void addInformationExportedColumns() {
         for ( Map.Entry<String, List<ExportedColumn>> entry : getExportedColumns().entrySet() ) {
-            InformationGroup group = new InformationGroup( informationPage, entry.getValue().get( 0 ).physicalSchemaName );
+            InformationGroup group = new InformationGroup( informationPage, entry.getValue().get( 0 ).physicalSchemaName() );
             informationGroups.add( group );
 
             InformationTable table = new InformationTable(
@@ -355,16 +358,22 @@ public class ExcelSource extends DataSource<RelAdapterCatalog> {
                     Arrays.asList( "Position", "Column Name", "Type", "Nullable", "Filename", "Primary" ) );
             for ( ExportedColumn exportedColumn : entry.getValue() ) {
                 table.addRow(
-                        exportedColumn.physicalPosition,
-                        exportedColumn.name,
+                        exportedColumn.physicalPosition(),
+                        exportedColumn.name(),
                         exportedColumn.getDisplayType(),
-                        exportedColumn.nullable ? "✔" : "",
-                        exportedColumn.physicalSchemaName,
-                        exportedColumn.primary ? "✔" : ""
+                        exportedColumn.nullable() ? "✔" : "",
+                        exportedColumn.physicalSchemaName(),
+                        exportedColumn.primary() ? "✔" : ""
                 );
             }
             informationElements.add( table );
         }
+    }
+
+
+    @Override
+    public RelationalDataSource asRelationalDataSource() {
+        return this;
     }
 
 

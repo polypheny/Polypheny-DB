@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2023 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,12 +47,13 @@ public class TransactionalConnectionFactory implements ConnectionFactory {
 
 
     public TransactionalConnectionFactory( BasicDataSource dataSource, int maxConnections, SqlDialect dialect ) {
-        super();
         this.maxConnections = maxConnections;
         this.dataSource = dataSource;
         this.activeInstances = new ConcurrentHashMap<>();
         this.freeInstances = new ConcurrentLinkedQueue<>();
         this.dialect = dialect;
+        dataSource.setMaxTotal( -1 ); // No limit for number of connections (limited by connection handler; see settings maxConnections)
+        dataSource.setDefaultAutoCommit( false );
     }
 
 
@@ -80,6 +81,25 @@ public class TransactionalConnectionFactory implements ConnectionFactory {
     }
 
 
+    /**
+     * Creates and returns a new, independent JDBC Connection.
+     *
+     * This method bypasses the connection pool and always obtains a fresh connection
+     * directly from the underlying data source. The returned connection is configured
+     * with auto-commit enabled and is intended for short-lived operations such as
+     * metadata access.
+     *
+     * @return a new JDBC connection
+     * @throws SQLException if the connection can't be established
+     */
+    @Override
+    public Connection getFreshConnection() throws SQLException {
+        Connection connection = dataSource.getConnection();
+        connection.setAutoCommit( true );
+        return connection;
+    }
+
+
     @Override
     public void close() throws SQLException {
         dataSource.close();
@@ -92,7 +112,7 @@ public class TransactionalConnectionFactory implements ConnectionFactory {
             if ( getNumActive() + getNumIdle() < maxConnections ) {
                 log.debug( "Creating a new transaction handler. Current freeInstances-Size: {}", freeInstances.size() );
                 try {
-                    handler = new TransactionalConnectionHandler( dataSource.getConnection(), dialect );
+                    handler = createNewHandler( dataSource.getConnection(), dialect );
                 } catch ( SQLException e ) {
                     throw new ConnectionHandlerException( "Caught exception while creating connection handler", e );
                 }
@@ -110,6 +130,16 @@ public class TransactionalConnectionFactory implements ConnectionFactory {
             }
         }
         return handler;
+    }
+
+
+    private TransactionalConnectionHandler createNewHandler( Connection connection, SqlDialect dialect ) throws ConnectionHandlerException {
+        try {
+            dialect.initializeConnection( connection );
+        } catch ( SQLException e ) {
+            throw new ConnectionHandlerException( "Failed to initialize dialect connection", e );
+        }
+        return new TransactionalConnectionHandler( connection, dialect );
     }
 
 
@@ -133,10 +163,9 @@ public class TransactionalConnectionFactory implements ConnectionFactory {
 
     public class TransactionalConnectionHandler extends ConnectionHandler {
 
-        private Xid xid;
-
         @Getter
         private final SqlDialect dialect;
+        private Xid xid;
 
 
         TransactionalConnectionHandler( Connection connection, SqlDialect dialect ) throws ConnectionHandlerException {
@@ -162,9 +191,10 @@ public class TransactionalConnectionFactory implements ConnectionFactory {
         public void commit() throws ConnectionHandlerException {
             try {
                 connection.commit();
-                close();
             } catch ( SQLException e ) {
                 throw new ConnectionHandlerException( "Error while committing transaction", e );
+            } finally {
+                close();
             }
         }
 

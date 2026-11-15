@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,14 +46,13 @@ import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
-import org.polypheny.db.adapter.mongodb.MongoPlugin.MongoStore;
+import org.polypheny.db.adapter.mongodb.store.MongoStore;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.util.Pair;
@@ -64,12 +63,12 @@ import org.polypheny.db.util.Pair;
  */
 public interface MongoAlg extends AlgNode {
 
-    void implement( Implementor implementor );
-
     /**
      * Calling convention for algebra operations that occur in MongoDB.
      */
     Convention CONVENTION = MongoConvention.INSTANCE;//new Convention.Impl( "MONGO", MongoAlg.class );
+
+    void implement( Implementor implementor );
 
 
     /**
@@ -78,35 +77,38 @@ public interface MongoAlg extends AlgNode {
     class Implementor extends AlgShuttleImpl implements Serializable {
 
         public final List<Pair<String, String>> list = new ArrayList<>();
+        /**
+         * This list will be used to create necessary indexes when performing $near,
+         * $nearSphere or a $geoNear query. It contains the index and index type,
+         * separated by a newline character (because that can't be part of a field name).
+         * The index type can be '2d' or '2dsphere' for now.
+         *
+         * List[String] instead of List[Pair[String,String]] because Pair is difficult
+         * to serialize.
+         */
+        public final List<String> indexAndIndexType = new ArrayList<>();
         public List<BsonDocument> operations = new ArrayList<>();
-
         public BsonArray filter = new BsonArray();
         @Getter
         @Setter
         public GridFSBucket bucket;
         public List<BsonDocument> preProjections = new ArrayList<>();
-
         // holds the logical names which where used in a DQL
         // and need to be projected beforehand from their physical names
         public Set<String> physicalMapper = new TreeSet<>();
         public boolean onlyOne = false;
         public boolean isDocumentUpdate = false;
-
-        @Getter
-        private MongoEntity entity;
-
-        @Getter
-        @Setter
-        private AlgDataType tupleType;
-
         @Setter
         @Getter
         public boolean hasProject = false;
-
+        @Getter
+        private MongoEntity entity;
+        @Getter
+        @Setter
+        private AlgDataType tupleType;
         @Setter
         @Getter
         private boolean isDML;
-
         @Getter
         @Setter
         private Operation operation;
@@ -122,6 +124,11 @@ public interface MongoAlg extends AlgNode {
         }
 
 
+        public static String toJson( BsonDocument doc ) {
+            return doc.toJson( JsonWriterSettings.builder().outputMode( JsonMode.EXTENDED ).build() );
+        }
+
+
         public void add( String findOp, String aggOp ) {
             list.add( Pair.of( findOp, aggOp ) );
         }
@@ -134,7 +141,7 @@ public interface MongoAlg extends AlgNode {
 
 
         public String getPhysicalName( String name ) {
-            MongoEntity mongoEntity = entity.physical.unwrap( PhysicalEntity.class ).orElseThrow().unwrap( MongoEntity.class ).orElseThrow();
+            MongoEntity mongoEntity = entity.physical.unwrap( MongoEntity.class ).orElseThrow();
             int index = mongoEntity.fields.stream().map( c -> c.logicalName ).toList().indexOf( name );
             if ( index != -1 ) {
                 return MongoStore.getPhysicalColumnName( mongoEntity.fields.stream().map( c -> c.id ).toList().get( index ) );
@@ -175,11 +182,6 @@ public interface MongoAlg extends AlgNode {
 
         public List<String> getOperations() {
             return operations.stream().map( Implementor::toJson ).toList();
-        }
-
-
-        public static String toJson( BsonDocument doc ) {
-            return doc.toJson( JsonWriterSettings.builder().outputMode( JsonMode.EXTENDED ).build() );
         }
 
 

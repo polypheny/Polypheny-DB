@@ -142,4 +142,10 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
         return List.of( getRelationalEquivalent() );
     }
 
+
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }

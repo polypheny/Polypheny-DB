@@ -63,10 +63,6 @@ public class IdBuilder {
 
     @Serialize
     @JsonProperty
-    public AtomicLong adapterTemplateId;
-
-    @Serialize
-    @JsonProperty
     public AtomicLong interfaceId;
 
     @Serialize
@@ -111,7 +107,6 @@ public class IdBuilder {
                 new AtomicLong( 0 ),
                 new AtomicLong( 0 ),
                 new AtomicLong( 0 ),
-                new AtomicLong( 0 ),
                 new AtomicLong( 0 ) );
     }
 
@@ -126,7 +121,6 @@ public class IdBuilder {
             @Deserialize("indexId") AtomicLong indexId,
             @Deserialize("keyId") AtomicLong keyId,
             @Deserialize("adapterId") AtomicLong adapterId,
-            @Deserialize("adapterTemplateId") AtomicLong adapterTemplateId,
             @Deserialize("interfaceId") AtomicLong interfaceId,
             @Deserialize("constraintId") AtomicLong constraintId,
             @Deserialize("groupId") AtomicLong groupId,
@@ -144,7 +138,6 @@ public class IdBuilder {
         this.constraintId = constraintId;
 
         this.adapterId = adapterId;
-        this.adapterTemplateId = adapterTemplateId;
         this.interfaceId = interfaceId;
         this.groupId = groupId;
         this.partitionId = partitionId;
@@ -222,11 +215,6 @@ public class IdBuilder {
     }
 
 
-    public long getNewAdapterTemplateId() {
-        return adapterTemplateId.getAndIncrement();
-    }
-
-
     public synchronized void restore( IdBuilder idBuilder ) {
         this.snapshotId.set( idBuilder.snapshotId.longValue() );
         this.entityId.set( idBuilder.entityId.longValue() );
@@ -240,7 +228,6 @@ public class IdBuilder {
         this.constraintId.set( idBuilder.constraintId.longValue() );
 
         this.adapterId.set( idBuilder.adapterId.longValue() );
-        this.adapterTemplateId.set( idBuilder.adapterTemplateId.longValue() );
         this.interfaceId.set( idBuilder.interfaceId.longValue() );
         this.groupId.set( idBuilder.groupId.longValue() );
         this.partitionId.set( idBuilder.partitionId.longValue() );

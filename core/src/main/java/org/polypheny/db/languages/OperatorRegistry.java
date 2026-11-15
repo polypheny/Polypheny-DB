@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.nodes.BinaryOperator;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.util.Pair;
@@ -36,6 +38,11 @@ import org.polypheny.db.util.Pair;
 public class OperatorRegistry {
 
     private static final Map<QueryLanguage, Map<OperatorName, Operator>> registry = new HashMap<>();
+
+    // Maps an Operator to a unique name (either op.getName() or op.getOperatorName().name() in case of colliding names within a QueryLanguage.
+    // Exception: the operator with the shortest OperatorName can use op.getName()
+    private static Map<Operator, String> uniqueNames = null;
+    private static Map<Pair<QueryLanguage, String>, Operator> nameLookup = null; // maps a query language and uniqueName to the operator
 
 
     static {
@@ -174,6 +181,94 @@ public class OperatorRegistry {
 
     public static void remove( QueryLanguage language ) {
         registry.remove( language );
+    }
+
+
+    /**
+     * Returns the operator registered with a QueryLanguage of the given DataModel
+     * and name equal the unique name registered in uniqueNames.
+     * Calling this method the first time creates a lookup table based on the current state of the registry.
+     * If new operators are registered after that point, they cannot be found.
+     *
+     * @param model the data model of the query language the operator was registered with
+     * @param name the unique name of the operator (either op.getName() or op.getOperatorName().name() in case of collisions)
+     * @return the specified operator or {@code null} if no such operator is registered.
+     */
+    public static Operator getFromUniqueName( DataModel model, String name ) {
+        if ( nameLookup == null ) {
+            buildNameLookup();
+        }
+        QueryLanguage ql = switch ( model ) {
+            case RELATIONAL -> null;
+            case DOCUMENT -> QueryLanguage.from( "mongo" );
+            case GRAPH -> QueryLanguage.from( "cypher" );
+        };
+        return nameLookup.get( Pair.of( ql, name ) );
+    }
+
+
+    /**
+     * Returns the unique name (within its query language) the given operator.
+     * By default, the unique name is equal to op.getName(). In case multiple operators have the same name, all but one have to change their unique name to op.getOperatorName().name().
+     * The operator that can keep using op.getName() is the one whose OperatorName is the shortest (and first in lexical order in case of same length).
+     * Example: OperatorName.PLUS has unique name "+", while OperatorName.DATETIME_PLUS has unique name "DATETIME_PLUS" (since PLUS is shorter than DATETIME_PLUS).
+     *
+     * Calling this method the first time creates a lookup table based on the current state of the registry.
+     * If new operators are registered after that point, they cannot be found.
+     *
+     * @param op the operator
+     * @return the unique name of the specified operator (either equal to op.getName() or op.getOperatorName().name() in case of collisions)
+     */
+    public static String getUniqueName( Operator op ) {
+        if ( uniqueNames == null ) {
+            buildNameLookup();
+        }
+        return uniqueNames.get( op );
+    }
+
+
+    private static void buildNameLookup() {
+        Map<Pair<QueryLanguage, String>, Operator> nameLookup = new HashMap<>();
+        Map<Operator, String> uniqueNames = new HashMap<>();
+        for ( Map.Entry<Pair<QueryLanguage, OperatorName>, Operator> entry : OperatorRegistry.getAllOperators().entrySet() ) {
+            QueryLanguage ql = entry.getKey().left;
+            String opName = entry.getKey().right.name(); // this is not the same as op.getName()!
+            Operator op = entry.getValue();
+
+            if ( op != null ) {
+                String uniqueName = op.getName();
+                if ( uniqueName.isEmpty() ) {
+                    uniqueName = op.getOperatorName().name();
+                }
+
+                Operator prevOp = nameLookup.get( Pair.of( ql, uniqueName ) );
+                if ( prevOp != null ) {
+                    String prevOpName = prevOp.getOperatorName().name();
+                    int d = prevOpName.length() - opName.length();
+                    if ( d == 0 && prevOpName.compareTo( opName ) == 0 ) {
+                        throw new GenericRuntimeException( "Cannot have two operators registered for the same query language and OperatorName." );
+                    }
+
+                    if ( d > 0 || (d == 0 && prevOpName.compareTo( opName ) > 0) ) {
+                        // found shorter name -> new operator takes priority and can use op.getName() as uniqueName.
+                        nameLookup.put( Pair.of( ql, prevOpName ), prevOp );
+                        uniqueNames.put( prevOp, prevOpName );
+                    } else {
+                        uniqueName = opName;
+                    }
+                }
+                nameLookup.put( Pair.of( ql, uniqueName ), op );
+                uniqueNames.put( op, uniqueName );
+            }
+        }
+
+        // prevent overwriting in case lookups are created concurrently
+        if ( OperatorRegistry.nameLookup == null ) {
+            OperatorRegistry.nameLookup = nameLookup;
+        }
+        if ( OperatorRegistry.uniqueNames == null ) {
+            OperatorRegistry.uniqueNames = uniqueNames;
+        }
     }
 
 }

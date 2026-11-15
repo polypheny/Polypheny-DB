@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,16 +19,15 @@ package org.polypheny.db.prisminterface.utils;
 import java.util.List;
 import org.polypheny.db.prisminterface.statements.PIPreparedStatement;
 import org.polypheny.db.prisminterface.statements.PIStatement;
-import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.prism.ColumnMeta;
 import org.polypheny.prism.DocumentFrame;
 import org.polypheny.prism.Frame;
-import org.polypheny.prism.GraphElement;
 import org.polypheny.prism.GraphFrame;
 import org.polypheny.prism.PreparedStatementSignature;
 import org.polypheny.prism.ProtoDocument;
-import org.polypheny.prism.ProtoPolyType;
 import org.polypheny.prism.RelationalFrame;
 import org.polypheny.prism.Row;
 import org.polypheny.prism.StatementBatchResponse;
@@ -76,7 +75,7 @@ public class PrismUtils {
     }
 
 
-    private static Row serializeToRow( List<PolyValue> row ) {
+    public static Row serializeToRow( List<PolyValue> row ) {
         return Row.newBuilder()
                 .addAllValues( PolyValueSerializer.serializeList( row ) )
                 .build();
@@ -85,11 +84,6 @@ public class PrismUtils {
 
     public static List<Row> serializeToRows( List<List<PolyValue>> rows ) {
         return rows.stream().map( PrismUtils::serializeToRow ).toList();
-    }
-
-
-    private static List<GraphElement> serializeToGraphElement( List<List<PolyValue>> data ) {
-        return data.stream().map( e -> PolyValueSerializer.buildProtoGraphElement( e.get( 0 ) ) ).toList();
     }
 
 
@@ -106,6 +100,14 @@ public class PrismUtils {
 
 
     public static Frame buildDocumentFrame( boolean isLast, List<PolyValue> data ) {
+        // ToDo: fix me: update counts are sometimes returned as normal results instead of scalar ones.
+        if ( data.size() == 1 && data.get( 0 ).isLong() ) {
+            data = List.of( new PolyDocument(
+                    new PolyString( "updateCount" ),
+                    data.get( 0 )
+            ) );
+        }
+
         List<ProtoDocument> documents = data.stream()
                 .map( PolyValue::asDocument )
                 .map( PolyValueSerializer::buildProtoDocument )
@@ -120,21 +122,16 @@ public class PrismUtils {
     }
 
 
-    public static Frame buildGraphFrame( boolean isLast, List<List<PolyValue>> data ) {
-        GraphFrame.Builder graphFrameBuilder = GraphFrame.newBuilder();
-        if ( !data.isEmpty() ) {
-            graphFrameBuilder.addAllElement( serializeToGraphElement( data ) );
+    public static Frame buildGraphFrame( boolean isLast, List<List<PolyValue>> rows ) {
+        GraphFrame.Builder graph = GraphFrame.newBuilder();
+        // GraphFrame is a flat sequence. Preserve projection and traversal order within it.
+        for ( List<PolyValue> row : rows ) {
+            row.forEach( value -> PolyValueSerializer.addGraphElements( graph, value ) );
         }
-
         return Frame.newBuilder()
                 .setIsLast( isLast )
-                .setGraphFrame( graphFrameBuilder.build() )
+                .setGraphFrame( graph )
                 .build();
-    }
-
-
-    public static ProtoPolyType getProtoFromPolyType( PolyType polyType ) {
-        return ProtoPolyType.valueOf( polyType.getName() );
     }
 
 }

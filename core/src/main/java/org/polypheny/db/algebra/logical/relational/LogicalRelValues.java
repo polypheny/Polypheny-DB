@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -51,6 +52,7 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.util.Pair;
 
 
 /**
@@ -80,6 +82,12 @@ public class LogicalRelValues extends Values implements RelAlg {
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE )
                 .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.values( mq, rowType, tuples ) );
         return new LogicalRelValues( cluster, traitSet, rowType, tuples );
+    }
+
+
+    public static LogicalRelValues create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        Pair<AlgDataType, ImmutableList<ImmutableList<RexLiteral>>> extracted = extractArgs( args, cluster );
+        return create( cluster, extracted.left, extracted.right );
     }
 
 

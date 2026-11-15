@@ -31,6 +31,7 @@ import org.pf4j.ExtensionPoint;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.LanguageManager;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.transaction.TransactionManager;
 
 
@@ -237,11 +238,11 @@ public abstract class QueryInterface implements Runnable, PropertyChangeListener
     @Override
     public void propertyChange( PropertyChangeEvent evt ) {
         if ( evt.getPropertyName().equals( "language" ) ) {
-            languageChange();
+            languageChange( (QueryLanguage) evt.getNewValue() );
         }
     }
 
 
-    public abstract void languageChange();
+    public abstract void languageChange( QueryLanguage language );
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,8 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Union;
+import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.util.BuiltInMethod;
@@ -53,6 +55,11 @@ public class EnumerableUnion extends Union implements EnumerableAlg {
 
     public EnumerableUnion( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
         super( cluster, traitSet, inputs, all );
+    }
+
+
+    public static EnumerableUnion create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        return new EnumerableUnion( cluster, cluster.traitSet(), children, args.getArg( "all", BooleanArg.class ).toBool() );
     }
 
 

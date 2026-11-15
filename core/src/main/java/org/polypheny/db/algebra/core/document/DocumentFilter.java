@@ -87,4 +87,10 @@ public abstract class DocumentFilter extends SingleAlg implements DocumentAlg {
         return super.explainTerms( pw ).item( "condition", condition );
     }
 
+
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
 }

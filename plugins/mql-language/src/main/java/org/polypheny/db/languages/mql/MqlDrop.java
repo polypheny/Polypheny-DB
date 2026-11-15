@@ -17,6 +17,7 @@
 package org.polypheny.db.languages.mql;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
@@ -29,6 +30,9 @@ import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockableUtils;
 
 
 public class MqlDrop extends MqlCollectionStatement implements ExecutableStatement {
@@ -68,6 +72,22 @@ public class MqlDrop extends MqlCollectionStatement implements ExecutableStateme
     @Override
     public @Nullable String getEntity() {
         return getCollection();
+    }
+
+
+    @Override
+    public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
+        long namespaceId = parsedQueryContext.getNamespaceId();
+        Optional<LogicalNamespace> optionalNamespace = context.getSnapshot().getNamespace( namespaceId );
+        if ( optionalNamespace.isEmpty() ) {
+            return Map.of();
+        }
+        LogicalNamespace namespace = optionalNamespace.get();
+        List<LogicalCollection> collections = context.getSnapshot().doc().getCollections( namespace.id, new Pattern( collection ) );
+        if ( collections.size() != 1 ) {
+            return Map.of();
+        }
+        return LockableUtils.getMapOfLockableFromObject( collections.get( 0 ), LockType.EXCLUSIVE );
     }
 
 }

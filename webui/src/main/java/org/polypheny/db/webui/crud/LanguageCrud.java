@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,13 @@ import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -52,7 +56,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
-import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationObserver;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
@@ -60,18 +63,23 @@ import org.polypheny.db.processing.ImplementationContext;
 import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.transaction.PolyXid;
+import org.polypheny.db.transaction.QueryAnalyzer;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
+import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.util.RunMode;
 import org.polypheny.db.webui.Crud;
+import org.polypheny.db.webui.SourceQueryReferenceDetector;
 import org.polypheny.db.webui.TemporalFileManager;
 import org.polypheny.db.webui.models.IndexModel;
 import org.polypheny.db.webui.models.PlacementModel;
@@ -95,9 +103,8 @@ import org.polypheny.db.webui.models.results.Result.ResultBuilder;
 public class LanguageCrud {
 
 
-    public static Crud crud;
-
     protected final static Map<QueryLanguage, TriFunction<ExecutedContext, UIRequest, Statement, ResultBuilder<?, ?, ?, ?>>> REGISTER = new HashMap<>();
+    public static Crud crud;
 
 
     public LanguageCrud( Crud crud ) {
@@ -143,12 +150,30 @@ public class LanguageCrud {
 
 
     public static List<? extends Result<?, ?>> anyQueryResult( QueryContext context, UIRequest request ) {
-        context = context.getLanguage().limitRemover().apply( context );
-        Transaction transaction = !context.getTransactions().isEmpty() ? context.getTransactions().get( 0 ) : context.getTransactionManager().startTransaction( context.getUserId(), Catalog.defaultNamespaceId, context.isAnalysed(), context.getOrigin() );
-        transaction.setUseCache( context.isUsesCache() );
-        attachAnalyzerIfSpecified( context, crud, transaction );
+        Optional<RelationalResult> rejectedSynchronizedSourceQuery = rejectSynchronizedSourceQuery( context, request );
+        if ( rejectedSynchronizedSourceQuery.isPresent() ) {
+            return List.of( rejectedSynchronizedSourceQuery.get() );
+        }
 
-        List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context.addTransaction( transaction ) );
+        context = context.getLanguage().limitRemover().apply( context );
+        Transaction transaction;
+        QueryAnalyzer queryAnalyzer = null;
+        if ( context.getTransactions().isEmpty() ) {
+            if ( context.isAnalysed() ) {
+                queryAnalyzer = new QueryAnalyzer();
+            }
+            transaction = context.getTransactionManager().startTransaction( context.getUserId(), Catalog.defaultNamespaceId, queryAnalyzer, context.getOrigin() );
+        } else {
+            transaction = context.getTransactions().get( 0 );
+            queryAnalyzer = transaction.getQueryAnalyzer();
+        }
+        transaction.setUseCache( context.isUsesCache() );
+        attachAnalyzerIfSpecified( queryAnalyzer, crud );
+
+        if ( context.getTransactions().isEmpty() ) {
+            context.addTransaction( transaction );
+        }
+        List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context );
 
         List<Result<?, ?>> results = new ArrayList<>();
         TriFunction<ExecutedContext, UIRequest, Statement, ResultBuilder<?, ?, ?, ?>> builder = REGISTER.get( context.getLanguage() );
@@ -156,56 +181,173 @@ public class LanguageCrud {
         for ( ExecutedContext executedContext : executedContexts ) {
             if ( executedContext.getException().isPresent() ) {
                 log.warn( "Caught exception", executedContext.getException().get() );
-                return List.of( buildErrorResult( transaction, executedContext, executedContext.getException().get() ).build() );
+                results.add( buildErrorResult( executedContext.getStatement().getTransaction(), executedContext, executedContext.getException().get() ).build() );
+                break;
             }
 
             results.add( builder.apply( executedContext, request, executedContext.getStatement() ).build() );
         }
 
-        commitAndFinish( executedContexts, transaction.getQueryAnalyzer(), results, executedContexts.stream().map( ExecutedContext::getExecutionTime ).reduce( Long::sum ).orElse( -1L ) );
+        commitAndFinish( executedContexts, queryAnalyzer, results, executedContexts.stream().map( ExecutedContext::getExecutionTime ).reduce( Long::sum ).orElse( -1L ) );
 
         return results;
     }
 
 
-    public static void commitAndFinish( List<ExecutedContext> executedContexts, InformationManager queryAnalyzer, List<Result<?, ?>> results, long executionTime ) {
-        String commitStatus = "Error on starting committing";
+    private static Optional<RelationalResult> rejectSynchronizedSourceQuery( QueryContext context, UIRequest request ) {
+        boolean isQueryRequest = request instanceof QueryRequest;
+        boolean isEntityRequest = request.entityId != null;
+        if ( !isQueryRequest && !isEntityRequest ) {
+            return Optional.empty();
+        }
+
+        Optional<LogicalTable> referencedSource = getReferencedSynchronizedSource( context.getQuery(), context.getLanguage().serializedName(), context.getNamespaceId(), request.entityId );
+        if ( referencedSource.isEmpty() ) {
+            return rejectSynchronizedSourceCollectionQuery( context, request );
+        }
+
+        LogicalTable source = referencedSource.get();
+        String sourceName = getFullTableName( source );
+        String synchronizedName = Catalog.snapshot().rel().getTables( (org.polypheny.db.catalog.logistic.Pattern) null, null ).stream()
+                .filter( table -> Objects.equals( table.synchronizedSourceEntityId, source.id ) )
+                .findFirst()
+                .map( LanguageCrud::getFullTableName )
+                .orElse( "its synchronized materialization" );
+
+        return Optional.of( RelationalResult.builder()
+                .error( "Queries against source table " + sourceName + " are disabled because it is materialized as " + synchronizedName + ". Query the synchronized materialization instead." )
+                .query( context.getQuery() )
+                .build() );
+    }
+
+
+    private static Optional<RelationalResult> rejectSynchronizedSourceCollectionQuery( QueryContext context, UIRequest request ) {
+        Optional<LogicalCollection> referencedSource = getReferencedSynchronizedSourceCollection( context.getQuery(), context.getLanguage().serializedName(), context.getNamespaceId(), request.entityId );
+        if ( referencedSource.isEmpty() ) {
+            return Optional.empty();
+        }
+
+        LogicalCollection source = referencedSource.get();
+        String sourceName = getFullCollectionName( source );
+        String synchronizedName = Catalog.snapshot().doc().getCollections( source.namespaceId, null ).stream()
+                .filter( collection -> isSynchronizedMaterializationForSourceCollection( source, collection ) )
+                .findFirst()
+                .map( LanguageCrud::getFullCollectionName )
+                .orElse( "its synchronized materialization" );
+
+        return Optional.of( RelationalResult.builder()
+                .error( "Queries against source collection " + sourceName + " are disabled because it is materialized as " + synchronizedName + ". Query the synchronized materialization instead." )
+                .query( context.getQuery() )
+                .build() );
+    }
+
+
+    private static Optional<LogicalCollection> getReferencedSynchronizedSourceCollection( String query, String language, long namespaceId, Long entityId ) {
+        List<LogicalCollection> collections = Catalog.snapshot().doc().getCollections( (org.polypheny.db.catalog.logistic.Pattern) null, null );
+        Set<Long> synchronizedSourceIds = collections.stream()
+                .map( collection -> collection.synchronizedSourceEntityId )
+                .filter( Objects::nonNull )
+                .collect( Collectors.toSet() );
+
+        return collections.stream()
+                .filter( collection -> collection.entityType == EntityType.SOURCE )
+                .filter( collection -> synchronizedSourceIds.contains( collection.id ) )
+                .filter( collection -> Objects.equals( entityId, collection.id ) || SourceQueryReferenceDetector.referencesCollection( query, language, collection, namespaceId, Catalog.snapshot() ) )
+                .findFirst();
+    }
+
+
+    private static boolean isSynchronizedMaterializationForSourceCollection( LogicalCollection source, LogicalCollection collection ) {
+        return Objects.equals( collection.synchronizedSourceEntityId, source.id );
+    }
+
+
+    private static Optional<LogicalTable> getReferencedSynchronizedSource( String query, String language, long namespaceId, Long entityId ) {
+        List<LogicalTable> tables = Catalog.snapshot().rel().getTables( (org.polypheny.db.catalog.logistic.Pattern) null, null );
+        Set<Long> synchronizedSourceIds = tables.stream()
+                .map( table -> table.synchronizedSourceEntityId )
+                .filter( Objects::nonNull )
+                .collect( Collectors.toSet() );
+
+        return tables.stream()
+                .filter( table -> table.entityType == EntityType.SOURCE )
+                .filter( table -> synchronizedSourceIds.contains( table.id ) )
+                .filter( table -> Objects.equals( entityId, table.id ) || SourceQueryReferenceDetector.referencesTable( query, language, table, namespaceId, Catalog.snapshot() ) )
+                .findFirst();
+    }
+
+
+    private static String getFullTableName( LogicalTable table ) {
+        return Catalog.snapshot().getNamespace( table.namespaceId )
+                .map( namespace -> namespace.name + "." + table.name )
+                .orElse( table.name );
+    }
+
+
+    private static String getFullCollectionName( LogicalCollection collection ) {
+        return Catalog.snapshot().getNamespace( collection.namespaceId )
+                .map( namespace -> namespace.name + "." + collection.name )
+                .orElse( collection.name );
+    }
+
+
+    public static void commitAndFinish( List<ExecutedContext> executedContexts, QueryAnalyzer queryAnalyzer, List<Result<?, ?>> results, long executionTime ) {
+        int txIdx = -1;
+        Set<String> abortedXids = new HashSet<>();
         for ( Transaction transaction : executedContexts.stream().flatMap( c -> c.getQuery().getTransactions().stream() ).toList() ) {
             // this has a lot of unnecessary no-op commits atm
-            try {
-                transaction.commit();
-                commitStatus = "Committed";
-            } catch ( TransactionException e ) {
-                log.error( "Caught exception", e );
-                results.add( RelationalResult.builder().error( e.getMessage() ).build() );
+            String commitStatus;
+            String xid = transaction.getXid().toString();
+            if ( transaction.isRolledBack() ) {
+                commitStatus = "Rolled back";
+            } else {
                 try {
-                    transaction.rollback();
-                    commitStatus = "Rolled back";
-                } catch ( TransactionException ex ) {
-                    log.error( "Caught exception while rollback", e );
-                    commitStatus = "Error while rolling back";
+                    transaction.commit();
+                    commitStatus = "Committed";
+                } catch ( TransactionException e ) {
+                    results.add( RelationalResult.builder().error( e.getMessage() ).xid( xid ).build() );
+                    try {
+                        transaction.rollback( e.getMessage() );
+                        commitStatus = "Rolled back";
+                    } catch ( TransactionException ex ) {
+                        log.error( "Caught exception while rollback", e );
+                        commitStatus = "Error while rolling back";
+                    }
                 }
+            }
+            if ( transaction.isAnalyze() ) {
+                transaction.getAnalyzer().registerFinished( commitStatus );
+            }
+
+            if ( transaction.isRolledBack() ) {
+                abortedXids.add( xid );
             }
         }
 
+        boolean lastRolledBack = false;
+        for ( Result<?, ?> result : results ) {
+            if ( result.xid != null ) {
+                lastRolledBack = abortedXids.contains( result.xid );
+            }
+            result.isRolledBack = lastRolledBack;
+        }
+
         if ( queryAnalyzer != null ) {
-            Crud.attachQueryAnalyzer( queryAnalyzer, executionTime, commitStatus, results.size() );
+            queryAnalyzer.registerOverview( executionTime, results.size() );
         }
     }
 
 
-    public static void attachAnalyzerIfSpecified( QueryContext context, InformationObserver observer, Transaction transaction ) {
-        // This is not a nice solution. In case of a sql script with auto commit only the first statement is analyzed
-        // and in case of auto commit of, the information is overwritten
-        if ( context.isAnalysed() ) {
-            transaction.getQueryAnalyzer().observe( observer );
+    public static void attachAnalyzerIfSpecified( QueryAnalyzer queryAnalyzer, InformationObserver observer ) {
+        if ( queryAnalyzer != null ) {
+            queryAnalyzer.observe( observer );
         }
     }
 
 
     public static Pair<@Nullable PolyXid, @NotNull PolyGraph> getGraph( String namespace, TransactionManager manager, Session session ) {
         QueryLanguage language = QueryLanguage.from( "cypher" );
-        Transaction transaction = Crud.getTransaction( false, false, manager, Catalog.defaultUserId, Catalog.defaultNamespaceId, "getGraph" );
+        Transaction transaction = Crud.getTransaction( false, manager, Catalog.defaultUserId, Catalog.defaultNamespaceId, "getGraph" );
         ImplementationContext context = LanguageManager.getINSTANCE().anyPrepareQuery(
                 QueryContext.builder()
                         .query( "MATCH (*) RETURN *" )
@@ -226,7 +368,7 @@ public class LanguageCrud {
         try {
             iterator.close();
             transaction.commit();
-        } catch ( Exception | TransactionException e ) {
+        } catch ( Exception e ) {
             throw new GenericRuntimeException( "Error while committing graph retrieval query." );
         }
 
@@ -239,19 +381,42 @@ public class LanguageCrud {
     }
 
 
+    public static Pair<PolyXid, PolyGraph> getSubGraph( String name, List<String> nodeIds, TransactionManager transactionManager, Session session ) {
+        if ( nodeIds.isEmpty() ) {
+            return Pair.of( null, new PolyGraph( PolyMap.of( new HashMap<>() ), PolyMap.of( new HashMap<>() ) ) );
+        }
+        Pair<PolyXid, PolyGraph> graph = getGraph( name, transactionManager, session );
+        if ( graph.left == null ) {
+            return graph;
+        }
+        PolyMap<PolyString, PolyNode> nodes = PolyMap.of( new HashMap<>() );
+        PolyMap<PolyString, PolyEdge> edges = PolyMap.of( new HashMap<>() );
+        Set<PolyString> requestedNodeIds = nodeIds.stream().map( PolyString::of ).collect( Collectors.toSet() );
+        for ( Entry<PolyString, PolyNode> entry : graph.right.getNodes().entrySet() ) {
+            if ( requestedNodeIds.contains( entry.getKey() ) ) {
+                nodes.put( entry.getKey(), entry.getValue() );
+            }
+        }
+        for ( Entry<PolyString, PolyEdge> entry : graph.right.getEdges().entrySet() ) {
+            PolyEdge edge = entry.getValue();
+            if ( requestedNodeIds.contains( edge.left ) && requestedNodeIds.contains( edge.right ) ) {
+                edges.put( entry.getKey(), edge );
+            }
+        }
+        return Pair.of( graph.left, new PolyGraph( nodes, edges ) );
+    }
+
+
     public static ResultBuilder<?, ?, ?, ?> buildErrorResult( Transaction transaction, ExecutedContext context, Throwable t ) {
+        String message = t == null ? "" : Objects.requireNonNullElse( t.getMessage(), t.getClass().getName() );
         ResultBuilder<?, ?, ?, ?> result = switch ( context.getQuery().getLanguage().dataModel() ) {
-            case RELATIONAL -> RelationalResult.builder().error( t == null ? null : t.getMessage() ).exception( t ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
-            case DOCUMENT -> DocResult.builder().error( t == null ? null : t.getMessage() ).exception( t ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
-            case GRAPH -> GraphResult.builder().error( t == null ? null : t.getMessage() ).exception( t ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
+            case RELATIONAL -> RelationalResult.builder().error( message ).exception( t ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
+            case DOCUMENT -> DocResult.builder().error( message ).exception( t ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
+            case GRAPH -> GraphResult.builder().error( message ).exception( t ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
         };
 
         if ( transaction.isActive() ) {
-            try {
-                transaction.rollback();
-            } catch ( TransactionException e ) {
-                throw new GenericRuntimeException( "Error while rolling back the failed transaction." );
-            }
+            transaction.rollback( t != null ? message : "Unknown reason during error building." );
         }
 
         return result;
@@ -411,9 +576,11 @@ public class LanguageCrud {
 
             boolean hasMoreRows = context.getIterator().hasMoreRows();
 
+            String[] normalizedData = data.stream().map( d -> d.get( 0 ).toJson() ).toArray( String[]::new );
+
             return DocResult.builder()
                     .header( new FieldDefinition[]{ FieldDefinition.builder().name( "Document" ).dataType( DataModel.DOCUMENT.name() ).build() } )
-                    .data( data.stream().map( d -> d.get( 0 ).toJson() ).toArray( String[]::new ) )
+                    .data( normalizedData )
                     .query( context.getQuery().getQuery() )
                     .language( context.getQuery().getLanguage() )
                     .queryType( QueryType.from( context.getImplementation().getKind() ) )
@@ -536,4 +703,3 @@ public class LanguageCrud {
     }
 
 }
-

@@ -28,10 +28,9 @@ import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.languages.QueryLanguage;
-import org.polypheny.db.prisminterface.metaRetrieval.DbMetaRetriever;
-import org.polypheny.db.prisminterface.metaRetrieval.PIClientInfoProperties;
 import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
 import org.polypheny.db.prisminterface.statements.PIPreparedIndexedStatement;
 import org.polypheny.db.prisminterface.statements.PIPreparedNamedStatement;
@@ -46,6 +45,7 @@ import org.polypheny.db.prisminterface.utils.VersionUtils;
 import org.polypheny.db.sql.language.SqlJdbcFunctionCall;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.RunMode;
 import org.polypheny.db.util.Util;
 import org.polypheny.prism.ClientInfoProperties;
@@ -168,22 +168,18 @@ class PIService {
     }
 
 
-    private Response handleRequest( Request req ) {
+    private Response handleRequest( Request req ) throws IOException {
         Response r;
         try {
             r = handleMessage( req );
         } catch ( Throwable t ) {
-            if ( Catalog.mode == RunMode.BENCHMARK ) {
+            if ( Catalog.mode == RunMode.BENCHMARK && !(t instanceof DeadlockException) ) {
                 log.error( "Request failed: ", t );
             }
             r = createErrorResponse( req.getId(), Objects.requireNonNullElse( t.getMessage(), t.getClass().getSimpleName() ) );
         }
-        try {
-            sendOneMessage( r );
-            return r;
-        } catch ( IOException e ) {
-            throw new GenericRuntimeException( e );
-        }
+        sendOneMessage( r );
+        return r;
     }
 
 
@@ -214,15 +210,17 @@ class PIService {
 
 
     private void acceptLoop() {
+        String reason = null;
         try {
             handleMessages();
         } catch ( Throwable e ) {
-            if ( !(e instanceof EOFException) ) {
+            if ( !(e instanceof EOFException) && !e.getMessage().equals( "Broken pipe" ) ) {
                 throw new GenericRuntimeException( e );
             }
+            reason = e.getMessage();
         } finally {
             if ( uuid != null ) {
-                clientManager.unregisterConnection( clientManager.getClient( uuid ) );
+                clientManager.unregisterConnection( clientManager.getClient( uuid ), reason );
             }
             Util.closeNoThrow( con );
         }
@@ -235,11 +233,16 @@ class PIService {
 
 
     private Request readOneMessage( BlockingQueue<Optional<byte[]>> waiting ) throws IOException {
-        try {
-            return Request.parseFrom( waiting.take().orElseThrow( EOFException::new ) );
-        } catch ( InterruptedException e ) {
-            throw new IOException( e );
+        byte[] msg;
+        while ( true ) {
+            try {
+                msg = waiting.take().orElseThrow( EOFException::new );
+                break;
+            } catch ( InterruptedException e ) {
+                // retry
+            }
         }
+        return Request.parseFrom( msg );
     }
 
 
@@ -247,6 +250,7 @@ class PIService {
         if ( uuid == null || clientManager.getClient( uuid ) == null ) {
             throw new IllegalStateException( "Clients must be authenticated before sending any messages" );
         }
+
         return switch ( req.getTypeCase() ) {
             case DBMS_VERSION_REQUEST -> getDbmsVersion( req.getDbmsVersionRequest(), new ResponseMaker<>( req, "dbms_version_response" ) );
             case DEFAULT_NAMESPACE_REQUEST -> getDefaultNamespace( req.getDefaultNamespaceRequest(), new ResponseMaker<>( req, "default_namespace_response" ) );
@@ -307,7 +311,7 @@ class PIService {
 
     private Response disconnect( DisconnectRequest request, ResponseMaker<DisconnectResponse> responseObserver ) {
         PIClient client = getClient();
-        clientManager.unregisterConnection( client );
+        clientManager.unregisterConnection( client, null );
         uuid = null;
         return responseObserver.makeResponse( DisconnectResponse.newBuilder().build() );
     }
@@ -354,7 +358,7 @@ class PIService {
 
     private Response searchEntities( EntitiesRequest request, ResponseMaker<EntitiesResponse> responseObserver ) {
         String entityPattern = request.hasEntityPattern() ? request.getEntityPattern() : null;
-        return responseObserver.makeResponse( DbMetaRetriever.searchEntities( request.getNamespaceName(), entityPattern ) );
+        return responseObserver.makeResponse( DbMetaRetriever.searchEntities( request.getNamespaceName(), entityPattern, getClient() ) );
     }
 
 
@@ -488,7 +492,7 @@ class PIService {
 
     private Response rollbackTransaction( RollbackRequest request, ResponseMaker<RollbackResponse> responseStreamObserver ) {
         PIClient client = getClient();
-        client.rollbackCurrentTransaction();
+        client.rollbackCurrentTransaction( null );
         return responseStreamObserver.makeResponse( RollbackResponse.newBuilder().build() );
     }
 
@@ -503,7 +507,11 @@ class PIService {
     private Response closeResult( CloseResultRequest request, ResponseMaker<CloseResultResponse> responseObserver ) {
         PIClient client = getClient();
         PIStatement statement = client.getStatementManager().getStatement( request.getStatementId() );
-        statement.closeResults();
+        if ( statement.getLanguage().dataModel() == DataModel.GRAPH ) {
+            statement.closeResultsAndCommitIfAuto();
+        } else {
+            statement.closeResults();
+        }
         return responseObserver.makeResponse( CloseResultResponse.newBuilder().build() );
     }
 

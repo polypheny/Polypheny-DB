@@ -16,6 +16,7 @@
 
 package org.polypheny.db.cypher.clause;
 
+import java.util.Map;
 import java.util.Optional;
 import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherExpression;
@@ -24,6 +25,8 @@ import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
 
 
 @Getter
@@ -53,6 +56,12 @@ public class CypherUseClause extends CypherClause implements ExecutableStatement
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
 
+    }
+
+
+    @Override
+    public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
+        return Map.of();
     }
 
 

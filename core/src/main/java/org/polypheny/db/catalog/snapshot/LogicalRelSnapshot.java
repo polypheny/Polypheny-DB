@@ -21,6 +21,7 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 import lombok.NonNull;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
@@ -225,6 +226,17 @@ public interface LogicalRelSnapshot {
     Optional<LogicalConstraint> getConstraint( long tableId, String constraintName );
 
     /**
+     * Returns the constraint with the specified name in the specified table.
+     *
+     * @param tableId The id of the table
+     * @param id The id of the constraint
+     * @return The constraint
+     */
+    @NonNull
+    Optional<LogicalConstraint> getConstraint( long tableId, long id );
+
+
+    /**
      * Return the foreign key with the specified name from the specified table
      *
      * @param tableId The id of the table
@@ -288,6 +300,7 @@ public interface LogicalRelSnapshot {
 
 
     AlgNode getNodeInfo( long id );
+    AlgCollation getCollationInfo( long id );
 
     List<LogicalView> getConnectedViews( long id );
 

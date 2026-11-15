@@ -17,21 +17,28 @@
 package org.polypheny.db.transaction;
 
 
+import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.index.IndexManager;
@@ -45,10 +52,9 @@ import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalKey.EnforcementTime;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.catalog.util.ConstraintCondition;
 import org.polypheny.db.config.RuntimeConfig;
-import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.monitoring.events.StatementEvent;
@@ -58,7 +64,10 @@ import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.processing.DataMigratorImpl;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryProcessor;
+import org.polypheny.db.transaction.QueryAnalyzer.TransactionAnalyzer;
+import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.view.MaterializedViewManager;
 
@@ -78,6 +87,9 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     private final AtomicBoolean cancelFlag = new AtomicBoolean();
 
     @Getter
+    private boolean isRolledBack = false;
+
+    @Getter
     private final LogicalUser user;
     @Getter
     private final LogicalNamespace defaultNamespace;
@@ -90,9 +102,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     @Getter
     private final MultimediaFlavor flavor;
 
-    @Getter
-    @Setter
-    private boolean analyze;
+    private final TransactionAnalyzer analyzer; // wraps the queryAnalyzer with this transaction context
 
     private final List<Statement> statements = new ArrayList<>();
 
@@ -104,7 +114,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     private final Map<Long, List<LogicalConstraint>> entityConstraints = new HashMap<>();
 
     @Getter
-    private final Set<Adapter<?>> involvedAdapters = new ConcurrentSkipListSet<>( ( a, b ) -> Math.toIntExact( a.adapterId - b.adapterId ) );
+    private final Set<Adapter<?>> involvedAdapters = new ConcurrentSkipListSet<>( Comparator.comparingLong( a -> a.adapterId ) );
 
     private boolean useCache = true;
 
@@ -117,13 +127,22 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     private final Catalog catalog = Catalog.getInstance();
 
+    private final Collection<Runnable> commitActions = new ConcurrentLinkedDeque<>();
+
+    private final Collection<ConstraintCondition> commitConstraints = new ConcurrentLinkedDeque<>();
+
+    @Getter
+    private final Set<Lockable> lockedEntities = new HashSet<>();
+
+    private boolean releasePhase = false;
+
 
     TransactionImpl(
             PolyXid xid,
             TransactionManagerImpl transactionManager,
             LogicalUser user,
             LogicalNamespace defaultNamespace,
-            boolean analyze,
+            @Nullable QueryAnalyzer queryAnalyzer,
             String origin,
             MultimediaFlavor flavor ) {
         this.id = TRANSACTION_COUNTER.getAndIncrement();
@@ -131,7 +150,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         this.transactionManager = transactionManager;
         this.user = user;
         this.defaultNamespace = defaultNamespace;
-        this.analyze = analyze;
+        this.analyzer = queryAnalyzer == null ? null : new TransactionAnalyzer( queryAnalyzer, this );
         this.origin = origin;
         this.flavor = flavor;
     }
@@ -144,14 +163,47 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
 
     @Override
-    public InformationManager getQueryAnalyzer() {
-        return InformationManager.getInstance( xid.toString() );
+    public TransactionAnalyzer getAnalyzer() {
+        return analyzer;
+    }
+
+
+    @Override
+    public QueryAnalyzer getQueryAnalyzer() {
+        return analyzer == null ? null : analyzer.getAnalyzer();
     }
 
 
     @Override
     public void registerInvolvedAdapter( Adapter<?> adapter ) {
         involvedAdapters.add( adapter );
+    }
+
+
+    private Pair<@NotNull Boolean, @Nullable String> checkIntegrity() {
+        // check constraints e.g. primary key constraints
+        List<Pair<Boolean, String>> fails = commitConstraints
+                .stream()
+                .map( c -> Pair.of( c.condition().get(), c.errorMessage() ) )
+                .filter( c -> !c.left )
+                .toList();
+
+        if ( !fails.isEmpty() ) {
+            return Pair.of( false, "DDL constraints not met: \n" + fails.stream().map( f -> f.right ).collect( Collectors.joining( ",\n " ) ) + "." );
+        }
+        return Pair.of( true, null );
+    }
+
+
+    @Override
+    public void attachCommitAction( Runnable action ) {
+        commitActions.add( action );
+    }
+
+
+    @Override
+    public void attachCommitConstraint( Supplier<Boolean> constraintChecker, String description ) {
+        commitConstraints.add( new ConstraintCondition( constraintChecker, description ) );
     }
 
 
@@ -162,13 +214,14 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             return;
         }
 
-        Pair<Boolean, String> isValid = catalog.checkIntegrity();
+        Pair<Boolean, String> isValid = checkIntegrity();
         if ( !isValid.left ) {
+            rollback( "Constraint violation" );
             throw new TransactionException( isValid.right + "\nThere are violated constraints, the transaction was rolled back!" );
         }
 
         // physical changes
-        catalog.executeCommitActions();
+        commitActions.forEach( Runnable::run );
 
         // Prepare to commit changes on all involved adapters and the catalog
         boolean okToCommit = true;
@@ -189,8 +242,9 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             List<List<?>> rows = results.stream().map( r -> r.execute( statement, -1 ).getAllRowsAndClose() ).filter( r -> !r.isEmpty() ).collect( Collectors.toList() );
             if ( !rows.isEmpty() ) {
                 int index = ((List<PolyNumber>) rows.get( 0 ).get( 0 )).get( 1 ).intValue();
-                rollback();
-                throw new TransactionException( infos.get( 0 ).errorMessages().get( index ) + "\nThere are violated constraints, the transaction was rolled back!" );
+                String error = infos.get( 0 ).errorMessages().get( index ) + "\nThere are violated constraints, the transaction was rolled back!";
+                rollback( error );
+                throw new TransactionException( error );
             }
         }
 
@@ -213,8 +267,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
             IndexManager.getInstance().commit( this.xid );
         } else {
-            log.error( "Unable to prepare all involved entities for commit. Rollback changes!" );
-            rollback();
+            rollback( "Unable to prepare all involved entities for commit. Rollback changes!" );
             throw new TransactionException( "Unable to prepare all involved entities for commit. Changes have been rolled back." );
         }
 
@@ -224,24 +277,27 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         statements.forEach( Statement::close );
 
         // Release locks
-        LockManager.INSTANCE.removeTransaction( this );
+        releaseAllLocks();
+
         // Remove transaction
         transactionManager.removeTransaction( xid );
 
         // Handover information about commit to Materialized Manager
         MaterializedViewManager.getInstance().updateCommittedXid( xid );
-
     }
 
 
     @Override
-    public void rollback() throws TransactionException {
+    public void rollback( @Nullable String reason ) throws TransactionException {
         if ( !isActive() ) {
             log.trace( "This transaction has already been finished!" );
             return;
         }
         try {
-            log.warn( "rolling back transaction" );
+            if ( reason != null ) {
+                log.warn( "Rolling back because: \"{}\" transaction {} ", reason, xid );
+            }
+
             //  Rollback changes to the adapters
             for ( Adapter<?> adapter : involvedAdapters ) {
                 adapter.rollback( xid );
@@ -259,9 +315,10 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             } );
         } finally {
             // Release locks
-            LockManager.INSTANCE.removeTransaction( this );
+            releaseAllLocks();
             // Remove transaction
             transactionManager.removeTransaction( xid );
+            isRolledBack = true;
         }
     }
 
@@ -278,6 +335,12 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         // it can lead to validator bleed when using multiple simultaneous insert for example
         // caching therefore is not possible atm
         return language.processorSupplier().get();
+    }
+
+
+    @Override
+    public boolean isAnalyze() {
+        return analyzer != null;
     }
 
 
@@ -356,78 +419,35 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
 
     @Override
-    public void removeNewConstraint( long entityId, LogicalConstraint constraint ) {
-        List<LogicalConstraint> constraints = this.entityConstraints.get( entityId );
-        constraints.remove( constraint );
-        this.entityConstraints.put( entityId, constraints );
-    }
-
-
-    /**
-     * Used to specify if a TX was started using freshness tolerance levels and
-     * therefore allows the usage of outdated replicas.
-     * <p>
-     * If this is active no DML operations are possible for this TX.
-     * If however a DML operation was already executed by this TX.
-     * This TX can now support no more freshness-related queries.
-     */
-    @Override
-    public void setAcceptsOutdated( boolean acceptsOutdated ) {
-        this.acceptsOutdated = acceptsOutdated;
-    }
-
-
-    @Override
-    public boolean acceptsOutdated() {
-        return this.acceptsOutdated;
-    }
-
-
-    @Override
-    public AccessMode getAccessMode() {
-        return accessMode;
-    }
-
-
-    @Override
-    public void updateAccessMode( AccessMode accessModeCandidate ) {
-
-        // If TX is already in RW access we can skip immediately
-        if ( this.accessMode.equals( AccessMode.READWRITE_ACCESS ) || this.accessMode.equals( accessModeCandidate ) ) {
-            return;
-        }
-
-        switch ( accessModeCandidate ) {
-            case WRITE_ACCESS:
-                if ( this.accessMode.equals( AccessMode.READ_ACCESS ) ) {
-                    accessModeCandidate = AccessMode.READWRITE_ACCESS;
-                }
-                break;
-
-            case READ_ACCESS:
-                if ( this.accessMode.equals( AccessMode.WRITE_ACCESS ) ) {
-                    accessModeCandidate = AccessMode.READWRITE_ACCESS;
-                }
-                break;
-
-            case NO_ACCESS:
-                throw new GenericRuntimeException( "Not possible to reset the access mode to NO_ACCESS" );
-        }
-
-        // If nothing else has matched so far. It's safe to simply use the input
-        this.accessMode = accessModeCandidate;
-
-    }
-
-
-    @Override
     public List<LogicalConstraint> getUsedConstraints( long id ) {
         return this.entityConstraints.getOrDefault( id, List.of() );
     }
 
 
-    void abort() {
-        Thread.currentThread().interrupt();
+    @Override
+    public void releaseAllLocks() {
+        releasePhase = true;
+        lockedEntities.forEach( lockedEntity -> {
+            try {
+                lockedEntity.release( this );
+            } catch ( Exception e ) {
+                // TODO TH: introduce proper exception type here. Or wrap in release method of lockable
+                throw new DeadlockException( MessageFormat.format( "Failed to release lock for transaction {0}", this ) );
+            }
+        } );
+    }
+
+
+    @Override
+    public void acquireLockable( Lockable lockable, Lockable.LockType lockType ) {
+        if ( !isActive() ) {
+            throw new IllegalStateException( "Cannot acquire lock: transaction is not active!" );
+        }
+        if ( releasePhase ) {
+            throw new IllegalStateException( "Cannot acquire lock: transaction is in release phase!" );
+        }
+        lockable.acquire( this, lockType );
+        lockedEntities.add( lockable );
     }
 
 

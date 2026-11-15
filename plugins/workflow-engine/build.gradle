@@ -1,0 +1,105 @@
+group "org.polypheny"
+
+configurations {
+    tests {
+        extendsFrom testRuntimeOnly
+    }
+}
+
+dependencies {
+    implementation group: 'com.cronutils', name: 'cron-utils', version: cron_utils_version  // Apache 2.0
+    compileOnly project(":core")
+    compileOnly project(":dbms")
+    compileOnly project(":webui")
+    compileOnly project(":plugins:sql-language")
+    compileOnly project(":plugins:mql-language")
+    compileOnly project(":plugins:cypher-language")
+    compileOnly project(":plugins:jdbc-adapter-framework")
+    compileOnly group: "io.javalin", name: "javalin", version: javalin_version
+    compileOnly group: "org.apache.commons", name: "commons-collections4", version: commons_collections_version
+    compileOnly group: "com.opencsv", name: "opencsv", version: opencsv_version
+    compileOnly group: "org.codehaus.janino", name: "commons-compiler", version: commons_compiler_version  // BSD
+
+
+    // --- Test Compile ---
+    testImplementation project(path: ":dbms", configuration: "test")
+    testImplementation project(path: ":dbms")
+    testImplementation project(path: ":core", configuration: "tests")
+    testImplementation project(path: ":core")
+    testImplementation project(path: ":webui")
+    testImplementation project(path: ":plugins:sql-language")
+    testImplementation project(":plugins:jdbc-adapter-framework")
+
+    testImplementation(group: "org.polypheny", name: "polypheny-jdbc-driver", version: polypheny_jdbc_driver_version) {
+        exclude(group: "com.fasterxml.jackson.core")
+    }
+
+    testImplementation group: "com.konghq", name: "unirest-java", version: unirest_version
+    testImplementation group: "com.opencsv", name: "opencsv", version: opencsv_version
+}
+
+test.dependsOn(":dbms:shadowJar")
+
+
+sourceSets {
+    main {
+        java {
+            srcDirs = ["src/main/java"]
+        }
+        resources {
+            srcDirs = ["src/main/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/classes")
+    }
+    test {
+        java {
+            srcDirs = ["src/test/java"]
+            destinationDirectory.set(file(project.buildDir.absolutePath + "/test-classes"))
+        }
+        resources {
+            srcDirs = ["src/test/resources"]
+        }
+        output.resourcesDir = file(project.buildDir.absolutePath + "/test-classes")
+    }
+}
+
+compileJava {
+    dependsOn(":config:processResources")
+    dependsOn(":core:processResources")
+    dependsOn(":information:processResources")
+    dependsOn(":webui:processResources")
+    dependsOn(":plugins:sql-language:processResources")
+    dependsOn(":plugins:mql-language:processResources")
+    dependsOn(":plugins:cypher-language:processResources")
+    dependsOn(":plugins:jdbc-adapter-framework:processResources")
+}
+
+delombok {
+    dependsOn(":plugins:sql-language:processResources")
+    dependsOn(":webui:processResources")
+    dependsOn(":plugins:sql-language:processResources")
+    dependsOn(":plugins:mql-language:processResources")
+    dependsOn(":plugins:cypher-language:processResources")
+    dependsOn(":plugins:jdbc-adapter-framework:processResources")
+}
+
+
+/**
+ * JARs
+ */
+jar {
+    manifest {
+        attributes "Manifest-Version": "1.0"
+        attributes "Copyright": "The Polypheny Project (polypheny.org)"
+        attributes "Version": "$project.version"
+    }
+}
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+licensee {
+    allow('MIT')
+    allow('Apache-2.0')
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -389,30 +390,35 @@ public class CypherToAlgConverter {
     }
 
 
+    public enum RexType {
+        PROJECT,
+        FILTER
+    }
+
+
     public static class CypherContext {
 
         public final AlgCluster cluster;
         public final AlgBuilder algBuilder;
         public final RexBuilder rexBuilder;
-
-        private final Stack<AlgNode> stack = new Stack<>();
-        // named projects, null if no name provided
-        private final Queue<Pair<PolyString, RexNode>> rexQueue = new LinkedList<>();
-        private final Queue<Pair<String, AggregateCall>> rexAggQueue = new LinkedList<>();
         public final CypherNode original;
         public final LogicalEntity graph;
-
         public final AlgDataType graphType;
         public final AlgDataType booleanType;
+        public final AlgDataType geometryType;
         public final AlgDataType nodeType;
         public final AlgDataType edgeType;
         public final AlgDataType pathType;
         public final AlgDataType numberType;
         public final Snapshot snapshot;
         public final AlgDataTypeFactory typeFactory;
+        private final Stack<AlgNode> stack = new Stack<>();
+        // named projects, null if no name provided
+        private final Queue<Pair<PolyString, RexNode>> rexQueue = new LinkedList<>();
+        private final Queue<Pair<String, AggregateCall>> rexAggQueue = new LinkedList<>();
+        private final Map<PolyString, PolyNode> nodes = new HashMap<>();
         public CypherNode active;
         public Kind kind;
-        private final Map<PolyString, PolyNode> nodes = new HashMap<>();
         private List<Pair<PolyString, EdgeVariableHolder>> edges = new LinkedList<>();
 
 
@@ -430,6 +436,7 @@ public class CypherToAlgConverter {
             this.rexBuilder = rexBuilder;
             this.graphType = cluster.getTypeFactory().createPolyType( PolyType.GRAPH );
             this.booleanType = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
+            this.geometryType = cluster.getTypeFactory().createPolyType( PolyType.GEOMETRY );
             this.nodeType = cluster.getTypeFactory().createPolyType( PolyType.NODE );
             this.edgeType = cluster.getTypeFactory().createPolyType( PolyType.EDGE );
             this.pathType = cluster.getTypeFactory().createPolyType( PolyType.PATH );
@@ -652,6 +659,8 @@ public class CypherToAlgConverter {
                         List.of(),
                         ImmutableList.of( ImmutableList.copyOf( nameAndValues.stream().map( e -> (RexLiteral) e.getValue() ).toList() ) ),
                         new AlgRecordType( fields ) );
+            } else if ( nameAndValues.stream().allMatch( v -> v.right.isA( Kind.CYPHER_FUNCTION ) ) ) {
+                throw new NotImplementedException( "RETURN statement with function call without MATCH currently not supported" );
             } else {
                 throw new UnsupportedOperationException();
             }
@@ -662,7 +671,7 @@ public class CypherToAlgConverter {
             for ( Pair<PolyString, PolyNode> node : nodes ) {
                 if ( !this.nodes.containsKey( node.left ) ) {
                     this.nodes.put( node.left, node.right );
-                } else if ( node.left == null ) {
+                } else if ( node.left == null || node.left.isNull() ) {
                     this.nodes.put( node.right.id, node.right );
                 }
                 // we don't add the variable again
@@ -774,7 +783,7 @@ public class CypherToAlgConverter {
                     .entrySet()
                     .stream()
                     .map( n -> Pair.of( n.getKey(), n.getValue() ) )
-                    .collect( Collectors.toList() );
+                    .toList();
             this.nodes.clear();
             return nodes;
         }
@@ -844,12 +853,6 @@ public class CypherToAlgConverter {
             clearVariables();
         }
 
-    }
-
-
-    public enum RexType {
-        PROJECT,
-        FILTER
     }
 
 

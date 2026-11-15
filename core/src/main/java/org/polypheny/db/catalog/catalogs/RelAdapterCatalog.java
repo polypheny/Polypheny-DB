@@ -69,7 +69,7 @@ public class RelAdapterCatalog extends AdapterCatalog {
         List<PhysicalColumn> updates = new ArrayList<>();
         for ( PhysicalField field : fields.values() ) {
             if ( field.id == id ) {
-                updates.add( field.unwrap( PhysicalColumn.class ).orElseThrow().toBuilder().logicalName( newFieldName ).build() );
+                updates.add( field.unwrapOrThrow( PhysicalColumn.class ).toBuilder().logicalName( newFieldName ).build() );
             }
         }
         for ( PhysicalColumn u : updates ) {
@@ -98,6 +98,9 @@ public class RelAdapterCatalog extends AdapterCatalog {
 
 
     public PhysicalTable createTable( String namespaceName, String tableName, Map<Long, String> columnNames, LogicalTable logical, Map<Long, LogicalColumn> lColumns, List<Long> pkIds, AllocationTableWrapper wrapper ) {
+        if ( namespaceName == null ) {
+            throw new IllegalArgumentException( "Namespace name is null" );
+        }
         AllocationTable allocation = wrapper.table;
         List<AllocationColumn> columns = wrapper.columns;
         List<PhysicalColumn> pColumns = Streams.mapWithIndex( columns.stream(), ( c, i ) -> new PhysicalColumn( columnNames.get( c.columnId ), logical.id, allocation.id, allocation.adapterId, (int) i, lColumns.get( c.columnId ) ) ).toList();

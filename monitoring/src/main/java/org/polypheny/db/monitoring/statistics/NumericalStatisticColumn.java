@@ -17,6 +17,7 @@
 package org.polypheny.db.monitoring.statistics;
 
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.google.gson.annotations.Expose;
 import java.util.List;
 import java.util.SortedSet;
@@ -35,6 +36,7 @@ import org.polypheny.db.type.entity.category.PolyNumber;
  */
 @Getter
 @Slf4j
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class NumericalStatisticColumn extends StatisticColumn {
 
     @Expose
@@ -50,13 +52,13 @@ public class NumericalStatisticColumn extends StatisticColumn {
 
 
     public NumericalStatisticColumn( QueryResult column ) {
-        super( column.getColumn().id, column.getColumn().type );
+        super( column.getColumn().id, column.getColumn().type, column.getColumn().name );
     }
 
 
     @Override
     public void insert( List<PolyValue> values ) {
-        if ( values != null && !(values.get( 0 ).isList()) ) {
+        if ( values != null ) {
             for ( PolyValue val : values ) {
                 if ( val != null ) {
                     insert( val );

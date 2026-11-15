@@ -86,7 +86,7 @@ public class CypherEveryPathPattern extends CypherPattern {
         List<Pair<PolyString, PolyNode>> nodes = new LinkedList<>();
         for ( CypherNodePattern node : this.nodes ) {
             Pair<PolyString, PolyNode> namedNode = node.getPolyNode();
-            if ( namedNode.left != null && context.getNodeVariable( namedNode.left ) != null ) {
+            if ( namedNode.left != null && !namedNode.left.isNull() && context.getNodeVariable( namedNode.left ) != null ) {
                 // this node exists already in the scope, we replace it with the existing one
                 namedNode = context.getNodeVariable( namedNode.left );
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,22 +20,17 @@ package org.polypheny.db.adapter.jdbc;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.RelationalDataSource;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.adapter.jdbc.sources.AbstractJdbcSource;
-import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
-import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
-import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
-import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
-import org.polypheny.db.prepare.Context;
 import org.polypheny.db.sql.language.dialect.MysqlSqlDialect;
 
 @SuppressWarnings("unused")
@@ -87,30 +82,12 @@ public class MysqlSourcePlugin extends PolyPlugin {
             description = "Maximum number of concurrent JDBC connections.")
     @AdapterSettingList(name = "transactionIsolation", options = { "SERIALIZABLE", "READ_UNCOMMITTED", "READ_COMMITTED", "REPEATABLE_READ" }, defaultValue = "SERIALIZABLE",
             description = "Which level of transaction isolation should be used.")
-    @AdapterSettingString(name = "tables", defaultValue = "foo,bar",
+    @AdapterSettingString(name = "tables", defaultValue = "",
             description = "List of tables which should be imported. The names must to be separated by a comma.")
     public static class MysqlSource extends AbstractJdbcSource {
 
         public MysqlSource( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
             super( storeId, uniqueName, settings, mode, "org.mariadb.jdbc.Driver", MysqlSqlDialect.DEFAULT, false );
-        }
-
-
-        @Override
-        public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
-            PhysicalTable table = adapterCatalog.createTable(
-                    logical.table.getNamespaceName(),
-                    logical.table.name,
-                    logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
-                    logical.table,
-                    logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
-                    logical.pkIds, allocation );
-
-            JdbcTable physical = currentJdbcSchema.createJdbcTable( table );
-
-            adapterCatalog.replacePhysical( physical );
-
-            return List.of( physical );
         }
 
 
@@ -140,6 +117,18 @@ public class MysqlSourcePlugin extends PolyPlugin {
         @Override
         protected boolean requiresSchema() {
             return false;
+        }
+
+
+        @Override
+        public boolean supportsDynamicTableDiscovery() {
+            return true;
+        }
+
+
+        @Override
+        public RelationalDataSource asRelationalDataSource() {
+            return this;
         }
 
     }

@@ -277,7 +277,7 @@ final class PolyphenyHandshakeClient {
                 return false; // Prevents a handshake successful message to be printed when cancelled
             }
         } else {
-            log.error( "Server " + hostname + " has send an invalid authentication value, aborting handshake" );
+            log.error( "Server {} has send an invalid authentication value, aborting handshake", hostname );
             // On purpose not NOT_RUNNING, because it could be an attack attempt.  This forces regeneration
             // of the psk, so the attacker has one chance to guess.  The more likely explanation is pasting
             // an old command, hence this error message.

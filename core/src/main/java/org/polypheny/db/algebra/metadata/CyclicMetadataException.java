@@ -34,22 +34,20 @@
 package org.polypheny.db.algebra.metadata;
 
 
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+
 /**
  * Exception that indicates that a cycle has been detected while computing metadata.
  */
-public class CyclicMetadataException extends RuntimeException {
-
-    /**
-     * Singleton instance. Since this exception is thrown for signaling purposes, rather than on an actual error, re-using a singleton instance saves the effort of constructing an exception instance.
-     */
-    public static final CyclicMetadataException INSTANCE = new CyclicMetadataException();
+public class CyclicMetadataException extends GenericRuntimeException {
 
 
     /**
      * Creates a CyclicMetadataException.
+     * Has to be {@code public} used by code generation.
      */
-    private CyclicMetadataException() {
-        super();
+    public CyclicMetadataException( String message ) {
+        super( message );
     }
 
 }

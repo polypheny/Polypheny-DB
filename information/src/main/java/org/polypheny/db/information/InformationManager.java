@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -257,6 +257,11 @@ public class InformationManager {
     }
 
 
+    public Information[] getInformationArray() {
+        return this.informationMap.values().toArray( new Information[0] );
+    }
+
+
     /**
      * Get a page from the Information Manager with a certain id.
      *
@@ -318,16 +323,6 @@ public class InformationManager {
         for ( InformationObserver observer : this.observers ) {
             observer.observePageList( this.pages.values().toArray( new InformationPage[0] ), instanceId, session );
         }
-    }
-
-
-    public void attachStacktrace( Throwable e ) {
-        InformationPage exceptionPage = new InformationPage( "Stacktrace" ).fullWidth();
-        InformationGroup exceptionGroup = new InformationGroup( exceptionPage.getId(), "Stacktrace" );
-        InformationStacktrace exceptionElement = new InformationStacktrace( e, exceptionGroup );
-        this.addPage( exceptionPage );
-        this.addGroup( exceptionGroup );
-        this.registerInformation( exceptionElement );
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.List;
 import lombok.experimental.Accessors;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.annotations.AdapterSettingList;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 @Accessors(chain = true)
 public class AbstractAdapterSettingList extends AbstractAdapterSetting {
@@ -29,8 +30,8 @@ public class AbstractAdapterSettingList extends AbstractAdapterSetting {
     public boolean dynamic = false;
 
 
-    public AbstractAdapterSettingList( String name, boolean canBeNull, final String subOf, boolean required, boolean modifiable, List<String> options, List<DeploySetting> appliesTo, String defaultValue, int position ) {
-        super( AdapterSettingType.LIST, name, canBeNull, subOf, required, modifiable, appliesTo, defaultValue, position );
+    public AbstractAdapterSettingList( String name, boolean canBeNull, final String subOf, boolean required, boolean modifiable, List<String> options, List<DeploySetting> appliesTo, String defaultValue, int position, String description ) {
+        super( AdapterSettingType.LIST, name, canBeNull, subOf, required, modifiable, appliesTo, defaultValue, position, description );
         this.options = options;
     }
 
@@ -45,13 +46,23 @@ public class AbstractAdapterSettingList extends AbstractAdapterSetting {
                 Arrays.asList( annotation.options() ),
                 Arrays.asList( annotation.appliesTo() ),
                 annotation.defaultValue(),
-                annotation.position() );
+                annotation.position(),
+                annotation.description()
+        );
     }
 
 
     @Override
     public String getValue() {
         return defaultValue;
+    }
+
+
+    @Override
+    public void validate( String s ) {
+        if ( !options.contains( s ) ) {
+            throw new GenericRuntimeException( "Setting %s is invalid: \"%s\" is not a valid option", name, s );
+        }
     }
 
 }

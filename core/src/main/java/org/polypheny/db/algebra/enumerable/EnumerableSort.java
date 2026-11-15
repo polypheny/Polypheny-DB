@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ package org.polypheny.db.algebra.enumerable;
 
 
 import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -42,6 +43,7 @@ import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
@@ -49,6 +51,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Triple;
 
 
 /**
@@ -75,6 +78,12 @@ public class EnumerableSort extends Sort implements EnumerableAlg {
         final AlgCluster cluster = child.getCluster();
         final AlgTraitSet traitSet = child.getTraitSet().replace( collation );
         return new EnumerableSort( cluster, traitSet, child, collation, offset, fetch );
+    }
+
+
+    public static EnumerableSort create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        Triple<AlgCollation, RexNode, RexNode> extracted = extractArgs( args );
+        return create( children.get( 0 ), extracted.left, extracted.middle, extracted.right );
     }
 
 

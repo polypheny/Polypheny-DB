@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,7 @@ import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.enumerable.impl.AggAddContextImpl;
 import org.polypheny.db.algebra.enumerable.impl.AggResultContextImpl;
 import org.polypheny.db.algebra.fun.AggFunction;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.config.RuntimeConfig;
@@ -69,6 +70,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Triple;
 import org.polypheny.db.util.Util;
 
 
@@ -91,6 +93,16 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
             if ( implementor2 == null ) {
                 throw new InvalidAlgException( "aggregation " + aggCall.getAggregation() + " not supported" );
             }
+        }
+    }
+
+
+    public static EnumerableAggregate create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        Triple<ImmutableBitSet, List<ImmutableBitSet>, List<AggregateCall>> extracted = extractArgs( args );
+        try {
+            return new EnumerableAggregate( cluster, cluster.traitSet(), children.get( 0 ), false, extracted.left, extracted.middle, extracted.right );
+        } catch ( InvalidAlgException e ) {
+            throw new RuntimeException( e );
         }
     }
 

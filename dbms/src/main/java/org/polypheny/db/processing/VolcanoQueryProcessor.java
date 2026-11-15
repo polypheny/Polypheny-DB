@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,8 @@ import org.polypheny.db.algebra.enumerable.common.EnumerableBindable.EnumerableT
 import org.polypheny.db.algebra.enumerable.common.EnumerableModifyToStreamerRule;
 import org.polypheny.db.algebra.enumerable.document.DocumentAggregateToAggregateRule;
 import org.polypheny.db.algebra.enumerable.document.DocumentFilterToCalcRule;
+import org.polypheny.db.algebra.enumerable.document.DocumentGeoNearUnwrap;
+import org.polypheny.db.algebra.enumerable.document.DocumentNearUnwrap;
 import org.polypheny.db.algebra.enumerable.document.DocumentProjectToCalcRule;
 import org.polypheny.db.algebra.enumerable.document.DocumentSortToSortRule;
 import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
@@ -66,13 +68,12 @@ import org.polypheny.db.plan.volcano.VolcanoPlannerPhase;
 import org.polypheny.db.rex.RexExecutorImpl;
 import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockablesRegistry;
 
 
 @Getter
 public class VolcanoQueryProcessor extends AbstractQueryProcessor {
-
-    private final VolcanoPlanner planner;
-
 
     public static final List<AlgOptRule> ENUMERABLE_RULES =
             ImmutableList.of(
@@ -89,6 +90,8 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     EnumerableRules.ENUMERABLE_PROJECT_TO_CALC_RULE,
                     DocumentProjectToCalcRule.INSTANCE,
                     DocumentFilterToCalcRule.INSTANCE,
+                    DocumentNearUnwrap.INSTANCE,
+                    DocumentGeoNearUnwrap.INSTANCE,
                     DocumentAggregateToAggregateRule.INSTANCE,
                     DocumentSortToSortRule.INSTANCE,
                     EnumerableRules.ENUMERABLE_PROJECT_RULE,
@@ -116,7 +119,6 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     EnumerableRules.ENUMERABLE_UNWIND_RULE,
                     EnumerableRules.ENUMERABLE_DOCUMENT_UNWIND_RULE,
                     EnumerableRules.ENUMERABLE_GRAPH_TRANSFORMER_RULE );
-
     public static final List<AlgOptRule> PRE_PROCESS_RULES =
             ImmutableList.of(
                     AllocationToPhysicalScanRule.REL_INSTANCE,
@@ -127,8 +129,6 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     AllocationToPhysicalModifyRule.GRAPH_INSTANCE,
                     ScanRule.INSTANCE
             );
-
-
     public static final List<AlgOptRule> DEFAULT_RULES =
             ImmutableList.of(
                     RuntimeConfig.JOIN_COMMUTE.getBoolean()
@@ -152,7 +152,6 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     SortJoinTransposeRule.INSTANCE,
                     SortRemoveConstantKeysRule.INSTANCE,
                     SortUnionTransposeRule.INSTANCE );
-
     public static final List<AlgOptRule> CONSTANT_REDUCTION_RULES =
             ImmutableList.of(
                     ReduceExpressionsRules.PROJECT_INSTANCE,
@@ -163,6 +162,7 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     ValuesReduceRule.PROJECT_FILTER_INSTANCE,
                     ValuesReduceRule.PROJECT_INSTANCE,
                     AggregateValuesRule.INSTANCE );
+    private final VolcanoPlanner planner;
 
 
     public VolcanoQueryProcessor( Statement statement ) {
@@ -226,6 +226,12 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
 
         final DataContext dataContext = statement.getPrepareContext().getDataContext();
         planner.setExecutor( new RexExecutorImpl( dataContext ) );
+    }
+
+
+    @Override
+    public void lock( Statement statement ) {
+        statement.getTransaction().acquireLockable( LockablesRegistry.GLOBAL_SCHEMA_LOCKABLE, LockType.EXCLUSIVE );
     }
 
 }
