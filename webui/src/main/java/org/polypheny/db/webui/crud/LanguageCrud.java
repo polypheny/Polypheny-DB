@@ -552,7 +552,7 @@ public class LanguageCrud {
                     .xid( statement.getTransaction().getXid().toString() )
                     .namespace( request.namespace );
 
-            if ( Kind.DML.contains( context.getIterator().getImplementation().getKind() ) ) {
+            if ( Kind.DML.contains( context.getImplementation().getKind() ) && !context.getImplementation().isDmlReturning() ) {
                 builder.affectedTuples( data.get( 0 )[0].asNumber().longValue() );
             }
             return builder;

@@ -89,6 +89,11 @@ public class PIClient {
     }
 
 
+    public boolean wantsRelationalCypherResults() {
+        return PIClientInfoProperties.RELATIONAL_FORMAT.equals( this.PIClientInfoProperties.getProperty( PIClientInfoProperties.CYPHER_RESULT_FORMAT ) );
+    }
+
+
     public Transaction getOrCreateNewTransaction() {
         if ( hasNoTransaction() ) {
             currentTransaction = transactionManager.startTransaction( catalogUser.id, namespace.id, null, "PrismInterface" );

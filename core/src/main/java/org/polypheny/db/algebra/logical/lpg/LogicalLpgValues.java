@@ -38,6 +38,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.functions.CrossModelFunctions;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexLiteral;
@@ -185,7 +186,7 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
                 ImmutableList.Builder<RexLiteral> row = ImmutableList.builder();
                 row.add( id );
                 row.add( getStringLiteral( entry.getKey().value, LABEL_TYPE ) );
-                row.add( getStringLiteral( entry.getValue().toJson(), VALUE_TYPE ) );
+                row.add( getStringLiteral( CrossModelFunctions.nodePropertyStorageValue( entry.getValue() ), VALUE_TYPE ) );
                 rows.add( row.build() );
             }
         }

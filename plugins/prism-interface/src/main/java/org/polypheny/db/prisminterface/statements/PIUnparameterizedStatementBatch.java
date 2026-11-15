@@ -19,7 +19,10 @@ package org.polypheny.db.prisminterface.statements;
 import java.util.LinkedList;
 import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prisminterface.PIClient;
+import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
 import org.polypheny.db.prisminterface.utils.PropertyUtils;
 
 @Getter
@@ -37,11 +40,19 @@ public class PIUnparameterizedStatementBatch {
     }
 
 
-    public List<Long> executeBatch() {
+    public List<Node> validate() {
+        // Check every Cypher member before any member can change the database.
+        return statements.stream()
+                .map( statement -> statement.getLanguage().dataModel() == DataModel.GRAPH ? StatementProcessor.parseGraphBatchMember( statement ) : null )
+                .toList();
+    }
+
+
+    public List<Long> executeBatch( List<Node> parsedStatements ) {
         int fetchSize = PropertyUtils.DEFAULT_FETCH_SIZE;
         List<Long> updateCounts = new LinkedList<>();
-        for ( PIUnparameterizedStatement statement : statements ) {
-            updateCounts.add( statement.execute( fetchSize ).getScalar() );
+        for ( int i = 0; i < statements.size(); i++ ) {
+            updateCounts.add( statements.get( i ).executeBatchMember( parsedStatements.get( i ), fetchSize ).getScalar() );
         }
         return updateCounts;
     }

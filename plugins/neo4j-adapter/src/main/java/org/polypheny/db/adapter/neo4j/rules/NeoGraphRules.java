@@ -40,8 +40,11 @@ import org.polypheny.db.algebra.core.lpg.LpgProject;
 import org.polypheny.db.algebra.core.lpg.LpgSort;
 import org.polypheny.db.algebra.core.lpg.LpgUnwind;
 import org.polypheny.db.algebra.core.lpg.LpgValues;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.volcano.AlgSubset;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 
 public interface NeoGraphRules {
@@ -59,6 +62,13 @@ public interface NeoGraphRules {
     };
 
     static boolean supports( LpgProject r ) {
+        AlgNode input = r.getInput() instanceof AlgSubset subset ? subset.getOriginal() : r.getInput();
+        if ( input instanceof LpgSort && r.getProjects().size() < input.getTupleType().getFieldCount()
+                && r.getProjects().stream().allMatch( RexIndexRef.class::isInstance ) ) {
+            // The native sort still needs this projection's hidden sort columns and alias definitions.
+            // Trim the native result with the enumerable projection after it has been sorted.
+            return false;
+        }
         NeoSupportVisitor visitor = new NeoSupportVisitor();
         for ( RexNode project : r.getProjects() ) {
             project.accept( visitor );
@@ -266,7 +276,7 @@ public interface NeoGraphRules {
 
     class NeoGraphMatchRule extends NeoConverterRule {
 
-        public static NeoGraphMatchRule INSTANCE = new NeoGraphMatchRule( LpgMatch.class, r -> true, NeoGraphMatchRule.class.getSimpleName() );
+        public static NeoGraphMatchRule INSTANCE = new NeoGraphMatchRule( LogicalLpgMatch.class, match -> !match.isEnumerableOnly(), NeoGraphMatchRule.class.getSimpleName() );
 
 
         private <R extends AlgNode> NeoGraphMatchRule( Class<R> clazz, Predicate<? super R> supports, String description ) {

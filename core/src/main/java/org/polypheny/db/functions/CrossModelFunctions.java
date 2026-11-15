@@ -235,10 +235,17 @@ public class CrossModelFunctions {
         if ( !node.properties.isEmpty() ) {
             context.addParameterValues( 0, idType, Collections.nCopies( node.properties.size(), node.id ) );
             context.addParameterValues( 1, labelType, new ArrayList<>( node.properties.keySet() ) );
-            context.addParameterValues( 2, valueType, new ArrayList<>( node.properties.values().stream().map( e -> PolyString.of( e.toJson() ) ).toList() ) );
+            context.addParameterValues( 2, valueType, new ArrayList<>( node.properties.values().stream()
+                    .map( value -> PolyString.of( nodePropertyStorageValue( value ) ) ).toList() ) );
             drainInserts( enumerables.get( i ), node.properties.size() );
             context.resetParameterValues();
         }
+    }
+
+
+    public static String nodePropertyStorageValue( PolyValue value ) {
+        // Normalized node properties are read as VARCHARs. Preserve string contents without JSON escaping them.
+        return value.isString() && !value.isNull() ? value.asString().value : value.toJson();
     }
 
 

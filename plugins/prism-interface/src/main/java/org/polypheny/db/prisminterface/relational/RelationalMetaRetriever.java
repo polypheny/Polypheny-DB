@@ -65,6 +65,10 @@ public class RelationalMetaRetriever {
 
     public static List<ColumnMeta> retrieveColumnMetas( PolyImplementation polyImplementation ) {
         AlgDataType algDataType = retrieveAlgDataType( polyImplementation );
+        if ( algDataType.getPolyType() == PolyType.GRAPH ) {
+            // GraphType's storage fields describe its ID, but a full scan returns one graph value.
+            return List.of( retrieveColumnMeta( 0, "graph", algDataType, null ) );
+        }
         AlgDataType whatever = QueryProcessorHelpers.makeStruct( polyImplementation.getStatement().getTransaction().getTypeFactory(), algDataType );
         List<List<String>> origins = polyImplementation.getPreparedResult().getFieldOrigins();
         List<ColumnMeta> columns = new ArrayList<>();
@@ -165,6 +169,9 @@ public class RelationalMetaRetriever {
 
 
     private static AlgDataType retrieveAlgDataType( PolyImplementation polyImplementation ) {
+        if ( polyImplementation.isDmlReturning() ) {
+            return polyImplementation.tupleType;
+        }
         return switch ( polyImplementation.getKind() ) {
             case INSERT, DELETE, UPDATE, EXPLAIN -> {
                 // FIXME: getValidatedNodeType is wrong for DML

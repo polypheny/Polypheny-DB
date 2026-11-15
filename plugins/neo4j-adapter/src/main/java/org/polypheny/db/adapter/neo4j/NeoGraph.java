@@ -215,7 +215,6 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
          */
         @SuppressWarnings("UnusedDeclaration")
         public Enumerable<PolyValue[]> executeAll( String nodes, String edges ) {
-            commit();
             Transaction trx = getTrx();
 
             dataContext.getStatement().getTransaction().registerInvolvedAdapter( graph.store );
@@ -244,14 +243,6 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
          */
         private Transaction getTrx() {
             return graph.transactionProvider.get( dataContext.getStatement().getTransaction().getXid() );
-        }
-
-
-        /**
-         * Commit the transaction.
-         */
-        private void commit() {
-            graph.transactionProvider.commit( dataContext.getStatement().getTransaction().getXid() );
         }
 
 

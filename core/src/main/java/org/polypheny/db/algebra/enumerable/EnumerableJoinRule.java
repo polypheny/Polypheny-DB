@@ -39,11 +39,14 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.InvalidAlgException;
 import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.schema.trait.ModelTraitDef;
 
 
 /**
@@ -52,13 +55,18 @@ import org.polypheny.db.plan.Convention;
 class EnumerableJoinRule extends ConverterRule {
 
     EnumerableJoinRule() {
-        super( LogicalRelJoin.class, Convention.NONE, EnumerableConvention.INSTANCE, "EnumerableJoinRule" );
+        this( LogicalRelJoin.class, "EnumerableJoinRule" );
+    }
+
+
+    EnumerableJoinRule( Class<? extends Join> joinClass, String description ) {
+        super( joinClass, Convention.NONE, EnumerableConvention.INSTANCE, description );
     }
 
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        LogicalRelJoin join = (LogicalRelJoin) alg;
+        Join join = (Join) alg;
         List<AlgNode> newInputs = new ArrayList<>();
         for ( AlgNode input : join.getInputs() ) {
             if ( !(input.getConvention() instanceof EnumerableConvention) ) {
@@ -73,7 +81,7 @@ class EnumerableJoinRule extends ConverterRule {
         if ( !info.isEqui() && join.getJoinType() != JoinAlgType.INNER ) {
             // EnumerableJoinRel only supports equi-join. We can put a filter on top if it is an inner join.
             try {
-                return EnumerableThetaJoin.create( left, right, join.getCondition(), join.getVariablesSet(), join.getJoinType() );
+                return withJoinModel( EnumerableThetaJoin.create( left, right, join.getCondition(), join.getVariablesSet(), join.getJoinType() ), join );
             } catch ( InvalidAlgException e ) {
                 EnumerableRules.LOGGER.debug( e.toString() );
                 return null;
@@ -81,7 +89,9 @@ class EnumerableJoinRule extends ConverterRule {
         }
         AlgNode newAlg;
         try {
-            newAlg = EnumerableJoin.create( left, right, info.getEquiCondition( left, right, cluster.getRexBuilder() ), info.leftKeys, info.rightKeys, join.getVariablesSet(), join.getJoinType() );
+            newAlg = withJoinModel(
+                    EnumerableJoin.create( left, right, info.getEquiCondition( left, right, cluster.getRexBuilder() ), info.leftKeys, info.rightKeys, join.getVariablesSet(), join.getJoinType() ),
+                    join );
         } catch ( InvalidAlgException e ) {
             EnumerableRules.LOGGER.debug( e.toString() );
             return null;
@@ -90,6 +100,15 @@ class EnumerableJoinRule extends ConverterRule {
             newAlg = new EnumerableFilter( cluster, newAlg.getTraitSet(), newAlg, info.getRemaining( cluster.getRexBuilder() ) );
         }
         return newAlg;
+    }
+
+
+    private Join withJoinModel( Join physical, Join logical ) {
+        ModelTrait model = logical.getTraitSet().getTrait( ModelTraitDef.INSTANCE );
+        if ( model == null || physical.getTraitSet().contains( model ) ) {
+            return physical;
+        }
+        return physical.copy( physical.getTraitSet().replace( model ), physical.getInputs() );
     }
 
 }

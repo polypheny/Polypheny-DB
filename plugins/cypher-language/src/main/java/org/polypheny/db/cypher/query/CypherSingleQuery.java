@@ -75,6 +75,14 @@ public class CypherSingleQuery extends CypherQuery implements ExecutableStatemen
     }
 
 
+    public boolean hasUpdates() {
+        return clauses.stream().anyMatch( clause -> switch ( clause.getCypherKind() ) {
+            case CREATE, SET, DELETE, REMOVE -> true;
+            default -> false;
+        } );
+    }
+
+
     @Override
     public boolean isDdl() {
         if ( clauses.stream().allMatch( CypherNode::isDdl ) ) {

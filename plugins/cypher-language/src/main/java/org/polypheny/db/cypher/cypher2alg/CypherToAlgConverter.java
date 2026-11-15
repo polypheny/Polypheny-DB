@@ -19,6 +19,7 @@ package org.polypheny.db.cypher.cypher2alg;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -38,8 +39,12 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.core.common.ConditionalExecute.Condition;
 import org.polypheny.db.algebra.core.common.Modify;
+import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgJoin;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
@@ -60,6 +65,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.CypherNode.CypherFamily;
+import org.polypheny.db.cypher.CypherNode.CypherKind;
 import org.polypheny.db.cypher.clause.CypherClause;
 import org.polypheny.db.cypher.clause.CypherCreate;
 import org.polypheny.db.cypher.clause.CypherDelete;
@@ -70,6 +76,7 @@ import org.polypheny.db.cypher.clause.CypherSetClause;
 import org.polypheny.db.cypher.clause.CypherUnwind;
 import org.polypheny.db.cypher.clause.CypherWhere;
 import org.polypheny.db.cypher.clause.CypherWith;
+import org.polypheny.db.cypher.pattern.CypherNamedPattern;
 import org.polypheny.db.cypher.pattern.CypherPattern;
 import org.polypheny.db.cypher.query.CypherSingleQuery;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -78,15 +85,20 @@ import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.util.Pair;
 
@@ -127,7 +139,13 @@ public class CypherToAlgConverter {
 
         convertQuery( query, context );
 
-        return AlgRoot.of( context.build(), context.kind != null ? context.kind : Kind.SELECT );
+        AlgNode output = context.build();
+        if ( context.returningInsert != null ) {
+            // Execute the write to completion even when the RETURN projection produces no rows.
+            output = LogicalConditionalExecute.create( context.returningInsert, output, Condition.GREATER_ZERO,
+                    GenericRuntimeException.class, "Cypher CREATE did not produce an update result" );
+        }
+        return AlgRoot.of( output, context.kind != null ? context.kind : Kind.SELECT );
     }
 
 
@@ -160,6 +178,16 @@ public class CypherToAlgConverter {
         switch ( node.getCypherKind() ) {
             case SINGLE:
                 CypherSingleQuery query = (CypherSingleQuery) node;
+                List<CypherKind> clauses = query.getClauses().stream()
+                        .map( CypherClause::getCypherKind )
+                        .filter( kind -> kind != CypherKind.USE )
+                        .toList();
+                if ( !clauses.isEmpty() && clauses.get( clauses.size() - 1 ) == CypherKind.RETURN && query.hasUpdates() ) {
+                    if ( !clauses.equals( List.of( CypherKind.CREATE, CypherKind.RETURN ) ) ) {
+                        throw new GenericRuntimeException( "Cypher write results support a single CREATE clause followed by RETURN" );
+                    }
+                    context.createReturning = true;
+                }
 
                 for ( CypherClause clause : query.getClauses() ) {
                     convertClauses( clause, context );
@@ -346,16 +374,16 @@ public class CypherToAlgConverter {
 
     private void convertMatch( CypherMatch clause, CypherContext context ) {
         setKindIfNull( context, Kind.SELECT );
-        if ( clause.isOptional() ) {
-            throw new UnsupportedOperationException();
-        }
-
         context.active = clause;
+        if ( clause.isOptional() || !context.stack.isEmpty() ) {
+            convertJoinedMatch( clause, context );
+            return;
+        }
 
         for ( CypherPattern pattern : clause.getPatterns() ) {
             convertPattern( pattern, context );
         }
-        context.combineMatch();
+        context.combineMatch( false );
 
         if ( clause.getWhere() == null ) {
             return;
@@ -364,6 +392,175 @@ public class CypherToAlgConverter {
         convertWhere( clause.getWhere(), context );
 
         context.combineFilter();
+    }
+
+
+    private void convertJoinedMatch( CypherMatch clause, CypherContext context ) {
+        MatchRows right = null;
+        boolean checkRelationshipUniqueness = clause.getPatterns().size() > 1;
+        for ( CypherPattern pattern : clause.getPatterns() ) {
+            CypherContext candidate = new CypherContext( context.original, context.graph, cluster, algBuilder, rexBuilder, snapshot );
+            candidate.active = clause;
+            candidate.add( pattern.getPatternMatch( candidate ) );
+            // Candidate rows need complete graph values, including unnamed nodes and paths.
+            candidate.combineMatch( true );
+            AlgNode match = candidate.build();
+            RexIndexRef matchedValue = rexBuilder.makeInputRef( match, 0 );
+            List<RexNode> paths = checkRelationshipUniqueness && matchedValue.getType().getPolyType() == PolyType.PATH ? List.of( matchedValue ) : List.of();
+            MatchRows bindings = projectMatchRows( match, matchBindings( new MatchRows( match, 0 ), 0, pattern instanceof CypherNamedPattern ), paths );
+            right = right == null ? bindings : joinBindings( right, bindings, JoinAlgType.INNER, null, context, true );
+        }
+
+        AlgNode left = context.pop();
+        if ( left == null ) {
+            // The first OPTIONAL MATCH has one input row with no variables.
+            left = LogicalLpgValues.create( cluster, cluster.traitSet(), new AlgRecordType( List.of() ), ImmutableList.of( ImmutableList.of() ) );
+        }
+        JoinAlgType joinType = clause.isOptional() ? JoinAlgType.LEFT : JoinAlgType.INNER;
+        context.add( joinBindings( new MatchRows( left, 0 ), Objects.requireNonNull( right ), joinType, clause.getWhere(), context, false ).node() );
+    }
+
+
+    private MatchRows joinBindings( MatchRows leftRows, MatchRows rightRows, JoinAlgType type, CypherWhere where, CypherContext context, boolean clausePatterns ) {
+        AlgNode left = leftRows.node();
+        AlgNode right = rightRows.node();
+        int offset = left.getTupleType().getFieldCount();
+        Map<PolyString, RexNode> leftBindings = matchBindings( leftRows, 0, true );
+        Map<PolyString, RexNode> rightBindings = matchBindings( rightRows, offset, true );
+        List<RexNode> conditions = new ArrayList<>();
+        Map<PolyString, RexNode> scope = new LinkedHashMap<>( leftBindings );
+        rightBindings.forEach( ( name, value ) -> {
+            RexNode current = scope.putIfAbsent( name, value );
+            if ( current != null ) {
+                conditions.add( sameBinding( name, current, value ) );
+            }
+        } );
+        // Patterns in the same clause cannot reuse a relationship, even when that relationship is unnamed.
+        List<RexNode> paths = new ArrayList<>();
+        if ( clausePatterns ) {
+            List<RexNode> leftPaths = matchPaths( leftRows, 0 );
+            List<RexNode> rightPaths = matchPaths( rightRows, offset );
+            for ( RexNode leftPath : leftPaths ) {
+                for ( RexNode rightPath : rightPaths ) {
+                    conditions.add( rexBuilder.makeCall( context.booleanType,
+                            OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_PATHS_DISJOINT ),
+                            List.of( leftPath, rightPath ) ) );
+                }
+            }
+            paths.addAll( leftPaths );
+            paths.addAll( rightPaths );
+        }
+        if ( where != null ) {
+            // Resolve WHERE against the visible bindings, then rewrite its references to the join inputs.
+            AlgNode combined = LogicalLpgJoin.create( left, right, rexBuilder.makeLiteral( true ), JoinAlgType.INNER );
+            context.add( projectBindings( combined, scope ) );
+            RexNode predicate = where.getExpression().getRex( context, RexType.PROJECT ).right;
+            List<RexNode> arguments = new ArrayList<>( scope.values() );
+            conditions.add( predicate.accept( new RexShuttle() {
+                @Override
+                public RexNode visitIndexRef( RexIndexRef ref ) {
+                    return arguments.get( ref.getIndex() );
+                }
+            } ) );
+            context.pop();
+        }
+
+        AlgNode join = LogicalLpgJoin.create( left, right, RexUtil.composeConjunction( rexBuilder, conditions, false ), type );
+        Map<PolyString, RexNode> output = new LinkedHashMap<>( leftBindings );
+        // Derive new bindings from the join's row type, which makes its optional side nullable.
+        for ( AlgDataTypeField field : rightRows.visibleFields() ) {
+            if ( field.getName() != null ) {
+                int index = offset + field.getIndex();
+                output.putIfAbsent( PolyString.of( field.getName() ), rexBuilder.makeInputRef( join, index ) );
+            }
+        }
+        return projectMatchRows( join, output, paths );
+    }
+
+
+    private Map<PolyString, RexNode> matchBindings( MatchRows input, int offset, boolean includePathColumn ) {
+        Map<PolyString, RexNode> bindings = new LinkedHashMap<>();
+        for ( AlgDataTypeField field : input.visibleFields() ) {
+            AlgDataType type = field.getType();
+            RexNode ref = rexBuilder.makeInputRef( type, offset + field.getIndex() );
+            if ( field.getName() != null && (includePathColumn || type.getPolyType() != PolyType.PATH) ) {
+                bindings.put( PolyString.of( field.getName() ), ref );
+            }
+            if ( type.getPolyType() == PolyType.PATH ) {
+                for ( AlgDataTypeField variable : type.getFields() ) {
+                    bindings.putIfAbsent( PolyString.of( variable.getName() ), rexBuilder.makeCall(
+                            contextPathFieldType( type, variable ),
+                            OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EXTRACT_FROM_PATH ),
+                            List.of( ref, rexBuilder.makeLiteral( variable.getName() ) ) ) );
+                }
+            }
+        }
+        return bindings;
+    }
+
+
+    private List<RexNode> matchPaths( MatchRows rows, int offset ) {
+        return rows.pathFields().stream()
+                .map( field -> (RexNode) rexBuilder.makeInputRef( field.getType(), offset + field.getIndex() ) )
+                .toList();
+    }
+
+
+    private AlgDataType contextPathFieldType( AlgDataType path, AlgDataTypeField field ) {
+        return cluster.getTypeFactory().createTypeWithNullability( field.getType(), path.isNullable() || field.getType().isNullable() );
+    }
+
+
+    private RexNode sameBinding( PolyString name, RexNode left, RexNode right ) {
+        PolyType type = left.getType().getPolyType();
+        if ( type != right.getType().getPolyType() || (type != PolyType.NODE && type != PolyType.EDGE) ) {
+            throw new GenericRuntimeException( "Variable " + name + " must refer to the same type of node or relationship in each pattern." );
+        }
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.EQUALS ), elementId( left ), elementId( right ) );
+    }
+
+
+    private RexNode elementId( RexNode element ) {
+        AlgDataType idType = cluster.getTypeFactory().createTypeWithNullability(
+                cluster.getTypeFactory().createPolyType( PolyType.VARCHAR ), element.getType().isNullable() );
+        return rexBuilder.makeCall( idType,
+                OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EXTRACT_ID ), List.of( element ) );
+    }
+
+
+    private AlgNode projectBindings( AlgNode node, Map<PolyString, RexNode> bindings ) {
+        return projectMatchRows( node, bindings, List.of() ).node();
+    }
+
+
+    private MatchRows projectMatchRows( AlgNode node, Map<PolyString, RexNode> bindings, List<RexNode> hiddenPaths ) {
+        List<PolyString> names = new ArrayList<>( bindings.keySet() );
+        List<RexNode> outputs = new ArrayList<>( bindings.values() );
+        for ( int i = 0; i < hiddenPaths.size(); i++ ) {
+            String name = "$matchPath" + i;
+            while ( bindings.containsKey( PolyString.of( name ) ) ) {
+                name += "$";
+            }
+            names.add( PolyString.of( name ) );
+        }
+        outputs.addAll( hiddenPaths );
+        return new MatchRows( LogicalLpgProject.create( node, outputs, names ), hiddenPaths.size() );
+    }
+
+
+    private record MatchRows( AlgNode node, int pathCount ) {
+
+        private List<AlgDataTypeField> visibleFields() {
+            List<AlgDataTypeField> fields = node.getTupleType().getFields();
+            return fields.subList( 0, fields.size() - pathCount );
+        }
+
+
+        private List<AlgDataTypeField> pathFields() {
+            List<AlgDataTypeField> fields = node.getTupleType().getFields();
+            return fields.subList( fields.size() - pathCount, fields.size() );
+        }
+
     }
 
 
@@ -419,6 +616,8 @@ public class CypherToAlgConverter {
         private final Map<PolyString, PolyNode> nodes = new HashMap<>();
         public CypherNode active;
         public Kind kind;
+        private boolean createReturning;
+        private LogicalLpgModify returningInsert;
         private List<Pair<PolyString, EdgeVariableHolder>> edges = new LinkedList<>();
 
 
@@ -459,13 +658,13 @@ public class CypherToAlgConverter {
         }
 
 
-        public void combineMatch() {
+        private void combineMatch( boolean enumerableOnly ) {
             addDefaultScanIfNecessary();
             List<Pair<PolyString, RexNode>> matches = getMatches();
 
             List<RexCall> calls = Pair.right( matches ).stream().map( r -> (RexCall) r ).toList();
 
-            stack.add( new LogicalLpgMatch( cluster, cluster.traitSet(), stack.pop(), calls, Pair.left( matches ) ) );
+            stack.add( new LogicalLpgMatch( cluster, cluster.traitSet(), stack.pop(), calls, Pair.left( matches ), enumerableOnly ) );
             clearVariables();
         }
 
@@ -603,7 +802,7 @@ public class CypherToAlgConverter {
 
         public Pair<PolyString, RexNode> getPropertyExtract( String key, String subject, RexNode field ) {
             RexNode extractedProperty = rexBuilder.makeCall(
-                    typeFactory.createPolyType( PolyType.ANY ),
+                    typeFactory.createTypeWithNullability( typeFactory.createPolyType( PolyType.ANY ), true ),
                     OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EXTRACT_PROPERTY ),
                     List.of( field, rexBuilder.makeLiteral( key ) ) );
 
@@ -621,7 +820,7 @@ public class CypherToAlgConverter {
                     return getLikeOperator( left, right, ( i ) -> "%" + i + "%" );
                 default:
                     return rexBuilder.makeCall(
-                            booleanType,
+                            typeFactory.createTypeWithNullability( booleanType, left.getType().isNullable() || right.getType().isNullable() ),
                             OperatorRegistry.get( op ),
                             List.of( left, right ) );
             }
@@ -632,7 +831,7 @@ public class CypherToAlgConverter {
             assert right.isA( Kind.LITERAL );
             String adjustedRight = adjustingFunction.apply( ((RexLiteral) right).value.asString().value );
             return rexBuilder.makeCall(
-                    booleanType,
+                    typeFactory.createTypeWithNullability( booleanType, left.getType().isNullable() ),
                     OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_LIKE ),
                     List.of( left, rexBuilder.makeLiteral( adjustedRight ) ) );
         }
@@ -698,16 +897,20 @@ public class CypherToAlgConverter {
             List<Pair<PolyString, EdgeVariableHolder>> edges = popEdgeValues();
 
             if ( stack.isEmpty() ) {
-                // simple unfiltered insert
-                add( LogicalLpgValues.create(
+                LogicalLpgValues values = LogicalLpgValues.create(
                         cluster,
                         cluster.traitSet(),
                         nodes,
                         nodeType,
-                        edges.stream().map( t -> Pair.of( t.left, t.right.edge ) ).toList(),
-                        edgeType ) );
-
-                add( new LogicalLpgModify( cluster, cluster.traitSet(), graph, pop(), Modify.Operation.INSERT, null, null ) );
+                        edges.stream().map( edge -> Pair.of( edge.left, orientCreatedEdge( edge.right.edge ) ) ).toList(),
+                        edgeType );
+                LogicalLpgModify insert = new LogicalLpgModify( cluster, cluster.traitSet(), graph, values, Modify.Operation.INSERT, null, null );
+                if ( createReturning ) {
+                    returningInsert = insert;
+                    add( buildCreatedBindings( values ) );
+                } else {
+                    add( insert );
+                }
             } else {
                 // filtered DML
                 List<Pair<PolyString, RexNode>> newNodes = new LinkedList<>();
@@ -768,6 +971,30 @@ public class CypherToAlgConverter {
                 add( new LogicalLpgModify( cluster, cluster.traitSet(), graph, pop(), Modify.Operation.INSERT, null, null ) );
             }
             clearVariables();
+        }
+
+
+        private static PolyEdge orientCreatedEdge( PolyEdge edge ) {
+            if ( edge.direction != EdgeDirection.RIGHT_TO_LEFT ) {
+                return edge;
+            }
+            // Store the source and target explicitly regardless of the direction used to spell the pattern.
+            return new PolyEdge( edge.id, edge.properties, edge.labels, edge.right, edge.left, EdgeDirection.LEFT_TO_RIGHT, edge.getVariableName() )
+                    .fromTo( edge.fromTo() );
+        }
+
+
+        private LogicalLpgValues buildCreatedBindings( LogicalLpgValues values ) {
+            List<AlgDataTypeField> fields = new ArrayList<>();
+            ImmutableList.Builder<RexLiteral> bindings = ImmutableList.builder();
+            Stream.<GraphPropertyHolder>concat( values.getNodes().stream(), values.getEdges().stream() )
+                    .filter( element -> element.getVariableName() != null && !element.getVariableName().isNull() )
+                    .forEach( element -> {
+                        AlgDataType type = element.isNode() ? nodeType : edgeType;
+                        fields.add( new AlgDataTypeFieldImpl( -1L, element.getVariableName().value, fields.size(), type ) );
+                        bindings.add( new RexLiteral( element, type, element.type ) );
+                    } );
+            return LogicalLpgValues.create( cluster, cluster.traitSet(), new AlgRecordType( fields ), ImmutableList.of( bindings.build() ) );
         }
 
 

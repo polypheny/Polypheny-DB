@@ -55,7 +55,22 @@ public class StatementProcessor {
 
 
     public static Node parseGraphStatement( PIStatement piStatement ) {
-        List<? extends Node> statements = piStatement.getLanguage().processorSupplier().get().parse( piStatement.getQuery() );
+        return parseGraphStatement( piStatement, piStatement.getLanguage().processorSupplier().get() );
+    }
+
+
+    public static Node parseGraphBatchMember( PIStatement piStatement ) {
+        Processor processor = piStatement.getLanguage().processorSupplier().get();
+        Node parsed = parseGraphStatement( piStatement, processor );
+        if ( !processor.isUpdateOnly( parsed ) ) {
+            throw new PIServiceException( "Cypher batch statements must update the graph without returning rows" );
+        }
+        return parsed;
+    }
+
+
+    private static Node parseGraphStatement( PIStatement piStatement, Processor processor ) {
+        List<? extends Node> statements = processor.parse( piStatement.getQuery() );
         if ( statements.size() != 1 ) {
             throw new PIServiceException( "Prism requires exactly one Cypher statement per request." );
         }
@@ -148,7 +163,7 @@ public class StatementProcessor {
     public static void prepare( PIPreparedStatement piStatement ) {
         QueryLanguage queryLanguage = piStatement.getLanguage();
         if ( queryLanguage.dataModel() == DataModel.GRAPH ) {
-            throw new PIServiceException( "Prepared Cypher statements are not supported by Prism" );
+            throw new PIServiceException( "Indexed prepared Cypher statements are not supported by Prism. Use named parameters." );
         }
         Transaction transaction = piStatement.getClient().getOrCreateNewTransaction();
         String query = piStatement.getQuery();

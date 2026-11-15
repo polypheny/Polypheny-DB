@@ -2159,7 +2159,7 @@ CypherExpression Properties() :
 {
     (
         LOOKAHEAD( 3 ) e=MapLiteral()
-        | e=Parameter( ParameterType.ANY )
+        | e=Parameter( ParameterType.MAP )
     )
     {
         return e;
@@ -2896,8 +2896,8 @@ CypherParameter Parameter( ParameterType type ) :
 }
 {
     t=<DOLLAR> (
-        v=Variable() { return CypherFactory.newParameter( pos( t ), v, type ); }
-        | <UNSIGNED_DECIMAL_INTEGER> { return CypherFactory.newParameter( pos( t ), token.image, type ); }
+        v=Variable() { return registerParameter( CypherFactory.newParameter( pos( t ), v, type ) ); }
+        | <UNSIGNED_DECIMAL_INTEGER> { return registerParameter( CypherFactory.newParameter( pos( t ), token.image, type ) ); }
     )
 }
 

@@ -48,8 +48,8 @@ final class GraphExecutor extends Executor {
         if ( implementation.isDDL() ) {
             return StatementResult.newBuilder().setScalar( 1 ).build();
         }
-        if ( !Kind.DML.contains( implementation.getKind() ) ) {
-            throw new PIServiceException( "Cypher batch statements must update the graph" );
+        if ( !Kind.DML.contains( implementation.getKind() ) || implementation.isDmlReturning() ) {
+            throw new PIServiceException( "Cypher batch statements must update the graph without returning rows" );
         }
         try {
             long count;
@@ -68,13 +68,13 @@ final class GraphExecutor extends Executor {
     @Override
     StatementResult executeAndGetResult( PIStatement statement, int fetchSize ) {
         PolyImplementation implementation = statement.getImplementation();
-        if ( implementation.isDDL() || Kind.DML.contains( implementation.getKind() ) ) {
+        if ( implementation.isDDL() || (Kind.DML.contains( implementation.getKind() ) && !implementation.isDmlReturning()) ) {
             return executeAndGetResult( statement );
         }
         try {
-            boolean graphFrame = usesGraphFrame( implementation.tupleType, statement.getClient() );
+            statement.setGraphFrame( usesGraphFrame( implementation.tupleType, statement.getClient() ) );
             statement.setIterator( implementation.execute( statement.getStatement(), fetchSize ) );
-            return StatementResult.newBuilder().setFrame( fetchFrame( statement, fetchSize, graphFrame ) ).build();
+            return StatementResult.newBuilder().setFrame( fetchFrame( statement, fetchSize ) ).build();
         } catch ( RuntimeException e ) {
             discardFailedResult( statement, e );
             throw e;
@@ -88,7 +88,7 @@ final class GraphExecutor extends Executor {
             throw new PIServiceException( "No open Cypher result exists for this statement" );
         }
         try {
-            return fetchFrame( statement, fetchSize, usesGraphFrame( statement.getImplementation().tupleType, statement.getClient() ) );
+            return fetchFrame( statement, fetchSize );
         } catch ( RuntimeException e ) {
             discardFailedResult( statement, e );
             throw e;
@@ -96,14 +96,14 @@ final class GraphExecutor extends Executor {
     }
 
 
-    private Frame fetchFrame( PIStatement statement, int fetchSize, boolean graphFrame ) {
+    private Frame fetchFrame( PIStatement statement, int fetchSize ) {
         StopWatch stopwatch = statement.getExecutionStopWatch();
         startOrResumeStopwatch( stopwatch );
         ResultIterator iterator = statement.getIterator();
         List<List<PolyValue>> rows = iterator.getNextBatch( fetchSize );
         boolean last = !iterator.hasMoreRows();
         boolean supportsGraphValues = statement.getClient().supportsGraphValues();
-        Frame frame = graphFrame
+        Frame frame = statement.isGraphFrame()
                 ? PrismUtils.buildGraphFrame( last, rows, supportsGraphValues )
                 : PrismUtils.buildRelationalFrame( last, rows, RelationalMetaRetriever.retrieveColumnMetas( statement.getImplementation() ), supportsGraphValues );
         stopwatch.suspend();
@@ -117,6 +117,9 @@ final class GraphExecutor extends Executor {
 
 
     private static boolean usesGraphFrame( AlgDataType rowType, PIClient client ) {
+        if ( client.wantsRelationalCypherResults() ) {
+            return false;
+        }
         if ( isGraphType( rowType.getPolyType() ) ) {
             return true;
         }

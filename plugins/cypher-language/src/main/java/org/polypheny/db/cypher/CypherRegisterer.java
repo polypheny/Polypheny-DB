@@ -51,6 +51,8 @@ public class CypherRegisterer {
 
         register( OperatorName.CYPHER_EXTRACT_FROM_PATH, new LangFunctionOperator( OperatorName.CYPHER_EXTRACT_FROM_PATH.name(), Kind.CYPHER_FUNCTION, CypherFromPathUtil::inferReturnType, CypherFromPathUtil::inferReturnType ) );
 
+        register( OperatorName.CYPHER_PATHS_DISJOINT, new LangFunctionOperator( OperatorName.CYPHER_PATHS_DISJOINT.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
+
         register( OperatorName.CYPHER_NODE_MATCH, new LangFunctionOperator( OperatorName.CYPHER_NODE_MATCH.name(), Kind.CYPHER_FUNCTION, PolyType.NODE ) );
 
         register( OperatorName.CYPHER_EXTRACT_PROPERTY, new LangFunctionOperator( OperatorName.CYPHER_EXTRACT_PROPERTY.name(), Kind.CYPHER_FUNCTION, PolyType.ANY ) );

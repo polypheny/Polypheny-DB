@@ -1704,6 +1704,8 @@ public enum OperatorName {
 
     CYPHER_EXTRACT_FROM_PATH( LangFunctionOperator.class ),
 
+    CYPHER_PATHS_DISJOINT( LangFunctionOperator.class ),
+
     CYPHER_EXTRACT_PROPERTY( LangFunctionOperator.class ),
 
     CYPHER_EXTRACT_ID( LangFunctionOperator.class ),

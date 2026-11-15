@@ -269,6 +269,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private ProposedImplementations prepareQueries( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean isRouted, boolean isSubQuery ) {
+        boolean dmlReturning = isGraphInsertReturning( logicalRoot );
         boolean isAnalyze = statement.isAnalyze() && !isSubQuery;
         boolean lock = !isSubQuery;
 
@@ -433,7 +434,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                             parameterizedRoot.validatedRowType,
                             resultConvention,
                             executionTimeMonitor,
-                            Objects.requireNonNull( optimalNode.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).dataModel() );
+                            Objects.requireNonNull( optimalNode.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).dataModel(),
+                            dmlReturning );
                     plan.result( result );
                     plan.generatedCodes( preparedResult.getCode() );
                     plan.optimalNode( optimalNode );
@@ -518,7 +520,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     optimalRoot.validatedRowType,
                     resultConvention,
                     executionTimeMonitor,
-                    Objects.requireNonNull( plan.optimalNode().getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).dataModel() );
+                    Objects.requireNonNull( plan.optimalNode().getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).dataModel(),
+                    dmlReturning );
             plan.result( result );
             plan.generatedCodes( preparedResult.getCode() );
             plan.optimalNode( optimalRoot.alg );
@@ -551,7 +554,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 root.validatedRowType,
                 resultConvention,
                 new ExecutionTimeMonitor(),
-                Objects.requireNonNull( root.alg.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).dataModel() );
+                Objects.requireNonNull( root.alg.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).dataModel(),
+                isGraphInsertReturning( root ) );
     }
 
 
@@ -963,7 +967,22 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
+    private static boolean isGraphInsertReturning( AlgRoot root ) {
+        return root.kind == Kind.INSERT
+                && root.getModel() == ModelTrait.GRAPH
+                && root.alg instanceof LogicalConditionalExecute returning
+                && returning.getLeft() instanceof LogicalLpgModify;
+    }
+
+
     private List<ProposedRoutingPlan> routeGraph( AlgRoot logicalRoot, LogicalQueryInformation queryInformation, DmlRouter dmlRouter ) {
+        if ( isGraphInsertReturning( logicalRoot ) ) {
+            LogicalConditionalExecute returning = (LogicalConditionalExecute) logicalRoot.alg;
+            LogicalLpgModify insert = (LogicalLpgModify) returning.getLeft();
+            AlgNode routedInsert = dmlRouter.routeGraphDml( insert, statement, null, null );
+            AlgNode routed = LogicalConditionalExecute.create( routedInsert, returning.getRight(), returning );
+            return Lists.newArrayList( new ProposedRoutingPlanImpl( routed, logicalRoot, queryInformation.getQueryHash() ) );
+        }
         if ( logicalRoot.alg instanceof LogicalLpgModify logicalLpgModify ) {
             AlgNode routedDml = dmlRouter.routeGraphDml( logicalLpgModify, statement, null, null );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryHash() ) );
@@ -1169,7 +1188,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private PolyImplementation createPolyImplementation( PreparedResult<PolyValue> preparedResult, Kind kind, AlgNode optimalNode, AlgDataType validatedRowType, Convention resultConvention, ExecutionTimeMonitor executionTimeMonitor, DataModel dataModel ) {
+    private PolyImplementation createPolyImplementation( PreparedResult<PolyValue> preparedResult, Kind kind, AlgNode optimalNode, AlgDataType validatedRowType, Convention resultConvention, ExecutionTimeMonitor executionTimeMonitor, DataModel dataModel, boolean dmlReturning ) {
         final AlgDataType jdbcType = QueryProcessorHelpers.makeStruct( optimalNode.getCluster().getTypeFactory(), validatedRowType );
         return new PolyImplementation(
                 jdbcType,
@@ -1178,7 +1197,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 preparedResult,
                 kind,
                 statement,
-                resultConvention
+                resultConvention,
+                dmlReturning
         );
     }
 

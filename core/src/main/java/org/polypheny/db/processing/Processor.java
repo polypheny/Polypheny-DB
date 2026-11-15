@@ -19,6 +19,7 @@ package org.polypheny.db.processing;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
@@ -34,6 +35,7 @@ import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 
@@ -41,6 +43,17 @@ import org.polypheny.db.util.Pair;
 public abstract class Processor {
 
     public abstract List<? extends Node> parse( String query );
+
+
+    public PreparedNamedQuery prepareNamedQuery( String query ) {
+        throw new UnsupportedOperationException( "Named parameters are not supported by this query processor" );
+    }
+
+
+    /** A parsed parameter signature and a binder that creates a fresh AST for each execution. */
+    public record PreparedNamedQuery(List<String> parameterNames, Function<Map<String, PolyValue>, Node> bind) {
+    }
+
 
     public abstract Pair<Node, AlgDataType> validate( Transaction transaction, Node parsed, boolean addDefaultValues );
 
@@ -81,5 +94,11 @@ public abstract class Processor {
     public abstract AlgDataType getParameterRowType( Node left );
 
     public abstract List<String> splitStatements( String statements );
+
+
+    /** Whether a parsed statement is a mutation or DDL that returns no result rows. */
+    public boolean isUpdateOnly( Node statement ) {
+        return statement.isDdl() || Kind.DML.contains( statement.getKind() );
+    }
 
 }

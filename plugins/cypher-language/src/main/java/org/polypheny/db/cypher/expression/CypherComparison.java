@@ -20,6 +20,7 @@ import lombok.Getter;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.entity.PolyString;
@@ -43,6 +44,10 @@ public class CypherComparison extends CypherExpression {
 
     @Override
     public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
+        if ( right == null ) {
+            RexNode input = left.getRex( context, RexType.PROJECT ).right;
+            return Pair.of( null, context.rexBuilder.makeCall( OperatorRegistry.get( operatorName ), input ) );
+        }
         Pair<PolyString, RexNode> namedLeft = left.getRex( context, type );
         Pair<PolyString, RexNode> namedRight = right.getRex( context, type );
 

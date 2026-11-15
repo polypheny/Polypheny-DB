@@ -289,14 +289,9 @@ public interface NeoUtil {
             case BIGINT, INTERVAL, SYMBOL -> literal.getValue().toString();
             case TIMESTAMP -> literal.value.asTemporal().getMillisSinceEpoch().toString();
             case DECIMAL, FLOAT, REAL, DOUBLE -> literal.getValue().toString();
-            case CHAR, VARCHAR -> {
-                if ( isLiteral ) {
-                    yield "'" + literal.value.asString() + "'";
-                }
-                yield literal.value.asString().value;
-
-            }
-            case MAP, DOCUMENT, ARRAY -> literal.value.asList().toString();
+            case CHAR, VARCHAR, TEXT -> isLiteral ? quoteStringLiteral( literal.value.asString().value ) : literal.value.asString().value;
+            case ARRAY -> NeoStatements._literalOrString( literal.value ).build();
+            case MAP, DOCUMENT -> literal.value.asList().toString();
             case BINARY, VARBINARY -> literal.value.asBinary().as64String();
             case FILE, IMAGE, VIDEO, AUDIO -> Arrays.toString( literal.value.asBlob().asByteArray() );
             case NULL -> null;
@@ -311,6 +306,16 @@ public interface NeoUtil {
             default -> throw new UnsupportedOperationException( "Type is not supported by the Neo4j adapter." );
         };
 
+    }
+
+    static String quoteStringLiteral( String value ) {
+        return "'" + value.replace( "\\", "\\\\" )
+                .replace( "'", "\\'" )
+                .replace( "\n", "\\n" )
+                .replace( "\r", "\\r" )
+                .replace( "\t", "\\t" )
+                .replace( "\b", "\\b" )
+                .replace( "\f", "\\f" ) + "'";
     }
 
     static Function1<List<String>, String> getOpAsNeo( OperatorName operatorName, List<RexNode> operands, AlgDataType returnType, List<AlgDataTypeField> beforeFields ) {
@@ -340,7 +345,7 @@ public interface NeoUtil {
             case UNARY_PLUS -> o -> o.get( 0 );
             case COALESCE -> o -> "coalesce(" + String.join( ", ", o ) + ")";
             case NOT_LIKE -> handleLike( operands, true );
-            case CYPHER_LIKE -> o -> String.format( "%s =~ '%s'", o.get( 0 ), maybeUnquote( getAsRegex( o.get( 1 ) ) ) );
+            case CYPHER_LIKE -> handleLike( operands, false );
             case LIKE -> handleLike( operands, false );
             case POWER -> o -> String.format( "%s^%s", o.get( 0 ), o.get( 1 ) );
             case SQRT -> o -> String.format( "sqrt(%s)", o.get( 0 ) );
@@ -423,7 +428,7 @@ public interface NeoUtil {
                     // Unknown value, we are done.
                     break;
                 }
-                String arg = argNameLiteral.value.toString() + ":" + argValueLiteral.value.toString();
+                String arg = argNameLiteral.value.toString() + ":" + rexAsString( argValueLiteral, null, true );
                 arguments.add( arg );
             }
 
@@ -473,7 +478,16 @@ public interface NeoUtil {
             return null;
         }
 
-        Function1<List<String>, String> func = o -> String.format( "%s =~ '%s'", o.get( 0 ), getAsRegex( o.get( 1 ) ) );
+        Function1<List<String>, String> func = o -> {
+            String rendered = o.get( 1 );
+            if ( rendered == null ) {
+                return o.get( 0 ) + " =~ null";
+            }
+            String pattern = operands.get( 1 ) instanceof RexLiteral literal
+                    ? literal.value.asString().value
+                    : maybeUnquote( rendered );
+            return o.get( 0 ) + " =~ " + quoteStringLiteral( getAsRegex( pattern ) );
+        };
         if ( operands.get( 1 ).isA( Kind.INPUT_REF ) ) {
             func = o -> String.format( "%s = %s", o.get( 0 ), o.get( 1 ) );
         }

@@ -59,6 +59,7 @@ public class PolyImplementation {
     public final AlgDataType tupleType;
     private final long maxRowCount = -1;
     private final Kind kind;
+    private final boolean dmlReturning;
     private Bindable<PolyValue[]> bindable;
     private final DataModel dataModel;
     private final ExecutionTimeMonitor executionTimeMonitor;
@@ -93,11 +94,25 @@ public class PolyImplementation {
             Kind kind,
             Statement statement,
             @Nullable Convention resultConvention ) {
+        this( tupleType, dataModel, executionTimeMonitor, preparedResult, kind, statement, resultConvention, false );
+    }
+
+
+    public PolyImplementation(
+            @Nullable AlgDataType tupleType,
+            DataModel dataModel,
+            ExecutionTimeMonitor executionTimeMonitor,
+            @Nullable PreparedResult<PolyValue> preparedResult,
+            Kind kind,
+            Statement statement,
+            @Nullable Convention resultConvention,
+            boolean dmlReturning ) {
 
         this.dataModel = dataModel;
         this.executionTimeMonitor = executionTimeMonitor;
         this.preparedResult = preparedResult;
         this.kind = kind;
+        this.dmlReturning = dmlReturning;
         this.statement = statement;
         this.resultConvention = resultConvention;
         this.isDDL = Kind.DDL.contains( kind );
@@ -159,7 +174,7 @@ public class PolyImplementation {
             return fields;
         }
 
-        final AlgDataType x = switch ( kind ) {
+        final AlgDataType x = dmlReturning ? tupleType : switch ( kind ) {
             case INSERT, DELETE, UPDATE, EXPLAIN ->
                 // FIXME: getValidatedNodeType is wrong for DML
                     AlgOptUtil.createDmlRowType( kind, statement.getTransaction().getTypeFactory() );

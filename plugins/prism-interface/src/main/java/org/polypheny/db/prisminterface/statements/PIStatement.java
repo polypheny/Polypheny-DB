@@ -40,6 +40,8 @@ public abstract class PIStatement {
     protected final QueryLanguage language;
     @Setter
     private ResultIterator iterator;
+    @Setter
+    private boolean graphFrame;
     protected LogicalNamespace namespace;
 
 

@@ -220,12 +220,12 @@ public class CypherFunctions {
     /**
      * Returns if the given node has the given key.
      *
-     * @param node the target node
+     * @param holder the target node or relationship
      * @param property the key to check
      */
     @SuppressWarnings("unused")
-    public static PolyBoolean hasProperty( PolyNode node, PolyValue property ) {
-        return PolyBoolean.of( node.properties.containsKey( property.asString() ) );
+    public static PolyBoolean hasProperty( GraphPropertyHolder holder, PolyString property ) {
+        return PolyBoolean.of( holder != null && holder.getProperties().containsKey( property ) );
     }
 
 
@@ -237,7 +237,7 @@ public class CypherFunctions {
      */
     @SuppressWarnings("unused")
     public static PolyBoolean hasLabel( PolyNode node, PolyValue label ) {
-        return PolyBoolean.of( node.labels.contains( label.asString() ) );
+        return node == null ? null : PolyBoolean.of( node.labels.contains( label.asString() ) );
     }
 
 
@@ -249,7 +249,15 @@ public class CypherFunctions {
      */
     @SuppressWarnings("unused")
     public static GraphObject extractFrom( PolyPath path, PolyString variableName ) {
-        return path.get( variableName );
+        return path == null ? null : path.get( variableName );
+    }
+
+
+    @SuppressWarnings("unused")
+    public static PolyBoolean pathsDisjoint( PolyPath left, PolyPath right ) {
+        Set<PolyString> relationships = new HashSet<>();
+        left.getEdges().forEach( edge -> relationships.add( edge.getId() ) );
+        return PolyBoolean.of( right.getEdges().stream().noneMatch( edge -> relationships.contains( edge.getId() ) ) );
     }
 
 
@@ -262,22 +270,19 @@ public class CypherFunctions {
      */
     @SuppressWarnings("unused")
     public static PolyValue extractProperty( GraphPropertyHolder holder, PolyString key ) {
-        if ( holder.getProperties().containsKey( key ) ) {
-            return holder.getProperties().get( key );
-        }
-        return null;
+        return holder == null ? null : holder.getProperties().get( key );
     }
 
 
     @SuppressWarnings("unused")
     public static PolyValue extractProperties( GraphPropertyHolder holder ) {
-        return holder.getProperties();
+        return holder == null ? null : holder.getProperties();
     }
 
 
     @SuppressWarnings("unused")
     public static PolyString extractId( GraphPropertyHolder holder ) {
-        return holder.getId();
+        return holder == null ? null : holder.getId();
     }
 
 
@@ -288,7 +293,7 @@ public class CypherFunctions {
      */
     @SuppressWarnings("unused")
     public static PolyString extractLabel( GraphPropertyHolder holder ) {
-        return holder.getLabels().get( 0 );
+        return holder == null ? null : holder.getLabels().get( 0 );
     }
 
 
@@ -299,7 +304,7 @@ public class CypherFunctions {
      */
     @SuppressWarnings("unused")
     public static List<PolyString> extractLabels( GraphPropertyHolder holder ) {
-        return holder.getLabels();
+        return holder == null ? null : holder.getLabels();
     }
 
 
@@ -429,6 +434,9 @@ public class CypherFunctions {
 
 
     public static PolyBoolean like( PolyValue b0, PolyValue b1 ) {
+        if ( b0 == null || b1 == null || b0.isNull() || b1.isNull() ) {
+            return null;
+        }
         if ( b0.isString() && b1.isString() ) {
             return Functions.like( b0.asString(), b1.asString() );
         }
