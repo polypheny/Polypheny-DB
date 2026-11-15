@@ -9,6 +9,8 @@ apply plugin: "com.google.protobuf"
 group "org.polypheny"
 
 configurations {
+    prismApi
+    protobuf.extendsFrom prismApi
     tests {
         extendsFrom testRuntimeOnly
     }
@@ -24,8 +26,7 @@ dependencies {
     compileOnly project(path: ':plugins:sql-language')
     compileOnly project(path: ':plugins:mql-language')
 
-    // Prism API files (protobuf files), needs to be implementation due to the prism-api-version.properties
-    implementation group: 'org.polypheny', name: 'prism', version: prism_api_version
+    prismApi group: 'org.polypheny', name: 'prism', version: prism_api_version
 
     // Protobuf
     implementation group: 'com.google.protobuf', name: 'protobuf-java', version: protobuf_version
@@ -47,7 +48,14 @@ compileJava.dependsOn(generateProto)
 compileTestJava.mustRunAfter(javadoc)
 compileTestJava.mustRunAfter(jar)
 compileTestJava.mustRunAfter(plugin)
-processResources.dependsOn(extractIncludeProto)
+
+processResources {
+    // The JDBC test driver also embeds a version file with this name.
+    from({ zipTree(configurations.prismApi.singleFile) }) {
+        include 'prism-api-version.properties'
+        into 'org/polypheny/db/prisminterface'
+    }
+}
 
 test.dependsOn(":dbms:shadowJar")
 
@@ -69,9 +77,6 @@ sourceSets {
     main {
         java {
             srcDirs = ["src/main/java", "build/generated/source/proto/main/java"]
-        }
-        proto {
-            srcDirs = ["build/extracted-include-protos/main"]
         }
         resources {
             srcDirs = ["src/main/resources"]

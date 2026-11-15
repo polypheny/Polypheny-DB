@@ -141,6 +141,11 @@ public class MongoStore extends DataStore<DocAdapterCatalog> {
                     throw new GenericRuntimeException( " Command 'mongo --eval rs.initiate()' failed" );
                 }
 
+                if ( !container.waitTillStarted( this::hasWritablePrimary, 20000 ) ) {
+                    container.destroy();
+                    throw new GenericRuntimeException( "Mongo replica set did not elect a writable primary" );
+                }
+
                 this.deploymentId = container.getContainerId();
                 settings.put( "deploymentId", this.deploymentId );
                 updateSettings( settings );
@@ -535,6 +540,17 @@ public class MongoStore extends DataStore<DocAdapterCatalog> {
     @Override
     public List<FunctionalIndexInfo> getFunctionalIndexes( LogicalTable table ) {
         return ImmutableList.of();
+    }
+
+
+    private boolean hasWritablePrimary() {
+        try {
+            // The Docker image uses the legacy Mongo shell and its isMaster command.
+            return container.execute( List.of( "mongo", "--quiet", "--eval", "quit(db.isMaster().ismaster ? 0 : 1)" ) ) == 0;
+        } catch ( IOException e ) {
+            log.debug( "Could not check Mongo replica set readiness", e );
+            return false;
+        }
     }
 
 

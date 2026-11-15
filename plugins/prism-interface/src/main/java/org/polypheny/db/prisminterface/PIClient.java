@@ -78,6 +78,15 @@ public class PIClient {
     }
 
 
+    /**
+     * Creates a read transaction owned by a metadata request, without changing the
+     * connection's transaction. The caller must complete this transaction.
+     */
+    Transaction createMetadataTransaction( long namespaceId ) {
+        return transactionManager.startTransaction( catalogUser.id, namespaceId, null, "PrismInterface metadata" );
+    }
+
+
     public void commitCurrentTransactionIfAuto() {
         if ( !isAutoCommit ) {
             return;
