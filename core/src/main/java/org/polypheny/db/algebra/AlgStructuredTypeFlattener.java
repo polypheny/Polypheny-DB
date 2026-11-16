@@ -81,6 +81,7 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgTransformer;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnwind;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgWriteRow;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
 import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
@@ -212,6 +213,7 @@ public class AlgStructuredTypeFlattener implements AlgConsumingVisitor {
                 put( LogicalLpgSort.class, a -> rewriteAlg( (LogicalLpgSort) a ) );
                 put( LogicalLpgAggregate.class, a -> rewriteAlg( (LogicalLpgAggregate) a ) );
                 put( LogicalLpgUnwind.class, a -> rewriteAlg( (LogicalLpgUnwind) a ) );
+                put( LogicalLpgWriteRow.class, a -> rewriteGeneric( a ) );
                 put( LogicalRelAggregate.class, a -> rewriteAlg( (LogicalRelAggregate) a ) );
                 put( LogicalRelCorrelate.class, a -> rewriteAlg( (LogicalRelCorrelate) a ) );
                 put( LogicalRelFilter.class, a -> rewriteAlg( (LogicalRelFilter) a ) );

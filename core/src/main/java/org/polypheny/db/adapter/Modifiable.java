@@ -225,6 +225,7 @@ public interface Modifiable extends Scannable {
                                 rexBuilder.makeInputRef( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 0 ),
                                 rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 0 ) ) );
 
+        inputs.add( getModify( edgePropertiesTable, algBuilder.build(), Modify.Operation.DELETE, null, null ) );
         return inputs;
     }
 
@@ -412,6 +413,40 @@ public interface Modifiable extends Scannable {
                 modify.operation,
                 modify.ids,
                 modify.operations );
+    }
+
+
+    default AlgNode getGraphRowModification( long allocationId, Operation operation, List<PolyType> parameters, AlgBuilder builder ) {
+        List<PhysicalEntity> physicals = getCatalog().getPhysicalsFromAllocs( allocationId );
+        AlgCluster cluster = builder.getCluster();
+        Optional<ModifiableGraph> nativeGraph = physicals.get( 0 ).unwrap( ModifiableGraph.class );
+        if ( nativeGraph.isPresent() ) {
+            return nativeGraph.get().toGraphRowModification( cluster, operation, parameters );
+        }
+
+        Entity nodesTable = physicals.get( 0 );
+        Entity nodePropertiesTable = physicals.get( 1 );
+        Entity edgesTable = physicals.get( 2 );
+        Entity edgePropertiesTable = physicals.get( 3 );
+        List<AlgNode> modifies = new ArrayList<>();
+        for ( PolyType type : parameters ) {
+            if ( type != PolyType.NODE && type != PolyType.EDGE ) {
+                throw new GenericRuntimeException( "Graph writes require a node or relationship binding" );
+            }
+            if ( operation == Operation.UPDATE || operation == Operation.DELETE ) {
+                modifies.addAll( type == PolyType.NODE
+                        ? attachPreparedGraphNodeModifyDelete( this, cluster, nodesTable, nodePropertiesTable, builder )
+                        : attachPreparedGraphEdgeModifyDelete( this, cluster, edgesTable, edgePropertiesTable, builder ) );
+            }
+            if ( operation == Operation.INSERT || operation == Operation.UPDATE ) {
+                modifies.addAll( type == PolyType.NODE
+                        ? attachPreparedGraphNodeModifyInsert( this, cluster, nodesTable, nodePropertiesTable, builder )
+                        : attachPreparedGraphEdgeModifyInsert( this, cluster, edgesTable, edgePropertiesTable, builder ) );
+            }
+        }
+        AlgRecordType resultType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl(
+                -1L, "ROWCOUNT", 0, cluster.getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
+        return new LogicalLpgTransformer( cluster, cluster.traitSet(), modifies, resultType, parameters, operation );
     }
 
 

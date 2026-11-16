@@ -117,6 +117,13 @@ public class PolyGraph extends GraphObject {
 
 
     public List<PolyPath> extract( PolyPath pattern ) {
+        if ( pattern.getEdges().isEmpty() ) {
+            PolyNode template = pattern.getNodes().get( 0 );
+            PolyString variable = template.getVariableName();
+            return extract( template ).stream()
+                    .map( node -> PolyPath.create( List.of( Pair.of( variable, node.copyNamed( variable ) ) ), List.of() ) )
+                    .toList();
+        }
         // Retrieve hop as de-referenced segments, which store the full information of nodes and edges
         List<List<PolySegment>> segments = pattern.getDerefSegments();
 
@@ -219,12 +226,14 @@ public class PolyGraph extends GraphObject {
                     PolyNode right = nodes.get( edge.right );
                     // then check if it matches pattern of segment either ()->() or ()-() depending if direction is specified
                     if ( segment.direction == EdgeDirection.LEFT_TO_RIGHT || segment.direction == EdgeDirection.NONE ) {
-                        if ( segment.matches( left, edge, right ) && !part.usedEdgesIds.contains( edge.id ) && part.targetId.equals( edge.left ) ) {
+                        if ( segment.matches( left, edge, right ) && part.targetId.equals( edge.left )
+                                && part.matchesNodeBinding( segment.target.getVariableName(), edge.right ) ) {
                             matches.add( new TreePart( part, edge.id, edge.right, segment.edge.getVariableName(), segment.target.getVariableName() ) );
                         }
                     }
                     if ( segment.direction == EdgeDirection.RIGHT_TO_LEFT || segment.direction == EdgeDirection.NONE ) {
-                        if ( segment.matches( right, edge, left ) && !part.usedEdgesIds.contains( edge.id ) && part.targetId.equals( edge.right ) ) {
+                        if ( segment.matches( right, edge, left ) && part.targetId.equals( edge.right )
+                                && part.matchesNodeBinding( segment.target.getVariableName(), edge.left ) ) {
                             matches.add( new TreePart( part, edge.id, edge.left, segment.edge.getVariableName(), segment.target.getVariableName() ) );
                         }
                     }
@@ -338,6 +347,19 @@ public class PolyGraph extends GraphObject {
             if ( edgeId != null ) {
                 usedEdgesIds.add( edgeId );
             }
+        }
+
+
+        private boolean matchesNodeBinding( PolyString variable, PolyString nodeId ) {
+            if ( variable == null || variable.isNull() ) {
+                return true;
+            }
+            for ( TreePart part = this; part != null; part = part.parent ) {
+                if ( variable.equals( part.targetVariable ) ) {
+                    return nodeId.equals( part.targetId );
+                }
+            }
+            return true;
         }
 
 

@@ -20,11 +20,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.webui.models.results.GraphResult;
 
@@ -155,6 +160,85 @@ class OptionalMatchTest {
         assertEquals( 1, separately.length );
         assertEquals( "Bob", text( separately[0][1] ) );
         assertEquals( "Bob", text( separately[0][2] ) );
+    }
+
+
+    @Test
+    void retainingAPathDoesNotKeepItsVariablesInScope() {
+        String[][] rows = execute( "MATCH p = (a:Person)-[:KNOWS]->(b) WITH p OPTIONAL MATCH (a:Person) RETURN a.name AS name ORDER BY name" ).getData();
+
+        assertEquals( List.of( "Alice", "Alice", "Bob", "Bob", "Charlie", "Charlie" ),
+                Arrays.stream( rows ).map( row -> text( row[0] ) ).toList() );
+    }
+
+
+    @Test
+    void aRepeatedNodeVariableRequiresOneIdentity() {
+        String[][] rows = execute( "MATCH (a:Person) OPTIONAL MATCH p = (a)-[:KNOWS]->(a) RETURN a.name AS name, p ORDER BY name" ).getData();
+
+        assertEquals( 3, rows.length );
+        for ( String[] row : rows ) {
+            assertNull( row[1] );
+        }
+    }
+
+
+    @Test
+    void namedSingleNodePathsKeepTheNodeBindingAndPathType() {
+        String[][] rows = execute( "MATCH (n:Person) OPTIONAL MATCH p = (n) RETURN n.name AS name, p ORDER BY name" ).getData();
+
+        assertEquals( 3, rows.length );
+        for ( String[] row : rows ) {
+            var path = PolyValue.fromTypedJson( row[1], PolyValue.class ).asPath();
+            assertEquals( 0, path.getEdges().size() );
+            assertEquals( 1, path.getNodes().size() );
+            assertEquals( text( row[0] ), path.getNodes().get( 0 ).getProperties().get( PolyString.of( "name" ) ).asString().getValue() );
+        }
+        String[][] first = execute( "OPTIONAL MATCH p = (n:Person {name: 'Alice'}) RETURN p, n.name AS name" ).getData();
+        assertEquals( 1, first.length );
+        assertEquals( "Alice", text( first[0][1] ) );
+    }
+
+
+    @Test
+    void inlineNodeAndRelationshipPredicatesFilterOptionalCandidates() {
+        String[][] missing = execute( "OPTIONAL MATCH (n:Person WHERE n.name = 'Missing') RETURN n" ).getData();
+        assertEquals( 1, missing.length );
+        assertNull( missing[0][0] );
+
+        String[][] rows = execute( "MATCH (n:Person) OPTIONAL MATCH (n)-[r:KNOWS WHERE r.since = 2021]->(m) "
+                + "RETURN n.name AS name, m.name AS friend ORDER BY name" ).getData();
+        assertEquals( 3, rows.length );
+        assertNull( rows[0][1] );
+        assertEquals( "Charlie", text( rows[1][1] ) );
+        assertNull( rows[2][1] );
+    }
+
+
+    @Test
+    void starProjectionExposesVariablesWithoutTheAnonymousPathColumn() {
+        GraphResult result = execute( "MATCH (a:Person)-[:KNOWS]->(b) OPTIONAL MATCH (b)-[:KNOWS]->(c) RETURN *" );
+
+        assertEquals( List.of( "a", "b", "c" ), Arrays.stream( result.getHeader() ).map( field -> field.name ).toList() );
+        assertEquals( 2, result.getData().length );
+    }
+
+
+    @Test
+    void groupsByGraphBindingAndCountsOnlyNonNullNeighbors() {
+        GraphResult result = execute( "MATCH (n:Person) OPTIONAL MATCH (n)-[:KNOWS]->(m) "
+                + "RETURN count(m) AS neighbors, n AS person, count(*) AS rows" );
+        assertEquals( List.of( "neighbors", "person", "rows" ), Arrays.stream( result.getHeader() ).map( field -> field.name ).toList() );
+        assertEquals( 3, result.getData().length );
+
+        Map<String, Integer> neighbors = new HashMap<>();
+        for ( String[] row : result.getData() ) {
+            var person = PolyValue.fromTypedJson( row[1], PolyValue.class ).asNode();
+            String name = person.getProperties().get( PolyString.of( "name" ) ).asString().getValue();
+            neighbors.put( name, PolyValue.fromTypedJson( row[0], PolyValue.class ).asNumber().intValue() );
+            assertEquals( 1, PolyValue.fromTypedJson( row[2], PolyValue.class ).asNumber().intValue() );
+        }
+        assertEquals( Map.of( "Alice", 1, "Bob", 1, "Charlie", 0 ), neighbors );
     }
 
 

@@ -31,6 +31,7 @@ import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
@@ -43,6 +44,7 @@ import org.polypheny.db.algebra.logical.common.LogicalBatchIterator;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.common.LogicalContextSwitcher;
+import org.polypheny.db.algebra.logical.common.LogicalStreamer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
@@ -86,6 +88,7 @@ import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Triple;
@@ -686,6 +689,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         }
 
         LogicalGraph graph = alg.entity.unwrapOrThrow( LogicalGraph.class );
+        if ( alg.returnsRows() ) {
+            return routeReturningGraphDml( alg, statement, graph, target, excludedPlacements );
+        }
 
         if ( target != null ) {
             return new LogicalLpgModify( alg.getCluster(),
@@ -728,7 +734,39 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
+    private AlgNode routeReturningGraphDml( LogicalLpgModify modify, Statement statement, LogicalGraph graph,
+            @Nullable AllocationEntity target, @Nullable List<Long> excludedPlacements ) {
+        Snapshot snapshot = statement.getTransaction().getSnapshot();
+        List<AllocationPartition> partitions = snapshot.alloc().getPartitionsFromLogical( graph.id );
+        if ( partitions.size() != 1 ) {
+            throw new GenericRuntimeException( "Graph writes require exactly one partition" );
+        }
+        List<AllocationEntity> targets = target != null ? List.of( target ) : snapshot.alloc().getPlacementsFromLogical( graph.id ).stream()
+                .filter( placement -> excludedPlacements == null || !excludedPlacements.contains( placement.id ) )
+                .map( placement -> snapshot.alloc().getAlloc( placement.id, partitions.get( 0 ).id ).orElseThrow() )
+                .toList();
+        if ( targets.isEmpty() ) {
+            throw new GenericRuntimeException( "No graph placement is available to write" );
+        }
+
+        AlgNode provider = buildGraphDml( modify.getInput(), statement, target, excludedPlacements );
+        List<PolyType> parameters = provider.getTupleType().getFields().stream().limit( modify.getReturningParameters() )
+                .map( field -> field.getType().getPolyType() ).toList();
+        AlgBuilder builder = AlgBuilder.create( statement, modify.getCluster() );
+        List<AlgNode> collectors = targets.stream()
+                .map( allocation -> AdapterManager.getInstance().getStore( allocation.adapterId ).orElseThrow()
+                        .getGraphRowModification( allocation.id, modify.operation, parameters, builder ) )
+                .toList();
+        AlgNode collector = collectors.size() == 1 ? collectors.get( 0 )
+                : new LogicalModifyCollect( modify.getCluster(), modify.getTraitSet(), collectors, true );
+        return new LogicalStreamer( modify.getCluster(), modify.getTraitSet(), provider, collector, modify.getReturningParameters() );
+    }
+
+
     private AlgNode buildGraphDml( AlgNode node, Statement statement, @Nullable AllocationEntity target, @Nullable List<Long> excludedPlacements ) {
+        if ( node instanceof LogicalLpgModify modify && modify.returnsRows() ) {
+            return routeGraphDml( modify, statement, null, null );
+        }
         if ( node instanceof LpgScan ) {
             return super.handleGraphScan( (LogicalLpgScan) node, statement, target, excludedPlacements );
         }

@@ -74,7 +74,12 @@ public class LaxAggregateCall {
             index = getInput().get().unwrap( RexIndexRef.class ).get().getIndex();
         }
 
-        return AggregateCall.create( function, false, false, index < 0 ? List.of() : List.of( index ), -1, AlgCollations.EMPTY, getType( cluster ), name );
+        return toAggCall( index < 0 ? List.of() : List.of( index ), cluster );
+    }
+
+
+    public AggregateCall toAggCall( List<Integer> arguments, AlgCluster cluster ) {
+        return AggregateCall.create( function, false, false, arguments, -1, AlgCollations.EMPTY, getType( cluster ), name );
     }
 
 

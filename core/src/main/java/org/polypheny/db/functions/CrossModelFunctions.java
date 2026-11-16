@@ -87,6 +87,11 @@ public class CrossModelFunctions {
         context.resetParameterValues();
         Enumerator<?> enumerable;
         for ( PolyType polyType : order ) {
+            PolyValue element = values.get( (long) i );
+            if ( element == null || element.isNull() ) {
+                i++;
+                continue;
+            }
             if ( polyType == PolyType.NODE ) {
                 PolyNode node = (PolyNode) values.get( (long) i );
 
@@ -284,6 +289,11 @@ public class CrossModelFunctions {
 
         context.resetParameterValues();
         for ( PolyType polyType : order ) {
+            PolyValue element = values.get( (long) i );
+            if ( element == null || element.isNull() ) {
+                i++;
+                continue;
+            }
             if ( polyType == PolyType.NODE ) {
                 PolyNode node = (PolyNode) values.get( (long) i );
 
@@ -300,7 +310,7 @@ public class CrossModelFunctions {
                 edgeTableDelete( context, enumerables, 2 * i, idType, labelType, edge );
 
                 // edge property table delete
-                edgePropertiesTableDelete( context, enumerables, 2 * i, idType, labelType, edge );
+                edgePropertiesTableDelete( context, enumerables, 2 * i + 1, idType, labelType, edge );
 
             }
 
@@ -400,6 +410,11 @@ public class CrossModelFunctions {
 
         context.resetParameterValues();
         for ( PolyType polyType : order ) {
+            PolyValue element = values.get( (long) i );
+            if ( element == null || element.isNull() ) {
+                i++;
+                continue;
+            }
             if ( polyType == PolyType.NODE ) {
                 PolyNode node = (PolyNode) values.get( (long) i );
 

@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
+import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.lpg.LpgModify;
@@ -45,12 +46,44 @@ import org.polypheny.db.type.entity.PolyString;
 
 public class LogicalLpgModify extends LpgModify<Entity> implements RelationalTransformable {
 
+    private final int returningParameters;
+
 
     /**
      * Subclass of {@link LpgModify} not targeted at any particular engine or calling convention.
      */
     public LogicalLpgModify( AlgCluster cluster, AlgTraitSet traits, Entity entity, AlgNode input, Operation operation, List<PolyString> ids, List<? extends RexNode> operations ) {
-        super( cluster, traits, entity, input, operation, ids, operations, AlgOptUtil.createDmlRowType( Kind.INSERT, cluster.getTypeFactory() ) );
+        this( cluster, traits, entity, input, operation, ids, operations, 0 );
+    }
+
+
+    public LogicalLpgModify( AlgCluster cluster, AlgTraitSet traits, Entity entity, AlgNode input, Operation operation, List<PolyString> ids,
+            List<? extends RexNode> operations, int returningParameters ) {
+        super( cluster, traits, entity, input, operation, ids, operations,
+                returningParameters == 0 ? AlgOptUtil.createDmlRowType( Kind.INSERT, cluster.getTypeFactory() ) : input.getTupleType() );
+        this.returningParameters = returningParameters;
+    }
+
+
+    public boolean returnsRows() {
+        return returningParameters > 0;
+    }
+
+
+    public int getReturningParameters() {
+        return returningParameters;
+    }
+
+
+    @Override
+    public String algCompareString() {
+        return super.algCompareString() + returningParameters;
+    }
+
+
+    @Override
+    public AlgWriter explainTerms( AlgWriter writer ) {
+        return super.explainTerms( writer ).itemIf( "returningParameters", returningParameters, returnsRows() );
     }
 
 
@@ -72,7 +105,7 @@ public class LogicalLpgModify extends LpgModify<Entity> implements RelationalTra
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalLpgModify( inputs.get( 0 ).getCluster(), traitSet, entity, inputs.get( 0 ), operation, ids, operations );
+        return new LogicalLpgModify( inputs.get( 0 ).getCluster(), traitSet, entity, inputs.get( 0 ), operation, ids, operations, returningParameters );
     }
 
 

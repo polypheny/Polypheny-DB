@@ -62,9 +62,7 @@ public abstract class LpgProject extends SingleAlg implements LpgAlg {
 
     @Override
     public String algCompareString() {
-        return "$" + getClass().getSimpleName() +
-                "$" + projects.hashCode() +
-                "$" + input.algCompareString();
+        return LpgAlg.comparisonKey( getClass().getName(), names, projects, input.algCompareString() );
     }
 
 

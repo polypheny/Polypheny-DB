@@ -23,6 +23,8 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.clause.CypherClause;
 import org.polypheny.db.cypher.clause.CypherQuery;
+import org.polypheny.db.cypher.clause.CypherReturnClause;
+import org.polypheny.db.cypher.clause.CypherStarReturn;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.nodes.Node;
@@ -43,12 +45,34 @@ public class CypherSingleQuery extends CypherQuery implements ExecutableStatemen
     public CypherSingleQuery( ParserPos pos, List<CypherClause> clauses ) {
         super( pos );
         this.clauses = clauses;
+        validateFullScan();
     }
 
 
     @Override
     public boolean isFullScan() {
         return clauses.stream().anyMatch( CypherNode::isFullScan );
+    }
+
+
+    private void validateFullScan() {
+        if ( !isFullScan() ) {
+            return;
+        }
+        List<CypherClause> scan = clauses.get( 0 ).getCypherKind() == CypherKind.USE ? clauses.subList( 1, clauses.size() ) : clauses;
+        // MATCH (*) is a Polypheny whole-graph scan, separate from ordinary Cypher patterns.
+        if ( scan.get( 0 ).isFullScan() && (scan.size() == 1 || scan.size() == 2 && isWholeGraphReturn( scan.get( 1 ) )) ) {
+            return;
+        }
+        throw new GenericRuntimeException( "MATCH (*) only supports a standalone whole-graph scan with optional RETURN *" );
+    }
+
+
+    private static boolean isWholeGraphReturn( CypherClause clause ) {
+        return clause instanceof CypherReturnClause projection
+                && !projection.isDistinct() && projection.getSkip() == null && projection.getLimit() == null
+                && projection.getOrder().isEmpty()
+                && projection.getReturnItems().size() == 1 && projection.getReturnItems().get( 0 ) instanceof CypherStarReturn;
     }
 
 
@@ -76,10 +100,21 @@ public class CypherSingleQuery extends CypherQuery implements ExecutableStatemen
 
 
     public boolean hasUpdates() {
-        return clauses.stream().anyMatch( clause -> switch ( clause.getCypherKind() ) {
+        return clauses.stream().anyMatch( CypherSingleQuery::isWriteClause );
+    }
+
+
+    public boolean isUpdateOnly() {
+        return !clauses.isEmpty() && isWriteClause( clauses.get( clauses.size() - 1 ) )
+                && clauses.stream().noneMatch( clause -> clause.getCypherKind() == CypherKind.RETURN );
+    }
+
+
+    private static boolean isWriteClause( CypherClause clause ) {
+        return switch ( clause.getCypherKind() ) {
             case CREATE, SET, DELETE, REMOVE -> true;
             default -> false;
-        } );
+        };
     }
 
 

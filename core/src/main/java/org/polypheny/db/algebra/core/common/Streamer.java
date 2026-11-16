@@ -34,6 +34,8 @@ import org.polypheny.db.plan.AlgTraitSet;
 @NonFinal
 public abstract class Streamer extends BiAlg {
 
+    int returningParameters;
+
     /**
      * {@code
      * Streamer
@@ -46,7 +48,13 @@ public abstract class Streamer extends BiAlg {
      * @param collector uses the provided values and
      */
     public Streamer( AlgCluster cluster, AlgTraitSet traitSet, AlgNode provider, AlgNode collector ) {
+        this( cluster, traitSet, provider, collector, 0 );
+    }
+
+
+    public Streamer( AlgCluster cluster, AlgTraitSet traitSet, AlgNode provider, AlgNode collector, int returningParameters ) {
         super( cluster, traitSet, provider, collector );
+        this.returningParameters = returningParameters;
     }
 
 
@@ -65,7 +73,7 @@ public abstract class Streamer extends BiAlg {
 
     @Override
     protected AlgDataType deriveRowType() {
-        return right.getTupleType();
+        return returningParameters == 0 ? right.getTupleType() : left.getTupleType();
     }
 
 
@@ -84,7 +92,7 @@ public abstract class Streamer extends BiAlg {
         return getClass().getSimpleName() + "from[$" +
                 getProvider().algCompareString() + "$" +
                 "],to[" + getCollector().algCompareString() +
-                "$]&";
+                "$" + returningParameters + "]&";
     }
 
 
@@ -92,7 +100,8 @@ public abstract class Streamer extends BiAlg {
     public AlgWriter explainTerms( AlgWriter pw ) {
         return super.explainTerms( pw )
                 .input( "provider", getProvider() )
-                .input( "collector", getProvider() );
+                .input( "collector", getCollector() )
+                .itemIf( "returningParameters", returningParameters, returningParameters > 0 );
     }
 
 }

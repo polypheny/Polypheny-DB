@@ -1719,6 +1719,9 @@ public enum OperatorName {
     CYPHER_TO_LIST( LangFunctionOperator.class ),
 
     CYPHER_ADJUST_EDGE( LangFunctionOperator.class ),
+    CYPHER_CREATE_NODE( LangFunctionOperator.class ),
+    CYPHER_CREATE_EDGE( LangFunctionOperator.class ),
+    CYPHER_CREATE_PATH( LangFunctionOperator.class ),
 
     CYPHER_SET_PROPERTY( LangFunctionOperator.class ),
 
@@ -1733,6 +1736,7 @@ public enum OperatorName {
     CYPHER_REMOVE_PROPERTIES( LangFunctionOperator.class ),
 
     CYPHER_LIKE( LangFunctionOperator.class ),
+    CYPHER_CONTAINS( LangFunctionOperator.class ),
 
 
     CYPHER_GEO_DISTANCE( LangFunctionOperator.class ),

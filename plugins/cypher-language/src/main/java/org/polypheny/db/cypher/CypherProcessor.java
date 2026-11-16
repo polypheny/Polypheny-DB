@@ -30,7 +30,6 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.cypher.CypherNode.CypherKind;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter;
 import org.polypheny.db.cypher.parser.CypherParser;
 import org.polypheny.db.cypher.parser.CypherParser.CypherParserConfig;
@@ -217,7 +216,7 @@ public class CypherProcessor extends Processor {
         if ( !(statement instanceof CypherSingleQuery query) ) {
             return false;
         }
-        return query.hasUpdates() && query.getClauses().stream().noneMatch( clause -> clause.getCypherKind() == CypherKind.RETURN );
+        return query.isUpdateOnly();
     }
 
 

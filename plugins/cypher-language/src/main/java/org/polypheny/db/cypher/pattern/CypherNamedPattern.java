@@ -16,8 +16,10 @@
 
 package org.polypheny.db.cypher.pattern;
 
+import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
+import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexNode;
@@ -45,8 +47,27 @@ public class CypherNamedPattern extends CypherPattern {
 
 
     @Override
+    public void getPatternValues( CypherContext context ) {
+        if ( anonymousPattern instanceof CypherEveryPathPattern path ) {
+            path.getPatternValues( context, PolyString.of( variable.getName() ) );
+        } else {
+            super.getPatternValues( context );
+        }
+    }
+
+
+    @Override
     public Pair<PolyString, RexNode> getPatternMatch( CypherContext context ) {
-        return Pair.of( PolyString.of( variable.getName() ), anonymousPattern.getPatternMatch( context ).right );
+        RexNode path = anonymousPattern instanceof CypherEveryPathPattern pattern
+                ? pattern.getPathFilter( context )
+                : anonymousPattern.getPatternMatch( context ).right;
+        return Pair.of( PolyString.of( variable.getName() ), path );
+    }
+
+
+    @Override
+    public List<CypherExpression> getPredicates() {
+        return anonymousPattern.getPredicates();
     }
 
 }

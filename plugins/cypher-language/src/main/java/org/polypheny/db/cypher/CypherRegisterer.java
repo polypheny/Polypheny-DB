@@ -40,6 +40,9 @@ public class CypherRegisterer {
         }
 
         register( OperatorName.CYPHER_LIKE, new LangFunctionOperator( OperatorName.CYPHER_LIKE.name(), Kind.LIKE, PolyType.BOOLEAN ) );
+        register( OperatorName.STARTS_WITH, new LangFunctionOperator( OperatorName.STARTS_WITH.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
+        register( OperatorName.ENDS_WITH, new LangFunctionOperator( OperatorName.ENDS_WITH.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
+        register( OperatorName.CYPHER_CONTAINS, new LangFunctionOperator( OperatorName.CYPHER_CONTAINS.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
 
         register( OperatorName.CYPHER_HAS_PROPERTY, new LangFunctionOperator( OperatorName.CYPHER_HAS_PROPERTY.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
 
@@ -68,6 +71,9 @@ public class CypherRegisterer {
         register( OperatorName.CYPHER_TO_LIST, new LangFunctionOperator( OperatorName.CYPHER_TO_LIST.name(), Kind.CYPHER_FUNCTION, PolyType.ARRAY, PolyType.ANY ) );
 
         register( OperatorName.CYPHER_ADJUST_EDGE, new LangFunctionOperator( OperatorName.CYPHER_ADJUST_EDGE.name(), Kind.CYPHER_FUNCTION, PolyType.EDGE ) );
+        register( OperatorName.CYPHER_CREATE_NODE, new LangFunctionOperator( OperatorName.CYPHER_CREATE_NODE.name(), Kind.CYPHER_FUNCTION, PolyType.NODE ) );
+        register( OperatorName.CYPHER_CREATE_EDGE, new LangFunctionOperator( OperatorName.CYPHER_CREATE_EDGE.name(), Kind.CYPHER_FUNCTION, PolyType.EDGE ) );
+        register( OperatorName.CYPHER_CREATE_PATH, new LangFunctionOperator( OperatorName.CYPHER_CREATE_PATH.name(), Kind.CYPHER_FUNCTION, PolyType.PATH ) );
 
         register( OperatorName.CYPHER_SET_LABELS, new LangFunctionOperator( OperatorName.CYPHER_SET_LABELS.name(), Kind.CYPHER_FUNCTION, PolyType.ANY ) );
 

@@ -72,6 +72,11 @@ public class LogicalStreamer extends Streamer {
     }
 
 
+    public LogicalStreamer( AlgCluster cluster, AlgTraitSet traitSet, AlgNode provider, AlgNode collector, int returningParameters ) {
+        super( cluster, traitSet, provider, collector, returningParameters );
+    }
+
+
     public static LogicalStreamer create( AlgNode provider, AlgNode collector ) {
         return new LogicalStreamer( provider.getCluster(), provider.getTraitSet(), provider, collector );
     }
@@ -242,7 +247,7 @@ public class LogicalStreamer extends Streamer {
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalStreamer( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), inputs.get( 1 ) );
+        return new LogicalStreamer( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), inputs.get( 1 ), getReturningParameters() );
     }
 
 

@@ -21,13 +21,16 @@ import static org.polypheny.db.functions.spatial.GeoDistanceFunctions.EARTH_RADI
 import static org.polypheny.db.type.entity.spatial.PolyGeometry.WGS_84;
 import static org.polypheny.db.type.entity.spatial.PolyGeometry.WGS_84_3D;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiPredicate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
@@ -53,6 +56,7 @@ import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.spatial.GeometryTopologicalException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.spatial.PolyPoint;
+import org.polypheny.db.util.Pair;
 
 
 @Deterministic
@@ -347,6 +351,55 @@ public class CypherFunctions {
     }
 
 
+
+    public static PolyNode createNode( PolyNode template, PolyString rowId, List<PolyString> keys, List<PolyValue> values ) {
+        return new PolyNode( createdId( template.id, rowId ), properties( keys, values ), template.labels, template.getVariableName() );
+    }
+
+
+    public static PolyEdge createEdge( PolyEdge template, PolyString rowId, PolyNode source, PolyNode target,
+            List<PolyString> keys, List<PolyValue> values ) {
+        if ( source == null || target == null ) {
+            throw new GenericRuntimeException( "CREATE requires a bound source and target node" );
+        }
+        return new PolyEdge( createdId( template.id, rowId ), properties( keys, values ), template.labels, source.id, target.id,
+                template.direction, template.getVariableName() );
+    }
+
+
+    public static PolyPath createPath( List<PolyValue> elements ) {
+        List<Pair<PolyString, PolyNode>> nodes = new ArrayList<>();
+        List<Pair<PolyString, PolyEdge>> edges = new ArrayList<>();
+        for ( PolyValue element : elements ) {
+            if ( element.isNode() ) {
+                PolyNode node = element.asNode();
+                nodes.add( Pair.of( node.getVariableName(), node ) );
+            } else {
+                PolyEdge edge = element.asEdge();
+                edges.add( Pair.of( edge.getVariableName(), edge ) );
+            }
+        }
+        return PolyPath.create( nodes, edges );
+    }
+
+
+    private static PolyString createdId( PolyString template, PolyString rowId ) {
+        return PolyString.of( UUID.nameUUIDFromBytes( (template.value + rowId.value).getBytes( StandardCharsets.UTF_8 ) ).toString() );
+    }
+
+
+    private static PolyDictionary properties( List<PolyString> keys, List<PolyValue> values ) {
+        PolyDictionary properties = new PolyDictionary();
+        for ( int i = 0; i < keys.size(); i++ ) {
+            PolyValue value = values.get( i );
+            if ( value != null && !value.isNull() ) {
+                properties.put( keys.get( i ), value );
+            }
+        }
+        return properties;
+    }
+
+
     /**
      * Sets a property value for a given key.
      * If the key does not exist it gets created, if it does, it gets replaced.
@@ -358,7 +411,14 @@ public class CypherFunctions {
      */
     @SuppressWarnings("unused")
     public static GraphPropertyHolder setProperty( GraphPropertyHolder target, PolyString key, PolyValue value ) {
-        target.properties.put( key, value );
+        if ( target == null ) {
+            return null;
+        }
+        if ( value == null || value.isNull() ) {
+            target.properties.remove( key );
+        } else {
+            target.properties.put( key, value );
+        }
         return target;
     }
 
@@ -441,6 +501,29 @@ public class CypherFunctions {
             return Functions.like( b0.asString(), b1.asString() );
         }
         return PolyBoolean.FALSE;
+    }
+
+
+    public static PolyBoolean startsWith( PolyValue value, PolyValue prefix ) {
+        return compareStrings( value, prefix, String::startsWith );
+    }
+
+
+    public static PolyBoolean endsWith( PolyValue value, PolyValue suffix ) {
+        return compareStrings( value, suffix, String::endsWith );
+    }
+
+
+    public static PolyBoolean contains( PolyValue value, PolyValue part ) {
+        return compareStrings( value, part, String::contains );
+    }
+
+
+    private static PolyBoolean compareStrings( PolyValue left, PolyValue right, BiPredicate<String, String> predicate ) {
+        if ( left == null || right == null || left.isNull() || right.isNull() || !left.isString() || !right.isString() ) {
+            return null;
+        }
+        return PolyBoolean.of( predicate.test( left.asString().value, right.asString().value ) );
     }
 
 

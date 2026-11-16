@@ -269,7 +269,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private ProposedImplementations prepareQueries( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean isRouted, boolean isSubQuery ) {
-        boolean dmlReturning = isGraphInsertReturning( logicalRoot );
+        boolean dmlReturning = isGraphInsertReturning( logicalRoot )
+                || logicalRoot.getModel() == ModelTrait.GRAPH && logicalRoot.kind.belongsTo( Kind.DML ) && containsReturningGraphModify( logicalRoot.alg );
         boolean isAnalyze = statement.isAnalyze() && !isSubQuery;
         boolean lock = !isSubQuery;
 
@@ -975,7 +976,27 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
+    private static boolean containsReturningGraphModify( AlgNode node ) {
+        return node instanceof LogicalLpgModify modify && modify.returnsRows()
+                || node.getInputs().stream().anyMatch( AbstractQueryProcessor::containsReturningGraphModify );
+    }
+
+
+    private AlgNode routeReturningGraphModify( AlgNode node, DmlRouter dmlRouter ) {
+        if ( node instanceof LogicalLpgModify modify && modify.returnsRows() ) {
+            return dmlRouter.routeGraphDml( modify, statement, null, null );
+        }
+        return node.copy( node.getTraitSet(), node.getInputs().stream()
+                .map( input -> containsReturningGraphModify( input ) ? routeReturningGraphModify( input, dmlRouter ) : input )
+                .toList() );
+    }
+
+
     private List<ProposedRoutingPlan> routeGraph( AlgRoot logicalRoot, LogicalQueryInformation queryInformation, DmlRouter dmlRouter ) {
+        if ( containsReturningGraphModify( logicalRoot.alg ) ) {
+            AlgNode routed = routeReturningGraphModify( logicalRoot.alg, dmlRouter );
+            return Lists.newArrayList( new ProposedRoutingPlanImpl( routed, logicalRoot, queryInformation.getQueryHash() ) );
+        }
         if ( isGraphInsertReturning( logicalRoot ) ) {
             LogicalConditionalExecute returning = (LogicalConditionalExecute) logicalRoot.alg;
             LogicalLpgModify insert = (LogicalLpgModify) returning.getLeft();

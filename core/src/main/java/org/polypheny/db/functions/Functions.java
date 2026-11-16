@@ -60,6 +60,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
@@ -352,6 +353,60 @@ public class Functions {
         context.setParameterValues( valuesBackup );
 
         return Linq4j.asEnumerable( results );
+    }
+
+
+    @SuppressWarnings("unused")
+    public static Enumerable<PolyValue[]> appendGraphRowId( Enumerable<?> source ) {
+        return source.select( item -> {
+            PolyValue[] row;
+            if ( item instanceof PolyValue[] fields ) {
+                row = fields;
+            } else if ( item instanceof List<?> fields ) {
+                row = fields.toArray( PolyValue[]::new );
+            } else {
+                row = new PolyValue[]{ (PolyValue) item };
+            }
+            PolyValue[] withId = java.util.Arrays.copyOf( row, row.length + 1 );
+            withId[row.length] = PolyString.of( UUID.randomUUID().toString() );
+            return withId;
+        } );
+    }
+
+
+    @SuppressWarnings("unused")
+    public static Enumerable<PolyValue[]> streamGraphRows( DataContext context, Enumerable<PolyValue[]> provider,
+            Function0<Enumerable<PolyValue[]>> collector, List<PolyType> polyTypes ) {
+        AlgDataTypeFactory factory = context.getStatement().getTransaction().getTypeFactory();
+        List<AlgDataType> parameterTypes = polyTypes.stream().map( factory::createPolyType ).toList();
+        List<Map<Long, PolyValue>> valuesBackup = context.getParameterValues();
+        Map<Long, AlgDataType> typesBackup = context.getParameterTypes();
+        List<PolyValue[]> rows = new ArrayList<>();
+        // Capture the complete input before modifying the store that provides it.
+        try ( Enumerator<PolyValue[]> input = provider.enumerator() ) {
+            while ( input.moveNext() ) {
+                rows.add( input.current().clone() );
+            }
+        }
+
+        try {
+            for ( PolyValue[] row : rows ) {
+                context.resetParameterValues();
+                for ( int i = 0; i < parameterTypes.size(); i++ ) {
+                    context.addParameterValues( i, parameterTypes.get( i ), Collections.singletonList( row[i] ) );
+                }
+                try ( Enumerator<PolyValue[]> updates = collector.apply().enumerator() ) {
+                    while ( updates.moveNext() ) {
+                        // Drain all adapters' writes before exposing any returning rows.
+                    }
+                }
+            }
+        } finally {
+            context.resetParameterValues();
+            context.setParameterTypes( typesBackup );
+            context.setParameterValues( valuesBackup );
+        }
+        return Linq4j.asEnumerable( rows );
     }
 
 

@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
@@ -33,16 +34,20 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.expression.CypherAggregate;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherProperty;
+import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 
@@ -107,7 +112,7 @@ public class CypherReturnClause extends CypherClause {
     }
 
 
-    private LogicalLpgAggregate getAggregate( CypherContext context, AlgNode node ) {
+    private AlgNode getAggregate( CypherContext context, AlgNode node ) {
         List<Pair<String, AggregateCall>> aggIndexes = context.popAggNodes();
         List<AggregateCall> aggCalls = new ArrayList<>();
         for ( Pair<String, AggregateCall> namedAgg : aggIndexes ) {
@@ -121,36 +126,48 @@ public class CypherReturnClause extends CypherClause {
 
         List<RexNameRef> groupIndexes = new ArrayList<>();
         List<LaxAggregateCall> calls = new ArrayList<>();
-        AlgDataTypeFactory.Builder builder = context.typeFactory.builder();
+        AlgDataTypeFactory.Builder groupedType = context.typeFactory.builder();
+        List<String> aggregateNames = new ArrayList<>();
+        List<Integer> requestedOrder = new ArrayList<>();
 
         int aggCount = 0;
         for ( CypherReturn returnItem : returnItems ) {
             if ( returnItem instanceof CypherReturnItem item ) {
-                if ( item.getExpression() instanceof CypherProperty name ) {
-                    AlgDataType type = node.getTupleType().getField( name.getName(), false, false ).getType();
-                    builder.add( name.getName(), null, type );
-
-                    int i = node.getTupleType().getFieldNames().indexOf( name.getName() );
-                    RexNameRef ref = RexNameRef.create( name.getName(), i, node.getTupleType().getFields().get( i ).getType() );
-                    groupIndexes.add( ref );
-                } else if ( item.getExpression() instanceof CypherAggregate aggregate ) {
-
-                    Pair<String, AggregateCall> aggIndex = aggIndexes.get( aggCount );
-                    LaxAggregateCall call = LaxAggregateCall.from( aggIndex.right, aggIndex.left == null ? null : node );
-                    calls.add( call );
-
-                    builder.add( item.getVariable() != null ? item.getVariable().getName() : aggregate.op.name(), null, call.getType( node.getCluster() ) );
+                if ( item.getExpression() instanceof CypherAggregate aggregate ) {
+                    requestedOrder.add( -1 - aggCount );
+                    AggregateCall call = aggCalls.get( aggCount );
+                    calls.add( LaxAggregateCall.from( call, aggIndexes.get( aggCount ).left == null ? null : node ) );
+                    aggregateNames.add( item.getVariable() != null ? item.getVariable().getName() : aggregate.op.name() );
+                    aggCount++;
+                } else if ( item.getVariable() != null || item.getExpression() instanceof CypherProperty || item.getExpression() instanceof CypherVariable ) {
+                    String name = item.getVariable() != null ? item.getVariable().getName() : item.getExpression().getName();
+                    int index = node.getTupleType().getFieldNames().indexOf( name );
+                    AlgDataType type = node.getTupleType().getFields().get( index ).getType();
+                    requestedOrder.add( groupIndexes.size() );
+                    groupIndexes.add( RexNameRef.create( name, index, type ) );
+                    groupedType.add( name, null, type );
                 }
             }
         }
 
-        return new LogicalLpgAggregate(
+        for ( int i = 0; i < calls.size(); i++ ) {
+            groupedType.add( aggregateNames.get( i ), null, calls.get( i ).getType( node.getCluster() ) );
+        }
+        AlgNode aggregate = new LogicalLpgAggregate(
                 node.getCluster(),
                 node.getTraitSet(),
                 node,
-                groupIndexes,// instead of grouping by only one filed add multiple combinations (), (1,2)
+                groupIndexes,
                 calls,
-                builder.build() );
+                groupedType.build() );
+        List<Integer> positions = requestedOrder.stream().map( index -> index < 0 ? groupIndexes.size() - 1 - index : index ).toList();
+        if ( IntStream.range( 0, positions.size() ).allMatch( index -> positions.get( index ) == index ) ) {
+            return aggregate;
+        }
+        return LogicalLpgProject.create(
+                aggregate,
+                positions.stream().map( index -> context.rexBuilder.makeInputRef( aggregate, index ) ).toList(),
+                positions.stream().map( index -> PolyString.of( aggregate.getTupleType().getFieldNames().get( index ) ) ).toList() );
     }
 
 
@@ -196,19 +213,25 @@ public class CypherReturnClause extends CypherClause {
 
         AlgCollation collation = AlgCollations.of( collations );
 
-        Integer skip = null;
-        if ( this.skip != null ) {
-            skip = this.skip.getComparable().asInteger().value;
-        }
-
-        Integer limit = null;
-        if ( this.limit != null ) {
-            limit = this.limit.getComparable().asInteger().value;
-        }
+        Integer skip = this.skip == null ? null : getRowBound( this.skip, "SKIP" );
+        Integer limit = this.limit == null ? null : getRowBound( this.limit, "LIMIT" );
 
         AlgTraitSet traitSet = node.getTraitSet().replace( collation );
 
         return new LogicalLpgSort( node.getCluster(), traitSet, collation, context.pop(), skip, limit );
+    }
+
+
+    private static int getRowBound( CypherExpression expression, String clause ) {
+        PolyValue value = expression.getComparable();
+        if ( value == null || value.isNull() || !PolyType.INT_TYPES.contains( value.getType() ) ) {
+            throw new GenericRuntimeException( "%s requires a non-negative integer", clause );
+        }
+        long bound = value.asNumber().longValue();
+        if ( bound < 0 || bound > Integer.MAX_VALUE ) {
+            throw new GenericRuntimeException( "%s requires an integer between 0 and %d", clause, Integer.MAX_VALUE );
+        }
+        return (int) bound;
     }
 
 

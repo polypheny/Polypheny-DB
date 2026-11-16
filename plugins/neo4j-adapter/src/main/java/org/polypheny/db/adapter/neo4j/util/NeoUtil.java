@@ -61,6 +61,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
@@ -80,6 +81,7 @@ import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.spatial.PolyPoint;
@@ -110,7 +112,7 @@ public interface NeoUtil {
             case DATE -> v -> PolyDate.of( v.asNumber() );
             case TIME -> v -> PolyTime.of( v.asNumber() );
             case TIMESTAMP -> v -> PolyTimestamp.of( v.asNumber() );
-            case BIGINT -> v -> PolyBigDecimal.of( v.asLong() );
+            case BIGINT -> v -> PolyLong.of( v.asLong() );
             case DECIMAL -> v -> v instanceof StringValue ? PolyBigDecimal.of( v.asString() ) : PolyBigDecimal.of( v.asDouble() );
             case FLOAT, REAL -> v -> v instanceof StringValue ? PolyFloat.of( Float.valueOf( v.asString() ) ) : PolyFloat.of( v.asNumber() );
             case DOUBLE -> v -> v instanceof StringValue ? PolyDouble.of( Double.valueOf( v.asString() ) ) : PolyDouble.of( v.asNumber() );
@@ -346,6 +348,9 @@ public interface NeoUtil {
             case COALESCE -> o -> "coalesce(" + String.join( ", ", o ) + ")";
             case NOT_LIKE -> handleLike( operands, true );
             case CYPHER_LIKE -> handleLike( operands, false );
+            case STARTS_WITH -> o -> o.get( 0 ) + " STARTS WITH " + o.get( 1 );
+            case ENDS_WITH -> o -> o.get( 0 ) + " ENDS WITH " + o.get( 1 );
+            case CYPHER_CONTAINS -> o -> o.get( 0 ) + " CONTAINS " + o.get( 1 );
             case LIKE -> handleLike( operands, false );
             case POWER -> o -> String.format( "%s^%s", o.get( 0 ), o.get( 1 ) );
             case SQRT -> o -> String.format( "sqrt(%s)", o.get( 0 ) );
@@ -595,10 +600,32 @@ public interface NeoUtil {
 
         @Override
         public Void visitCall( RexCall call ) {
-            if ( NeoUtil.getOpAsNeo( call.op.getOperatorName(), call.operands, call.type, List.of() ) == null ) {
-                supports = false;
+            // Graph mutations in a projection construct values for the row writer.
+            // Their native spelling is a SET/REMOVE clause, never a return expression.
+            switch ( call.op.getOperatorName() ) {
+                case CYPHER_SET_PROPERTY, CYPHER_SET_PROPERTIES, CYPHER_SET_LABELS, CYPHER_REMOVE_LABELS, CYPHER_REMOVE_PROPERTY -> supports = false;
+                default -> {
+                    if ( NeoUtil.getOpAsNeo( call.op.getOperatorName(), call.operands, call.type, List.of() ) == null ) {
+                        supports = false;
+                    }
+                }
             }
             return super.visitCall( call );
+        }
+
+
+        @Override
+        public Void visitLiteral( RexLiteral literal ) {
+            if ( literal.getPolyType() == PolyType.BINARY || literal.getPolyType() == PolyType.VARBINARY
+                    || literal.getPolyType() == PolyType.DECIMAL ) {
+                // Native Cypher literals do not preserve byte arrays or exact decimals.
+                supports = false;
+            }
+            if ( literal.getType() instanceof ArrayType arrayType && arrayType.getDimension() < 1 ) {
+                // The native result decoder needs a declared dimension to decode arrays.
+                supports = false;
+            }
+            return super.visitLiteral( literal );
         }
 
     }
