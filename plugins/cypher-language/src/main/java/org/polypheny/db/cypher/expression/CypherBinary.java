@@ -20,6 +20,7 @@ import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -52,10 +53,15 @@ public class CypherBinary extends CypherExpression {
 
         Pair<PolyString, RexNode> left = this.left.getRex( context, type );
         Pair<PolyString, RexNode> right = this.right.getRex( context, type );
+        PolyType leftType = left.right.getType().getPolyType();
+        PolyType rightType = right.right.getType().getPolyType();
+        boolean differentFamilies = leftType.getFamily() != rightType.getFamily();
 
-        if ( (op == OperatorName.EQUALS || op == OperatorName.NOT_EQUALS)
-                && (left.right.getType().getPolyType() == PolyType.ANY || right.right.getType().getPolyType() == PolyType.ANY) ) {
-            // Property values can have different types in different rows of the same graph.
+        // A binding can also change the type of a variable introduced by WITH.
+        boolean needsTypedComparison = differentFamilies || leftType == PolyType.ANY || rightType == PolyType.ANY
+                || leftType == PolyType.NULL || rightType == PolyType.NULL
+                || this.left instanceof CypherParameter || this.right instanceof CypherParameter;
+        if ( needsTypedComparison && (op == OperatorName.EQUALS || op == OperatorName.NOT_EQUALS) ) {
             OperatorName dynamicComparison = op == OperatorName.EQUALS ? OperatorName.CYPHER_EQUALS : OperatorName.CYPHER_NOT_EQUALS;
             return Pair.of( null, context.rexBuilder.makeCall(
                     context.typeFactory.createTypeWithNullability( context.booleanType, true ),
@@ -64,7 +70,7 @@ public class CypherBinary extends CypherExpression {
         if ( OperatorRegistry.get( op ) instanceof BinaryOperator ) {
             // when we have a binary comparison, we have to adjust potential mismatches
             // this is the case if one of the sides is a literal, which has an explicit type
-            if ( left.right.getType().getPolyType().getFamily() != right.right.getType().getPolyType().getFamily() ) {
+            if ( differentFamilies ) {
                 if ( left.right.isA( Kind.LITERAL ) && right.right.isA( Kind.LITERAL ) ) {
                     throw new UnsupportedOperationException( "Both binary sides define non matching types" );
                 } else if ( left.right.isA( Kind.LITERAL ) ) {

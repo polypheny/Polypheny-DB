@@ -64,13 +64,13 @@ import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.functions.CypherFunctions;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl.SyntheticRecordType;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -122,19 +122,16 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
 
         @Override
         protected void implementNotNullAdd( AggContext info, AggAddContext add ) {
-            Expression value = add.arguments().get( 0 );
-            PolyType type = info.parameterAlgTypes().get( 0 ).getPolyType();
-            if ( type == PolyType.NODE || type == PolyType.EDGE ) {
-                value = Expressions.call( BuiltInMethod.CYPHER_EXTRACT_ID.method, value );
-            }
-            add.currentBlock().add( Expressions.statement( Expressions.call( add.accumulator().get( 0 ), BuiltInMethod.COLLECTION_ADD.method, value ) ) );
+            Expression key = Expressions.call( CypherFunctions.class, "aggregationKey", add.arguments().get( 0 ) );
+            add.currentBlock().add( Expressions.statement( Expressions.call( add.accumulator().get( 0 ), BuiltInMethod.COLLECTION_ADD.method, key ) ) );
         }
 
 
         @Override
         protected Expression implementNotNullResult( AggContext info, AggResultContext result ) {
             Expression size = Expressions.call( result.accumulator().get( 0 ), BuiltInMethod.COLLECTION_SIZE.method );
-            return Expressions.call( PolyLong.class, "of", Expressions.convert_( size, long.class ) );
+            Expression count = Expressions.call( PolyLong.class, "of", Expressions.convert_( size, long.class ) );
+            return Expressions.convert_( count, info.returnType() );
         }
 
     }
@@ -241,6 +238,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
 
         final PhysType keyPhysType = inputPhysType.project( groupSet.asList(), getGroupType() != Group.SIMPLE, JavaTupleFormat.LIST );
         final int groupCount = getGroupCount();
+        final boolean graphKeys = traitSet.contains( ModelTrait.GRAPH );
 
         final List<AggImpState> aggs = new ArrayList<>( aggCalls.size() );
         for ( Ord<AggregateCall> call : Ord.zip( aggCalls ) ) {
@@ -412,7 +410,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
                                             Expressions.call( Expressions.call( lambdaFactory, BuiltInMethod.AGG_LAMBDA_FACTORY_ACC_INITIALIZER.method ), BuiltInMethod.FUNCTION0_APPLY.method ),
                                             Expressions.call( lambdaFactory, BuiltInMethod.AGG_LAMBDA_FACTORY_ACC_ADDER.method ),
                                             Expressions.call( lambdaFactory, BuiltInMethod.AGG_LAMBDA_FACTORY_ACC_SINGLE_GROUP_RESULT_SELECTOR.method, resultSelector ) ) ) ) );
-        } else if ( aggCalls.isEmpty() && groupSet.equals( ImmutableBitSet.range( child.getTupleType().getFieldCount() ) ) ) {
+        } else if ( !graphKeys && aggCalls.isEmpty() && groupSet.equals( ImmutableBitSet.range( child.getTupleType().getFieldCount() ) ) ) {
             builder.add(
                     Expressions.return_(
                             null,
@@ -423,17 +421,21 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
         } else {
             final Expression keySelector_ = builder.append( "keySelector", inputPhysType.generateSelector( parameter, groupSet.asList(), keyPhysType.getFormat() ) );
             final Expression resultSelector_ = builder.append( "resultSelector", Expressions.lambda( Function2.class, resultBlock.toBlock(), key_, acc_ ) );
+            Expression comparer = graphKeys
+                    ? Expressions.call( CypherFunctions.class, "groupingComparer", Expressions.constant( groupCount > 1 ) )
+                    : keyPhysType.comparer();
+            BuiltInMethod groupBy = comparer == null ? BuiltInMethod.GROUP_BY2 : BuiltInMethod.GROUP_BY_WITH_COMPARER;
             builder.add(
                     Expressions.return_(
                             null,
                             Expressions.call(
                                     childExp,
-                                    BuiltInMethod.GROUP_BY2.method,
+                                    groupBy.method,
                                     Expressions.list(
                                             keySelector_,
                                             Expressions.call( lambdaFactory, BuiltInMethod.AGG_LAMBDA_FACTORY_ACC_INITIALIZER.method ),
                                             Expressions.call( lambdaFactory, BuiltInMethod.AGG_LAMBDA_FACTORY_ACC_ADDER.method ),
-                                            Expressions.call( lambdaFactory, BuiltInMethod.AGG_LAMBDA_FACTORY_ACC_RESULT_SELECTOR.method, resultSelector_ ) ).appendIfNotNull( keyPhysType.comparer() ) ) ) );
+                                            Expressions.call( lambdaFactory, BuiltInMethod.AGG_LAMBDA_FACTORY_ACC_RESULT_SELECTOR.method, resultSelector_ ) ).appendIfNotNull( comparer ) ) ) );
         }
         return implementor.result( physType, builder.toBlock() );
     }

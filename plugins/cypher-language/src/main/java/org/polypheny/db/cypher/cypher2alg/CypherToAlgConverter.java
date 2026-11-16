@@ -403,6 +403,7 @@ public class CypherToAlgConverter {
         context.active = clause;
         List<CypherExpression> inlinePredicates = clause.getPatterns().stream().flatMap( pattern -> pattern.getPredicates().stream() ).toList();
         if ( clause.isOptional() || !context.stack.isEmpty() || !inlinePredicates.isEmpty() ) {
+            context.requiresRowWriter = true;
             convertJoinedMatch( clause, context, inlinePredicates );
             return;
         }
@@ -413,6 +414,7 @@ public class CypherToAlgConverter {
         // Row-dependent writes extract their bindings from the full path in the engine.
         boolean usesPathInWrite = !context.implicitPathBindings.isEmpty()
                 && context.original instanceof CypherSingleQuery query && query.hasUpdates();
+        context.requiresRowWriter |= usesPathInWrite;
         context.combineMatch( usesPathInWrite );
 
         if ( clause.getWhere() == null ) {
@@ -664,6 +666,7 @@ public class CypherToAlgConverter {
         public Kind kind;
         private boolean returning;
         private boolean createReturning;
+        private boolean requiresRowWriter;
         private LogicalLpgModify returningInsert;
         private List<Pair<PolyString, EdgeVariableHolder>> edges = new LinkedList<>();
         private final Map<PolyString, PolyPath> createdPaths = new LinkedHashMap<>();
@@ -1209,24 +1212,41 @@ public class CypherToAlgConverter {
 
         private void modify( Modify.Operation operation, List<Pair<PolyString, RexNode>> updates ) {
             AlgNode input = pop();
-            if ( !returning ) {
+            if ( !returning && !requiresRowWriter ) {
                 add( new LogicalLpgModify( cluster, cluster.traitSet(), graph, input, operation, Pair.left( updates ), Pair.right( updates ) ) );
                 clearVariables();
                 return;
             }
 
+            if ( operation == Modify.Operation.UPDATE ) {
+                // WITH values must be evaluated before the update expressions mutate their graph bindings.
+                input = new LogicalLpgWriteRow( input );
+            }
             List<RexNode> parameters = new ArrayList<>( Pair.right( updates ) );
             List<PolyString> names = new ArrayList<>();
             for ( int i = 0; i < updates.size(); i++ ) {
-                names.add( PolyString.of( "$modify$" + i ) );
+                names.add( PolyString.of( privateName( input.getTupleType().getFieldNames(), "$modify$" + i ) ) );
             }
             List<AlgDataTypeField> fields = input.getTupleType().getFields();
-            for ( AlgDataTypeField field : fields ) {
-                parameters.add( rexBuilder.makeInputRef( input, field.getIndex() ) );
-                names.add( PolyString.of( field.getName() ) );
+            if ( returning ) {
+                for ( AlgDataTypeField field : fields ) {
+                    parameters.add( rexBuilder.makeInputRef( input, field.getIndex() ) );
+                    names.add( PolyString.of( field.getName() ) );
+                }
             }
             AlgNode provider = new LogicalLpgProject( cluster, cluster.traitSet(), input, parameters, names );
+            if ( !returning ) {
+                List<RexNode> targets = refs( provider ).stream()
+                        .map( ref -> (RexNode) rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), ref ) )
+                        .toList();
+                provider = new LogicalLpgFilter( cluster, cluster.traitSet(), provider, RexUtil.composeDisjunction( rexBuilder, targets, false ) );
+            }
             AlgNode modify = new LogicalLpgModify( cluster, cluster.traitSet(), graph, provider, operation, null, null, updates.size() );
+            if ( !returning ) {
+                add( LogicalLpgAggregate.countWrites( modify ) );
+                clearVariables();
+                return;
+            }
 
             List<RexNode> values = new ArrayList<>();
             List<PolyString> aliases = Pair.left( updates );

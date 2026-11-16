@@ -31,18 +31,22 @@ import java.util.UUID;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiPredicate;
+import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Deterministic;
+import org.apache.calcite.linq4j.function.EqualityComparer;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.graph.GraphObject;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
@@ -433,6 +437,9 @@ public class CypherFunctions {
      */
     @SuppressWarnings("unused")
     public static GraphPropertyHolder setLabels( GraphPropertyHolder target, List<PolyString> labels, PolyBoolean replace ) {
+        if ( target == null ) {
+            return null;
+        }
         if ( replace.value ) {
             target.labels.clear();
         }
@@ -452,6 +459,9 @@ public class CypherFunctions {
      */
     @SuppressWarnings("unused")
     public static GraphPropertyHolder setProperties( GraphPropertyHolder target, List<PolyString> keys, List<PolyValue> values, PolyBoolean replace ) {
+        if ( target == null ) {
+            return null;
+        }
         if ( replace.value ) {
             target.properties.clear();
         }
@@ -474,6 +484,9 @@ public class CypherFunctions {
      */
     @SuppressWarnings("unused")
     public static GraphPropertyHolder removeLabels( GraphPropertyHolder target, List<PolyString> labels ) {
+        if ( target == null ) {
+            return null;
+        }
         target.labels.removeAll( labels );
         return target;
     }
@@ -488,6 +501,9 @@ public class CypherFunctions {
      */
     @SuppressWarnings("unused")
     public static GraphPropertyHolder removeProperty( GraphPropertyHolder target, PolyString key ) {
+        if ( target == null ) {
+            return null;
+        }
         target.properties.remove( key );
         return target;
     }
@@ -509,6 +525,50 @@ public class CypherFunctions {
             return null;
         }
         return Functions.eq( left, right );
+    }
+
+
+    /**
+     * Uses the same exact decimal normalization as numeric equality, so values
+     * with different numeric types or scales also agree as hash keys.
+     */
+    public static Object aggregationKey( Object value ) {
+        if ( value instanceof PolyValue poly && poly.isNull() ) {
+            return null;
+        }
+        if ( value instanceof PolyNumber number ) {
+            if ( PolyType.APPROX_TYPES.contains( number.getType() ) && !Double.isFinite( number.doubleValue() ) ) {
+                return number.doubleValue();
+            }
+            return number.bigDecimalValue().stripTrailingZeros();
+        }
+        if ( value instanceof GraphPropertyHolder element ) {
+            return Pair.of( element.getType(), element.getId() );
+        }
+        return value;
+    }
+
+
+    /**
+     * Compares keys without changing the types of the original projected values.
+     * A composite row key is distinct from a single key whose value is a list.
+     */
+    public static EqualityComparer<Object> groupingComparer( boolean composite ) {
+        Function<Object, Object> key = composite
+                ? row -> ((List<?>) row).stream().map( CypherFunctions::aggregationKey ).toList()
+                : CypherFunctions::aggregationKey;
+        return new EqualityComparer<>() {
+            @Override
+            public boolean equal( Object left, Object right ) {
+                return Objects.equals( key.apply( left ), key.apply( right ) );
+            }
+
+
+            @Override
+            public int hashCode( Object row ) {
+                return Objects.hashCode( key.apply( row ) );
+            }
+        };
     }
 
 

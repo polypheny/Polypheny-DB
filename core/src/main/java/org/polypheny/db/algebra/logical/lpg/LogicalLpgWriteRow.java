@@ -17,6 +17,7 @@
 package org.polypheny.db.algebra.logical.lpg;
 
 import java.util.List;
+import javax.annotation.Nullable;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -37,7 +38,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 
 
-/** Appends one ID per input row so every element created by that row uses the same identity seed. */
+/** Keeps the input projection separate from the write expressions and optionally appends an identity seed for CREATE. */
 public class LogicalLpgWriteRow extends SingleAlg implements LpgAlg {
 
     public static final ConverterRule TO_ENUMERABLE = new ConverterRule(
@@ -51,15 +52,21 @@ public class LogicalLpgWriteRow extends SingleAlg implements LpgAlg {
         }
     };
 
+    @Nullable
     private final String name;
 
 
-    public LogicalLpgWriteRow( AlgNode input, String name ) {
+    public LogicalLpgWriteRow( AlgNode input ) {
+        this( input, null );
+    }
+
+
+    public LogicalLpgWriteRow( AlgNode input, @Nullable String name ) {
         this( input.getTraitSet(), input, name );
     }
 
 
-    protected LogicalLpgWriteRow( AlgTraitSet traits, AlgNode input, String name ) {
+    protected LogicalLpgWriteRow( AlgTraitSet traits, AlgNode input, @Nullable String name ) {
         super( input.getCluster(), traits, input );
         this.name = name;
     }
@@ -67,6 +74,9 @@ public class LogicalLpgWriteRow extends SingleAlg implements LpgAlg {
 
     @Override
     protected AlgDataType deriveRowType() {
+        if ( name == null ) {
+            return input.getTupleType();
+        }
         return getCluster().getTypeFactory().builder()
                 .addAll( input.getTupleType().getFields() )
                 .add( name, null, PolyType.VARCHAR, 36 )
@@ -94,10 +104,11 @@ public class LogicalLpgWriteRow extends SingleAlg implements LpgAlg {
 
     private static final class EnumerableWriteRow extends LogicalLpgWriteRow implements EnumerableAlg {
 
+        @Nullable
         private final String idName;
 
 
-        private EnumerableWriteRow( AlgTraitSet traits, AlgNode input, String name ) {
+        private EnumerableWriteRow( AlgTraitSet traits, AlgNode input, @Nullable String name ) {
             super( traits, input, name );
             this.idName = name;
         }
@@ -111,6 +122,9 @@ public class LogicalLpgWriteRow extends SingleAlg implements LpgAlg {
 
         @Override
         public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
+            if ( idName == null ) {
+                return implementor.visitChild( this, 0, (EnumerableAlg) getInput(), pref );
+            }
             Result child = implementor.visitChild( this, 0, (EnumerableAlg) getInput(), Prefer.ARRAY );
             BlockBuilder builder = new BlockBuilder();
             Expression rows = builder.append( "rows", child.block() );

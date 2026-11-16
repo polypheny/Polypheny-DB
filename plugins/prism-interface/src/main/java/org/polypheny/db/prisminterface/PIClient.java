@@ -157,7 +157,7 @@ public class PIClient {
         try {
             currentTransaction.commit();
         } catch ( Throwable e ) {
-            throw new PIServiceException( "Committing current transaction failed: " + e.getMessage() );
+            throw new PIServiceException( "Committing current transaction failed: " + e.getMessage(), e );
         } finally {
             clearCurrentTransaction();
         }
