@@ -20,7 +20,9 @@ import java.util.List;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.monitoring.events.MonitoringType;
 import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.PIServiceException;
 import org.polypheny.db.prisminterface.statements.PIStatement;
@@ -58,11 +60,17 @@ public class DocumentExecutor extends Executor {
                     9002
             );
         }
-        PIClient client = piStatement.getClient();
-        StatementResult.Builder resultBuilder = StatementResult.newBuilder();
         if ( implementation.isDDL() ) {
-            resultBuilder.setScalar( 1 );
-            return resultBuilder.build();
+            return StatementResult.newBuilder().setScalar( 1 ).build();
+        }
+        if ( Kind.DML.contains( implementation.getKind() ) && !implementation.isDmlReturning() ) {
+            Statement statement = piStatement.getStatement();
+            int count;
+            try ( ResultIterator iterator = implementation.execute( statement, -1 ) ) {
+                count = PolyImplementation.getRowsChanged( statement, iterator.getIterator(), MonitoringType.from( implementation.getKind() ) );
+            }
+            piStatement.getClient().commitCurrentTransactionIfAuto();
+            return StatementResult.newBuilder().setScalar( count ).build();
         }
         throw new PIServiceException( "Can't execute a non DDL or non DML statement using this method..",
                 "I9003",

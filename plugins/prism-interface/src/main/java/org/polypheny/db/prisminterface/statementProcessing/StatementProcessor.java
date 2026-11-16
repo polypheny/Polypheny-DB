@@ -59,11 +59,20 @@ public class StatementProcessor {
     }
 
 
-    public static Node parseGraphBatchMember( PIStatement piStatement ) {
+    public static Node parseUpdateBatchMember( PIStatement piStatement ) {
         Processor processor = piStatement.getLanguage().processorSupplier().get();
-        Node parsed = parseGraphStatement( piStatement, processor );
+        Node parsed;
+        if ( piStatement.getLanguage().dataModel() == DataModel.GRAPH ) {
+            parsed = parseGraphStatement( piStatement, processor );
+        } else {
+            List<? extends Node> statements = processor.parse( piStatement.getQuery() );
+            if ( statements.size() != 1 ) {
+                throw new PIServiceException( "An update batch requires exactly one statement per member" );
+            }
+            parsed = statements.get( 0 );
+        }
         if ( !processor.isUpdateOnly( parsed ) ) {
-            throw new PIServiceException( "Cypher batch statements must update the graph without returning rows" );
+            throw new PIServiceException( "Update batch statements must update data without returning rows" );
         }
         return parsed;
     }

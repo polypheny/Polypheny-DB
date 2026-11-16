@@ -242,6 +242,95 @@ class OptionalMatchTest {
     }
 
 
+    @Test
+    void wildcardReturnsAndWithClausesGroupByEveryVisibleBinding() {
+        String optional = "MATCH (n:Person) OPTIONAL MATCH (n)-[:KNOWS]->(m) ";
+        GraphResult returned = execute( optional + "RETURN *, count(m) AS neighbors" );
+        GraphResult forwarded = execute( optional + "WITH *, count(m) AS neighbors RETURN n, m, neighbors" );
+
+        for ( GraphResult result : List.of( returned, forwarded ) ) {
+            assertEquals( List.of( "n", "m", "neighbors" ), Arrays.stream( result.getHeader() ).map( field -> field.name ).toList() );
+            assertEquals( 3, result.getData().length );
+            Map<String, Integer> neighbors = new HashMap<>();
+            for ( String[] row : result.getData() ) {
+                String person = nodeName( row[0] );
+                neighbors.put( person, number( row[2] ) );
+                switch ( person ) {
+                    case "Alice" -> assertEquals( "Bob", nodeName( row[1] ) );
+                    case "Bob" -> assertEquals( "Charlie", nodeName( row[1] ) );
+                    case "Charlie" -> assertNull( row[1] );
+                    default -> throw new AssertionError( person );
+                }
+            }
+            assertEquals( Map.of( "Alice", 1, "Bob", 1, "Charlie", 0 ), neighbors );
+        }
+    }
+
+
+    @Test
+    void projectedAliasDoesNotShadowAnAggregateArgument() {
+        GraphResult result = execute( "MATCH (n:Person) OPTIONAL MATCH (n)-[:KNOWS]->(m) "
+                + "RETURN n.name AS m, count(m) AS matches ORDER BY m" );
+
+        assertEquals( List.of( "m", "matches" ), Arrays.stream( result.getHeader() ).map( field -> field.name ).toList() );
+        String[][] rows = result.getData();
+        assertEquals( 3, rows.length );
+        assertEquals( List.of( "Alice", "Bob", "Charlie" ), Arrays.stream( rows ).map( row -> text( row[0] ) ).toList() );
+        assertEquals( List.of( 1, 1, 0 ), Arrays.stream( rows ).map( row -> number( row[1] ) ).toList() );
+    }
+
+
+    @Test
+    void aggregateAliasesDoNotResolveToInputColumns() {
+        String[][] rows = execute( "MATCH (n:Person) OPTIONAL MATCH (n)-[:KNOWS]->(m) "
+                + "RETURN count(n) AS m, count(m) AS n, count(*) AS allRows" ).getData();
+
+        assertEquals( 1, rows.length );
+        assertEquals( List.of( 3, 2, 3 ), Arrays.stream( rows[0] ).map( OptionalMatchTest::number ).toList() );
+    }
+
+
+    @Test
+    void distinctCountDeduplicatesOptionalMatchesAndIgnoresNull() {
+        execute( "CREATE (:Fan {name:'Left'})-[:FOLLOWS]->(:Fan {name:'Right'})<-[:FOLLOWS]-(:Fan {name:'Left'})" );
+
+        GraphResult result = execute( "MATCH (n:Fan) OPTIONAL MATCH (n)-[:FOLLOWS]->(m) "
+                + "RETURN n.name AS person, count(m) AS total, count(DISTINCT m) AS uniqueTargets, count(*) AS rows" );
+
+        assertEquals( List.of( "person", "total", "uniqueTargets", "rows" ), Arrays.stream( result.getHeader() ).map( field -> field.name ).toList() );
+        assertEquals( 2, result.getData().length );
+        Map<String, List<Integer>> counts = new HashMap<>();
+        for ( String[] row : result.getData() ) {
+            counts.put( text( row[0] ), List.of( number( row[1] ), number( row[2] ), number( row[3] ) ) );
+        }
+        assertEquals( Map.of( "Left", List.of( 2, 1, 2 ), "Right", List.of( 0, 0, 1 ) ), counts );
+
+        String[][] direct = execute( "MATCH (:Fan)-[:FOLLOWS]->(m:Fan) RETURN count(DISTINCT m) AS uniqueTargets" ).getData();
+        assertEquals( 1, direct.length );
+        assertEquals( 1, number( direct[0][0] ) );
+    }
+
+
+    @Test
+    void groupsByAnUnnamedExpression() {
+        String[][] rows = execute( "MATCH (n:Person) OPTIONAL MATCH (n)-[:KNOWS]->(m) RETURN 42, count(m) AS neighbors" ).getData();
+        assertEquals( 1, rows.length );
+        assertEquals( 42, number( rows[0][0] ) );
+        assertEquals( 2, number( rows[0][1] ) );
+    }
+
+
+    private static int number( String cell ) {
+        return PolyValue.fromTypedJson( cell, PolyValue.class ).asNumber().intValue();
+    }
+
+
+    private static String nodeName( String cell ) {
+        var node = PolyValue.fromTypedJson( cell, PolyValue.class ).asNode();
+        return node.getProperties().get( PolyString.of( "name" ) ).asString().getValue();
+    }
+
+
     private static GraphResult execute( String query ) {
         return CypherTestTemplate.execute( query, NAMESPACE );
     }

@@ -163,7 +163,7 @@ public class CypherFunctions {
             if ( !key.isNull() ) {
                 // id | key | value | source | target
                 // 13 | null| null | 12      | 10 ( no key value present )
-                oldProps.put( key, val );
+                oldProps.put( key, CrossModelFunctions.readGraphPropertyStorageValue( val ) );
             }
         }
 
@@ -209,7 +209,7 @@ public class CypherFunctions {
             }
             if ( !key.isNull() ) {
                 // eventually no properties present
-                oldProps.put( key, val );
+                oldProps.put( key, CrossModelFunctions.readGraphPropertyStorageValue( val ) );
             }
         }
 
@@ -473,8 +473,8 @@ public class CypherFunctions {
      * @return the modified graph element
      */
     @SuppressWarnings("unused")
-    public static GraphPropertyHolder removeLabels( GraphPropertyHolder target, List<String> labels ) {
-        target.labels.removeAll( labels.stream().map( PolyString::of ).toList() );
+    public static GraphPropertyHolder removeLabels( GraphPropertyHolder target, List<PolyString> labels ) {
+        target.labels.removeAll( labels );
         return target;
     }
 
@@ -487,8 +487,8 @@ public class CypherFunctions {
      * @return the modified graph element
      */
     @SuppressWarnings("unused")
-    public static GraphPropertyHolder removeProperty( GraphPropertyHolder target, String key ) {
-        target.properties.remove( PolyString.of( key ) );
+    public static GraphPropertyHolder removeProperty( GraphPropertyHolder target, PolyString key ) {
+        target.properties.remove( key );
         return target;
     }
 
@@ -501,6 +501,20 @@ public class CypherFunctions {
             return Functions.like( b0.asString(), b1.asString() );
         }
         return PolyBoolean.FALSE;
+    }
+
+
+    public static PolyBoolean equal( PolyValue left, PolyValue right ) {
+        if ( left == null || left.isNull() || right == null || right.isNull() ) {
+            return null;
+        }
+        return Functions.eq( left, right );
+    }
+
+
+    public static PolyBoolean notEqual( PolyValue left, PolyValue right ) {
+        PolyBoolean equal = equal( left, right );
+        return equal == null ? null : PolyBoolean.of( !equal.value );
     }
 
 
@@ -783,16 +797,14 @@ public class CypherFunctions {
 
 
     private static double convertPolyValueToDouble( PolyValue value ) {
-        // This should be sufficient, as all numerical values from Cypher are stored as BigDecimal.
+        if ( value.isNumber() ) {
+            return value.asNumber().doubleValue();
+        }
         if ( value.isString() ) {
-            return Double.parseDouble( value.toString() );
+            // Existing normalized graph properties may have decimal coordinates stored as text.
+            return Double.parseDouble( value.asString().value );
         }
-        if ( value.isDouble() ) {
-            return value.asDouble().doubleValue();
-        }
-
-        assert value.isBigDecimal() : "Extend method to handle other numerical data types.";
-        return Objects.requireNonNull( value.asBigDecimal().getValue() ).doubleValue();
+        throw new GenericRuntimeException( "Point coordinates must be numeric." );
     }
 
 }

@@ -40,6 +40,7 @@ import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
@@ -52,6 +53,9 @@ import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.relational.PolyMap;
 
 public class CrossModelFunctions {
+
+    // Existing normalized graph properties contain plain text. Keep this marker printable across SQL adapters.
+    private static final String TYPED_GRAPH_VALUE_PREFIX = "~{PolyphenyGraphValue:v1}~:";
 
     private CrossModelFunctions() {
         // empty on purpose
@@ -200,13 +204,7 @@ public class CrossModelFunctions {
      * @param edge the edge for which the properties are inserted
      */
     private static void edgePropertiesTableInsert( DataContext context, List<Function0<Enumerable<?>>> enumerables, int i, AlgDataType idType, AlgDataType labelType, AlgDataType valueType, PolyEdge edge ) {
-        if ( !edge.properties.isEmpty() ) {
-            context.addParameterValues( 0, idType, Collections.nCopies( edge.properties.size(), edge.id ) );
-            context.addParameterValues( 1, labelType, new ArrayList<>( edge.properties.keySet() ) );
-            context.addParameterValues( 2, valueType, new ArrayList<>( edge.properties.values().stream().map( value -> PolyString.of( value.toString() ) ).toList() ) );
-            drainInserts( enumerables.get( i ), edge.labels.size() );
-            context.resetParameterValues();
-        }
+        graphPropertiesTableInsert( context, enumerables.get( i ), idType, labelType, valueType, edge.id, edge.properties );
     }
 
 
@@ -237,20 +235,51 @@ public class CrossModelFunctions {
      * @param node the edge for which the properties are inserted
      */
     private static void nodePropertiesTableInsert( DataContext context, List<Function0<Enumerable<?>>> enumerables, int i, AlgDataType idType, AlgDataType labelType, AlgDataType valueType, PolyNode node ) {
-        if ( !node.properties.isEmpty() ) {
-            context.addParameterValues( 0, idType, Collections.nCopies( node.properties.size(), node.id ) );
-            context.addParameterValues( 1, labelType, new ArrayList<>( node.properties.keySet() ) );
-            context.addParameterValues( 2, valueType, new ArrayList<>( node.properties.values().stream()
-                    .map( value -> PolyString.of( nodePropertyStorageValue( value ) ) ).toList() ) );
-            drainInserts( enumerables.get( i ), node.properties.size() );
+        graphPropertiesTableInsert( context, enumerables.get( i ), idType, labelType, valueType, node.id, node.properties );
+    }
+
+
+    private static void graphPropertiesTableInsert( DataContext context, Function0<Enumerable<?>> enumerable, AlgDataType idType,
+            AlgDataType labelType, AlgDataType valueType, PolyString id, PolyDictionary properties ) {
+        List<PolyString> keys = new ArrayList<>();
+        List<PolyString> values = new ArrayList<>();
+        for ( Entry<PolyString, PolyValue> entry : properties.entrySet() ) {
+            PolyValue value = entry.getValue();
+            if ( value != null && !value.isNull() ) {
+                keys.add( entry.getKey() );
+                values.add( PolyString.of( graphPropertyStorageValue( value ) ) );
+            }
+        }
+        if ( !keys.isEmpty() ) {
+            context.addParameterValues( 0, idType, Collections.nCopies( keys.size(), id ) );
+            context.addParameterValues( 1, labelType, new ArrayList<>( keys ) );
+            context.addParameterValues( 2, valueType, new ArrayList<>( values ) );
+            drainInserts( enumerable, keys.size() );
             context.resetParameterValues();
         }
     }
 
 
-    public static String nodePropertyStorageValue( PolyValue value ) {
-        // Normalized node properties are read as VARCHARs. Preserve string contents without JSON escaping them.
-        return value.isString() && !value.isNull() ? value.asString().value : value.toJson();
+    public static String graphPropertyStorageValue( PolyValue value ) {
+        if ( value.isString() && !value.asString().value.startsWith( TYPED_GRAPH_VALUE_PREFIX ) ) {
+            return value.asString().value;
+        }
+        return TYPED_GRAPH_VALUE_PREFIX + value.toTypedJson();
+    }
+
+
+    public static PolyValue readGraphPropertyStorageValue( PolyString stored ) {
+        if ( stored.isNull() ) {
+            return PolyNull.NULL;
+        }
+        if ( stored.value.startsWith( TYPED_GRAPH_VALUE_PREFIX ) ) {
+            String json = stored.value.substring( TYPED_GRAPH_VALUE_PREFIX.length() );
+            PolyValue decoded = PolyValue.fromTypedJson( json, PolyValue.class );
+            if ( decoded != null && decoded.toTypedJson().equals( json ) ) {
+                return decoded;
+            }
+        }
+        return stored;
     }
 
 

@@ -27,7 +27,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Stack;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -42,6 +41,7 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.common.ConditionalExecute.Condition;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgJoin;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
@@ -213,6 +213,7 @@ public class CypherToAlgConverter {
                 convertReturn( (CypherReturnClause) clause, context );
                 break;
             case CREATE:
+                materializePathBindings( context );
                 convertCreate( (CypherCreate) clause, context );
                 break;
             case USE:
@@ -224,12 +225,15 @@ public class CypherToAlgConverter {
                 convertUnwind( (CypherUnwind) clause, context );
                 break;
             case SET:
+                materializePathBindings( context );
                 convertSet( (CypherSetClause) clause, context );
                 break;
             case DELETE:
+                materializePathBindings( context );
                 convertDelete( (CypherDelete) clause, context );
                 break;
             case REMOVE:
+                materializePathBindings( context );
                 convertRemove( (CypherRemove) clause, context );
                 break;
             default:
@@ -273,10 +277,8 @@ public class CypherToAlgConverter {
 
 
     private void convertReturn( CypherReturnClause clause, CypherContext context ) {
-        if ( !context.implicitPathBindings.isEmpty() && clause.getReturnItems().stream().anyMatch( CypherReturn::isStar ) ) {
-            AlgNode input = context.pop();
-            context.add( projectBindings( input, matchBindings( new MatchRows( input, 0 ), 0, context.implicitPathBindings ) ) );
-            context.implicitPathBindings.clear();
+        if ( clause.getReturnItems().stream().anyMatch( CypherReturn::isStar ) ) {
+            materializePathBindings( context );
         }
         AlgNode node = clause.getGraphProject( context );
 
@@ -302,6 +304,16 @@ public class CypherToAlgConverter {
 
         }
         context.add( node );
+    }
+
+
+    private void materializePathBindings( CypherContext context ) {
+        if ( context.implicitPathBindings.isEmpty() ) {
+            return;
+        }
+        AlgNode input = context.pop();
+        context.add( projectBindings( input, matchBindings( new MatchRows( input, 0 ), 0, context.implicitPathBindings ) ) );
+        context.implicitPathBindings.clear();
     }
 
 
@@ -398,7 +410,10 @@ public class CypherToAlgConverter {
         for ( CypherPattern pattern : clause.getPatterns() ) {
             convertPattern( pattern, context );
         }
-        context.combineMatch( false );
+        // Row-dependent writes extract their bindings from the full path in the engine.
+        boolean usesPathInWrite = !context.implicitPathBindings.isEmpty()
+                && context.original instanceof CypherSingleQuery query && query.hasUpdates();
+        context.combineMatch( usesPathInWrite );
 
         if ( clause.getWhere() == null ) {
             return;
@@ -934,7 +949,7 @@ public class CypherToAlgConverter {
 
             if ( usesCreateExpressions() ) {
                 createRows( nodes, edges );
-            } else if ( stack.isEmpty() ) {
+            } else {
                 LogicalLpgValues values = LogicalLpgValues.create(
                         cluster,
                         cluster.traitSet(),
@@ -949,71 +964,13 @@ public class CypherToAlgConverter {
                 } else {
                     add( insert );
                 }
-            } else {
-                // filtered DML
-                List<Pair<PolyString, RexNode>> newNodes = new LinkedList<>();
-
-                List<Pair<PolyString, RexNode>> newEdges = new LinkedList<>();
-
-                AlgNode node = stack.peek();
-                List<String> names = node.getTupleType().getFieldNames();
-                List<AlgDataTypeField> fields = node.getTupleType().getFields();
-
-                // nodes can be added as literals
-                for ( Pair<PolyString, PolyNode> namedNode : nodes ) {
-                    if ( !names.contains( namedNode.left.value ) ) {
-                        newNodes.add( Pair.of( namedNode.left, rexBuilder.makeLiteral( namedNode.right, nodeType, false ) ) );
-                    }
-                }
-
-                // edges need to be adjusted depending on the previous stage
-                for ( Pair<PolyString, EdgeVariableHolder> namedEdge : edges ) {
-                    RexNode ref = rexBuilder.makeLiteral( namedEdge.right.edge, edgeType, false );
-                    int leftIndex = names.indexOf( namedEdge.right.left.value );
-                    int rightIndex = names.indexOf( namedEdge.right.right.value );
-
-                    if ( leftIndex != -1 && rightIndex != -1 ) {
-                        // both sides are retrieved from the previous stage (inputRef)-[]-(inputRef)
-                        RexNode left = rexBuilder.makeInputRef( fields.get( leftIndex ).getType(), leftIndex );
-                        RexNode right = rexBuilder.makeInputRef( fields.get( rightIndex ).getType(), rightIndex );
-                        newEdges.add( Pair.of( namedEdge.left, rexBuilder.makeCall( edgeType, OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_ADJUST_EDGE ), List.of( ref, left, right ) ) ) );
-                    } else if ( leftIndex == -1 && rightIndex == -1 ) {
-                        // both sides are part of this stage (literal)
-                        RexNode stubL = rexBuilder.makeLiteral( new PolyNode( new PolyDictionary(), PolyList.of(), namedEdge.right.left ).isVariable( true ), nodeType, false );
-                        RexNode stubR = rexBuilder.makeLiteral( new PolyNode( new PolyDictionary(), PolyList.of(), namedEdge.right.right ).isVariable( true ), nodeType, false );
-                        newEdges.add( Pair.of( namedEdge.left, rexBuilder.makeCall( edgeType, OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_ADJUST_EDGE ), List.of( ref, stubL, stubR ) ) ) );
-                    } else if ( leftIndex != -1 ) {
-                        // left is from previous stage, right is not (inputRef)-[]-()
-                        RexNode left = rexBuilder.makeInputRef( fields.get( leftIndex ).getType(), leftIndex );
-                        RexNode stub = rexBuilder.makeLiteral( new PolyNode( new PolyDictionary(), PolyList.of(), namedEdge.right.right ).isVariable( true ), nodeType, false );
-                        newEdges.add( Pair.of( namedEdge.left, rexBuilder.makeCall( edgeType, OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_ADJUST_EDGE ), List.of( ref, left, stub ) ) ) );
-                    } else {
-                        // right is from previous stage, left is not ()-[]-(inputRef)
-                        RexNode right = rexBuilder.makeInputRef( fields.get( rightIndex ).getType(), rightIndex );
-                        RexNode stub = rexBuilder.makeLiteral( new PolyNode( new PolyDictionary(), PolyList.of(), namedEdge.right.left ).isVariable( true ), nodeType, false );
-                        newEdges.add( Pair.of( namedEdge.left, rexBuilder.makeCall( edgeType, OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_ADJUST_EDGE ), List.of( ref, stub, right ) ) ) );
-                    }
-                }
-
-                List<Pair<PolyString, RexNode>> nodesAndEdges = Stream.concat( newNodes.stream(), newEdges.stream() ).collect( Collectors.toList() );
-
-                AtomicLong id = new AtomicLong();
-                List<PolyString> adjustedNames = Pair.left( nodesAndEdges ).stream()
-                        .map( n -> Objects.requireNonNullElseGet( n.value, () -> "EXPR$" + id.getAndIncrement() ) )
-                        .map( Object::toString )
-                        .map( PolyString::of )
-                        .collect( Collectors.toList() );
-
-                add( new LogicalLpgProject( node.getCluster(), node.getTraitSet(), pop(), Pair.right( nodesAndEdges ), adjustedNames ) );
-
-                add( new LogicalLpgModify( cluster, cluster.traitSet(), graph, pop(), Modify.Operation.INSERT, null, null ) );
             }
             clearVariables();
         }
 
 
         public boolean usesCreateExpressions() {
-            return returning && !createReturning && kind == Kind.INSERT;
+            return kind == Kind.INSERT && (!stack.isEmpty() || returning && !createReturning);
         }
 
 
@@ -1105,6 +1062,12 @@ public class CypherToAlgConverter {
             for ( int slot : writeSlots ) {
                 values.add( rexBuilder.makeInputRef( created, slot ) );
                 names.add( PolyString.of( privateName( fields, "$create$write" + slot ) ) );
+            }
+            if ( !returning ) {
+                AlgNode provider = new LogicalLpgProject( cluster, cluster.traitSet(), created, values, names );
+                AlgNode write = new LogicalLpgModify( cluster, cluster.traitSet(), graph, provider, Modify.Operation.INSERT, null, null, writeSlots.size() );
+                add( LogicalLpgAggregate.countWrites( write ) );
+                return;
             }
             for ( PolyString binding : bindings ) {
                 values.add( rexBuilder.makeInputRef( created, fields.indexOf( binding.value ) ) );

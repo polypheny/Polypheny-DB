@@ -40,6 +40,8 @@ public class CypherRegisterer {
         }
 
         register( OperatorName.CYPHER_LIKE, new LangFunctionOperator( OperatorName.CYPHER_LIKE.name(), Kind.LIKE, PolyType.BOOLEAN ) );
+        register( OperatorName.CYPHER_EQUALS, new LangFunctionOperator( OperatorName.CYPHER_EQUALS.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
+        register( OperatorName.CYPHER_NOT_EQUALS, new LangFunctionOperator( OperatorName.CYPHER_NOT_EQUALS.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
         register( OperatorName.STARTS_WITH, new LangFunctionOperator( OperatorName.STARTS_WITH.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
         register( OperatorName.ENDS_WITH, new LangFunctionOperator( OperatorName.ENDS_WITH.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
         register( OperatorName.CYPHER_CONTAINS, new LangFunctionOperator( OperatorName.CYPHER_CONTAINS.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );

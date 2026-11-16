@@ -836,6 +836,8 @@ public class RexImpTable {
         map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_SINGLE_MATCH ), implementor );
         map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_NONE_MATCH ), implementor );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_LIKE ), BuiltInMethod.CYPHER_LIKE.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EQUALS ), BuiltInMethod.CYPHER_EQUALS.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_NOT_EQUALS ), BuiltInMethod.CYPHER_NOT_EQUALS.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.STARTS_WITH ), BuiltInMethod.CYPHER_STARTS_WITH.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.ENDS_WITH ), BuiltInMethod.CYPHER_ENDS_WITH.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_CONTAINS ), BuiltInMethod.CYPHER_CONTAINS.method, NullPolicy.NONE );
@@ -1057,10 +1059,7 @@ public class RexImpTable {
                     }
                     // fall through
                 default:
-                    if ( (this == FALSE || this == TRUE) && Types.isAssignableFrom( PolyBoolean.class, x.type ) ) {
-                        return x;
-                    }
-                    // fall through
+                    break;
             }
             return switch ( this ) {
                 case NULL, NOT_POSSIBLE -> x;

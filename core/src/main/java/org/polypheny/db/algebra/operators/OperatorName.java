@@ -1674,6 +1674,10 @@ public enum OperatorName {
 
     REG_EQUALS( LangFunctionOperator.class ),
 
+    CYPHER_EQUALS( LangFunctionOperator.class ),
+
+    CYPHER_NOT_EQUALS( LangFunctionOperator.class ),
+
     STARTS_WITH( LangFunctionOperator.class ),
 
     ENDS_WITH( LangFunctionOperator.class ),

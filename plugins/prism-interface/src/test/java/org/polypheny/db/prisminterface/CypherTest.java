@@ -243,6 +243,16 @@ class CypherTest {
                         MATCH (n:Person {name: 'Alice'})
                         RETURN n.name %s $needle AS matched
                         """.formatted( operator.getKey() ) );
+                PreparedStatementSignature filter = prepareNamedCypher( connection, """
+                        MATCH (n:Person {name: 'Alice'})
+                        WHERE n.name %s $needle
+                        RETURN n.name AS name
+                        """.formatted( operator.getKey() ) );
+                PreparedStatementSignature optionalFilter = prepareNamedCypher( connection, """
+                        OPTIONAL MATCH (n:Person {name: 'Alice'})
+                        WHERE n.name %s $needle
+                        RETURN n.name AS name
+                        """.formatted( operator.getKey() ) );
                 Map<ProtoValue, ProtoValue> arguments = Map.of(
                         stringParameter( operator.getValue() ), trueValue,
                         stringParameter( "%" ), falseValue,
@@ -255,10 +265,82 @@ class CypherTest {
                             Response.TypeCase.STATEMENT_RESULT );
                     Row row = singleRow( relationalFrame( result.getStatementResult().getFrame(), true, List.of( "matched" ) ) );
                     assertEquals( argument.getValue(), row.getValues( 0 ), () -> operator.getKey() + " with " + argument.getKey() );
+
+                    boolean matches = trueValue.equals( argument.getValue() );
+                    Map<String, ProtoValue> binding = Map.of( "needle", argument.getKey() );
+                    Response filtered = expect( executeNamedCypher( connection, filter.getStatementId(), binding ), Response.TypeCase.STATEMENT_RESULT );
+                    RelationalFrame filteredRows = relationalFrame( filtered.getStatementResult().getFrame(), true, List.of( "name" ) );
+                    assertEquals( matches ? List.of( "Alice" ) : List.of(), projectedNames( filteredRows ) );
+
+                    Response optional = expect( executeNamedCypher( connection, optionalFilter.getStatementId(), binding ), Response.TypeCase.STATEMENT_RESULT );
+                    Row optionalRow = singleRow( relationalFrame( optional.getStatementResult().getFrame(), true, List.of( "name" ) ) );
+                    assertEquals( matches ? stringParameter( "Alice" ) : nullValue, optionalRow.getValues( 0 ) );
                 }
             }
             connection.checkTransactions( 0 );
         }
+    }
+
+
+    @Test
+    void matchesAndPersistsTypedNamedGraphProperties() throws IOException {
+        String namespace = "cyphertypednamedtest";
+        ProtoValue integer = PolyValueSerializer.serialize( PolyInteger.of( 42 ) );
+        ProtoValue truth = PolyValueSerializer.serialize( PolyBoolean.TRUE );
+        ProtoValue nullValue = PolyValueSerializer.serialize( PolyNull.NULL );
+        Map<String, ProtoValue> values = Map.of( "integer", integer, "numberText", stringParameter( "42" ),
+                "boolean", truth, "booleanText", stringParameter( "true" ), "absent", nullValue );
+        try ( PrismConnection writer = new PrismConnection( true, 3 ) ) {
+            writer.execute( Catalog.DEFAULT_NAMESPACE_NAME, "sql", "CREATE GRAPH NAMESPACE " + namespace, 1 );
+            try {
+                PreparedStatementSignature insert = prepareNamedCypher( writer, namespace, "CREATE (:TypedNamedValue {name:$name, value:$value})" );
+                for ( Map.Entry<String, ProtoValue> value : values.entrySet() ) {
+                    expect( executeNamedCypher( writer, insert.getStatementId(), Map.of( "name", stringParameter( value.getKey() ), "value", value.getValue() ) ),
+                            Response.TypeCase.STATEMENT_RESULT );
+                }
+                PreparedStatementSignature edge = prepareNamedCypher( writer, namespace, """
+                        CREATE (:TypedNamedEndpoint)-[e:TYPED_VALUE {value:$value}]->(:TypedNamedEndpoint)
+                        RETURN e.value AS value
+                        """ );
+                Response inserted = expect( executeNamedCypher( writer, edge.getStatementId(), Map.of( "value", integer ) ), Response.TypeCase.STATEMENT_RESULT );
+                assertStoredInteger( singleRow( relationalFrame( inserted.getStatementResult().getFrame(), true, List.of( "value" ) ) ).getValues( 0 ) );
+
+                // Read over a new connection so this verifies storage rather than the values in the write plan.
+                try ( PrismConnection reader = new PrismConnection( true, 3 ) ) {
+                    for ( String query : List.of( "MATCH (n:TypedNamedValue {value:$value}) RETURN n.name AS name",
+                            "MATCH (n:TypedNamedValue) WHERE n.value = $value RETURN n.name AS name" ) ) {
+                        PreparedStatementSignature lookup = prepareNamedCypher( reader, namespace, query );
+                        for ( Map.Entry<String, ProtoValue> value : values.entrySet() ) {
+                            Response result = expect( executeNamedCypher( reader, lookup.getStatementId(), Map.of( "value", value.getValue() ) ),
+                                    Response.TypeCase.STATEMENT_RESULT );
+                            RelationalFrame rows = relationalFrame( result.getStatementResult().getFrame(), true, List.of( "name" ) );
+                            assertEquals( value.getValue().equals( nullValue ) ? List.of() : List.of( value.getKey() ), projectedNames( rows ) );
+                        }
+                    }
+
+                    Frame readNodes = reader.execute( namespace, "cypher", "MATCH (n:TypedNamedValue) RETURN n.name AS name, n.value AS value", -1 ).getResult().getFrame();
+                    Map<String, ProtoValue> stored = relationalFrame( readNodes, true, List.of( "name", "value" ) ).getRowsList().stream()
+                            .collect( Collectors.toMap( row -> row.getValues( 0 ).getString().getString(), row -> row.getValues( 1 ) ) );
+                    assertStoredInteger( stored.get( "integer" ) );
+                    assertEquals( truth, stored.get( "boolean" ) );
+                    assertEquals( stringParameter( "42" ), stored.get( "numberText" ) );
+                    assertEquals( stringParameter( "true" ), stored.get( "booleanText" ) );
+                    assertEquals( nullValue, stored.get( "absent" ) );
+
+                    Frame readEdge = reader.execute( namespace, "cypher", "MATCH ()-[e:TYPED_VALUE]->() RETURN e.value AS value", -1 ).getResult().getFrame();
+                    assertStoredInteger( singleRow( relationalFrame( readEdge, true, List.of( "value" ) ) ).getValues( 0 ) );
+                }
+            } finally {
+                writer.execute( Catalog.DEFAULT_NAMESPACE_NAME, "sql", "DROP NAMESPACE " + namespace, 1 );
+            }
+        }
+    }
+
+
+    private static void assertStoredInteger( ProtoValue value ) {
+        // Neo4j stores all integers as longs.
+        assertTrue( value.hasInteger() || value.hasLong(), () -> "Expected an integer property, got " + value );
+        assertEquals( 42, integerValue( value ) );
     }
 
 
@@ -283,6 +365,24 @@ class CypherTest {
                     "LIMIT requires an integer between 0 and " + Integer.MAX_VALUE );
             assertNamedCypherError( executeNamedCypher( connection, signature.getStatementId(), Map.of( "offset", one, "count", stringParameter( "1" ) ) ),
                     "LIMIT requires a non-negative integer" );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void countsNonNullNamedArgumentsWhenReusingTheStatement() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            PreparedStatementSignature signature = prepareNamedCypher( connection, "MATCH (n:Person) RETURN count($value) AS counted" );
+
+            for ( ProtoValue value : List.of( PolyValueSerializer.serialize( PolyNull.NULL ), PolyValueSerializer.serialize( PolyInteger.of( 1 ) ) ) ) {
+                Response response = expect( executeNamedCypher( connection, signature.getStatementId(), Map.of( "value", value ) ),
+                        Response.TypeCase.STATEMENT_RESULT );
+                RelationalFrame frame = relationalFrame( response.getStatementResult().getFrame(), true, List.of( "counted" ) );
+                ProtoValue counted = singleRow( frame ).getValues( 0 );
+                assertTrue( counted.hasLong() );
+                assertEquals( value.hasNull() ? 0 : 3, counted.getLong().getLong() );
+            }
             connection.checkTransactions( 0 );
         }
     }
@@ -879,6 +979,173 @@ class CypherTest {
 
 
     @Test
+    void rollsBackAutocommitBatchWhenALaterCypherMemberCannotBePlanned() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            String firstWrite = "CREATE (:BatchMustRollBack)";
+            for ( String unsupported : List.of( "MATCH (n:Person) DETACH DELETE n", "MERGE (:Person {name: 'Bob'}) CREATE (:BatchMustRollBack)" ) ) {
+                expect( cypherBatch( connection, NAMESPACE, firstWrite, unsupported ), Response.TypeCase.ERROR_RESPONSE );
+                connection.checkTransactions( 0 );
+                try ( PrismConnection reader = new PrismConnection( true, 3 ) ) {
+                    Frame stored = reader.cypher( "MATCH (n:BatchMustRollBack) RETURN n", -1 ).getResult().getFrame();
+                    assertTrue( graphElements( stored, true ).isEmpty(), unsupported );
+                    assertEquals( 3, graphElements( reader.cypher( "MATCH (n:Person) RETURN n", -1 ).getResult().getFrame(), true ).size() );
+                }
+            }
+            expect( cypherBatch( connection, NAMESPACE, "MATCH (n:BatchMustRollBack) DELETE n" ), Response.TypeCase.STATEMENT_BATCH_RESPONSE );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void rejectsMixedBatchQueriesAndImplicitCommitsBeforeAnyWrite() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            for ( Map.Entry<String, String> invalid : Map.of(
+                    "SELECT 1", "without returning rows",
+                    "CREATE TABLE mixedbatchrejected (id INTEGER NOT NULL, PRIMARY KEY (id))", "DDL must execute separately" ).entrySet() ) {
+                Response response = expect( mixedBatch( connection, "CREATE (:MixedBatchRejected)", Catalog.DEFAULT_NAMESPACE_NAME, "sql", invalid.getKey() ),
+                        Response.TypeCase.ERROR_RESPONSE );
+                assertTrue( response.getErrorResponse().getMessage().contains( invalid.getValue() ), response.getErrorResponse().getMessage() );
+                connection.checkTransactions( 0 );
+                Frame stored = connection.cypher( "MATCH (n:MixedBatchRejected) RETURN n", -1 ).getResult().getFrame();
+                assertTrue( graphElements( stored, true ).isEmpty() );
+            }
+        }
+    }
+
+
+    @Test
+    void commitsCypherAndSqlUpdatesFromTheSameBatch() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            connection.execute( Catalog.DEFAULT_NAMESPACE_NAME, "sql", "CREATE TABLE mixedbatchwritten (id INTEGER NOT NULL, PRIMARY KEY (id))", 1 );
+            try {
+                Response response = expect( mixedBatch( connection, "CREATE (:MixedBatchWritten)", Catalog.DEFAULT_NAMESPACE_NAME, "sql", "INSERT INTO mixedbatchwritten VALUES (7)" ),
+                        Response.TypeCase.STATEMENT_BATCH_RESPONSE );
+                assertEquals( 2, response.getStatementBatchResponse().getScalarsCount() );
+                assertEquals( 1, response.getStatementBatchResponse().getScalars( 1 ) );
+                connection.checkTransactions( 0 );
+                try ( PrismConnection reader = new PrismConnection( true, 3 ) ) {
+                    Frame graph = reader.cypher( "MATCH (n:MixedBatchWritten) RETURN n", -1 ).getResult().getFrame();
+                    assertEquals( 1, graphElements( graph, true ).size() );
+                    Frame sql = reader.execute( Catalog.DEFAULT_NAMESPACE_NAME, "sql", "SELECT id AS id FROM mixedbatchwritten", -1 ).getResult().getFrame();
+                    assertEquals( 7, integerValue( singleRow( relationalFrame( sql, true, List.of( "id" ) ) ).getValues( 0 ) ) );
+                }
+            } finally {
+                connection.cypher( "MATCH (n:MixedBatchWritten) DELETE n", -1 );
+                connection.execute( Catalog.DEFAULT_NAMESPACE_NAME, "sql", "DROP TABLE mixedbatchwritten", 1 );
+            }
+        }
+    }
+
+
+    @Test
+    void returnsTheDocumentUpdateCountFromAMixedBatch() throws IOException {
+        String namespace = "mixedbatchdocuments";
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            connection.execute( Catalog.DEFAULT_NAMESPACE_NAME, "sql", "CREATE DOCUMENT NAMESPACE " + namespace, 1 );
+            try {
+                connection.execute( namespace, "mongo", "db.createCollection(\"entries\")", 1 );
+                Response response = expect( mixedBatch( connection, "CREATE (:MixedBatchWithDocument)", namespace, "mongo", "db.entries.insertOne({name:'written'})" ),
+                        Response.TypeCase.STATEMENT_BATCH_RESPONSE );
+                assertEquals( 2, response.getStatementBatchResponse().getScalarsCount() );
+                assertEquals( 1, response.getStatementBatchResponse().getScalars( 1 ) );
+                connection.checkTransactions( 0 );
+                Frame frame = connection.execute( namespace, "mongo", "db.entries.find({})", -1 ).getResult().getFrame();
+                assertEquals( 1, frame.getDocumentFrame().getDocumentsCount() );
+                assertEquals( "written", frame.getDocumentFrame().getDocuments( 0 ).getEntriesOrThrow( "name" ).getString().getString() );
+            } finally {
+                connection.cypher( "MATCH (n:MixedBatchWithDocument) DELETE n", -1 );
+                connection.execute( Catalog.DEFAULT_NAMESPACE_NAME, "sql", "DROP NAMESPACE " + namespace, 1 );
+            }
+        }
+    }
+
+
+    private static Response mixedBatch( PrismConnection connection, String cypher, String namespace, String language, String query ) throws IOException {
+        return connection.send( Request.newBuilder().setExecuteUnparameterizedStatementBatchRequest( ExecuteUnparameterizedStatementBatchRequest.newBuilder()
+                .addStatements( statementRequest( NAMESPACE, "cypher", cypher, 1 ).getExecuteUnparameterizedStatementRequest() )
+                .addStatements( statementRequest( namespace, language, query, 1 ).getExecuteUnparameterizedStatementRequest() ) ) );
+    }
+
+
+    @Test
+    void manualCypherBatchKeepsItsWritesInTheConnectionTransaction() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( false, 3 ) ) {
+            expect( cypherBatch( connection, NAMESPACE, "CREATE (:ManualBatch {name: 'created'})",
+                    "MATCH (n:ManualBatch) SET n.name = 'updated'" ), Response.TypeCase.STATEMENT_BATCH_RESPONSE );
+            Frame inTransaction = connection.cypher( "MATCH (n:ManualBatch) RETURN n.name AS name", -1 ).getResult().getFrame();
+            assertEquals( "updated", singleRow( relationalFrame( inTransaction, true, List.of( "name" ) ) ).getValues( 0 ).getString().getString() );
+            expect( connection.send( Request.newBuilder().setRollbackRequest( RollbackRequest.getDefaultInstance() ) ), Response.TypeCase.ROLLBACK_RESPONSE );
+            connection.checkTransactions( 0 );
+        }
+        try ( PrismConnection reader = new PrismConnection( true, 3 ) ) {
+            Frame stored = reader.cypher( "MATCH (n:ManualBatch) RETURN n", -1 ).getResult().getFrame();
+            assertTrue( graphElements( stored, true ).isEmpty() );
+        }
+    }
+
+
+    @Test
+    void canUpdateACommittedRowAfterRollingBackItsDeletion() throws IOException {
+        String namespace = Catalog.DEFAULT_NAMESPACE_NAME;
+        try ( PrismConnection reader = new PrismConnection( true, 3 ) ) {
+            reader.execute( namespace, "sql", "CREATE TABLE batchdeletedrow (id INTEGER NOT NULL, label VARCHAR(20), PRIMARY KEY (id))", 1 );
+            try {
+                reader.execute( namespace, "sql", "INSERT INTO batchdeletedrow VALUES (1, 'original')", 1 );
+                try ( PrismConnection writer = new PrismConnection( false, 3 ) ) {
+                    assertEquals( 1, writer.execute( namespace, "sql", "DELETE FROM batchdeletedrow WHERE id = 1", 1 ).getResult().getScalar() );
+                    expect( writer.send( Request.newBuilder().setRollbackRequest( RollbackRequest.getDefaultInstance() ) ), Response.TypeCase.ROLLBACK_RESPONSE );
+                }
+                reader.execute( namespace, "sql", "UPDATE batchdeletedrow SET label = 'updated' WHERE id = 1", 1 );
+                Frame result = reader.execute( namespace, "sql", "SELECT label AS label FROM batchdeletedrow", -1 ).getResult().getFrame();
+                assertEquals( "updated", singleRow( relationalFrame( result, true, List.of( "label" ) ) ).getValues( 0 ).getString().getString() );
+            } finally {
+                reader.execute( namespace, "sql", "DROP TABLE batchdeletedrow", 1 );
+            }
+        }
+    }
+
+
+    @Test
+    void rollsBackAMixedBatchThatFailsDuringExecution() throws IOException {
+        try ( PrismConnection reader = new PrismConnection( true, 3 ) ) {
+            // Exercise a JDBC execution error even when the tested graph adapter
+            // uses a different execution backend for SQL updates.
+            reader.execute( Catalog.DEFAULT_NAMESPACE_NAME, "sql", """
+                    ALTER ADAPTERS ADD batch_error_store USING 'Hsqldb' AS 'Store'
+                    WITH '{maxConnections:"25",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'
+                    """, 1 );
+            try {
+                reader.execute( Catalog.DEFAULT_NAMESPACE_NAME, "sql", """
+                        CREATE TABLE mixedbatchdenominator (id INTEGER NOT NULL, denominator INTEGER NOT NULL, PRIMARY KEY (id)) ON STORE batch_error_store
+                        """, 1 );
+                try {
+                    reader.execute( Catalog.DEFAULT_NAMESPACE_NAME, "sql", "INSERT INTO mixedbatchdenominator VALUES (1, 0)", 1 );
+                    for ( boolean autocommit : List.of( true, false ) ) {
+                        try ( PrismConnection writer = new PrismConnection( autocommit, 3 ) ) {
+                            Response result = expect( mixedBatch( writer, "CREATE (:MixedBatchMustRollBack)", Catalog.DEFAULT_NAMESPACE_NAME, "sql",
+                                    "UPDATE mixedbatchdenominator SET denominator = 7 / denominator" ), Response.TypeCase.ERROR_RESPONSE );
+                            assertTrue( result.getErrorResponse().getMessage().startsWith( "While executing SQL" ), result.getErrorResponse().getMessage() );
+                            if ( !autocommit ) {
+                                expect( writer.send( Request.newBuilder().setCommitRequest( CommitRequest.getDefaultInstance() ) ), Response.TypeCase.COMMIT_RESPONSE );
+                            }
+                            writer.checkTransactions( 0 );
+                            Frame graph = reader.cypher( "MATCH (n:MixedBatchMustRollBack) RETURN n", -1 ).getResult().getFrame();
+                            assertTrue( graphElements( graph, true ).isEmpty() );
+                        }
+                    }
+                } finally {
+                    reader.cypher( "MATCH (n:MixedBatchMustRollBack) DELETE n", -1 );
+                    reader.execute( Catalog.DEFAULT_NAMESPACE_NAME, "sql", "DROP TABLE mixedbatchdenominator", 1 );
+                }
+            } finally {
+                reader.execute( Catalog.DEFAULT_NAMESPACE_NAME, "sql", "ALTER ADAPTERS DROP batch_error_store", 1 );
+            }
+        }
+    }
+
+
+    @Test
     void graphPlanCachesDistinguishCollidingBoundValues() throws IOException {
         String namespace = "cypherparametercachetest";
         try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
@@ -1167,6 +1434,102 @@ class CypherTest {
             Frame stored = connection.execute( WRITE_RETURN_NAMESPACE, "cypher",
                     "MATCH (:ReturningMatchSeed)-[e:RETURN_CHILD]->(:ReturningChild) RETURN e", -1 ).getResult().getFrame();
             assertEquals( returnedEdges, graphElements( stored, true ).stream().map( element -> element.getEdge().getId() ).collect( Collectors.toSet() ) );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void reusesBothMatchedPathEndpointsWhenCreatingARelationship() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            expect( setCypherResultFormat( connection, "relational" ), Response.TypeCase.SET_CLIENT_INFO_PROPERTIES_RESPONSE );
+            connection.execute( WRITE_RETURN_NAMESPACE, "cypher",
+                    "CREATE (:PathSource)-[:PATH_SEED]->(:PathTarget)", -1 );
+
+            Frame result = connection.execute( WRITE_RETURN_NAMESPACE, "cypher", """
+                    MATCH p = (a:PathSource)-[:PATH_SEED]->(b:PathTarget)
+                    CREATE q = (a)-[e:PATH_ADDED]->(b)
+                    RETURN p, q, e
+                    """, -1 ).getResult().getFrame();
+            Row row = singleRow( relationalFrame( result, true, List.of( "p", "q", "e" ) ) );
+            ProtoPath existing = row.getValues( 0 ).getPath();
+            ProtoPath appended = row.getValues( 1 ).getPath();
+            ProtoEdge edge = row.getValues( 2 ).getEdge();
+            assertEquals( existing.getNodesList(), appended.getNodesList() );
+            assertEquals( appended.getEdgesList(), List.of( edge ) );
+            assertEquals( existing.getNodes( 0 ).getId(), edge.getLeft() );
+            assertEquals( existing.getNodes( 1 ).getId(), edge.getRight() );
+
+            Frame stored = connection.execute( WRITE_RETURN_NAMESPACE, "cypher",
+                    "MATCH (a)-[e:PATH_ADDED]->(b) RETURN a, b, e", -1 ).getResult().getFrame();
+            Row storedRow = singleRow( relationalFrame( stored, true, List.of( "a", "b", "e" ) ) );
+            assertEquals( edge.getLeft(), storedRow.getValues( 0 ).getNode().getId() );
+            assertEquals( edge.getRight(), storedRow.getValues( 1 ).getNode().getId() );
+            assertTrue( storedRow.getValues( 0 ).getNode().getLabelsList().contains( "PathSource" ) );
+            assertTrue( storedRow.getValues( 1 ).getNode().getLabelsList().contains( "PathTarget" ) );
+            assertEquals( edge.getId(), storedRow.getValues( 2 ).getEdge().getId() );
+
+            StatementResult mutation = connection.execute( WRITE_RETURN_NAMESPACE, "cypher", """
+                    MATCH (a:PathSource)-[:PATH_SEED]->(b:PathTarget)
+                    CREATE (a)-[:PATH_ADDED_WITHOUT_RETURN]->(b)
+                    """, -1 ).getResult();
+            assertFalse( mutation.hasFrame() );
+            assertEquals( 1, mutation.getScalar() );
+            Frame storedMutation = connection.execute( WRITE_RETURN_NAMESPACE, "cypher",
+                    "MATCH ()-[e:PATH_ADDED_WITHOUT_RETURN]->() RETURN e", -1 ).getResult().getFrame();
+            ProtoEdge storedEdge = singleRow( relationalFrame( storedMutation, true, List.of( "e" ) ) ).getValues( 0 ).getEdge();
+            assertEquals( edge.getLeft(), storedEdge.getLeft() );
+            assertEquals( edge.getRight(), storedEdge.getRight() );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void setsPropertiesOnRelationshipsBoundByAPath() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            connection.execute( WRITE_RETURN_NAMESPACE, "cypher",
+                    "CREATE (:PathEditSource)-[:PATH_EDIT {status: 'before'}]->(:PathEditTarget)", -1 );
+            Frame updated = connection.execute( WRITE_RETURN_NAMESPACE, "cypher", """
+                    MATCH (a:PathEditSource)-[e:PATH_EDIT]->(b:PathEditTarget)
+                    SET e.status = 'after'
+                    RETURN e, e.status AS status
+                    """, -1 ).getResult().getFrame();
+            Row row = singleRow( relationalFrame( updated, true, List.of( "e", "status" ) ) );
+            ProtoEdge edge = row.getValues( 0 ).getEdge();
+            assertEquals( "after", edge.getPropertiesOrThrow( "status" ).getString().getString() );
+            assertEquals( "after", row.getValues( 1 ).getString().getString() );
+
+            Frame stored = connection.execute( WRITE_RETURN_NAMESPACE, "cypher",
+                    "MATCH ()-[e:PATH_EDIT]->() RETURN e, e.status AS status", -1 ).getResult().getFrame();
+            Row storedRow = singleRow( relationalFrame( stored, true, List.of( "e", "status" ) ) );
+            assertEquals( edge.getId(), storedRow.getValues( 0 ).getEdge().getId() );
+            assertEquals( "after", storedRow.getValues( 1 ).getString().getString() );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void removesPropertiesAndLabelsBeforeReturningTheUpdatedNode() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            connection.execute( WRITE_RETURN_NAMESPACE, "cypher",
+                    "CREATE (:ReturningRemove:Discarded {dropMe: 'old', keepMe: 'remove-retained'})", -1 );
+            Frame updated = connection.execute( WRITE_RETURN_NAMESPACE, "cypher", """
+                    MATCH (n) WHERE n.keepMe = 'remove-retained'
+                    REMOVE n.dropMe, n:Discarded
+                    RETURN n
+                    """, -1 ).getResult().getFrame();
+            ProtoNode node = graphElements( updated, true ).get( 0 ).getNode();
+            assertEquals( List.of( "ReturningRemove" ), node.getLabelsList() );
+            assertEquals( Set.of( "keepMe" ), node.getPropertiesMap().keySet() );
+
+            Frame stored = connection.execute( WRITE_RETURN_NAMESPACE, "cypher",
+                    "MATCH (n:ReturningRemove) RETURN n", -1 ).getResult().getFrame();
+            ProtoNode storedNode = graphElements( stored, true ).get( 0 ).getNode();
+            assertEquals( node.getId(), storedNode.getId() );
+            assertEquals( node.getLabelsList(), storedNode.getLabelsList() );
+            assertEquals( node.getPropertiesMap(), storedNode.getPropertiesMap() );
             connection.checkTransactions( 0 );
         }
     }

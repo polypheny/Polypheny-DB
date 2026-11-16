@@ -573,13 +573,22 @@ public class PolyAlgToAlgConverter {
 
     private LaxAggregateCall convertLaxAggCall( PolyAlgExpression exp, String name, Context ctx ) {
         RexNode input = null;
+        boolean distinct = false;
         if ( !exp.getChildExps().isEmpty() ) {
-            input = convertRexNode( exp.getOnlyChild(), ctx );
+            PolyAlgExpression operand = exp.getOnlyChild();
+            List<PolyAlgLiteral> literals = operand.getLiterals();
+            distinct = literals.size() > 1 && literals.get( 0 ).toString().equals( "DISTINCT" );
+            if ( distinct ) {
+                operand = new PolyAlgExpression(
+                        literals.subList( 1, literals.size() ), operand.getChildExps(), operand.getDataType(),
+                        List.copyOf( operand.getExtensions().values() ), operand.getPos() );
+            }
+            input = convertRexNode( operand, ctx );
         }
         if ( name == null ) {
             name = exp.getDefaultAlias();
         }
-        return LaxAggregateCall.create( name, exp.getAggFunction(), input );
+        return LaxAggregateCall.create( name, exp.getAggFunction(), input, distinct );
     }
 
 

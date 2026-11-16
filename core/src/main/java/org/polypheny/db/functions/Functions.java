@@ -2169,7 +2169,7 @@ public class Functions {
 
 
     public static PolyBoolean isTrue( PolyBoolean b ) {
-        return PolyBoolean.of( b != null && b.value );
+        return PolyBoolean.of( b != null && Boolean.TRUE.equals( b.value ) );
     }
 
 
@@ -2214,7 +2214,7 @@ public class Functions {
 
     @SuppressWarnings("unused")
     public static PolyBoolean isNotFalse( PolyBoolean b ) {
-        return PolyBoolean.of( b == null || b.value );
+        return PolyBoolean.of( b == null || !Boolean.FALSE.equals( b.value ) );
     }
 
 

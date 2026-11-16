@@ -38,6 +38,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
@@ -53,6 +54,7 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.InvalidAlgException;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.enumerable.impl.AggAddContextImpl;
@@ -67,6 +69,9 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl.SyntheticRecordType;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
@@ -86,7 +91,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
         assert getConvention() instanceof EnumerableConvention;
 
         for ( AggregateCall aggCall : aggCalls ) {
-            if ( aggCall.isDistinct() ) {
+            if ( aggCall.isDistinct() && !supportsGraphDistinctCount( aggCall ) ) {
                 throw new InvalidAlgException( "distinct aggregation not supported" );
             }
             AggImplementor implementor2 = RexImpTable.INSTANCE.get( aggCall.getAggregation(), false );
@@ -94,6 +99,49 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
                 throw new InvalidAlgException( "aggregation " + aggCall.getAggregation() + " not supported" );
             }
         }
+    }
+
+
+    /**
+     * Keeps graph-valued distinct arguments in the enumerable graph plan. The relational
+     * distinct rewrite introduces relational projections that cannot consume graph rows.
+     */
+    private static class GraphDistinctCountImplementor extends StrictAggImplementor {
+
+        @Override
+        public List<Type> getNotNullState( AggContext info ) {
+            return List.of( HashSet.class );
+        }
+
+
+        @Override
+        protected void implementNotNullReset( AggContext info, AggResetContext reset ) {
+            reset.currentBlock().add( Expressions.statement( Expressions.assign( reset.accumulator().get( 0 ), Expressions.new_( HashSet.class ) ) ) );
+        }
+
+
+        @Override
+        protected void implementNotNullAdd( AggContext info, AggAddContext add ) {
+            Expression value = add.arguments().get( 0 );
+            PolyType type = info.parameterAlgTypes().get( 0 ).getPolyType();
+            if ( type == PolyType.NODE || type == PolyType.EDGE ) {
+                value = Expressions.call( BuiltInMethod.CYPHER_EXTRACT_ID.method, value );
+            }
+            add.currentBlock().add( Expressions.statement( Expressions.call( add.accumulator().get( 0 ), BuiltInMethod.COLLECTION_ADD.method, value ) ) );
+        }
+
+
+        @Override
+        protected Expression implementNotNullResult( AggContext info, AggResultContext result ) {
+            Expression size = Expressions.call( result.accumulator().get( 0 ), BuiltInMethod.COLLECTION_SIZE.method );
+            return Expressions.call( PolyLong.class, "of", Expressions.convert_( size, long.class ) );
+        }
+
+    }
+
+
+    private boolean supportsGraphDistinctCount( AggregateCall call ) {
+        return traitSet.contains( ModelTrait.GRAPH ) && call.getAggregation().getKind() == Kind.COUNT && call.getArgList().size() == 1;
     }
 
 
@@ -196,7 +244,9 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
 
         final List<AggImpState> aggs = new ArrayList<>( aggCalls.size() );
         for ( Ord<AggregateCall> call : Ord.zip( aggCalls ) ) {
-            aggs.add( new AggImpState( call.i, call.e, false ) );
+            aggs.add( call.e.isDistinct()
+                    ? new AggImpState( call.i, call.e, new GraphDistinctCountImplementor() )
+                    : new AggImpState( call.i, call.e, false ) );
         }
 
         // Function0<Object[]> accumulatorInitializer =

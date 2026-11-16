@@ -32,6 +32,7 @@ import org.polypheny.db.adapter.neo4j.util.NeoUtil.NeoSupportVisitor;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.core.lpg.LpgAggregate;
 import org.polypheny.db.algebra.core.lpg.LpgFilter;
 import org.polypheny.db.algebra.core.lpg.LpgMatch;
@@ -45,6 +46,7 @@ import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 
 public interface NeoGraphRules {
@@ -71,6 +73,10 @@ public interface NeoGraphRules {
         }
         NeoSupportVisitor visitor = new NeoSupportVisitor();
         for ( RexNode project : r.getProjects() ) {
+            if ( project instanceof RexLiteral literal && literal.isNull() ) {
+                // Native projection expects a string expression, but the literal translator returns null.
+                return false;
+            }
             project.accept( visitor );
         }
         return visitor.isSupports();
@@ -251,7 +257,27 @@ public interface NeoGraphRules {
 
     class NeoGraphAggregateRule extends NeoConverterRule {
 
-        public static NeoGraphAggregateRule INSTANCE = new NeoGraphAggregateRule( LpgAggregate.class, r -> true, "NeoGraphAggregateRule" );
+        public static NeoGraphAggregateRule INSTANCE = new NeoGraphAggregateRule(
+                LpgAggregate.class, NeoGraphAggregateRule::supports, "NeoGraphAggregateRule" );
+
+
+        private static boolean supports( LpgAggregate aggregate ) {
+            if ( aggregate.aggCalls.stream().anyMatch( LaxAggregateCall::isDistinct ) ) {
+                return false;
+            }
+            AlgNode input = aggregate.getInput() instanceof AlgSubset subset ? subset.getOriginal() : aggregate.getInput();
+            if ( !(input instanceof LpgProject project) ) {
+                return true;
+            }
+
+            // The native implementation drops the argument projection and reads its input names.
+            // A literal or bound parameter has no variable in that scope.
+            return aggregate.aggCalls.stream()
+                    .flatMap( call -> call.getInput().stream() )
+                    .filter( RexIndexRef.class::isInstance )
+                    .map( RexIndexRef.class::cast )
+                    .noneMatch( ref -> project.getProjects().get( ref.getIndex() ) instanceof RexLiteral );
+        }
 
 
         private <R extends AlgNode> NeoGraphAggregateRule( Class<R> clazz, Predicate<? super R> supports, String description ) {

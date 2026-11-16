@@ -453,17 +453,19 @@ class PIService {
     private Response executeUnparameterizedStatementBatch( ExecuteUnparameterizedStatementBatchRequest request, ResponseMaker<StatementBatchResponse> responseObserver ) throws IOException {
         PIClient client = getClient();
         PIUnparameterizedStatementBatch batch = client.getStatementManager().createUnparameterizedStatementBatch( request.getStatementsList() );
-        List<Node> parsedStatements;
         try {
-            parsedStatements = batch.validate();
-        } catch ( RuntimeException failure ) {
-            client.getStatementManager().closeStatementOrBatch( batch.getBatchId() );
+            List<Node> parsedStatements = batch.validate();
+            sendOneMessage( responseObserver.makeResponse( PrismUtils.createStatementBatchStatus( batch.getBatchId() ), false ) );
+            List<Long> updateCounts = batch.executeBatch( parsedStatements );
+            return responseObserver.makeResponse( PrismUtils.createStatementBatchStatus( batch.getBatchId(), updateCounts ) );
+        } catch ( Throwable failure ) {
+            try {
+                client.getStatementManager().closeStatementOrBatch( batch.getBatchId() );
+            } catch ( RuntimeException closeFailure ) {
+                failure.addSuppressed( closeFailure );
+            }
             throw failure;
         }
-        Response mid = responseObserver.makeResponse( PrismUtils.createStatementBatchStatus( batch.getBatchId() ), false );
-        sendOneMessage( mid );
-        List<Long> updateCounts = batch.executeBatch( parsedStatements );
-        return responseObserver.makeResponse( PrismUtils.createStatementBatchStatus( batch.getBatchId(), updateCounts ) );
     }
 
 

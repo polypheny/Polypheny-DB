@@ -66,6 +66,7 @@ import org.polypheny.db.algebra.logical.common.LogicalBatchIterator;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
@@ -270,7 +271,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     private ProposedImplementations prepareQueries( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean isRouted, boolean isSubQuery ) {
         boolean dmlReturning = isGraphInsertReturning( logicalRoot )
-                || logicalRoot.getModel() == ModelTrait.GRAPH && logicalRoot.kind.belongsTo( Kind.DML ) && containsReturningGraphModify( logicalRoot.alg );
+                || logicalRoot.getModel() == ModelTrait.GRAPH && logicalRoot.kind.belongsTo( Kind.DML )
+                && !(logicalRoot.alg instanceof LogicalLpgAggregate aggregate && aggregate.isWriteCount())
+                && containsReturningGraphModify( logicalRoot.alg );
         boolean isAnalyze = statement.isAnalyze() && !isSubQuery;
         boolean lock = !isSubQuery;
 

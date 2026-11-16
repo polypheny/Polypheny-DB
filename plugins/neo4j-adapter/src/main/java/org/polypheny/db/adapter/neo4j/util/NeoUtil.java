@@ -116,7 +116,7 @@ public interface NeoUtil {
             case DECIMAL -> v -> v instanceof StringValue ? PolyBigDecimal.of( v.asString() ) : PolyBigDecimal.of( v.asDouble() );
             case FLOAT, REAL -> v -> v instanceof StringValue ? PolyFloat.of( Float.valueOf( v.asString() ) ) : PolyFloat.of( v.asNumber() );
             case DOUBLE -> v -> v instanceof StringValue ? PolyDouble.of( Double.valueOf( v.asString() ) ) : PolyDouble.of( v.asNumber() );
-            case ANY -> v -> PolyString.of( v.asObject().toString() );
+            case ANY -> NeoUtil::asPolyValue;
             case CHAR, VARCHAR, TEXT -> v -> PolyString.of( v.asString() );
             case BINARY, VARBINARY -> v -> PolyBinary.of( v.asByteArray() );
             case FILE, IMAGE, VIDEO, AUDIO -> v -> PolyBlob.of( v.asByteArray() );
@@ -228,18 +228,24 @@ public interface NeoUtil {
 
     static PolyValue asPolyValue( @NonNull Value value ) {
         if ( value instanceof IntegerValue ) {
-            return PolyString.of( String.valueOf( value.asLong() ) );
+            return PolyLong.of( value.asLong() );
         } else if ( value instanceof StringValue ) {
             return PolyString.of( value.asString() );
         } else if ( value instanceof FloatValue ) {
-            return PolyString.of( String.valueOf( value.asDouble() ) );
-
+            return PolyDouble.of( value.asDouble() );
         } else if ( value instanceof ListValue ) {
             return new PolyList<>( value.asList( NeoUtil::getComparableOrString ) );
         } else if ( value instanceof PointValue ) {
             return asPolyGeometry( value );
         }
-        throw new NotImplementedException( "Type not supported" );
+        Object raw = value.asObject();
+        if ( raw instanceof Boolean bool ) {
+            return PolyBoolean.of( bool );
+        }
+        if ( raw instanceof byte[] bytes ) {
+            return PolyBinary.of( bytes );
+        }
+        return PolyString.of( raw.toString() );
     }
 
     static Function1<Record, PolyValue[]> getTypesFunction( NestedPolyType types ) {
@@ -325,14 +331,14 @@ public interface NeoUtil {
             case AND -> o -> o.stream().map( e -> String.format( "(%s)", e ) ).collect( Collectors.joining( " AND " ) );
             case DIVIDE -> handleDivide( operatorName, operands, returnType );
             case DIVIDE_INTEGER -> o -> String.format( "%s / %s", o.get( 0 ), o.get( 1 ) );
-            case EQUALS, IS_DISTINCT_FROM -> o -> String.format( "%s = %s", o.get( 0 ), o.get( 1 ) );
+            case EQUALS, CYPHER_EQUALS, IS_DISTINCT_FROM -> o -> String.format( "%s = %s", o.get( 0 ), o.get( 1 ) );
             case GREATER_THAN -> o -> String.format( "%s > %s", o.get( 0 ), o.get( 1 ) );
             case GREATER_THAN_OR_EQUAL -> o -> String.format( "%s >= %s", o.get( 0 ), o.get( 1 ) );
             case LESS_THAN -> o -> String.format( "%s < %s", o.get( 0 ), o.get( 1 ) );
             case LESS_THAN_OR_EQUAL -> o -> String.format( "%s <= %s", o.get( 0 ), o.get( 1 ) );
             case MINUS -> o -> String.format( "%s - %s", o.get( 0 ), o.get( 1 ) );
             case MULTIPLY -> o -> String.format( "%s * %s", o.get( 0 ), o.get( 1 ) );
-            case NOT_EQUALS, IS_NOT_DISTINCT_FROM -> o -> String.format( "%s <> %s", o.get( 0 ), o.get( 1 ) );
+            case NOT_EQUALS, CYPHER_NOT_EQUALS, IS_NOT_DISTINCT_FROM -> o -> String.format( "%s <> %s", o.get( 0 ), o.get( 1 ) );
             case OR -> o -> o.stream().map( e -> String.format( "(%s)", e ) ).collect( Collectors.joining( " OR " ) );
             case PLUS -> o -> String.format( "%s + %s", o.get( 0 ), o.get( 1 ) );
             case IS_NOT_NULL -> o -> String.format( "%s IS NOT NULL ", o.get( 0 ) );

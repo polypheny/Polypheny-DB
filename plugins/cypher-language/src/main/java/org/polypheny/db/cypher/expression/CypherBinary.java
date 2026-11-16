@@ -24,8 +24,10 @@ import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.BinaryOperator;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
 
@@ -51,6 +53,14 @@ public class CypherBinary extends CypherExpression {
         Pair<PolyString, RexNode> left = this.left.getRex( context, type );
         Pair<PolyString, RexNode> right = this.right.getRex( context, type );
 
+        if ( (op == OperatorName.EQUALS || op == OperatorName.NOT_EQUALS)
+                && (left.right.getType().getPolyType() == PolyType.ANY || right.right.getType().getPolyType() == PolyType.ANY) ) {
+            // Property values can have different types in different rows of the same graph.
+            OperatorName dynamicComparison = op == OperatorName.EQUALS ? OperatorName.CYPHER_EQUALS : OperatorName.CYPHER_NOT_EQUALS;
+            return Pair.of( null, context.rexBuilder.makeCall(
+                    context.typeFactory.createTypeWithNullability( context.booleanType, true ),
+                    OperatorRegistry.get( QueryLanguage.from( "cypher" ), dynamicComparison ), List.of( left.right, right.right ) ) );
+        }
         if ( OperatorRegistry.get( op ) instanceof BinaryOperator ) {
             // when we have a binary comparison, we have to adjust potential mismatches
             // this is the case if one of the sides is a literal, which has an explicit type

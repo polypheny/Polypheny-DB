@@ -18,8 +18,6 @@ package org.polypheny.db.cypher.clause;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgCollation;
@@ -39,12 +37,11 @@ import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.expression.CypherAggregate;
 import org.polypheny.db.cypher.expression.CypherExpression;
-import org.polypheny.db.cypher.expression.CypherProperty;
-import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -93,74 +90,84 @@ public class CypherReturnClause extends CypherClause {
 
 
     public AlgNode getGraphProject( CypherContext context ) {
-        List<Pair<PolyString, RexNode>> nameAndProject = returnItems.stream()
-                .map( i -> i.getRex( context, RexType.PROJECT ) )
-                .filter( Objects::nonNull )
-                .collect( Collectors.toCollection( ArrayList::new ) );
-        nameAndProject.addAll( 0, context.popNodes() );
-
-        AlgNode node = getProject( context, nameAndProject );
+        List<Pair<PolyString, RexNode>> projections = new ArrayList<>();
+        List<Pair<PolyString, RexNode>> operands = new ArrayList<>();
+        List<Integer> requestedOrder = new ArrayList<>();
+        for ( CypherReturn item : returnItems ) {
+            Pair<PolyString, RexNode> expression = item.getRex( context, RexType.PROJECT );
+            if ( item.isStar() ) {
+                for ( Pair<PolyString, RexNode> field : context.popNodes() ) {
+                    requestedOrder.add( projections.size() );
+                    projections.add( field );
+                }
+            } else if ( item instanceof CypherReturnItem value && value.getExpression() instanceof CypherAggregate ) {
+                requestedOrder.add( -1 - operands.size() );
+                operands.add( expression );
+            } else {
+                requestedOrder.add( projections.size() );
+                projections.add( expression.left == null
+                        ? Pair.of( PolyString.of( "EXPR$" + projections.size() ), expression.right )
+                        : expression );
+            }
+        }
 
         if ( context.containsAggs() ) {
-            // we use not yet existing fields in the aggregate
-            // we have to insert a project between, this is automatically "removed" after the aggregate
-            // we do this every time even when not really necessary, worst-case with two projects is removed later
-
-            return getAggregate( context, node );
+            return getAggregate( context, projections, operands, requestedOrder );
         }
-        return node;
+        return getProject( context, projections );
     }
 
 
-    private AlgNode getAggregate( CypherContext context, AlgNode node ) {
-        List<Pair<String, AggregateCall>> aggIndexes = context.popAggNodes();
-        List<AggregateCall> aggCalls = new ArrayList<>();
-        for ( Pair<String, AggregateCall> namedAgg : aggIndexes ) {
-            if ( namedAgg.left == null ) {
-                aggCalls.add( namedAgg.right );
-            } else {
-                int i = node.getTupleType().getFieldNames().indexOf( namedAgg.left );
-                aggCalls.add( namedAgg.right.adjustedCopy( List.of( i ) ) );
+    private AlgNode getAggregate(
+            CypherContext context, List<Pair<PolyString, RexNode>> groups, List<Pair<PolyString, RexNode>> operands, List<Integer> requestedOrder ) {
+        List<Pair<String, AggregateCall>> aggregates = context.popAggNodes();
+        List<Pair<PolyString, RexNode>> inputProjections = new ArrayList<>( groups );
+        List<Integer> operandIndexes = new ArrayList<>();
+        List<PolyString> fieldNames = new ArrayList<>( Pair.left( groups ) );
+        for ( Pair<PolyString, RexNode> operand : operands ) {
+            if ( operand == null ) {
+                operandIndexes.add( -1 );
+                continue;
             }
+
+            // The argument is resolved in the input scope, independently of any aliases in the output.
+            PolyString name = operand.left;
+            if ( name == null || name.value.startsWith( "$" ) || fieldNames.contains( name ) ) {
+                name = PolyString.of( "_aggregateInput" + operandIndexes.size() );
+                while ( fieldNames.contains( name ) ) {
+                    name = PolyString.of( name.value + "_" );
+                }
+            }
+            operandIndexes.add( inputProjections.size() );
+            inputProjections.add( Pair.of( name, operand.right ) );
+            fieldNames.add( name );
         }
 
+        AlgNode input = getProject( context, inputProjections );
         List<RexNameRef> groupIndexes = new ArrayList<>();
         List<LaxAggregateCall> calls = new ArrayList<>();
         AlgDataTypeFactory.Builder groupedType = context.typeFactory.builder();
-        List<String> aggregateNames = new ArrayList<>();
-        List<Integer> requestedOrder = new ArrayList<>();
-
-        int aggCount = 0;
-        for ( CypherReturn returnItem : returnItems ) {
-            if ( returnItem instanceof CypherReturnItem item ) {
-                if ( item.getExpression() instanceof CypherAggregate aggregate ) {
-                    requestedOrder.add( -1 - aggCount );
-                    AggregateCall call = aggCalls.get( aggCount );
-                    calls.add( LaxAggregateCall.from( call, aggIndexes.get( aggCount ).left == null ? null : node ) );
-                    aggregateNames.add( item.getVariable() != null ? item.getVariable().getName() : aggregate.op.name() );
-                    aggCount++;
-                } else if ( item.getVariable() != null || item.getExpression() instanceof CypherProperty || item.getExpression() instanceof CypherVariable ) {
-                    String name = item.getVariable() != null ? item.getVariable().getName() : item.getExpression().getName();
-                    int index = node.getTupleType().getFieldNames().indexOf( name );
-                    AlgDataType type = node.getTupleType().getFields().get( index ).getType();
-                    requestedOrder.add( groupIndexes.size() );
-                    groupIndexes.add( RexNameRef.create( name, index, type ) );
-                    groupedType.add( name, null, type );
-                }
-            }
+        for ( int i = 0; i < groups.size(); i++ ) {
+            String name = groups.get( i ).left.value;
+            AlgDataType type = input.getTupleType().getFields().get( i ).getType();
+            groupIndexes.add( RexNameRef.create( name, i, type ) );
+            groupedType.add( name, null, type );
+        }
+        for ( int i = 0; i < aggregates.size(); i++ ) {
+            AggregateCall aggregate = aggregates.get( i ).right;
+            int operandIndex = operandIndexes.get( i );
+            LaxAggregateCall call = operandIndex < 0
+                    ? LaxAggregateCall.from( aggregate, null )
+                    : LaxAggregateCall.from( aggregate.adjustedCopy( List.of( operandIndex ) ), input );
+            calls.add( call );
+            groupedType.add( aggregate.name, null, call.getType( input.getCluster() ) );
         }
 
-        for ( int i = 0; i < calls.size(); i++ ) {
-            groupedType.add( aggregateNames.get( i ), null, calls.get( i ).getType( node.getCluster() ) );
-        }
         AlgNode aggregate = new LogicalLpgAggregate(
-                node.getCluster(),
-                node.getTraitSet(),
-                node,
-                groupIndexes,
-                calls,
-                groupedType.build() );
-        List<Integer> positions = requestedOrder.stream().map( index -> index < 0 ? groupIndexes.size() - 1 - index : index ).toList();
+                input.getCluster(), input.getTraitSet(), input, groupIndexes, calls, groupedType.build() );
+        List<Integer> positions = requestedOrder.stream()
+                .map( index -> index < 0 ? groups.size() - 1 - index : index )
+                .toList();
         if ( IntStream.range( 0, positions.size() ).allMatch( index -> positions.get( index ) == index ) ) {
             return aggregate;
         }
@@ -190,7 +197,7 @@ public class CypherReturnClause extends CypherClause {
                 Pair.left( nameAndProject )
         );
 
-        if ( node.getTupleType().equals( project.getTupleType() ) ) {
+        if ( node.getTupleType().equals( project.getTupleType() ) && RexUtil.isIdentity( Pair.right( nameAndProject ), node.getTupleType() ) ) {
             return node;
         }
         return project;

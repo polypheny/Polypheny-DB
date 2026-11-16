@@ -18,6 +18,7 @@ package org.polypheny.db.algebra.core;
 
 import java.util.List;
 import java.util.Optional;
+import lombok.Getter;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.fun.AggFunction;
@@ -33,12 +34,20 @@ public class LaxAggregateCall {
     public final String name;
     public final AggFunction function;
     private final RexNode input;
+    @Getter
+    private final boolean distinct;
 
 
     public LaxAggregateCall( String name, AggFunction function, RexNode input ) {
+        this( name, function, input, false );
+    }
+
+
+    private LaxAggregateCall( String name, AggFunction function, RexNode input, boolean distinct ) {
         this.name = name;
         this.function = function;
         this.input = input;
+        this.distinct = distinct;
     }
 
 
@@ -47,9 +56,14 @@ public class LaxAggregateCall {
     }
 
 
+    public static LaxAggregateCall create( String name, AggFunction function, RexNode input, boolean distinct ) {
+        return new LaxAggregateCall( name, function, input, distinct );
+    }
+
+
     public static LaxAggregateCall from( AggregateCall call, AlgNode parent ) {
         if ( parent == null ) {
-            return new LaxAggregateCall( call.name, call.getAggregation(), null );
+            return new LaxAggregateCall( call.name, call.getAggregation(), null, call.isDistinct() );
         }
 
         RexNode node;
@@ -59,7 +73,7 @@ public class LaxAggregateCall {
             node = new RexIndexRef( call.getArgList().get( 0 ), parent.getTupleType().getFields().get( call.getArgList().get( 0 ) ).getType() );
         }
 
-        return new LaxAggregateCall( call.name, call.getAggregation(), node );
+        return new LaxAggregateCall( call.name, call.getAggregation(), node, call.isDistinct() );
     }
 
 
@@ -79,7 +93,7 @@ public class LaxAggregateCall {
 
 
     public AggregateCall toAggCall( List<Integer> arguments, AlgCluster cluster ) {
-        return AggregateCall.create( function, false, false, arguments, -1, AlgCollations.EMPTY, getType( cluster ), name );
+        return AggregateCall.create( function, distinct, false, arguments, -1, AlgCollations.EMPTY, getType( cluster ), name );
     }
 
 

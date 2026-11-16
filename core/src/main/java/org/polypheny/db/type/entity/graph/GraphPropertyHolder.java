@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import lombok.Getter;
 import lombok.NonNull;
+import org.polypheny.db.functions.Functions;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyList.PolyListDeserializer;
@@ -50,10 +51,9 @@ public abstract class GraphPropertyHolder extends GraphObject {
 
     public boolean matchesProperties( PolyDictionary properties ) {
         for ( Entry<PolyString, PolyValue> entry : properties.entrySet() ) {
-            if ( !this.properties.containsKey( entry.getKey() ) ) {
-                return false;
-            }
-            if ( !this.properties.get( entry.getKey() ).toString().equals( entry.getValue().toString() ) ) {
+            PolyValue stored = this.properties.get( entry.getKey() );
+            PolyValue requested = entry.getValue();
+            if ( stored == null || stored.isNull() || requested == null || requested.isNull() || !Functions.eq( stored, requested ).value ) {
                 return false;
             }
         }

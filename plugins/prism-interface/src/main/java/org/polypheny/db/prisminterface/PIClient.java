@@ -16,6 +16,7 @@
 
 package org.polypheny.db.prisminterface;
 
+import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +46,7 @@ public class PIClient {
     @Getter
     @Setter
     private boolean isAutoCommit;
+    private boolean deferAutoCommit;
     @Getter
     @Setter
     private LogicalNamespace namespace;
@@ -112,10 +114,34 @@ public class PIClient {
 
 
     public void commitCurrentTransactionIfAuto() {
-        if ( !isAutoCommit ) {
+        if ( !isAutoCommit || deferAutoCommit ) {
             return;
         }
         commitCurrentTransactionUnsynchronized();
+    }
+
+
+    public <T> T executeAtomicBatch( Supplier<T> execute ) {
+        // The request loop serializes operations on this client. Defer automatic
+        // commits until the batch completes and preserve the connection's commit mode.
+        deferAutoCommit = true;
+        try {
+            T result = execute.get();
+            if ( isAutoCommit ) {
+                commitCurrentTransaction();
+            }
+            return result;
+        } catch ( Throwable failure ) {
+            // There is no savepoint within a transaction. A failed batch aborts it.
+            try {
+                rollbackCurrentTransaction( failure.getMessage() );
+            } catch ( RuntimeException rollbackFailure ) {
+                failure.addSuppressed( rollbackFailure );
+            }
+            throw failure;
+        } finally {
+            deferAutoCommit = false;
+        }
     }
 
 
