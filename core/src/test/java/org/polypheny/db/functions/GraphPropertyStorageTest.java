@@ -28,6 +28,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.numerical.PolyLong;
+import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
@@ -53,6 +54,7 @@ class GraphPropertyStorageTest {
         for ( PolyValue original : List.of( integer, PolyLong.of( 4294967300L ), PolyBoolean.TRUE,
                 PolyBigDecimal.of( "0.1234567890123456789" ), PolyBinary.of( new byte[]{ 0, 1, -1 } ),
                 PolyDate.ofDays( 20_000 ), new PolyTime( 12345 ), new PolyTimestamp( 1700000000123L ),
+                PolyGeometry.ofOrThrow( "SRID=4326;POINT (8.5417 47.3769)" ), PolyGeometry.ofOrThrow( "POINT (15 30)" ),
                 PolyList.of( integer, PolyString.of( "42" ) ), encodedLookingString ) ) {
             String storage = CrossModelFunctions.graphPropertyStorageValue( original );
             PolyValue restored = CrossModelFunctions.readGraphPropertyStorageValue( PolyString.of( storage ) );
