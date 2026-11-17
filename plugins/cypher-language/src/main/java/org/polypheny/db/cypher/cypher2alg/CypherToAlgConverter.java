@@ -99,6 +99,7 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyEdge;
@@ -183,17 +184,16 @@ public class CypherToAlgConverter {
         switch ( node.getCypherKind() ) {
             case SINGLE:
                 CypherSingleQuery query = (CypherSingleQuery) node;
-                List<CypherKind> clauses = query.getClauses().stream()
-                        .map( CypherClause::getCypherKind )
-                        .filter( kind -> kind != CypherKind.USE )
+                List<CypherClause> clauses = query.getClauses().stream()
+                        .filter( clause -> clause.getCypherKind() != CypherKind.USE )
                         .toList();
-                if ( !clauses.isEmpty() && clauses.get( clauses.size() - 1 ) == CypherKind.RETURN && query.hasUpdates() ) {
-                    context.returning = true;
-                    context.createReturning = clauses.equals( List.of( CypherKind.CREATE, CypherKind.RETURN ) );
-                }
+                context.createReturning = clauses.size() == 2
+                        && clauses.get( 0 ).getCypherKind() == CypherKind.CREATE
+                        && clauses.get( 1 ).getCypherKind() == CypherKind.RETURN;
 
-                for ( CypherClause clause : query.getClauses() ) {
-                    convertClauses( clause, context );
+                for ( int i = 0; i < clauses.size(); i++ ) {
+                    context.writeHasConsumer = i + 1 < clauses.size();
+                    convertClauses( clauses.get( i ), context );
                 }
 
                 break;
@@ -581,7 +581,7 @@ public class CypherToAlgConverter {
         for ( int i = 0; i < hiddenPaths.size(); i++ ) {
             String name = "$matchPath" + i;
             while ( bindings.containsKey( PolyString.of( name ) ) ) {
-                name += "$";
+                name += "_";
             }
             names.add( PolyString.of( name ) );
         }
@@ -664,7 +664,7 @@ public class CypherToAlgConverter {
         private final Map<String, Boolean> implicitPathBindings = new HashMap<>();
         public CypherNode active;
         public Kind kind;
-        private boolean returning;
+        private boolean writeHasConsumer;
         private boolean createReturning;
         private boolean requiresRowWriter;
         private LogicalLpgModify returningInsert;
@@ -953,6 +953,8 @@ public class CypherToAlgConverter {
             if ( usesCreateExpressions() ) {
                 createRows( nodes, edges );
             } else {
+                Stream.<GraphPropertyHolder>concat( nodes.stream().map( binding -> binding.right ), edges.stream().map( binding -> binding.right.edge ) )
+                        .forEach( element -> element.properties.values().removeIf( PolyValue::isNull ) );
                 LogicalLpgValues values = LogicalLpgValues.create(
                         cluster,
                         cluster.traitSet(),
@@ -973,7 +975,7 @@ public class CypherToAlgConverter {
 
 
         public boolean usesCreateExpressions() {
-            return kind == Kind.INSERT && (!stack.isEmpty() || returning && !createReturning);
+            return kind == Kind.INSERT && (!stack.isEmpty() || writeHasConsumer && !createReturning);
         }
 
 
@@ -1066,12 +1068,13 @@ public class CypherToAlgConverter {
                 values.add( rexBuilder.makeInputRef( created, slot ) );
                 names.add( PolyString.of( privateName( fields, "$create$write" + slot ) ) );
             }
-            if ( !returning ) {
+            if ( !writeHasConsumer ) {
                 AlgNode provider = new LogicalLpgProject( cluster, cluster.traitSet(), created, values, names );
                 AlgNode write = new LogicalLpgModify( cluster, cluster.traitSet(), graph, provider, Modify.Operation.INSERT, null, null, writeSlots.size() );
                 add( LogicalLpgAggregate.countWrites( write ) );
                 return;
             }
+            requiresRowWriter = true;
             for ( PolyString binding : bindings ) {
                 values.add( rexBuilder.makeInputRef( created, fields.indexOf( binding.value ) ) );
                 names.add( binding );
@@ -1198,21 +1201,27 @@ public class CypherToAlgConverter {
         }
 
 
-        public void combineDelete() {
+        public void combineDelete( boolean detach ) {
             if ( rexQueue.isEmpty() ) {
                 throw new GenericRuntimeException( "Empty DELETE is not possible" );
             }
 
             List<Pair<PolyString, RexNode>> deletes = popNodes();
 
-            modify( Modify.Operation.DELETE, deletes );
+            modify( Modify.Operation.DELETE, deletes, detach );
             kind = Kind.DELETE;
         }
 
 
         private void modify( Modify.Operation operation, List<Pair<PolyString, RexNode>> updates ) {
+            modify( operation, updates, false );
+        }
+
+
+        private void modify( Modify.Operation operation, List<Pair<PolyString, RexNode>> updates, boolean detachDelete ) {
             AlgNode input = pop();
-            if ( !returning && !requiresRowWriter ) {
+            requiresRowWriter |= writeHasConsumer;
+            if ( !requiresRowWriter && operation != Modify.Operation.DELETE ) {
                 add( new LogicalLpgModify( cluster, cluster.traitSet(), graph, input, operation, Pair.left( updates ), Pair.right( updates ) ) );
                 clearVariables();
                 return;
@@ -1225,24 +1234,24 @@ public class CypherToAlgConverter {
             List<RexNode> parameters = new ArrayList<>( Pair.right( updates ) );
             List<PolyString> names = new ArrayList<>();
             for ( int i = 0; i < updates.size(); i++ ) {
-                names.add( PolyString.of( privateName( input.getTupleType().getFieldNames(), "$modify$" + i ) ) );
+                names.add( PolyString.of( privateName( input.getTupleType().getFieldNames(), "polypheny_modify_" + i ) ) );
             }
             List<AlgDataTypeField> fields = input.getTupleType().getFields();
-            if ( returning ) {
+            if ( writeHasConsumer ) {
                 for ( AlgDataTypeField field : fields ) {
                     parameters.add( rexBuilder.makeInputRef( input, field.getIndex() ) );
                     names.add( PolyString.of( field.getName() ) );
                 }
             }
             AlgNode provider = new LogicalLpgProject( cluster, cluster.traitSet(), input, parameters, names );
-            if ( !returning ) {
+            if ( !writeHasConsumer ) {
                 List<RexNode> targets = refs( provider ).stream()
                         .map( ref -> (RexNode) rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), ref ) )
                         .toList();
                 provider = new LogicalLpgFilter( cluster, cluster.traitSet(), provider, RexUtil.composeDisjunction( rexBuilder, targets, false ) );
             }
-            AlgNode modify = new LogicalLpgModify( cluster, cluster.traitSet(), graph, provider, operation, null, null, updates.size() );
-            if ( !returning ) {
+            AlgNode modify = new LogicalLpgModify( cluster, cluster.traitSet(), graph, provider, operation, null, null, updates.size(), detachDelete );
+            if ( !writeHasConsumer ) {
                 add( LogicalLpgAggregate.countWrites( modify ) );
                 clearVariables();
                 return;
@@ -1290,7 +1299,7 @@ public class CypherToAlgConverter {
 
         public void combineSet() {
             if ( rexQueue.isEmpty() ) {
-                throw new GenericRuntimeException( "Empty DELETE is not possible" );
+                throw new GenericRuntimeException( "Empty SET is not possible" );
             }
 
             List<Pair<PolyString, RexNode>> updates = popNodes();

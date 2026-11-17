@@ -20,8 +20,10 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.AbstractQueryable;
@@ -161,8 +163,8 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
 
 
     @Override
-    public AlgNode toGraphRowModification( AlgCluster cluster, Operation operation, List<PolyType> parameterTypes ) {
-        return new NeoGraphRowModification( cluster, this, operation, parameterTypes.size() );
+    public AlgNode toGraphRowModification( AlgCluster cluster, Operation operation, List<PolyType> parameterTypes, boolean detachDelete ) {
+        return new NeoGraphRowModification( cluster, this, operation, parameterTypes.size(), detachDelete );
     }
 
 
@@ -171,32 +173,36 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
         private final NeoGraph graph;
         private final Operation operation;
         private final int parameterCount;
+        private final boolean detachDelete;
 
 
-        private NeoGraphRowModification( AlgCluster cluster, NeoGraph graph, Operation operation, int parameterCount ) {
+        private NeoGraphRowModification( AlgCluster cluster, NeoGraph graph, Operation operation, int parameterCount, boolean detachDelete ) {
             super( cluster, cluster.traitSetOf( EnumerableConvention.INSTANCE ).replace( ModelTrait.GRAPH ) );
             this.graph = graph;
             this.operation = operation;
             this.parameterCount = parameterCount;
+            this.detachDelete = detachDelete;
             this.rowType = AlgOptUtil.createDmlRowType( Kind.INSERT, cluster.getTypeFactory() );
         }
 
 
         @Override
         public String algCompareString() {
-            return getClass().getSimpleName() + "$" + graph.id + "$" + operation + "$" + parameterCount + "&";
+            return getClass().getSimpleName() + "$" + graph.id + "$" + operation + "$" + parameterCount + "$" + detachDelete + "&";
         }
 
 
         @Override
         public AlgWriter explainTerms( AlgWriter writer ) {
-            return super.explainTerms( writer ).item( "graph", graph.id ).item( "operation", operation ).item( "parameters", parameterCount );
+            return super.explainTerms( writer ).item( "graph", graph.id ).item( "operation", operation ).item( "parameters", parameterCount )
+                    .itemIf( "detachDelete", true, detachDelete );
         }
 
 
         @Override
         public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
-            Expression execute = Expressions.call( graph.asExpression(), "modifyRow", Expressions.constant( operation ), Expressions.constant( parameterCount ) );
+            Expression execute = Expressions.call( graph.asExpression(), "modifyRow", Expressions.constant( operation ),
+                    Expressions.constant( parameterCount ), Expressions.constant( detachDelete ) );
             return implementor.result( PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), JavaTupleFormat.ARRAY, false ),
                     Blocks.toBlock( execute ) );
         }
@@ -266,9 +272,12 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
 
 
         @SuppressWarnings("UnusedDeclaration")
-        public Enumerable<PolyValue[]> modifyRow( Operation operation, int parameterCount ) {
+        public Enumerable<PolyValue[]> modifyRow( Operation operation, int parameterCount, boolean detachDelete ) {
             Transaction trx = getTrx();
             dataContext.getStatement().getTransaction().registerInvolvedAdapter( graph.store );
+            if ( operation == Operation.DELETE ) {
+                return deleteRows( trx, parameterCount, detachDelete );
+            }
             Map<Long, PolyValue> parameters = dataContext.getParameterValues().get( 0 );
             List<GraphPropertyHolder> elements = new ArrayList<>();
             for ( int i = 0; i < parameterCount; i++ ) {
@@ -277,13 +286,47 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
                     elements.add( (GraphPropertyHolder) value );
                 }
             }
-            if ( operation == Operation.DELETE ) {
-                elements.sort( java.util.Comparator.comparing( PolyValue::isNode ) );
-            }
             for ( GraphPropertyHolder element : elements ) {
                 modifyElement( trx, operation, element );
             }
             return Functions.singletonEnumerable( new PolyValue[]{ PolyLong.of( elements.size() ) } );
+        }
+
+
+        private Enumerable<PolyValue[]> deleteRows( Transaction trx, int parameterCount, boolean detachDelete ) {
+            Set<String> nodes = new LinkedHashSet<>();
+            Set<String> edges = new LinkedHashSet<>();
+            long count = 0;
+            for ( Map<Long, PolyValue> row : dataContext.getParameterValues() ) {
+                boolean hasTarget = false;
+                for ( int i = 0; i < parameterCount; i++ ) {
+                    PolyValue value = row.get( (long) i );
+                    if ( value == null || value.isNull() ) {
+                        continue;
+                    }
+                    hasTarget = true;
+                    if ( value instanceof PolyNode node ) {
+                        nodes.add( node.id.value );
+                    } else if ( value instanceof PolyEdge edge ) {
+                        edges.add( edge.id.value );
+                    } else {
+                        throw new GenericRuntimeException( "Graph deletes require a node or relationship binding" );
+                    }
+                }
+                if ( hasTarget ) {
+                    count++;
+                }
+            }
+            String graphLabel = identifier( graph.mappingLabel );
+            if ( !edges.isEmpty() ) {
+                trx.run( "UNWIND $ids AS id MATCH (:" + graphLabel + ")-[r {_id: id}]->(:" + graphLabel + ") DELETE r",
+                        Map.of( "ids", List.copyOf( edges ) ) ).consume();
+            }
+            if ( !nodes.isEmpty() ) {
+                trx.run( "UNWIND $ids AS id MATCH (n:" + graphLabel + " {_id: id})" + (detachDelete ? " DETACH DELETE n" : " DELETE n"),
+                        Map.of( "ids", List.copyOf( nodes ) ) ).consume();
+            }
+            return Functions.singletonEnumerable( new PolyValue[]{ PolyLong.of( count ) } );
         }
 
 
@@ -294,11 +337,6 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
                     : "MATCH (:" + graphLabel + ")-[n {_id: $id}]->(:" + graphLabel + ")";
             Map<String, Object> params = new LinkedHashMap<>();
             params.put( "id", element.id.value );
-            if ( operation == Operation.DELETE ) {
-                trx.run( match + " DELETE n", params ).consume();
-                return;
-            }
-
             Map<String, Object> properties = new LinkedHashMap<>();
             element.properties.forEach( (key, value) -> {
                 if ( value != null && !value.isNull() ) {

@@ -842,6 +842,10 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_LIKE ), BuiltInMethod.CYPHER_LIKE.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EQUALS ), BuiltInMethod.CYPHER_EQUALS.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_NOT_EQUALS ), BuiltInMethod.CYPHER_NOT_EQUALS.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_LESS_THAN ), BuiltInMethod.CYPHER_LESS_THAN.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_LESS_THAN_OR_EQUAL ), BuiltInMethod.CYPHER_LESS_THAN_OR_EQUAL.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_GREATER_THAN ), BuiltInMethod.CYPHER_GREATER_THAN.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_GREATER_THAN_OR_EQUAL ), BuiltInMethod.CYPHER_GREATER_THAN_OR_EQUAL.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.STARTS_WITH ), BuiltInMethod.CYPHER_STARTS_WITH.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.ENDS_WITH ), BuiltInMethod.CYPHER_ENDS_WITH.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_CONTAINS ), BuiltInMethod.CYPHER_CONTAINS.method, NullPolicy.NONE );

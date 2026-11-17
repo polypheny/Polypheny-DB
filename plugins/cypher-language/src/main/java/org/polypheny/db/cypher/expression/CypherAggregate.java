@@ -97,6 +97,7 @@ public class CypherAggregate extends CypherExpression {
                 RexNode casted = context.rexBuilder.makeCast( context.typeFactory.createTypeWithNullability( context.typeFactory.createPolyType( PolyType.DOUBLE ), true ), node );
                 yield Pair.of( casted, context.typeFactory.createTypeWithNullability( context.typeFactory.createPolyType( PolyType.DOUBLE ), true ) );
             }
+            case MIN, MAX -> Pair.of( node, context.typeFactory.createTypeWithNullability( Objects.requireNonNull( node ).getType(), true ) );
             default -> Pair.of( node, context.typeFactory.createPolyType( PolyType.BIGINT ) );
         };
     }

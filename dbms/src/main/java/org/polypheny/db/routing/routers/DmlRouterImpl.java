@@ -755,11 +755,12 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         AlgBuilder builder = AlgBuilder.create( statement, modify.getCluster() );
         List<AlgNode> collectors = targets.stream()
                 .map( allocation -> AdapterManager.getInstance().getStore( allocation.adapterId ).orElseThrow()
-                        .getGraphRowModification( allocation.id, modify.operation, parameters, builder ) )
+                        .getGraphRowModification( allocation.id, modify.operation, parameters, builder, modify.isDetachDelete() ) )
                 .toList();
         AlgNode collector = collectors.size() == 1 ? collectors.get( 0 )
                 : new LogicalModifyCollect( modify.getCluster(), modify.getTraitSet(), collectors, true );
-        return new LogicalStreamer( modify.getCluster(), modify.getTraitSet(), provider, collector, modify.getReturningParameters() );
+        return new LogicalStreamer( modify.getCluster(), modify.getTraitSet(), provider, collector,
+                modify.getReturningParameters(), modify.operation == Operation.DELETE );
     }
 
 

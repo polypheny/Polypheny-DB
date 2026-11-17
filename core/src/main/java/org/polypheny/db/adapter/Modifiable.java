@@ -106,23 +106,29 @@ public interface Modifiable extends Scannable {
 
 
     static AlgNode attachRelationalGraphDelete( Modifiable modifiable, AlgNode provider, LogicalLpgModify alg, AlgBuilder algBuilder, Entity nodesTable, Entity nodePropertiesTable, Entity edgesTable, Entity edgePropertiesTable ) {
-        AlgNode project = new LogicalLpgProject( alg.getCluster(), alg.getTraitSet(), alg.getInput(), alg.operations, alg.ids );
-
-        List<AlgNode> inputs = new ArrayList<>();
-        List<PolyType> sequence = new ArrayList<>();
-        for ( AlgDataTypeField field : project.getTupleType().getFields() ) {
-            sequence.add( field.getType().getPolyType() );
-            if ( field.getType().getPolyType() == PolyType.EDGE ) {
-                inputs.addAll( attachPreparedGraphEdgeModifyDelete( modifiable, alg.getCluster(), edgesTable, edgePropertiesTable, algBuilder ) );
-            } else if ( field.getType().getPolyType() == PolyType.NODE ) {
-                inputs.addAll( attachPreparedGraphNodeModifyDelete( modifiable, alg.getCluster(), nodesTable, nodePropertiesTable, algBuilder ) );
-            } else {
-                throw new GenericRuntimeException( "Graph delete of non-graph elements is not possible." );
-            }
-        }
-        AlgRecordType updateRowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( -1L, "ROWCOUNT", 0, alg.getCluster().getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
-        LogicalLpgTransformer transformer = new LogicalLpgTransformer( alg.getCluster(), alg.getTraitSet(), inputs, updateRowType, sequence, Modify.Operation.DELETE );
+        AlgNode project = new LogicalLpgProject( alg.getCluster(), alg.getTraitSet(), provider, alg.operations, alg.ids );
+        List<PolyType> sequence = project.getTupleType().getFields().stream().map( field -> field.getType().getPolyType() ).toList();
+        AlgNode transformer = prepareGraphDelete( modifiable, algBuilder, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable, sequence, alg.isDetachDelete() );
         return new LogicalStreamer( alg.getCluster(), alg.getTraitSet(), project, transformer );
+    }
+
+
+    private static AlgNode prepareGraphDelete( Modifiable modifiable, AlgBuilder builder, Entity nodesTable, Entity nodePropertiesTable,
+            Entity edgesTable, Entity edgePropertiesTable, List<PolyType> parameters, boolean detachDelete ) {
+        if ( parameters.stream().anyMatch( type -> type != PolyType.NODE && type != PolyType.EDGE ) ) {
+            throw new GenericRuntimeException( "Graph deletes require a node or relationship binding" );
+        }
+        AlgCluster cluster = builder.getCluster();
+        List<AlgNode> inputs = new ArrayList<>( attachPreparedGraphEdgeModifyDelete( modifiable, cluster, edgesTable, edgePropertiesTable, builder ) );
+        if ( parameters.contains( PolyType.NODE ) ) {
+            inputs.addAll( attachPreparedGraphNodeModifyDelete( modifiable, cluster, nodesTable, nodePropertiesTable, builder ) );
+            builder.relScan( edgesTable );
+            // Scan the relationship IDs and endpoints once to validate the complete DELETE clause.
+            inputs.add( builder.project( builder.field( 0 ), builder.field( 2 ), builder.field( 3 ) ).build() );
+        }
+        AlgRecordType resultType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl(
+                -1L, "ROWCOUNT", 0, cluster.getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
+        return new LogicalLpgTransformer( cluster, cluster.traitSet(), inputs, resultType, parameters, Operation.DELETE, detachDelete );
     }
 
 
@@ -416,24 +422,27 @@ public interface Modifiable extends Scannable {
     }
 
 
-    default AlgNode getGraphRowModification( long allocationId, Operation operation, List<PolyType> parameters, AlgBuilder builder ) {
+    default AlgNode getGraphRowModification( long allocationId, Operation operation, List<PolyType> parameters, AlgBuilder builder, boolean detachDelete ) {
         List<PhysicalEntity> physicals = getCatalog().getPhysicalsFromAllocs( allocationId );
         AlgCluster cluster = builder.getCluster();
         Optional<ModifiableGraph> nativeGraph = physicals.get( 0 ).unwrap( ModifiableGraph.class );
         if ( nativeGraph.isPresent() ) {
-            return nativeGraph.get().toGraphRowModification( cluster, operation, parameters );
+            return nativeGraph.get().toGraphRowModification( cluster, operation, parameters, detachDelete );
         }
 
         Entity nodesTable = physicals.get( 0 );
         Entity nodePropertiesTable = physicals.get( 1 );
         Entity edgesTable = physicals.get( 2 );
         Entity edgePropertiesTable = physicals.get( 3 );
+        if ( operation == Operation.DELETE ) {
+            return prepareGraphDelete( this, builder, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable, parameters, detachDelete );
+        }
         List<AlgNode> modifies = new ArrayList<>();
         for ( PolyType type : parameters ) {
             if ( type != PolyType.NODE && type != PolyType.EDGE ) {
                 throw new GenericRuntimeException( "Graph writes require a node or relationship binding" );
             }
-            if ( operation == Operation.UPDATE || operation == Operation.DELETE ) {
+            if ( operation == Operation.UPDATE ) {
                 modifies.addAll( type == PolyType.NODE
                         ? attachPreparedGraphNodeModifyDelete( this, cluster, nodesTable, nodePropertiesTable, builder )
                         : attachPreparedGraphEdgeModifyDelete( this, cluster, edgesTable, edgePropertiesTable, builder ) );

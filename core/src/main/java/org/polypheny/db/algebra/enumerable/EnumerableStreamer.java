@@ -18,6 +18,7 @@ package org.polypheny.db.algebra.enumerable;
 
 
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.function.Function;
@@ -58,13 +59,13 @@ public class EnumerableStreamer extends Streamer implements EnumerableAlg {
     }
 
 
-    public EnumerableStreamer( AlgCluster cluster, AlgTraitSet traitSet, AlgNode provider, AlgNode collector, int returningParameters ) {
-        super( cluster, traitSet, provider, collector, returningParameters );
+    public EnumerableStreamer( AlgCluster cluster, AlgTraitSet traitSet, AlgNode provider, AlgNode collector, int returningParameters, boolean batchGraphWrites ) {
+        super( cluster, traitSet, provider, collector, returningParameters, batchGraphWrites );
     }
 
 
-    public static EnumerableStreamer create( AlgTraitSet traitSet, AlgNode query, AlgNode prepared, int returningParameters ) {
-        return new EnumerableStreamer( query.getCluster(), traitSet, query, prepared, returningParameters );
+    public static EnumerableStreamer create( AlgTraitSet traitSet, AlgNode query, AlgNode prepared, int returningParameters, boolean batchGraphWrites ) {
+        return new EnumerableStreamer( query.getCluster(), traitSet, query, prepared, returningParameters, batchGraphWrites );
     }
 
 
@@ -95,12 +96,16 @@ public class EnumerableStreamer extends Streamer implements EnumerableAlg {
         builder.add( Expressions.declare( Modifier.FINAL, exp, expCall ) );
 
         int parameterCount = returning ? getReturningParameters() : getLeft().getTupleType().getFieldCount();
-        MethodCallExpression transformContext = Expressions.call(
-                (returning ? BuiltInMethod.STREAM_GRAPH_ROWS : BuiltInMethod.STREAM_RIGHT).method,
+        List<Expression> arguments = new ArrayList<>( List.of(
                 Expressions.constant( DataContext.ROOT ),
                 builder.append( builder.newName( "query" + System.nanoTime() ), query.block() ),
                 exp,
-                Expressions.constant( getLeft().getTupleType().getFields().stream().limit( parameterCount ).map( f -> f.getType().getPolyType() ).toList() ) );
+                Expressions.constant( getLeft().getTupleType().getFields().stream().limit( parameterCount ).map( f -> f.getType().getPolyType() ).toList() ) ) );
+        if ( returning ) {
+            arguments.add( Expressions.constant( isBatchGraphWrites() ) );
+        }
+        MethodCallExpression transformContext = Expressions.call(
+                (returning ? BuiltInMethod.STREAM_GRAPH_ROWS : BuiltInMethod.STREAM_RIGHT).method, arguments );
 
         builder.add( Expressions.return_( null, builder.append( "test", transformContext ) ) );
 
@@ -110,7 +115,7 @@ public class EnumerableStreamer extends Streamer implements EnumerableAlg {
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new EnumerableStreamer( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), inputs.get( 1 ), getReturningParameters() );
+        return new EnumerableStreamer( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), inputs.get( 1 ), getReturningParameters(), isBatchGraphWrites() );
     }
 
 }

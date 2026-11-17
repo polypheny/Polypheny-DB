@@ -30,9 +30,9 @@ import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgUnwind;
 import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgValues;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil.NeoSupportVisitor;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
-import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.core.lpg.LpgAggregate;
 import org.polypheny.db.algebra.core.lpg.LpgFilter;
 import org.polypheny.db.algebra.core.lpg.LpgMatch;
@@ -48,6 +48,7 @@ import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.PolyType;
 
 public interface NeoGraphRules {
 
@@ -262,21 +263,20 @@ public interface NeoGraphRules {
 
 
         private static boolean supports( LpgAggregate aggregate ) {
-            if ( aggregate.aggCalls.stream().anyMatch( LaxAggregateCall::isDistinct ) ) {
+            if ( aggregate.aggCalls.stream().anyMatch( call -> call.isDistinct()
+                    || call.function.getKind() == Kind.MIN || call.function.getKind() == Kind.MAX ) ) {
+                return false;
+            }
+            if ( aggregate.getTupleType().getFields().stream().anyMatch( field -> field.getType().getPolyType() == PolyType.DECIMAL
+                    || !field.getName().matches( "[A-Za-z_][A-Za-z0-9_]*" ) ) ) {
                 return false;
             }
             AlgNode input = aggregate.getInput() instanceof AlgSubset subset ? subset.getOriginal() : aggregate.getInput();
-            if ( !(input instanceof LpgProject project) ) {
-                return true;
+            if ( input instanceof LpgProject project ) {
+                input = project.getInput() instanceof AlgSubset subset ? subset.getOriginal() : project.getInput();
             }
-
-            // The native implementation drops the argument projection and reads its input names.
-            // A literal or bound parameter has no variable in that scope.
-            return aggregate.aggCalls.stream()
-                    .flatMap( call -> call.getInput().stream() )
-                    .filter( RexIndexRef.class::isInstance )
-                    .map( RexIndexRef.class::cast )
-                    .noneMatch( ref -> project.getProjects().get( ref.getIndex() ) instanceof RexLiteral );
+            // NeoLpgSort terminates the native query with RETURN before its ordering and limit.
+            return !(input instanceof LpgSort);
         }
 
 

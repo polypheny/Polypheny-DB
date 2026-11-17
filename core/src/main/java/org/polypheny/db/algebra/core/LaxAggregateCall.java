@@ -21,6 +21,7 @@ import java.util.Optional;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -34,20 +35,22 @@ public class LaxAggregateCall {
     public final String name;
     public final AggFunction function;
     private final RexNode input;
+    private final AlgDataType resultType;
     @Getter
     private final boolean distinct;
 
 
     public LaxAggregateCall( String name, AggFunction function, RexNode input ) {
-        this( name, function, input, false );
+        this( name, function, input, false, null );
     }
 
 
-    private LaxAggregateCall( String name, AggFunction function, RexNode input, boolean distinct ) {
+    private LaxAggregateCall( String name, AggFunction function, RexNode input, boolean distinct, AlgDataType resultType ) {
         this.name = name;
         this.function = function;
         this.input = input;
         this.distinct = distinct;
+        this.resultType = resultType;
     }
 
 
@@ -57,13 +60,14 @@ public class LaxAggregateCall {
 
 
     public static LaxAggregateCall create( String name, AggFunction function, RexNode input, boolean distinct ) {
-        return new LaxAggregateCall( name, function, input, distinct );
+        return new LaxAggregateCall( name, function, input, distinct, null );
     }
 
 
     public static LaxAggregateCall from( AggregateCall call, AlgNode parent ) {
+        AlgDataType resultType = isExtremum( call.getAggregation() ) ? call.getType() : null;
         if ( parent == null ) {
-            return new LaxAggregateCall( call.name, call.getAggregation(), null, call.isDistinct() );
+            return new LaxAggregateCall( call.name, call.getAggregation(), null, call.isDistinct(), resultType );
         }
 
         RexNode node;
@@ -73,7 +77,7 @@ public class LaxAggregateCall {
             node = new RexIndexRef( call.getArgList().get( 0 ), parent.getTupleType().getFields().get( call.getArgList().get( 0 ) ).getType() );
         }
 
-        return new LaxAggregateCall( call.name, call.getAggregation(), node, call.isDistinct() );
+        return new LaxAggregateCall( call.name, call.getAggregation(), node, call.isDistinct(), resultType );
     }
 
 
@@ -98,7 +102,7 @@ public class LaxAggregateCall {
 
 
     public AlgDataType getType( AlgCluster cluster ) {
-        AlgDataType type = getType( cluster, function );
+        AlgDataType type = resultType != null ? resultType : getType( cluster, function );
         if ( type == null ) {
             throw new GenericRuntimeException( "Unknown aggregate function: " + function.getKind() );
         }
@@ -116,11 +120,19 @@ public class LaxAggregateCall {
 
 
     public Optional<AlgDataType> requiresCast( AlgCluster cluster ) {
+        if ( resultType != null ) {
+            return Optional.empty();
+        }
         return switch ( function.getKind() ) {
             case COUNT -> Optional.empty();
             case SUM, AVG, MAX, MIN -> Optional.ofNullable( cluster.getTypeFactory().createTypeWithNullability( cluster.getTypeFactory().createPolyType( PolyType.DOUBLE ), true ) );
             default -> Optional.empty();
         };
+    }
+
+
+    private static boolean isExtremum( AggFunction function ) {
+        return function.getKind() == Kind.MIN || function.getKind() == Kind.MAX;
     }
 
 }

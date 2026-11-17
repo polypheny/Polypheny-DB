@@ -206,9 +206,12 @@ public class Translator extends RexVisitorImpl<String> {
         List<PolyValue> rexKeys = ((RexLiteral) call.operands.get( 1 )).value.asList();
         List<String> keys = rexKeys.stream().map( l -> l.asString().value ).toList();
         List<PolyValue> rexValues = ((RexLiteral) call.operands.get( 2 )).value.asList().value;
-        List<String> values = rexValues.stream().map( value -> value.isString()
-                ? NeoUtil.quoteStringLiteral( value.asString().value )
-                : value.toJson() ).toList();
+        List<String> values = rexValues.stream().map( value -> {
+            if ( value.isNull() ) {
+                return "null";
+            }
+            return value.isString() ? NeoUtil.quoteStringLiteral( value.asString().value ) : value.toJson();
+        } ).toList();
 
         boolean replace = ((RexLiteral) call.operands.get( 3 )).value.asBoolean().value;
 

@@ -19,9 +19,11 @@ package org.polypheny.db.functions;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -38,6 +40,7 @@ import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.algebra.type.GraphType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyNull;
@@ -72,9 +75,13 @@ public class CrossModelFunctions {
      * @return the result of the modify operation
      */
     @SuppressWarnings("unused")
-    public static Enumerable<PolyValue[]> sendGraphModifies( DataContext context, List<Function0<Enumerable<?>>> enumerables, List<PolyType> order, Operation operation ) {
-        if ( operation == Modify.Operation.DELETE || operation == Modify.Operation.UPDATE ) {
-            return sendGraphUpdatesOrDeletes( context, enumerables, order, operation );
+    public static Enumerable<PolyValue[]> sendGraphModifies( DataContext context, List<Function0<Enumerable<?>>> enumerables,
+            List<PolyType> order, Operation operation, boolean detachDelete ) {
+        if ( operation == Modify.Operation.DELETE ) {
+            return sendGraphDeletes( context, enumerables, order, detachDelete );
+        }
+        if ( operation == Modify.Operation.UPDATE ) {
+            return sendGraphUpdates( context, enumerables, order );
         }
 
         int i = 0;
@@ -123,8 +130,7 @@ public class CrossModelFunctions {
     }
 
 
-    private static Enumerable<PolyValue[]> sendGraphUpdatesOrDeletes(
-            DataContext context, List<Function0<Enumerable<?>>> enumerables, List<PolyType> order, Operation operation ) {
+    private static Enumerable<PolyValue[]> sendGraphUpdates( DataContext context, List<Function0<Enumerable<?>>> enumerables, List<PolyType> order ) {
         List<Map<Long, PolyValue>> rows = context.getParameterValues();
         Map<Long, AlgDataType> types = context.getParameterTypes();
         long count = 0;
@@ -133,11 +139,7 @@ public class CrossModelFunctions {
                 if ( row.values().stream().allMatch( value -> value == null || value.isNull() ) ) {
                     continue;
                 }
-                if ( operation == Modify.Operation.DELETE ) {
-                    sendDeletes( context, enumerables, order, row );
-                } else {
-                    sendUpdates( context, enumerables, order, row );
-                }
+                sendUpdates( context, enumerables, order, row );
                 count++;
             }
         } finally {
@@ -323,48 +325,71 @@ public class CrossModelFunctions {
     }
 
 
-    /**
-     * Modify operation, which deletes specific elements
-     *
-     * @param context dataContext of the delete operation
-     * @param enumerables collection of all modify enumerables
-     * @param order the order of modify operations
-     */
-    private static void sendDeletes( DataContext context, List<Function0<Enumerable<?>>> enumerables, List<PolyType> order, Map<Long, PolyValue> values ) {
-        int i = 0;
-        JavaTypeFactory typeFactory = context.getStatement().getTransaction().getTypeFactory();
-        AlgDataType idType = typeFactory.createPolyType( PolyType.VARCHAR, 36 );
-        AlgDataType labelType = typeFactory.createPolyType( PolyType.VARCHAR, 255 );
-
-        context.resetParameterValues();
-        for ( PolyType polyType : order ) {
-            PolyValue element = values.get( (long) i );
-            if ( element == null || element.isNull() ) {
-                i++;
-                continue;
+    private static Enumerable<PolyValue[]> sendGraphDeletes( DataContext context, List<Function0<Enumerable<?>>> inputs,
+            List<PolyType> order, boolean detachDelete ) {
+        List<Map<Long, PolyValue>> rows = context.getParameterValues();
+        Map<Long, AlgDataType> types = context.getParameterTypes();
+        Set<PolyString> nodes = new LinkedHashSet<>();
+        Set<PolyString> edges = new LinkedHashSet<>();
+        long count = 0;
+        for ( Map<Long, PolyValue> row : rows ) {
+            boolean hasTarget = false;
+            for ( int i = 0; i < order.size(); i++ ) {
+                PolyValue value = row.get( (long) i );
+                if ( value == null || value.isNull() ) {
+                    continue;
+                }
+                hasTarget = true;
+                if ( order.get( i ) == PolyType.NODE ) {
+                    nodes.add( value.asNode().id );
+                } else {
+                    edges.add( value.asEdge().id );
+                }
             }
-            if ( polyType == PolyType.NODE ) {
-                PolyNode node = (PolyNode) values.get( (long) i );
-
-                // node table delete
-                nodeTableDelete( context, enumerables, 2 * i, idType, labelType, node );
-
-                // node property table delete
-                nodePropertiesTableDelete( context, enumerables, 2 * i + 1, idType, labelType, node );
-
-            } else if ( polyType == PolyType.EDGE ) {
-                PolyEdge edge = (PolyEdge) values.get( (long) i );
-
-                // edge table delete
-                edgeTableDelete( context, enumerables, 2 * i, idType, labelType, edge );
-
-                // edge property table delete
-                edgePropertiesTableDelete( context, enumerables, 2 * i + 1, idType, labelType, edge );
-
+            if ( hasTarget ) {
+                count++;
             }
-
-            i++;
         }
+        JavaTypeFactory typeFactory = context.getStatement().getTransaction().getTypeFactory();
+        AlgDataType idType = typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE );
+        try {
+            if ( !nodes.isEmpty() ) {
+                context.resetParameterValues();
+                try ( Enumerator<?> incidentEdges = inputs.get( 4 ).apply().enumerator() ) {
+                    while ( incidentEdges.moveNext() ) {
+                        Object[] edge = (Object[]) incidentEdges.current();
+                        if ( !nodes.contains( edge[1] ) && !nodes.contains( edge[2] ) ) {
+                            continue;
+                        }
+                        PolyString id = (PolyString) edge[0];
+                        if ( !detachDelete && !edges.contains( id ) ) {
+                            throw new GenericRuntimeException( "Cannot delete a node with relationships. Delete its relationships or use DETACH DELETE." );
+                        }
+                        edges.add( id );
+                    }
+                }
+            }
+            // The first two inputs delete relationships and their properties. The next two handle nodes.
+            for ( PolyString id : edges ) {
+                deleteGraphElement( context, inputs, 0, idType, id );
+            }
+            for ( PolyString id : nodes ) {
+                deleteGraphElement( context, inputs, 2, idType, id );
+            }
+        } finally {
+            context.resetParameterValues();
+            context.setParameterValues( rows );
+            context.setParameterTypes( types );
+        }
+        return Linq4j.singletonEnumerable( new PolyValue[]{ PolyLong.of( count ) } );
+    }
+
+
+    private static void deleteGraphElement( DataContext context, List<Function0<Enumerable<?>>> inputs, int index, AlgDataType idType, PolyString id ) {
+        context.resetParameterValues();
+        context.addParameterValues( 0, idType, List.of( id ) );
+        drainWrites( inputs.get( index ), 1 );
+        drainWrites( inputs.get( index + 1 ), 1 );
     }
 
 

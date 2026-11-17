@@ -51,13 +51,10 @@ public class CypherDelete extends CypherClause {
     public void getDelete( CypherContext context ) {
         for ( CypherExpression expression : expressions ) {
             Pair<PolyString, RexNode> pair = expression.getRex( context, RexType.PROJECT );
-            if ( detach ) {
-                throw new UnsupportedOperationException( "Detach is not supported" );
-            }
             context.add( pair );
         }
 
-        context.combineDelete();
+        context.combineDelete( detach );
     }
 
 }

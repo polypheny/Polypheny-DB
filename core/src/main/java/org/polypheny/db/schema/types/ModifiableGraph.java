@@ -39,7 +39,7 @@ public interface ModifiableGraph extends Typed {
             List<? extends RexNode> sources );
 
 
-    default AlgNode toGraphRowModification( AlgCluster cluster, Operation operation, List<PolyType> parameterTypes ) {
+    default AlgNode toGraphRowModification( AlgCluster cluster, Operation operation, List<PolyType> parameterTypes, boolean detachDelete ) {
         throw new UnsupportedOperationException( "This graph adapter does not support row-producing mutations" );
     }
 

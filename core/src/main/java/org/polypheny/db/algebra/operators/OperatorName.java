@@ -1678,6 +1678,14 @@ public enum OperatorName {
 
     CYPHER_NOT_EQUALS( LangFunctionOperator.class ),
 
+    CYPHER_LESS_THAN( LangFunctionOperator.class ),
+
+    CYPHER_LESS_THAN_OR_EQUAL( LangFunctionOperator.class ),
+
+    CYPHER_GREATER_THAN( LangFunctionOperator.class ),
+
+    CYPHER_GREATER_THAN_OR_EQUAL( LangFunctionOperator.class ),
+
     STARTS_WITH( LangFunctionOperator.class ),
 
     ENDS_WITH( LangFunctionOperator.class ),

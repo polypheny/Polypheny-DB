@@ -111,6 +111,10 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
+import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
+import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
@@ -118,6 +122,7 @@ import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.ByteString;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Static;
 
 
@@ -377,20 +382,48 @@ public class Functions {
     @SuppressWarnings({ "unused", "unchecked" })
     public static <T> Enumerable<T> materializeGraphRows( Enumerable<T> source ) {
         List<T> rows = new ArrayList<>();
+        Map<Pair<PolyType, PolyString>, GraphPropertyHolder> bindings = new HashMap<>();
         try ( Enumerator<T> input = source.enumerator() ) {
             while ( input.moveNext() ) {
                 T row = input.current();
-                // Snapshot the row container while keeping graph aliases bound to the same elements.
-                rows.add( row instanceof Object[] fields ? (T) fields.clone() : row );
+                if ( row instanceof Object[] fields ) {
+                    Object[] snapshot = fields.clone();
+                    for ( int i = 0; i < snapshot.length; i++ ) {
+                        snapshot[i] = bindGraphValue( snapshot[i], bindings );
+                    }
+                    rows.add( (T) snapshot );
+                } else {
+                    rows.add( (T) bindGraphValue( row, bindings ) );
+                }
             }
         }
         return Linq4j.asEnumerable( rows );
     }
 
 
+    private static Object bindGraphValue( Object value, Map<Pair<PolyType, PolyString>, GraphPropertyHolder> bindings ) {
+        // Independent MATCH clauses can load separate instances of the same element.
+        if ( value instanceof GraphPropertyHolder element ) {
+            return bindGraphElement( element, bindings );
+        }
+        if ( value instanceof PolyPath path ) {
+            List<PolyNode> nodes = path.getNodes().stream().map( node -> (PolyNode) bindGraphElement( node, bindings ) ).toList();
+            List<PolyEdge> edges = path.getEdges().stream().map( edge -> (PolyEdge) bindGraphElement( edge, bindings ) ).toList();
+            List<GraphPropertyHolder> parts = path.getPath().stream().map( element -> bindGraphElement( element, bindings ) ).toList();
+            return new PolyPath( path.id, nodes, edges, path.getNames(), parts, path.getVariableName() );
+        }
+        return value;
+    }
+
+
+    private static GraphPropertyHolder bindGraphElement( GraphPropertyHolder element, Map<Pair<PolyType, PolyString>, GraphPropertyHolder> bindings ) {
+        return bindings.computeIfAbsent( Pair.of( element.getType(), element.id ), key -> element );
+    }
+
+
     @SuppressWarnings("unused")
     public static Enumerable<PolyValue[]> streamGraphRows( DataContext context, Enumerable<PolyValue[]> provider,
-            Function0<Enumerable<PolyValue[]>> collector, List<PolyType> polyTypes ) {
+            Function0<Enumerable<PolyValue[]>> collector, List<PolyType> polyTypes, boolean batchGraphWrites ) {
         AlgDataTypeFactory factory = context.getStatement().getTransaction().getTypeFactory();
         List<AlgDataType> parameterTypes = polyTypes.stream().map( factory::createPolyType ).toList();
         List<Map<Long, PolyValue>> valuesBackup = context.getParameterValues();
@@ -404,15 +437,21 @@ public class Functions {
         }
 
         try {
-            for ( PolyValue[] row : rows ) {
+            if ( batchGraphWrites && !rows.isEmpty() ) {
+                // A DELETE clause validates all its node and relationship targets together.
                 context.resetParameterValues();
                 for ( int i = 0; i < parameterTypes.size(); i++ ) {
-                    context.addParameterValues( i, parameterTypes.get( i ), Collections.singletonList( row[i] ) );
+                    int index = i;
+                    context.addParameterValues( i, parameterTypes.get( i ), rows.stream().map( row -> row[index] ).toList() );
                 }
-                try ( Enumerator<PolyValue[]> updates = collector.apply().enumerator() ) {
-                    while ( updates.moveNext() ) {
-                        // Drain all adapters' writes before exposing any returning rows.
+                drainGraphWrites( collector );
+            } else {
+                for ( PolyValue[] row : rows ) {
+                    context.resetParameterValues();
+                    for ( int i = 0; i < parameterTypes.size(); i++ ) {
+                        context.addParameterValues( i, parameterTypes.get( i ), Collections.singletonList( row[i] ) );
                     }
+                    drainGraphWrites( collector );
                 }
             }
         } finally {
@@ -421,6 +460,15 @@ public class Functions {
             context.setParameterValues( valuesBackup );
         }
         return Linq4j.asEnumerable( rows );
+    }
+
+
+    private static void drainGraphWrites( Function0<Enumerable<PolyValue[]>> collector ) {
+        try ( Enumerator<PolyValue[]> updates = collector.apply().enumerator() ) {
+            while ( updates.moveNext() ) {
+                // Drain all adapters' writes before exposing any returning rows.
+            }
+        }
     }
 
 

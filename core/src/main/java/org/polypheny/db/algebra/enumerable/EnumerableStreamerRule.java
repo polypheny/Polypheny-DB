@@ -38,7 +38,8 @@ public class EnumerableStreamerRule extends ConverterRule {
         final AlgNode query = convert( streamer.getLeft(), streamer.getLeft().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
         final AlgNode prepared = convert( streamer.getRight(), streamer.getRight().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
 
-        return EnumerableStreamer.create( alg.getTraitSet().replace( EnumerableConvention.INSTANCE ), query, prepared, streamer.getReturningParameters() );
+        return EnumerableStreamer.create( alg.getTraitSet().replace( EnumerableConvention.INSTANCE ), query, prepared,
+                streamer.getReturningParameters(), streamer.isBatchGraphWrites() );
     }
 
 }

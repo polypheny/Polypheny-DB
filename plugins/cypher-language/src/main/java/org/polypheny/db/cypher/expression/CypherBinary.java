@@ -20,7 +20,6 @@ import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
-import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -29,7 +28,6 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.BinaryOperator;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
 
@@ -58,16 +56,19 @@ public class CypherBinary extends CypherExpression {
         PolyType rightType = right.right.getType().getPolyType();
         boolean differentFamilies = leftType.getFamily() != rightType.getFamily();
 
-        // A binding can change the type of a variable introduced by WITH, even within the numeric family.
-        boolean needsTypedComparison = differentFamilies || leftType == PolyType.ANY || rightType == PolyType.ANY
-                || leftType == PolyType.NULL || rightType == PolyType.NULL
-                || leftType.getFamily() == PolyTypeFamily.NUMERIC
-                || this.left instanceof CypherParameter || this.right instanceof CypherParameter;
-        if ( needsTypedComparison && (op == OperatorName.EQUALS || op == OperatorName.NOT_EQUALS) ) {
-            OperatorName dynamicComparison = op == OperatorName.EQUALS ? OperatorName.CYPHER_EQUALS : OperatorName.CYPHER_NOT_EQUALS;
+        OperatorName comparison = switch ( op ) {
+            case EQUALS -> OperatorName.CYPHER_EQUALS;
+            case NOT_EQUALS -> OperatorName.CYPHER_NOT_EQUALS;
+            case LESS_THAN -> OperatorName.CYPHER_LESS_THAN;
+            case LESS_THAN_OR_EQUAL -> OperatorName.CYPHER_LESS_THAN_OR_EQUAL;
+            case GREATER_THAN -> OperatorName.CYPHER_GREATER_THAN;
+            case GREATER_THAN_OR_EQUAL -> OperatorName.CYPHER_GREATER_THAN_OR_EQUAL;
+            default -> null;
+        };
+        if ( comparison != null ) {
             return Pair.of( null, context.rexBuilder.makeCall(
                     context.typeFactory.createTypeWithNullability( context.booleanType, true ),
-                    OperatorRegistry.get( QueryLanguage.from( "cypher" ), dynamicComparison ), List.of( left.right, right.right ) ) );
+                    OperatorRegistry.get( QueryLanguage.from( "cypher" ), comparison ), List.of( left.right, right.right ) ) );
         }
         if ( OperatorRegistry.get( op ) instanceof BinaryOperator ) {
             // when we have a binary comparison, we have to adjust potential mismatches

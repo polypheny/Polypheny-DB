@@ -139,6 +139,45 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
     }
 
 
+    private static class GraphMinMaxImplementor extends StrictAggImplementor {
+
+        @Override
+        protected boolean nonDefaultOnEmptySet( AggContext info ) {
+            // The value accumulator itself is null until the first non-null input.
+            return false;
+        }
+
+
+        @Override
+        public List<Type> getNotNullState( AggContext info ) {
+            return List.of( PolyValue.class );
+        }
+
+
+        @Override
+        protected void implementNotNullReset( AggContext info, AggResetContext reset ) {
+            Expression acc = reset.accumulator().get( 0 );
+            reset.currentBlock().add( Expressions.statement( Expressions.assign( acc, Expressions.constant( null, PolyValue.class ) ) ) );
+        }
+
+
+        @Override
+        protected void implementNotNullAdd( AggContext info, AggAddContext add ) {
+            Expression acc = add.accumulator().get( 0 );
+            Expression arg = add.rowTranslator().translate( add.rexArguments().get( 0 ), PolyValue.class );
+            Expression minimum = Expressions.constant( info.aggregation().getKind() == Kind.MIN );
+            accAdvance( add, acc, Expressions.call( CypherFunctions.class, "aggregateExtremum", acc, arg, minimum ) );
+        }
+
+
+        @Override
+        protected Expression implementNotNullResult( AggContext info, AggResultContext result ) {
+            return Types.castIfNecessary( info.returnType(), result.accumulator().get( 0 ) );
+        }
+
+    }
+
+
     private boolean supportsGraphDistinctCount( AggregateCall call ) {
         return traitSet.contains( ModelTrait.GRAPH ) && call.getAggregation().getKind() == Kind.COUNT && call.getArgList().size() == 1;
     }
@@ -244,9 +283,14 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
 
         final List<AggImpState> aggs = new ArrayList<>( aggCalls.size() );
         for ( Ord<AggregateCall> call : Ord.zip( aggCalls ) ) {
-            aggs.add( call.e.isDistinct()
-                    ? new AggImpState( call.i, call.e, new GraphDistinctCountImplementor() )
-                    : new AggImpState( call.i, call.e, false ) );
+            Kind kind = call.e.getAggregation().getKind();
+            if ( call.e.isDistinct() ) {
+                aggs.add( new AggImpState( call.i, call.e, new GraphDistinctCountImplementor() ) );
+            } else if ( graphKeys && (kind == Kind.MIN || kind == Kind.MAX) ) {
+                aggs.add( new AggImpState( call.i, call.e, new GraphMinMaxImplementor() ) );
+            } else {
+                aggs.add( new AggImpState( call.i, call.e, false ) );
+            }
         }
 
         // Function0<Object[]> accumulatorInitializer =

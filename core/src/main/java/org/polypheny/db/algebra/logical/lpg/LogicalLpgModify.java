@@ -47,6 +47,7 @@ import org.polypheny.db.type.entity.PolyString;
 public class LogicalLpgModify extends LpgModify<Entity> implements RelationalTransformable {
 
     private final int returningParameters;
+    private final boolean detachDelete;
 
 
     /**
@@ -59,9 +60,16 @@ public class LogicalLpgModify extends LpgModify<Entity> implements RelationalTra
 
     public LogicalLpgModify( AlgCluster cluster, AlgTraitSet traits, Entity entity, AlgNode input, Operation operation, List<PolyString> ids,
             List<? extends RexNode> operations, int returningParameters ) {
+        this( cluster, traits, entity, input, operation, ids, operations, returningParameters, false );
+    }
+
+
+    public LogicalLpgModify( AlgCluster cluster, AlgTraitSet traits, Entity entity, AlgNode input, Operation operation, List<PolyString> ids,
+            List<? extends RexNode> operations, int returningParameters, boolean detachDelete ) {
         super( cluster, traits, entity, input, operation, ids, operations,
                 returningParameters == 0 ? AlgOptUtil.createDmlRowType( Kind.INSERT, cluster.getTypeFactory() ) : input.getTupleType() );
         this.returningParameters = returningParameters;
+        this.detachDelete = detachDelete;
     }
 
 
@@ -75,15 +83,21 @@ public class LogicalLpgModify extends LpgModify<Entity> implements RelationalTra
     }
 
 
+    public boolean isDetachDelete() {
+        return detachDelete;
+    }
+
+
     @Override
     public String algCompareString() {
-        return super.algCompareString() + returningParameters;
+        return super.algCompareString() + "$" + returningParameters + "$" + detachDelete;
     }
 
 
     @Override
     public AlgWriter explainTerms( AlgWriter writer ) {
-        return super.explainTerms( writer ).itemIf( "returningParameters", returningParameters, returnsRows() );
+        return super.explainTerms( writer ).itemIf( "returningParameters", returningParameters, returnsRows() )
+                .itemIf( "detachDelete", true, detachDelete );
     }
 
 
@@ -105,7 +119,7 @@ public class LogicalLpgModify extends LpgModify<Entity> implements RelationalTra
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalLpgModify( inputs.get( 0 ).getCluster(), traitSet, entity, inputs.get( 0 ), operation, ids, operations, returningParameters );
+        return new LogicalLpgModify( inputs.get( 0 ).getCluster(), traitSet, entity, inputs.get( 0 ), operation, ids, operations, returningParameters, detachDelete );
     }
 
 

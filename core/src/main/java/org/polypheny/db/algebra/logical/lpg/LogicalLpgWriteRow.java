@@ -122,7 +122,7 @@ public class LogicalLpgWriteRow extends SingleAlg implements LpgAlg {
 
         @Override
         public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
-            Result child = implementor.visitChild( this, 0, (EnumerableAlg) getInput(), idName == null ? pref : Prefer.ARRAY );
+            Result child = implementor.visitChild( this, 0, (EnumerableAlg) getInput(), Prefer.ARRAY );
             BlockBuilder builder = new BlockBuilder();
             Expression rows = builder.append( "rows", child.block() );
             if ( idName == null ) {

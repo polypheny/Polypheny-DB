@@ -50,8 +50,9 @@ public class EnumerableLpgTransformer extends LpgTransformer implements Enumerab
     /**
      * Creates an <code>AbstractAlgNode</code>.
      */
-    public EnumerableLpgTransformer( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, AlgDataType rowType, List<PolyType> operationOrder, Operation operation ) {
-        super( cluster, traitSet, inputs, rowType, operationOrder, operation );
+    public EnumerableLpgTransformer( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, AlgDataType rowType,
+            List<PolyType> operationOrder, Operation operation, boolean detachDelete ) {
+        super( cluster, traitSet, inputs, rowType, operationOrder, operation, detachDelete );
     }
 
 
@@ -67,7 +68,8 @@ public class EnumerableLpgTransformer extends LpgTransformer implements Enumerab
         List<Result> inputs = new ArrayList<>();
         int i = 0;
         for ( AlgNode input : getInputs() ) {
-            inputs.add( implementor.visitChild( this, i, (EnumerableAlg) input, pref ) );
+            Prefer childFormat = operation == Operation.DELETE ? Prefer.ARRAY : pref;
+            inputs.add( implementor.visitChild( this, i, (EnumerableAlg) input, childFormat ) );
             i++;
         }
         List<Expression> enumerables = inputs.stream().map( j -> attachLambdaEnumerable( j.block() ) ).collect( Collectors.toList() );
@@ -77,7 +79,8 @@ public class EnumerableLpgTransformer extends LpgTransformer implements Enumerab
                 DataContext.ROOT,
                 EnumUtils.expressionList( enumerables ),
                 EnumUtils.constantArrayList( operationOrder, PolyType.class ),
-                Expressions.constant( operation ) );
+                Expressions.constant( operation ),
+                Expressions.constant( detachDelete ) );
 
         builder.add( Expressions.return_( null, builder.append( "splitter" + System.nanoTime(), splitter ) ) );
 
@@ -104,7 +107,7 @@ public class EnumerableLpgTransformer extends LpgTransformer implements Enumerab
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new EnumerableLpgTransformer( inputs.get( 0 ).getCluster(), traitSet, inputs, rowType, operationOrder, operation );
+        return new EnumerableLpgTransformer( inputs.get( 0 ).getCluster(), traitSet, inputs, rowType, operationOrder, operation, detachDelete );
     }
 
 }

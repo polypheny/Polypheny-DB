@@ -35,6 +35,7 @@ import org.polypheny.db.plan.AlgTraitSet;
 public abstract class Streamer extends BiAlg {
 
     int returningParameters;
+    boolean batchGraphWrites;
 
     /**
      * {@code
@@ -53,8 +54,14 @@ public abstract class Streamer extends BiAlg {
 
 
     public Streamer( AlgCluster cluster, AlgTraitSet traitSet, AlgNode provider, AlgNode collector, int returningParameters ) {
+        this( cluster, traitSet, provider, collector, returningParameters, false );
+    }
+
+
+    public Streamer( AlgCluster cluster, AlgTraitSet traitSet, AlgNode provider, AlgNode collector, int returningParameters, boolean batchGraphWrites ) {
         super( cluster, traitSet, provider, collector );
         this.returningParameters = returningParameters;
+        this.batchGraphWrites = batchGraphWrites;
     }
 
 
@@ -88,11 +95,18 @@ public abstract class Streamer extends BiAlg {
 
 
     @Override
+    public String toString() {
+        // Planner rule matches use this description to distinguish nodes with the same write parameters.
+        return getDescription();
+    }
+
+
+    @Override
     public String algCompareString() {
         return getClass().getSimpleName() + "from[$" +
                 getProvider().algCompareString() + "$" +
                 "],to[" + getCollector().algCompareString() +
-                "$" + returningParameters + "]&";
+                "$" + returningParameters + "$" + batchGraphWrites + "]&";
     }
 
 
@@ -101,7 +115,8 @@ public abstract class Streamer extends BiAlg {
         return super.explainTerms( pw )
                 .input( "provider", getProvider() )
                 .input( "collector", getCollector() )
-                .itemIf( "returningParameters", returningParameters, returningParameters > 0 );
+                .itemIf( "returningParameters", returningParameters, returningParameters > 0 )
+                .itemIf( "batchGraphWrites", true, batchGraphWrites );
     }
 
 }

@@ -27,11 +27,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
+import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
+import java.util.function.IntPredicate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
@@ -468,7 +470,7 @@ public class CypherFunctions {
 
         int i = 0;
         for ( PolyString key : keys ) {
-            target.properties.put( key, values.get( i ) );
+            setProperty( target, key, values.get( i ) );
             i++;
         }
         return target;
@@ -524,7 +526,8 @@ public class CypherFunctions {
         if ( left == null || left.isNull() || right == null || right.isNull() ) {
             return null;
         }
-        if ( left instanceof PolyNumber && right instanceof PolyNumber ) {
+        if ( left instanceof PolyNumber && right instanceof PolyNumber
+                || left instanceof GraphObject && right instanceof GraphObject ) {
             return PolyBoolean.of( aggregationKey( left ).equals( aggregationKey( right ) ) );
         }
         return Functions.eq( left, right );
@@ -547,6 +550,9 @@ public class CypherFunctions {
         }
         if ( value instanceof GraphPropertyHolder element ) {
             return Pair.of( element.getType(), element.getId() );
+        }
+        if ( value instanceof PolyPath path ) {
+            return Pair.of( PolyType.PATH, path.getPath().stream().map( GraphPropertyHolder::getId ).toList() );
         }
         return value;
     }
@@ -575,9 +581,75 @@ public class CypherFunctions {
     }
 
 
+    public static PolyValue aggregateExtremum( PolyValue current, PolyValue candidate, boolean minimum ) {
+        if ( current == null ) {
+            return candidate;
+        }
+        int comparison = current instanceof PolyNumber left && candidate instanceof PolyNumber right
+                ? compareNumbers( left, right )
+                : current.compareTo( candidate );
+        return (minimum ? comparison > 0 : comparison < 0) ? candidate : current;
+    }
+
+
     public static PolyBoolean notEqual( PolyValue left, PolyValue right ) {
         PolyBoolean equal = equal( left, right );
         return equal == null ? null : PolyBoolean.of( !equal.value );
+    }
+
+
+    public static PolyBoolean lessThan( PolyValue left, PolyValue right ) {
+        return orderedComparison( left, right, order -> order < 0, Functions::lt );
+    }
+
+
+    public static PolyBoolean lessThanOrEqual( PolyValue left, PolyValue right ) {
+        return orderedComparison( left, right, order -> order <= 0, Functions::le );
+    }
+
+
+    public static PolyBoolean greaterThan( PolyValue left, PolyValue right ) {
+        return orderedComparison( left, right, order -> order > 0, Functions::gt );
+    }
+
+
+    public static PolyBoolean greaterThanOrEqual( PolyValue left, PolyValue right ) {
+        return orderedComparison( left, right, order -> order >= 0, Functions::ge );
+    }
+
+
+    private static PolyBoolean orderedComparison( PolyValue left, PolyValue right, IntPredicate test,
+            BiFunction<PolyValue, PolyValue, PolyBoolean> fallback ) {
+        if ( left == null || right == null || left.isNull() || right.isNull() ) {
+            return null;
+        }
+        if ( left instanceof PolyNumber a && right instanceof PolyNumber b ) {
+            return PolyBoolean.of( !Double.isNaN( a.doubleValue() ) && !Double.isNaN( b.doubleValue() )
+                    && test.test( compareNumbers( a, b ) ) );
+        }
+        return fallback.apply( left, right );
+    }
+
+
+    public static int compareNumbers( PolyNumber left, PolyNumber right ) {
+        int leftRank = numericRank( left );
+        int rightRank = numericRank( right );
+        return leftRank == 0 && rightRank == 0
+                ? left.bigDecimalValue().compareTo( right.bigDecimalValue() )
+                : Integer.compare( leftRank, rightRank );
+    }
+
+
+    private static int numericRank( PolyNumber number ) {
+        if ( PolyType.APPROX_TYPES.contains( number.getType() ) && !Double.isFinite( number.doubleValue() ) ) {
+            // Order negative infinity before finite values, then positive infinity and NaN.
+            double value = number.doubleValue();
+            if ( value == Double.NEGATIVE_INFINITY ) {
+                return -1;
+            }
+            return value == Double.POSITIVE_INFINITY ? 1 : 2;
+        }
+        return 0;
     }
 
 
