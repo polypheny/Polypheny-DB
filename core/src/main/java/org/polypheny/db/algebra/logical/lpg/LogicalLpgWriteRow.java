@@ -18,6 +18,7 @@ package org.polypheny.db.algebra.logical.lpg;
 
 import java.util.List;
 import javax.annotation.Nullable;
+import lombok.Getter;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -52,6 +53,7 @@ public class LogicalLpgWriteRow extends SingleAlg implements LpgAlg {
         }
     };
 
+    @Getter
     @Nullable
     private final String name;
 

@@ -46,6 +46,8 @@ import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.PlanKey;
+import org.polypheny.db.algebra.PlanKeys;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
@@ -98,6 +100,7 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.prepare.Prepare.PreparedResult;
 import org.polypheny.db.prepare.Prepare.PreparedResultImpl;
 import org.polypheny.db.processing.caching.ImplementationCache;
+import org.polypheny.db.processing.caching.ImplementationCache.CachedImplementation;
 import org.polypheny.db.processing.caching.QueryPlanCache;
 import org.polypheny.db.processing.caching.RoutingPlanCache;
 import org.polypheny.db.processing.shuttles.LogicalQueryInformationImpl;
@@ -413,6 +416,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
 
             plan.parameterizedRoot( parameterizedRoot );
+            if ( isQueryPlanCachingActive( statement, routedRoot ) || isImplementationCachingActive( statement, routedRoot ) ) {
+                plan.cacheKey( createCacheKey( parameterizedRoot, parameterRowType, resultConvention ) );
+            }
         }
 
         if ( isAnalyze ) {
@@ -428,11 +434,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             AlgRoot routedRoot = plan.proposedRoutingPlan().getRoutedRoot();
             if ( this.isImplementationCachingActive( statement, routedRoot ) ) {
                 AlgRoot parameterizedRoot = plan.parameterizedRoot();
-                PreparedResult<PolyValue> preparedResult = ImplementationCache.INSTANCE.getIfPresent( parameterizedRoot.alg );
-                AlgNode optimalNode = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRoot.alg );
-                if ( preparedResult != null ) {
+                CachedImplementation cached = ImplementationCache.INSTANCE.getIfPresent( plan.cacheKey() );
+                if ( cached != null ) {
+                    AlgNode optimalNode = cached.optimalNode();
                     PolyImplementation result = createPolyImplementation(
-                            preparedResult,
+                            cached.result(),
                             parameterizedRoot.kind,
                             optimalNode,
                             parameterizedRoot.validatedRowType,
@@ -441,7 +447,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                             Objects.requireNonNull( optimalNode.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).dataModel(),
                             dmlReturning );
                     plan.result( result );
-                    plan.generatedCodes( preparedResult.getCode() );
+                    plan.generatedCodes( cached.result().getCode() );
                     plan.optimalNode( optimalNode );
                 }
             }
@@ -462,9 +468,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getProcessingDuration().start( "Plan Caching" );
         }
         for ( Plan plan : plans ) {
-            if ( this.isQueryPlanCachingActive( statement, plan.proposedRoutingPlan().getRoutedRoot() ) ) {
-                // Should always be the case
-                AlgNode cachedElem = QueryPlanCache.INSTANCE.getIfPresent( plan.parameterizedRoot().alg );
+            if ( plan.cacheKey() != null && this.isQueryPlanCachingActive( statement, plan.proposedRoutingPlan().getRoutedRoot() ) ) {
+                AlgNode cachedElem = QueryPlanCache.INSTANCE.getIfPresent( plan.cacheKey() );
                 if ( cachedElem != null ) {
                     plan.optimalNode( cachedElem );
                 }
@@ -485,8 +490,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
             plan.optimalNode( optimize( plan.parameterizedRoot(), resultConvention ) );
 
-            if ( this.isQueryPlanCachingActive( statement, plan.proposedRoutingPlan().getRoutedRoot() ) ) {
-                QueryPlanCache.INSTANCE.put( plan.parameterizedRoot().alg, plan.optimalNode() );
+            if ( plan.cacheKey() != null && this.isQueryPlanCachingActive( statement, plan.proposedRoutingPlan().getRoutedRoot() ) ) {
+                QueryPlanCache.INSTANCE.put( plan.cacheKey(), plan.optimalNode() );
             }
         }
 
@@ -510,8 +515,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             // Cache implementation
             if ( this.isImplementationCachingActive( statement, plan.proposedRoutingPlan().getRoutedRoot() ) ) {
-                if ( optimalRoot.alg.isImplementationCacheable() ) {
-                    ImplementationCache.INSTANCE.put( plan.parameterizedRoot().alg, preparedResult );
+                if ( plan.cacheKey() != null && optimalRoot.alg.isImplementationCacheable() ) {
+                    ImplementationCache.INSTANCE.put( plan.cacheKey(), new CachedImplementation( optimalRoot.alg, preparedResult ) );
                 } else {
                     ImplementationCache.INSTANCE.countUncacheable();
                 }
@@ -1215,6 +1220,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 resultConvention,
                 dmlReturning
         );
+    }
+
+
+    private PlanKey createCacheKey( AlgRoot root, AlgDataType parameterRowType, Convention resultConvention ) {
+        return PlanKeys.forTree( root.alg )
+                .flatMap( tree -> PlanKey.of( tree, root.kind, root.validatedRowType, root.fields, root.collation,
+                        parameterRowType, resultConvention.getName(), root.alg.getCluster().getSnapshot().id() ) )
+                .orElse( null );
     }
 
 

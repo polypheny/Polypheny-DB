@@ -36,6 +36,7 @@ public class LaxAggregateCall {
     public final String name;
     public final AggFunction function;
     private final RexNode input;
+    @Getter
     private final AlgDataType resultType;
     @Getter
     private final boolean distinct;
