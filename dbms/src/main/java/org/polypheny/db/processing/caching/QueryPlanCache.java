@@ -160,4 +160,9 @@ public class QueryPlanCache {
         return planCache.size();
     }
 
+
+    long getHitCount() {
+        return hitsCounter.get();
+    }
+
 }
