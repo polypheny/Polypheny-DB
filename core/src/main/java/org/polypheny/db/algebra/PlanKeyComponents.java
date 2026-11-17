@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -35,10 +34,12 @@ import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.algebra.type.GraphType;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.nodes.IntervalQualifier;
 import org.polypheny.db.nodes.IntervalQualifierImpl;
 import org.polypheny.db.nodes.Operator;
+import org.polypheny.db.plan.AlgTrait;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexCall;
@@ -133,12 +134,19 @@ final class PlanKeyComponents {
         if ( value instanceof AlgDataType dataType ) {
             return dataType( dataType );
         }
+        if ( value instanceof Snapshot snapshot ) {
+            // A rollback can reuse a numeric snapshot ID for a different catalog snapshot.
+            return new IdentityComponent( snapshot );
+        }
         if ( value instanceof Operator operator ) {
             // Registered built-in operator instances carry the actual implementation and configuration.
-            return OperatorRegistry.isRegistered( operator ) ? new RegisteredOperator( operator, operator.getOperatorName() ) : null;
+            return OperatorRegistry.isRegistered( operator ) ? new RegisteredOperator( new IdentityComponent( operator ), operator.getOperatorName() ) : null;
+        }
+        if ( value instanceof AlgTraitSet traits ) {
+            return traitSet( traits );
         }
         if ( value instanceof List<?> list ) {
-            return value instanceof AlgTraitSet ? tagged( type, list.toArray() ) : snapshot( list );
+            return snapshot( list );
         }
         if ( value instanceof Map<?, ?> map ) {
             // Some operators use the entry iteration order to construct the output row.
@@ -154,6 +162,16 @@ final class PlanKeyComponents {
             return tagged( type, pair.left, pair.right );
         }
         return metadata( value );
+    }
+
+
+    private static Object traitSet( AlgTraitSet traits ) {
+        List<Object> slots = new ArrayList<>( traits.size() );
+        for ( int i = 0; i < traits.size(); i++ ) {
+            AlgTrait<?> trait = traits.getTrait( i );
+            slots.add( trait != null && trait.getTraitDef() == AlgCollationTraitDef.INSTANCE ? traits.getTraits( i ) : trait );
+        }
+        return tagged( AlgTraitSet.class, slots );
     }
 
 
@@ -175,7 +193,7 @@ final class PlanKeyComponents {
             return tagged( type, reference.getType(), reference.getIndex() );
         }
         if ( type == RexNameRef.class && rex instanceof RexNameRef reference ) {
-            return tagged( type, reference.getType(), reference.names, reference.getIndex().orElse( null ) );
+            return tagged( type, reference.getType(), reference.getName(), reference.names, reference.getIndex().orElse( null ) );
         }
         if ( type == RexCorrelVariable.class && rex instanceof RexCorrelVariable reference ) {
             return tagged( type, reference.getType(), reference.id );
@@ -203,7 +221,7 @@ final class PlanKeyComponents {
             return tagged( type, array.isNullable(), array.getComponentType(), array.getMaxCardinality(), array.getMaxDimension() );
         }
         if ( type == VectorType.class && dataType instanceof VectorType vector ) {
-            return tagged( type, vector.isNullable(), vector.getComponentType(), vector.getVectorDimension(), vector.getVectorElementType() );
+            return tagged( type, vector.isNullable(), vector.getComponentType(), vector.getVectorDimension(), vector.getMaxDimension(), vector.getVectorElementType() );
         }
         if ( type == MapPolyType.class && dataType instanceof MapPolyType map ) {
             return tagged( type, map.isNullable(), map.getKeyType(), map.getValueType() );
@@ -295,7 +313,7 @@ final class PlanKeyComponents {
             return tagged( type, interval.millis, interval.months );
         }
         if ( type == PolySymbol.class && value instanceof PolySymbol symbol ) {
-            return tagged( type, symbol.value );
+            return tagged( type, symbol.value, symbol.object );
         }
         if ( type == PolyList.class && value instanceof PolyList<?> list ) {
             return tagged( type, value.getType(), list.value );
@@ -357,17 +375,22 @@ final class PlanKeyComponents {
     }
 
 
-    private record RegisteredOperator( Operator operator, OperatorName name ) {
+    private record RegisteredOperator( IdentityComponent operator, OperatorName name ) {
+
+    }
+
+
+    private record IdentityComponent( Object reference ) {
 
         @Override
         public boolean equals( Object other ) {
-            return other instanceof RegisteredOperator registered && operator == registered.operator && name == registered.name;
+            return other instanceof IdentityComponent component && reference == component.reference;
         }
 
 
         @Override
         public int hashCode() {
-            return 31 * System.identityHashCode( operator ) + Objects.hashCode( name );
+            return System.identityHashCode( reference );
         }
 
     }

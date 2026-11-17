@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.collect.ImmutableList;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
@@ -36,6 +37,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
@@ -82,6 +84,26 @@ class PlanKeysTest {
 
 
     @Test
+    void preparedDocumentValuesReuseEquivalentParameterSlots() {
+        AlgCluster cluster = cluster( ModelTrait.DOCUMENT );
+        PlanKey first = key( preparedDocuments( cluster, 0 ) );
+
+        assertEquals( first, key( preparedDocuments( cluster( ModelTrait.DOCUMENT ), 0 ) ) );
+        assertNotEquals( first, key( preparedDocuments( cluster, 1 ) ) );
+    }
+
+
+    @Test
+    void literalDocumentValuesDistinguishPayloadsWithTheSameId() {
+        AlgCluster cluster = cluster( ModelTrait.DOCUMENT );
+        PlanKey first = key( literalDocuments( cluster, "Aa" ) );
+
+        assertEquals( first, key( literalDocuments( cluster( ModelTrait.DOCUMENT ), "Aa" ) ) );
+        assertNotEquals( first, key( literalDocuments( cluster, "BB" ) ) );
+    }
+
+
+    @Test
     void relationalProjectionsReuseEquivalentParameterSlots() {
         AlgCluster cluster = cluster( ModelTrait.RELATIONAL );
         PlanKey original = key( parameterProjection( cluster, 0 ) );
@@ -101,6 +123,18 @@ class PlanKeysTest {
 
         assertNotEquals( original, key( LogicalRelSort.create( values, ascendingNullsFirst, null, null ) ) );
         assertNotEquals( original, key( LogicalRelSort.create( values, descendingNullsLast, null, null ) ) );
+    }
+
+
+    @Test
+    void relationalValuesKeysIncludeEveryDerivedCollation() {
+        LogicalRelValues values = orderedValues( cluster( ModelTrait.RELATIONAL ) );
+        List<AlgCollation> collations = values.getTraitSet().getTraits( AlgCollationTraitDef.INSTANCE );
+        assertEquals( 2, collations.size() );
+
+        PlanKey original = key( values );
+        assertEquals( original, key( orderedValues( cluster( ModelTrait.RELATIONAL ) ) ) );
+        assertNotEquals( original, key( values.copy( values.getTraitSet().replace( collations.get( 0 ) ), List.of() ) ) );
     }
 
 
@@ -132,9 +166,31 @@ class PlanKeysTest {
     }
 
 
+    private static AlgNode preparedDocuments( AlgCluster cluster, int index ) {
+        return LogicalDocumentValues.createDynamic( cluster, List.of( cluster.getRexBuilder().makeDynamicParam( DocumentType.ofId(), index ) ) );
+    }
+
+
+    private static AlgNode literalDocuments( AlgCluster cluster, String value ) {
+        PolyDocument document = new PolyDocument( Map.of( PolyString.of( DocumentType.DOCUMENT_ID ), PolyString.of( "fixed" ),
+                PolyString.of( "value" ), PolyString.of( value ) ) );
+        return LogicalDocumentValues.create( cluster, List.of( document ) );
+    }
+
+
     private static AlgNode parameterProjection( AlgCluster cluster, int index ) {
         AlgDataType type = cluster.getTypeFactory().createPolyType( PolyType.INTEGER );
         return LogicalRelProject.create( LogicalRelValues.createOneRow( cluster ), List.of( cluster.getRexBuilder().makeDynamicParam( type, index ) ), List.of( "supplied" ) );
+    }
+
+
+    private static LogicalRelValues orderedValues( AlgCluster cluster ) {
+        AlgDataType type = cluster.getTypeFactory().createPolyType( PolyType.INTEGER );
+        AlgDataType rowType = cluster.getTypeFactory().builder().add( "first", null, type ).add( "second", null, type ).build();
+        RexBuilder rex = cluster.getRexBuilder();
+        return LogicalRelValues.create( cluster, rowType, ImmutableList.of(
+                ImmutableList.of( rex.makeExactLiteral( BigDecimal.ZERO, type ), rex.makeExactLiteral( BigDecimal.ONE, type ) ),
+                ImmutableList.of( rex.makeExactLiteral( BigDecimal.TEN, type ), rex.makeExactLiteral( BigDecimal.TEN, type ) ) ) );
     }
 
 

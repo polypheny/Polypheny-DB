@@ -177,4 +177,9 @@ public class ImplementationCache {
         return implementationCache.size();
     }
 
+
+    long getHitCount() {
+        return hitsCounter.get();
+    }
+
 }
