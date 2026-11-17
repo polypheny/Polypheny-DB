@@ -22,7 +22,9 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.annotation.Nullable;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.PlanKey;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationAction;
 import org.polypheny.db.information.InformationGraph;
@@ -41,7 +43,7 @@ public class ImplementationCache {
 
     public static final ImplementationCache INSTANCE = new ImplementationCache();
 
-    private final Cache<String, PreparedResult<PolyValue>> implementationCache;
+    private final Cache<PlanKey, CachedImplementation> implementationCache;
 
     private final AtomicLong hitsCounter = new AtomicLong(); // Number of requests for which the cache contained the value
     private final AtomicLong missesCounter = new AtomicLong(); // Number of requests for which the cache hasn't contained the value
@@ -57,19 +59,24 @@ public class ImplementationCache {
     }
 
 
-    public PreparedResult<PolyValue> getIfPresent( AlgNode parameterizedNode ) {
-        PreparedResult<PolyValue> preparedResult = implementationCache.getIfPresent( parameterizedNode.algCompareString() );
-        if ( preparedResult == null ) {
+    public CachedImplementation getIfPresent( @Nullable PlanKey key ) {
+        CachedImplementation implementation = key == null ? null : implementationCache.getIfPresent( key );
+        if ( implementation == null ) {
             missesCounter.incrementAndGet();
         } else {
             hitsCounter.incrementAndGet();
         }
-        return preparedResult;
+        return implementation;
     }
 
 
-    public void put( AlgNode parameterizedNode, PreparedResult<PolyValue> preparedResult ) {
-        implementationCache.put( parameterizedNode.algCompareString(), preparedResult );
+    public void put( PlanKey key, CachedImplementation implementation ) {
+        implementationCache.put( key, implementation );
+    }
+
+
+    public record CachedImplementation( AlgNode optimalNode, PreparedResult<PolyValue> result ) {
+
     }
 
 

@@ -117,6 +117,13 @@ public class EnumerableInterpreter extends SingleAlg implements EnumerableAlg {
 
 
     @Override
+    public boolean isImplementationCacheable() {
+        // The generated code reads the input plan stashed in the current statement's data context.
+        return false;
+    }
+
+
+    @Override
     public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
         final JavaTypeFactory typeFactory = implementor.getTypeFactory();
         final BlockBuilder builder = new BlockBuilder();
