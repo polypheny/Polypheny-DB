@@ -18,6 +18,7 @@ package org.polypheny.db.cypher;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -236,8 +237,9 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         Map<String, Object> hsqldbResult = convertResultToMap( results.get( 0 ) ).get( 0 );
         Map<String, Object> neo4jResult = convertResultToMap( results.get( 1 ) ).get( 0 );
 
-        // Validate that the difference change between both numbers is smaller than a threshold, e.g. 0,2% (
-        assert isWithinPercentageChange( ((Number) hsqldbResult.get( "value" )).doubleValue(), (Integer) neo4jResult.get( "value" ), 0.2 );
+        double hsqldbDistance = assertInstanceOf( Double.class, hsqldbResult.get( "value" ) );
+        double neo4jDistance = assertInstanceOf( Double.class, neo4jResult.get( "value" ) );
+        assertTrue( isWithinPercentageChange( hsqldbDistance, neo4jDistance, 0.2 ) );
     }
 
 

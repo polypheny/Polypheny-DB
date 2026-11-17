@@ -36,6 +36,7 @@ import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
 
@@ -146,7 +147,7 @@ public class CypherFunctionInvocation extends CypherExpression {
             }
             case DISTANCE: {
                 return new RexCall(
-                        context.numberType,
+                        context.typeFactory.createPolyType( PolyType.DOUBLE ),
                         // If the third argument for the point.distance function is the string 'neo4j', then
                         // use the spherical distance approximation of Neo4j. This uses a different earth radius.
                         // Otherwise, the default behavior is to use the same distance measurement as the other
@@ -164,7 +165,7 @@ public class CypherFunctionInvocation extends CypherExpression {
             }
             case DISTANCE_NEO4J: {
                 return new RexCall(
-                        context.numberType,
+                        context.typeFactory.createPolyType( PolyType.DOUBLE ),
                         OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.DISTANCE_NEO4J ),
                         List.of(
                                 arguments.get( 0 ).getRex( context, RexType.PROJECT ).getRight(),
