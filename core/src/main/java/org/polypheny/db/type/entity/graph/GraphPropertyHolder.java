@@ -22,8 +22,9 @@ import java.util.List;
 import java.util.Map.Entry;
 import lombok.Getter;
 import lombok.NonNull;
-import org.polypheny.db.functions.Functions;
+import org.polypheny.db.functions.CypherFunctions;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyList.PolyListDeserializer;
 import org.polypheny.db.type.entity.PolyString;
@@ -51,9 +52,8 @@ public abstract class GraphPropertyHolder extends GraphObject {
 
     public boolean matchesProperties( PolyDictionary properties ) {
         for ( Entry<PolyString, PolyValue> entry : properties.entrySet() ) {
-            PolyValue stored = this.properties.get( entry.getKey() );
-            PolyValue requested = entry.getValue();
-            if ( stored == null || stored.isNull() || requested == null || requested.isNull() || !Functions.eq( stored, requested ).value ) {
+            PolyBoolean matches = CypherFunctions.equal( this.properties.get( entry.getKey() ), entry.getValue() );
+            if ( matches == null || !matches.value ) {
                 return false;
             }
         }

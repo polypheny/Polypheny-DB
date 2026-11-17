@@ -487,6 +487,10 @@ public class RexImpTable {
                     new CallImplementor() {
                         @Override
                         public Expression implement( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
+                            if ( nullAs == NullAs.IS_NULL || nullAs == NullAs.IS_NOT_NULL ) {
+                                // NOT changes truth, but it preserves whether its operand is null.
+                                return translator.translate( call.getOperands().get( 0 ), nullAs );
+                            }
                             if ( Objects.requireNonNull( nullAs ) == NullAs.NULL ) {
                                 return Expressions.call( BuiltInMethod.NOT.method, translator.translateList( call.getOperands(), nullAs ) );
                             }

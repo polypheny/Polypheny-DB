@@ -29,6 +29,7 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.BinaryOperator;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
 
@@ -57,9 +58,10 @@ public class CypherBinary extends CypherExpression {
         PolyType rightType = right.right.getType().getPolyType();
         boolean differentFamilies = leftType.getFamily() != rightType.getFamily();
 
-        // A binding can also change the type of a variable introduced by WITH.
+        // A binding can change the type of a variable introduced by WITH, even within the numeric family.
         boolean needsTypedComparison = differentFamilies || leftType == PolyType.ANY || rightType == PolyType.ANY
                 || leftType == PolyType.NULL || rightType == PolyType.NULL
+                || leftType.getFamily() == PolyTypeFamily.NUMERIC
                 || this.left instanceof CypherParameter || this.right instanceof CypherParameter;
         if ( needsTypedComparison && (op == OperatorName.EQUALS || op == OperatorName.NOT_EQUALS) ) {
             OperatorName dynamicComparison = op == OperatorName.EQUALS ? OperatorName.CYPHER_EQUALS : OperatorName.CYPHER_NOT_EQUALS;

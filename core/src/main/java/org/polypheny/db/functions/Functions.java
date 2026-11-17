@@ -374,6 +374,20 @@ public class Functions {
     }
 
 
+    @SuppressWarnings({ "unused", "unchecked" })
+    public static <T> Enumerable<T> materializeGraphRows( Enumerable<T> source ) {
+        List<T> rows = new ArrayList<>();
+        try ( Enumerator<T> input = source.enumerator() ) {
+            while ( input.moveNext() ) {
+                T row = input.current();
+                // Snapshot the row container while keeping graph aliases bound to the same elements.
+                rows.add( row instanceof Object[] fields ? (T) fields.clone() : row );
+            }
+        }
+        return Linq4j.asEnumerable( rows );
+    }
+
+
     @SuppressWarnings("unused")
     public static Enumerable<PolyValue[]> streamGraphRows( DataContext context, Enumerable<PolyValue[]> provider,
             Function0<Enumerable<PolyValue[]>> collector, List<PolyType> polyTypes ) {

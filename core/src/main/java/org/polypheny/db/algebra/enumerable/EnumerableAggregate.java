@@ -71,6 +71,8 @@ import org.polypheny.db.prepare.JavaTypeFactoryImpl.SyntheticRecordType;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -367,7 +369,9 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
             final Type keyType = keyPhysType.getJavaTupleType();
             key_ = Expressions.parameter( keyType, "key" );
             for ( int j = 0; j < groupCount; j++ ) {
-                final Expression ref = keyPhysType.fieldReference( key_, j );
+                final Expression ref = graphKeys && getGroupType() == Group.SIMPLE
+                        ? graphKeyField( keyPhysType, key_, j )
+                        : keyPhysType.fieldReference( key_, j );
                 if ( getGroupType() == Group.SIMPLE ) {
                     results.add( ref );
                 } else {
@@ -419,7 +423,10 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
                                     BuiltInMethod.DISTINCT.method,
                                     Expressions.<Expression>list().appendIfNotNull( physType.comparer() ) ) ) );
         } else {
-            final Expression keySelector_ = builder.append( "keySelector", inputPhysType.generateSelector( parameter, groupSet.asList(), keyPhysType.getFormat() ) );
+            Expression selector = graphKeys
+                    ? generateGraphKeySelector( inputPhysType, keyPhysType, parameter )
+                    : inputPhysType.generateSelector( parameter, groupSet.asList(), keyPhysType.getFormat() );
+            final Expression keySelector_ = builder.append( "keySelector", selector );
             final Expression resultSelector_ = builder.append( "resultSelector", Expressions.lambda( Function2.class, resultBlock.toBlock(), key_, acc_ ) );
             Expression comparer = graphKeys
                     ? Expressions.call( CypherFunctions.class, "groupingComparer", Expressions.constant( groupCount > 1 ) )
@@ -438,6 +445,22 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
                                             Expressions.call( lambdaFactory, BuiltInMethod.AGG_LAMBDA_FACTORY_ACC_RESULT_SELECTOR.method, resultSelector_ ) ).appendIfNotNull( comparer ) ) ) );
         }
         return implementor.result( physType, builder.toBlock() );
+    }
+
+
+    private Expression generateGraphKeySelector( PhysType input, PhysType key, ParameterExpression row ) {
+        List<Expression> fields = groupSet.asList().stream().map( index -> graphKeyField( input, row, index ) ).toList();
+        Expression groupingKey = fields.size() == 1 ? fields.get( 0 ) : key.record( fields );
+        return Expressions.lambda( Function1.class, groupingKey, row );
+    }
+
+
+    private static Expression graphKeyField( PhysType type, Expression row, int index ) {
+        if ( type.fieldClass( index ) == PolyNumber.class ) {
+            // Read through PolyValue to preserve the numeric subtype when selecting and returning group keys.
+            return Types.castIfNecessary( PolyNumber.class, type.fieldReference( row, index, PolyValue.class ) );
+        }
+        return type.fieldReference( row, index );
     }
 
 

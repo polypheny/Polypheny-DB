@@ -73,11 +73,8 @@ public class CrossModelFunctions {
      */
     @SuppressWarnings("unused")
     public static Enumerable<PolyValue[]> sendGraphModifies( DataContext context, List<Function0<Enumerable<?>>> enumerables, List<PolyType> order, Operation operation ) {
-        if ( operation == Modify.Operation.DELETE ) {
-            return sendDeletes( context, enumerables, order );
-        }
-        if ( operation == Modify.Operation.UPDATE ) {
-            return sendUpdates( context, enumerables, order );
+        if ( operation == Modify.Operation.DELETE || operation == Modify.Operation.UPDATE ) {
+            return sendGraphUpdatesOrDeletes( context, enumerables, order, operation );
         }
 
         int i = 0;
@@ -123,6 +120,32 @@ public class CrossModelFunctions {
         context.setParameterTypes( typeBackup );
 
         return Linq4j.singletonEnumerable( new PolyValue[]{ PolyInteger.of( 1 ) } );
+    }
+
+
+    private static Enumerable<PolyValue[]> sendGraphUpdatesOrDeletes(
+            DataContext context, List<Function0<Enumerable<?>>> enumerables, List<PolyType> order, Operation operation ) {
+        List<Map<Long, PolyValue>> rows = context.getParameterValues();
+        Map<Long, AlgDataType> types = context.getParameterTypes();
+        long count = 0;
+        try {
+            for ( Map<Long, PolyValue> row : rows ) {
+                if ( row.values().stream().allMatch( value -> value == null || value.isNull() ) ) {
+                    continue;
+                }
+                if ( operation == Modify.Operation.DELETE ) {
+                    sendDeletes( context, enumerables, order, row );
+                } else {
+                    sendUpdates( context, enumerables, order, row );
+                }
+                count++;
+            }
+        } finally {
+            context.resetParameterValues();
+            context.setParameterValues( rows );
+            context.setParameterTypes( types );
+        }
+        return Linq4j.singletonEnumerable( new PolyValue[]{ PolyLong.of( count ) } );
     }
 
 
@@ -222,7 +245,7 @@ public class CrossModelFunctions {
         context.addParameterValues( 3, idType, List.of( edge.right ) );
 
         // execute all inserts
-        drainInserts( enumerables.get( i ), edge.labels.size() );
+        drainWrites( enumerables.get( i ), edge.labels.size() );
         context.resetParameterValues();
     }
 
@@ -254,7 +277,7 @@ public class CrossModelFunctions {
             context.addParameterValues( 0, idType, Collections.nCopies( keys.size(), id ) );
             context.addParameterValues( 1, labelType, new ArrayList<>( keys ) );
             context.addParameterValues( 2, valueType, new ArrayList<>( values ) );
-            drainInserts( enumerable, keys.size() );
+            drainWrites( enumerable, keys.size() );
             context.resetParameterValues();
         }
     }
@@ -295,7 +318,7 @@ public class CrossModelFunctions {
         labels.add( 0, PolyString.of( "$" ) ); // id + key (null ) is required for each node to enable label-less nodes
         context.addParameterValues( 0, idType, Collections.nCopies( labels.size(), node.id ) );
         context.addParameterValues( 1, labelType, labels );
-        drainInserts( enumerables.get( i ), labels.size() );
+        drainWrites( enumerables.get( i ), labels.size() );
         context.resetParameterValues();
     }
 
@@ -307,14 +330,11 @@ public class CrossModelFunctions {
      * @param enumerables collection of all modify enumerables
      * @param order the order of modify operations
      */
-    private static Enumerable<PolyValue[]> sendDeletes( DataContext context, List<Function0<Enumerable<?>>> enumerables, List<PolyType> order ) {
+    private static void sendDeletes( DataContext context, List<Function0<Enumerable<?>>> enumerables, List<PolyType> order, Map<Long, PolyValue> values ) {
         int i = 0;
-        Map<Long, PolyValue> values = context.getParameterValues().get( 0 );
-        Map<Long, AlgDataType> typeBackup = context.getParameterTypes();
         JavaTypeFactory typeFactory = context.getStatement().getTransaction().getTypeFactory();
         AlgDataType idType = typeFactory.createPolyType( PolyType.VARCHAR, 36 );
         AlgDataType labelType = typeFactory.createPolyType( PolyType.VARCHAR, 255 );
-        AlgDataType valueType = typeFactory.createPolyType( PolyType.VARCHAR, 255 );
 
         context.resetParameterValues();
         for ( PolyType polyType : order ) {
@@ -345,13 +365,6 @@ public class CrossModelFunctions {
 
             i++;
         }
-        // restore original context
-        context.resetParameterValues();
-        context.setParameterValues( List.of( values ) );
-        context.setParameterTypes( typeBackup );
-
-        return Linq4j.singletonEnumerable( new PolyValue[]{ PolyLong.of( values.size() ) } );
-
     }
 
 
@@ -365,8 +378,7 @@ public class CrossModelFunctions {
      */
     private static void edgePropertiesTableDelete( DataContext context, List<Function0<Enumerable<?>>> enumerables, int enumIndex, AlgDataType idType, AlgDataType labelType, PolyEdge edge ) {
         context.addParameterValues( 0, idType, List.of( edge.id ) );
-        Enumerator<?> enumerableE = enumerables.get( enumIndex ).apply().enumerator();
-        enumerableE.moveNext();
+        drainWrites( enumerables.get( enumIndex ), 1 );
         context.resetParameterValues();
     }
 
@@ -382,8 +394,7 @@ public class CrossModelFunctions {
     private static void edgeTableDelete( DataContext context, List<Function0<Enumerable<?>>> enumerables, int enumIndex, AlgDataType idType, AlgDataType labelType, PolyEdge edge ) {
         context.addParameterValues( 0, idType, List.of( edge.id ) );
         context.addParameterValues( 1, labelType, List.copyOf( edge.labels ) );
-        Enumerator<?> enumerable = enumerables.get( enumIndex ).apply().enumerator();
-        enumerable.moveNext();
+        drainWrites( enumerables.get( enumIndex ), 1 );
         context.resetParameterValues();
     }
 
@@ -398,8 +409,7 @@ public class CrossModelFunctions {
      */
     private static void nodePropertiesTableDelete( DataContext context, List<Function0<Enumerable<?>>> enumerables, int enumIndex, AlgDataType idType, AlgDataType labelType, PolyNode node ) {
         context.addParameterValues( 0, idType, List.of( node.id ) );
-        Enumerator<?> enumerable = enumerables.get( enumIndex ).apply().enumerator();
-        enumerable.moveNext();
+        drainWrites( enumerables.get( enumIndex ), 1 );
         context.resetParameterValues();
     }
 
@@ -414,8 +424,7 @@ public class CrossModelFunctions {
      */
     private static void nodeTableDelete( DataContext context, List<Function0<Enumerable<?>>> enumerables, int enumIndex, AlgDataType idType, AlgDataType labelType, PolyNode node ) {
         context.addParameterValues( 0, idType, List.of( node.id ) );
-        Enumerator<?> enumerable = enumerables.get( enumIndex ).apply().enumerator();
-        enumerable.moveNext();
+        drainWrites( enumerables.get( enumIndex ), 1 );
         context.resetParameterValues();
     }
 
@@ -426,12 +435,9 @@ public class CrossModelFunctions {
      * @param context the dataContext for the update operation
      * @param enumerables collection of all modify operations
      * @param order the types included in the update operation
-     * @return the result of the update operation
      */
-    private static Enumerable<PolyValue[]> sendUpdates( DataContext context, List<Function0<Enumerable<?>>> enumerables, List<PolyType> order ) {
+    private static void sendUpdates( DataContext context, List<Function0<Enumerable<?>>> enumerables, List<PolyType> order, Map<Long, PolyValue> values ) {
         int i = 0;
-        Map<Long, PolyValue> values = context.getParameterValues().get( 0 );
-        Map<Long, AlgDataType> typeBackup = context.getParameterTypes();
         JavaTypeFactory typeFactory = context.getStatement().getTransaction().getTypeFactory();
         AlgDataType idType = typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE );
         AlgDataType labelType = typeFactory.createPolyType( PolyType.TEXT );
@@ -470,26 +476,20 @@ public class CrossModelFunctions {
 
             i++;
         }
-        // restore original context
-        context.resetParameterValues();
-        context.setParameterValues( List.of( values ) );
-        context.setParameterTypes( typeBackup );
-
-        return Linq4j.singletonEnumerable( new PolyValue[]{ PolyLong.of( values.size() ) } );
-
     }
 
 
     /**
-     * Executes all insert operations.
+     * Executes the bound write operations.
      *
-     * @param activator functions, which execute the inserts
-     * @param size the amount of inserts to execute
+     * @param activator the function that executes the writes
+     * @param size the maximum number of rows the write returns
      */
-    private static void drainInserts( Function0<Enumerable<?>> activator, int size ) {
-        Enumerator<?> enumerable = activator.apply().enumerator();
-        for ( int i1 = 0; i1 < size; i1++ ) {
-            enumerable.moveNext();
+    private static void drainWrites( Function0<Enumerable<?>> activator, int size ) {
+        try ( Enumerator<?> enumerable = activator.apply().enumerator() ) {
+            for ( int i = 0; i < size && enumerable.moveNext(); i++ ) {
+                // The adapter performs the write while advancing its cursor.
+            }
         }
     }
 

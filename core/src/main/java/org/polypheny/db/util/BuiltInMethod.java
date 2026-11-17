@@ -157,6 +157,7 @@ public enum BuiltInMethod {
     STREAM_RIGHT( Functions.class, "streamRight", DataContext.class, Enumerable.class, Function0.class, List.class ),
     STREAM_GRAPH_ROWS( Functions.class, "streamGraphRows", DataContext.class, Enumerable.class, Function0.class, List.class ),
     APPEND_GRAPH_ROW_ID( Functions.class, "appendGraphRowId", Enumerable.class ),
+    MATERIALIZE_GRAPH_ROWS( Functions.class, "materializeGraphRows", Enumerable.class ),
     ENFORCE_CONSTRAINT( Functions.class, "enforceConstraint", DataContext.class, Function0.class, Function0.class, List.class, List.class ),
     PARSE_ARRAY_FROM_TEXT( Functions.class, "reparse", String.class ),
     QUERYABLE_SELECT( Queryable.class, "select", FunctionExpression.class ),

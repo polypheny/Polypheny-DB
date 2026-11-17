@@ -524,6 +524,9 @@ public class CypherFunctions {
         if ( left == null || left.isNull() || right == null || right.isNull() ) {
             return null;
         }
+        if ( left instanceof PolyNumber && right instanceof PolyNumber ) {
+            return PolyBoolean.of( aggregationKey( left ).equals( aggregationKey( right ) ) );
+        }
         return Functions.eq( left, right );
     }
 

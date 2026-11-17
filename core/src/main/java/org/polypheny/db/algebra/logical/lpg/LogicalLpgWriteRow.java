@@ -38,7 +38,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.BuiltInMethod;
 
 
-/** Keeps the input projection separate from the write expressions and optionally appends an identity seed for CREATE. */
+/** Captures projected rows before UPDATE or appends an identity seed for CREATE. */
 public class LogicalLpgWriteRow extends SingleAlg implements LpgAlg {
 
     public static final ConverterRule TO_ENUMERABLE = new ConverterRule(
@@ -122,12 +122,13 @@ public class LogicalLpgWriteRow extends SingleAlg implements LpgAlg {
 
         @Override
         public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
-            if ( idName == null ) {
-                return implementor.visitChild( this, 0, (EnumerableAlg) getInput(), pref );
-            }
-            Result child = implementor.visitChild( this, 0, (EnumerableAlg) getInput(), Prefer.ARRAY );
+            Result child = implementor.visitChild( this, 0, (EnumerableAlg) getInput(), idName == null ? pref : Prefer.ARRAY );
             BlockBuilder builder = new BlockBuilder();
             Expression rows = builder.append( "rows", child.block() );
+            if ( idName == null ) {
+                builder.add( Expressions.return_( null, Expressions.call( BuiltInMethod.MATERIALIZE_GRAPH_ROWS.method, rows ) ) );
+                return implementor.result( child.physType(), builder.toBlock() );
+            }
             builder.add( Expressions.return_( null, Expressions.call( BuiltInMethod.APPEND_GRAPH_ROW_ID.method, rows ) ) );
             return implementor.result( PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), JavaTupleFormat.ARRAY, false ), builder.toBlock() );
         }
