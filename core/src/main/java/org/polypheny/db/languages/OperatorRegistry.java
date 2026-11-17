@@ -179,7 +179,14 @@ public class OperatorRegistry {
     }
 
 
-    public static void remove( QueryLanguage language ) {
+    /** Whether the operator instance is the one declared in a language registry. */
+    public static synchronized boolean isRegistered( Operator operator ) {
+        OperatorName name = operator.getOperatorName();
+        return name != null && registry.values().stream().anyMatch( operators -> operators.get( name ) == operator );
+    }
+
+
+    public static synchronized void remove( QueryLanguage language ) {
         registry.remove( language );
     }
 

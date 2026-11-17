@@ -74,6 +74,11 @@ public class DocumentType implements AlgDataType, AlgDataTypeFamily {
     }
 
 
+    public boolean hasFixedSchema() {
+        return isFixed;
+    }
+
+
     public static AlgDataType ofRelational() {
         return new AlgRecordType( List.of(
                 getRelationalId(),
