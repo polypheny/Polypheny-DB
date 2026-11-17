@@ -37,6 +37,8 @@ import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.expression.CypherAggregate;
 import org.polypheny.db.cypher.expression.CypherExpression;
+import org.polypheny.db.cypher.expression.CypherProperty;
+import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNameRef;
@@ -205,17 +207,17 @@ public class CypherReturnClause extends CypherClause {
 
 
     public AlgNode getGraphSort( CypherContext context ) {
-        List<Pair<Direction, String>> orders = order.stream()
-                .map( o -> Pair.of( o.isAsc() ? Direction.ASCENDING : Direction.DESCENDING, o.getExpression().getName() ) )
-                .toList();
-
         AlgNode node = context.peek();
-
+        List<String> fields = node.getTupleType().getFieldNames();
         List<AlgFieldCollation> collations = new ArrayList<>();
 
-        for ( Pair<Direction, String> item : orders ) {
-            int index = node.getTupleType().getFieldNames().indexOf( item.right );
-            collations.add( new AlgFieldCollation( index, item.left ) );
+        for ( CypherOrderItem item : order ) {
+            String name = sortField( item.getExpression(), fields );
+            int index = fields.indexOf( name );
+            if ( index < 0 ) {
+                throw new GenericRuntimeException( "Unknown sort expression: %s", name );
+            }
+            collations.add( new AlgFieldCollation( index, item.isAsc() ? Direction.ASCENDING : Direction.DESCENDING ) );
         }
 
         AlgCollation collation = AlgCollations.of( collations );
@@ -242,8 +244,26 @@ public class CypherReturnClause extends CypherClause {
     }
 
 
-    public List<String> getSortFields() {
-        return order.stream().map( o -> o.getExpression().getName() ).toList();
+    public List<String> getSortFields( List<String> projectedFields ) {
+        return order.stream().map( item -> sortField( item.getExpression(), projectedFields ) ).toList();
+    }
+
+
+    private String sortField( CypherExpression expression, List<String> projectedFields ) {
+        String name = expression.getName();
+        if ( projectedFields.contains( name ) ) {
+            return name;
+        }
+        // A grouping expression remains sortable through its projected alias.
+        for ( CypherReturn item : returnItems ) {
+            if ( item instanceof CypherReturnItem projection && projection.getVariable() != null ) {
+                CypherExpression source = projection.getExpression();
+                if ( (source instanceof CypherProperty || source instanceof CypherVariable) && name.equals( source.getName() ) ) {
+                    return projection.getVariable().getName();
+                }
+            }
+        }
+        return name;
     }
 
 }

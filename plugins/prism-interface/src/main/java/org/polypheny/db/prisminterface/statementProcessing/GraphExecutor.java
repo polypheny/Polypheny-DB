@@ -149,9 +149,11 @@ final class GraphExecutor extends Executor {
             failure.addSuppressed( cleanupFailure );
         }
         PIClient client = statement.getClient();
-        if ( client.isAutoCommit() && client.getCurrentTransaction() == statement.getTransaction() ) {
+        // A write may have reached the store before a later clause failed. Prism has no statement savepoint.
+        boolean rollback = client.isAutoCommit() || Kind.DML.contains( statement.getImplementation().getKind() );
+        if ( rollback && client.getCurrentTransaction() == statement.getTransaction() ) {
             try {
-                client.rollbackCurrentTransaction( "Cypher result could not be produced" );
+                client.rollbackCurrentTransaction( failure.getMessage() );
             } catch ( RuntimeException cleanupFailure ) {
                 failure.addSuppressed( cleanupFailure );
             }

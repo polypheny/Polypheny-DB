@@ -285,7 +285,7 @@ public class CypherToAlgConverter {
         if ( clause.getOrder() != null && !clause.getOrder().isEmpty() || clause.getLimit() != null || clause.getSkip() != null ) {
             AlgDataType rowType = node.getTupleType();
             List<String> missingNames = clause
-                    .getSortFields()
+                    .getSortFields( rowType.getFieldNames() )
                     .stream().filter( n -> !rowType.getFieldNames().contains( n ) )
                     .toList();
 
@@ -403,7 +403,6 @@ public class CypherToAlgConverter {
         context.active = clause;
         List<CypherExpression> inlinePredicates = clause.getPatterns().stream().flatMap( pattern -> pattern.getPredicates().stream() ).toList();
         if ( clause.isOptional() || !context.stack.isEmpty() || !inlinePredicates.isEmpty() ) {
-            context.requiresRowWriter = true;
             convertJoinedMatch( clause, context, inlinePredicates );
             return;
         }
@@ -414,7 +413,6 @@ public class CypherToAlgConverter {
         // Row-dependent writes extract their bindings from the full path in the engine.
         boolean usesPathInWrite = !context.implicitPathBindings.isEmpty()
                 && context.original instanceof CypherSingleQuery query && query.hasUpdates();
-        context.requiresRowWriter |= usesPathInWrite;
         context.combineMatch( usesPathInWrite );
 
         if ( clause.getWhere() == null ) {
@@ -666,7 +664,6 @@ public class CypherToAlgConverter {
         public Kind kind;
         private boolean writeHasConsumer;
         private boolean createReturning;
-        private boolean requiresRowWriter;
         private LogicalLpgModify returningInsert;
         private List<Pair<PolyString, EdgeVariableHolder>> edges = new LinkedList<>();
         private final Map<PolyString, PolyPath> createdPaths = new LinkedHashMap<>();
@@ -1074,7 +1071,6 @@ public class CypherToAlgConverter {
                 add( LogicalLpgAggregate.countWrites( write ) );
                 return;
             }
-            requiresRowWriter = true;
             for ( PolyString binding : bindings ) {
                 values.add( rexBuilder.makeInputRef( created, fields.indexOf( binding.value ) ) );
                 names.add( binding );
@@ -1220,13 +1216,6 @@ public class CypherToAlgConverter {
 
         private void modify( Modify.Operation operation, List<Pair<PolyString, RexNode>> updates, boolean detachDelete ) {
             AlgNode input = pop();
-            requiresRowWriter |= writeHasConsumer;
-            if ( !requiresRowWriter && operation != Modify.Operation.DELETE ) {
-                add( new LogicalLpgModify( cluster, cluster.traitSet(), graph, input, operation, Pair.left( updates ), Pair.right( updates ) ) );
-                clearVariables();
-                return;
-            }
-
             if ( operation == Modify.Operation.UPDATE ) {
                 // WITH values must be evaluated before the update expressions mutate their graph bindings.
                 input = new LogicalLpgWriteRow( input );

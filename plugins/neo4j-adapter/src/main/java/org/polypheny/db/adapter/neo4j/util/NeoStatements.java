@@ -162,10 +162,15 @@ public interface NeoStatements {
     static List<PropertyStatement> properties_( PolyDictionary properties ) {
         List<PropertyStatement> props = new ArrayList<>();
         for ( Entry<PolyString, PolyValue> entry : properties.entrySet() ) {
-            props.add( property_( entry.getKey(), _literalOrString( entry.getValue() ) ) );
+            props.add( property_( entry.getKey(), graphProperty_( entry.getValue() ) ) );
         }
         return props;
     }
+
+    static NeoStatement graphProperty_( PolyValue value ) {
+        return _literalOrString( NeoUtil.encodeGraphProperty( value ) );
+    }
+
 
     static NeoStatement _literalOrString( PolyValue value ) {
         if ( value == null || value.isNull() ) {

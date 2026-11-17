@@ -20,7 +20,9 @@ import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nullable;
 import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -93,10 +95,8 @@ public class CypherAggregate extends CypherExpression {
                 Pair<PolyString, RexNode> rex = Objects.requireNonNull( this.target ).getRex( context, RexType.PROJECT );
                 yield Pair.of( node, context.typeFactory.createArrayType( rex.getValue().getType(), -1 ) );
             }
-            case AVG -> {
-                RexNode casted = context.rexBuilder.makeCast( context.typeFactory.createTypeWithNullability( context.typeFactory.createPolyType( PolyType.DOUBLE ), true ), node );
-                yield Pair.of( casted, context.typeFactory.createTypeWithNullability( context.typeFactory.createPolyType( PolyType.DOUBLE ), true ) );
-            }
+            case SUM, AVG -> Pair.of( node, LaxAggregateCall.inferGraphNumericType( context.typeFactory,
+                    op == OperatorName.SUM ? Kind.SUM : Kind.AVG, Objects.requireNonNull( node ).getType() ) );
             case MIN, MAX -> Pair.of( node, context.typeFactory.createTypeWithNullability( Objects.requireNonNull( node ).getType(), true ) );
             default -> Pair.of( node, context.typeFactory.createPolyType( PolyType.BIGINT ) );
         };

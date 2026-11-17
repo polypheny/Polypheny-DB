@@ -21,8 +21,11 @@ import static org.polypheny.db.functions.spatial.GeoDistanceFunctions.EARTH_RADI
 import static org.polypheny.db.type.entity.spatial.PolyGeometry.WGS_84;
 import static org.polypheny.db.type.entity.spatial.PolyGeometry.WGS_84_3D;
 
+import java.math.BigDecimal;
+import java.math.MathContext;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -57,7 +60,9 @@ import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.spatial.GeometryTopologicalException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
@@ -554,6 +559,9 @@ public class CypherFunctions {
         if ( value instanceof PolyPath path ) {
             return Pair.of( PolyType.PATH, path.getPath().stream().map( GraphPropertyHolder::getId ).toList() );
         }
+        if ( value instanceof List<?> list ) {
+            return list.stream().map( CypherFunctions::aggregationKey ).toList();
+        }
         return value;
     }
 
@@ -585,10 +593,108 @@ public class CypherFunctions {
         if ( current == null ) {
             return candidate;
         }
-        int comparison = current instanceof PolyNumber left && candidate instanceof PolyNumber right
-                ? compareNumbers( left, right )
-                : current.compareTo( candidate );
+        int comparison = compareForOrdering( current, candidate, false );
         return (minimum ? comparison > 0 : comparison < 0) ? candidate : current;
+    }
+
+
+    public static Comparator<PolyValue> orderingComparator( boolean nullsFirst, boolean descending ) {
+        return descending
+                ? (left, right) -> compareForOrdering( right, left, !nullsFirst )
+                : (left, right) -> compareForOrdering( left, right, nullsFirst );
+    }
+
+
+    public static int compareForOrdering( PolyValue left, PolyValue right, boolean nullsFirst ) {
+        boolean leftNull = left == null || left.isNull();
+        boolean rightNull = right == null || right.isNull();
+        if ( leftNull || rightNull ) {
+            return nullsFirst ? Boolean.compare( rightNull, leftNull ) : Boolean.compare( leftNull, rightNull );
+        }
+        if ( left instanceof PolyNumber a && right instanceof PolyNumber b ) {
+            return compareNumbers( a, b );
+        }
+        int typeOrder = Integer.compare( orderingRank( left ), orderingRank( right ) );
+        if ( typeOrder != 0 ) {
+            return typeOrder;
+        }
+        if ( left instanceof PolyList<?> a && right instanceof PolyList<?> b ) {
+            for ( int i = 0; i < Math.min( a.size(), b.size() ); i++ ) {
+                int elementOrder = compareForOrdering( a.get( i ), b.get( i ), false );
+                if ( elementOrder != 0 ) {
+                    return elementOrder;
+                }
+            }
+            return Integer.compare( a.size(), b.size() );
+        }
+        return left.compareTo( right );
+    }
+
+
+    private static int orderingRank( PolyValue value ) {
+        if ( value instanceof PolyNumber ) {
+            return 12;
+        }
+        return switch ( value.getType() ) {
+            case MAP, DOCUMENT -> 0;
+            case NODE -> 1;
+            case EDGE -> 2;
+            case ARRAY -> 3;
+            case PATH -> 4;
+            case TIMESTAMP -> 5;
+            case DATE -> 6;
+            case TIME -> 7;
+            case INTERVAL -> 8;
+            case GEOMETRY -> 9;
+            case CHAR, VARCHAR -> 10;
+            case BOOLEAN -> 11;
+            default -> 13 + value.getType().ordinal();
+        };
+    }
+
+
+    public static final class NumericAggregate {
+
+        private BigDecimal exactSum = BigDecimal.ZERO;
+        private double approximateSum;
+        private boolean approximate;
+        private boolean decimal;
+        private long count;
+
+
+        public void add( PolyValue value ) {
+            if ( value == null || value.isNull() ) {
+                return;
+            }
+            PolyNumber number = value.asNumber();
+            if ( approximate ) {
+                approximateSum += number.doubleValue();
+            } else if ( PolyType.APPROX_TYPES.contains( number.getType() ) ) {
+                approximate = true;
+                approximateSum = exactSum.doubleValue() + number.doubleValue();
+            } else {
+                exactSum = exactSum.add( number.bigDecimalValue() );
+                decimal |= number.getType() == PolyType.DECIMAL;
+            }
+            count++;
+        }
+
+
+        public PolyNumber sum( PolyType resultType ) {
+            if ( approximate || resultType == PolyType.DOUBLE ) {
+                return PolyDouble.of( approximate ? approximateSum : exactSum.doubleValue() );
+            }
+            return decimal || resultType == PolyType.DECIMAL ? PolyBigDecimal.of( exactSum ) : PolyLong.of( exactSum.longValueExact() );
+        }
+
+
+        public PolyDouble average() {
+            if ( count == 0 ) {
+                return null;
+            }
+            return PolyDouble.of( approximate ? approximateSum / count : exactSum.divide( BigDecimal.valueOf( count ), MathContext.DECIMAL128 ).doubleValue() );
+        }
+
     }
 
 

@@ -48,6 +48,7 @@ import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -62,6 +63,7 @@ import org.polypheny.db.algebra.rules.AggregateProjectPullUpConstantsRule;
 import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Function;
@@ -383,7 +385,10 @@ public abstract class Aggregate extends SingleAlg {
     private boolean typeMatchesInferred( final AggregateCall aggCall, final Litmus litmus ) {
         Function aggFunction = aggCall.getAggregation();
         AggCallBinding callBinding = aggCall.createBinding( this );
-        AlgDataType type = aggFunction.inferReturnType( callBinding );
+        Kind kind = aggFunction.getKind();
+        AlgDataType type = traitSet.contains( ModelTrait.GRAPH ) && (kind == Kind.SUM || kind == Kind.AVG) && callBinding.getOperandCount() == 1
+                ? LaxAggregateCall.inferGraphNumericType( getCluster().getTypeFactory(), kind, callBinding.getOperandType( 0 ) )
+                : aggFunction.inferReturnType( callBinding );
         AlgDataType expectedType = aggCall.type;
         if ( type.isNullable() != expectedType.isNullable() ) {
             // During PolyAlgebra parsing, the type might become non-nullable. We do not want to throw an error in this case.

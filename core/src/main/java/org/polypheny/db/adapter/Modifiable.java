@@ -100,6 +100,7 @@ public interface Modifiable extends Scannable {
             }
         }
         AlgRecordType updateRowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( -1L, "ROWCOUNT", 0, alg.getCluster().getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
+        addGraphWriteLookups( builder, nodesTable, edgesTable, inputs, sequence, Operation.UPDATE );
         LogicalLpgTransformer transformer = new LogicalLpgTransformer( alg.getCluster(), alg.getTraitSet(), inputs, updateRowType, sequence, Modify.Operation.UPDATE );
         return new LogicalStreamer( alg.getCluster(), alg.getTraitSet(), project, transformer );
     }
@@ -176,9 +177,32 @@ public interface Modifiable extends Scannable {
             }
         }
         AlgRecordType updateRowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( -1L, "ROWCOUNT", 0, alg.getCluster().getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
+        addGraphWriteLookups( algBuilder, nodesTable, edgesTable, inputs, sequence, Operation.INSERT );
         LogicalLpgTransformer transformer = new LogicalLpgTransformer( alg.getCluster(), alg.getTraitSet(), inputs, updateRowType, sequence, Modify.Operation.INSERT );
         return new LogicalStreamer( alg.getCluster(), alg.getTraitSet(), provider, transformer );
     }
+
+
+    private static void addGraphWriteLookups( AlgBuilder builder, Entity nodesTable, Entity edgesTable,
+            List<AlgNode> inputs, List<PolyType> parameters, Operation operation ) {
+        boolean writesEdges = parameters.contains( PolyType.EDGE );
+        if ( operation == Operation.UPDATE || (operation == Operation.INSERT && writesEdges) ) {
+            inputs.add( graphElementLookup( builder, nodesTable ) );
+        }
+        if ( operation == Operation.UPDATE && writesEdges ) {
+            inputs.add( graphElementLookup( builder, edgesTable ) );
+        }
+    }
+
+
+    private static AlgNode graphElementLookup( AlgBuilder builder, Entity table ) {
+        RexBuilder rexBuilder = builder.getCluster().getRexBuilder();
+        builder.relScan( table );
+        RexNode id = rexBuilder.makeDynamicParam( nonNullGraphId.apply( rexBuilder.getTypeFactory() ), 0 );
+        builder.filter( builder.equals( builder.field( 0 ), id ) );
+        return builder.project( builder.field( 0 ) ).build();
+    }
+
 
     static List<AlgNode> attachPreparedGraphNodeModifyInsert( Modifiable modifiable, AlgCluster cluster, Entity nodesTable, Entity nodePropertiesTable, AlgBuilder algBuilder ) {
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
@@ -455,6 +479,7 @@ public interface Modifiable extends Scannable {
         }
         AlgRecordType resultType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl(
                 -1L, "ROWCOUNT", 0, cluster.getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
+        addGraphWriteLookups( builder, nodesTable, edgesTable, modifies, parameters, operation );
         return new LogicalLpgTransformer( cluster, cluster.traitSet(), modifies, resultType, parameters, operation );
     }
 

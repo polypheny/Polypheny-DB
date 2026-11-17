@@ -206,12 +206,7 @@ public class Translator extends RexVisitorImpl<String> {
         List<PolyValue> rexKeys = ((RexLiteral) call.operands.get( 1 )).value.asList();
         List<String> keys = rexKeys.stream().map( l -> l.asString().value ).toList();
         List<PolyValue> rexValues = ((RexLiteral) call.operands.get( 2 )).value.asList().value;
-        List<String> values = rexValues.stream().map( value -> {
-            if ( value.isNull() ) {
-                return "null";
-            }
-            return value.isString() ? NeoUtil.quoteStringLiteral( value.asString().value ) : value.toJson();
-        } ).toList();
+        List<String> values = rexValues.stream().map( value -> NeoStatements.graphProperty_( value ).build() ).toList();
 
         boolean replace = ((RexLiteral) call.operands.get( 3 )).value.asBoolean().value;
 
@@ -234,7 +229,7 @@ public class Translator extends RexVisitorImpl<String> {
     private String handleSetProperty( RexCall call ) {
         String identifier = call.operands.get( 0 ).accept( this );
         String key = call.operands.get( 1 ).unwrapOrThrow( RexLiteral.class ).value.asString().value;
-        String literal = NeoUtil.rexAsString( call.operands.get( 2 ).unwrapOrThrow( RexLiteral.class ), null, true );
+        String literal = NeoStatements.graphProperty_( call.operands.get( 2 ).unwrapOrThrow( RexLiteral.class ).value ).build();
         return String.format( "%s.%s = %s", identifier, key, literal );
     }
 

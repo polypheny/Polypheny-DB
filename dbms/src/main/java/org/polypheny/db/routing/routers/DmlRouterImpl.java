@@ -679,6 +679,12 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     @Override
+    public AlgNode routeGraphDml( AlgNode root, Statement statement ) {
+        return buildGraphDml( root, statement, null, null );
+    }
+
+
+    @Override
     public AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement, @Nullable AllocationEntity target, @Nullable List<Long> excludedPlacements ) {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
         List<AlgNode> modifies = new ArrayList<>();

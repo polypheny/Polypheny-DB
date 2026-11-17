@@ -83,48 +83,43 @@ public class CrossModelFunctions {
         if ( operation == Modify.Operation.UPDATE ) {
             return sendGraphUpdates( context, enumerables, order );
         }
+        return sendGraphInserts( context, enumerables, order );
+    }
 
-        int i = 0;
+
+    private static Enumerable<PolyValue[]> sendGraphInserts( DataContext context, List<Function0<Enumerable<?>>> enumerables, List<PolyType> order ) {
         Map<Long, PolyValue> values = context.getParameterValues().get( 0 );
         Map<Long, AlgDataType> typeBackup = context.getParameterTypes();
         JavaTypeFactory typeFactory = context.getStatement().getTransaction().getTypeFactory();
-        AlgDataType idType = typeFactory.createPolyType( PolyType.VARCHAR, 36 );
+        AlgDataType idType = typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE );
         AlgDataType labelType = typeFactory.createPolyType( PolyType.VARCHAR, 255 );
         AlgDataType valueType = typeFactory.createPolyType( PolyType.VARCHAR, 255 );
 
-        context.resetParameterValues();
-        Enumerator<?> enumerable;
-        for ( PolyType polyType : order ) {
-            PolyValue element = values.get( (long) i );
-            if ( element == null || element.isNull() ) {
-                i++;
-                continue;
+        try {
+            if ( order.contains( PolyType.EDGE ) ) {
+                validateInsertEndpoints( context, enumerables.get( 2 * order.size() ), order, values, idType );
             }
-            if ( polyType == PolyType.NODE ) {
-                PolyNode node = (PolyNode) values.get( (long) i );
-
-                // node table insert
-                nodeTableInsert( context, enumerables, 2 * i, idType, labelType, node );
-
-                // node property table insert
-                nodePropertiesTableInsert( context, enumerables, 2 * i + 1, idType, labelType, valueType, node );
-
-            } else if ( polyType == PolyType.EDGE ) {
-                PolyEdge edge = (PolyEdge) values.get( (long) i );
-
-                // edge table insert
-                edgeTableInsert( context, enumerables, 2 * i, idType, labelType, edge );
-
-                // edge property table insert
-                edgePropertiesTableInsert( context, enumerables, 2 * i + 1, idType, labelType, valueType, edge );
+            context.resetParameterValues();
+            for ( int i = 0; i < order.size(); i++ ) {
+                PolyValue element = values.get( (long) i );
+                if ( element == null || element.isNull() ) {
+                    continue;
+                }
+                if ( order.get( i ) == PolyType.NODE ) {
+                    PolyNode node = element.asNode();
+                    nodeTableInsert( context, enumerables, 2 * i, idType, labelType, node );
+                    nodePropertiesTableInsert( context, enumerables, 2 * i + 1, idType, labelType, valueType, node );
+                } else if ( order.get( i ) == PolyType.EDGE ) {
+                    PolyEdge edge = element.asEdge();
+                    edgeTableInsert( context, enumerables, 2 * i, idType, labelType, edge );
+                    edgePropertiesTableInsert( context, enumerables, 2 * i + 1, idType, labelType, valueType, edge );
+                }
             }
-
-            i++;
+        } finally {
+            context.resetParameterValues();
+            context.setParameterValues( List.of( values ) );
+            context.setParameterTypes( typeBackup );
         }
-        // restore original context
-        context.resetParameterValues();
-        context.setParameterValues( List.of( values ) );
-        context.setParameterTypes( typeBackup );
 
         return Linq4j.singletonEnumerable( new PolyValue[]{ PolyInteger.of( 1 ) } );
     }
@@ -135,6 +130,7 @@ public class CrossModelFunctions {
         Map<Long, AlgDataType> types = context.getParameterTypes();
         long count = 0;
         try {
+            validateUpdateTargets( context, enumerables, order, rows );
             for ( Map<Long, PolyValue> row : rows ) {
                 if ( row.values().stream().allMatch( value -> value == null || value.isNull() ) ) {
                     continue;
@@ -148,6 +144,76 @@ public class CrossModelFunctions {
             context.setParameterTypes( types );
         }
         return Linq4j.singletonEnumerable( new PolyValue[]{ PolyLong.of( count ) } );
+    }
+
+
+    private static void validateInsertEndpoints( DataContext context, Function0<Enumerable<?>> nodeLookup, List<PolyType> order,
+            Map<Long, PolyValue> values, AlgDataType idType ) {
+        Set<PolyString> insertedNodes = new LinkedHashSet<>();
+        Set<PolyString> endpoints = new LinkedHashSet<>();
+        for ( int i = 0; i < order.size(); i++ ) {
+            PolyValue element = values.get( (long) i );
+            if ( element == null || element.isNull() ) {
+                continue;
+            }
+            if ( order.get( i ) == PolyType.NODE ) {
+                insertedNodes.add( element.asNode().id );
+            } else if ( order.get( i ) == PolyType.EDGE ) {
+                PolyEdge edge = element.asEdge();
+                endpoints.add( edge.left );
+                endpoints.add( edge.right );
+            }
+        }
+        // Newly declared endpoints in this row will be inserted by the same CREATE.
+        endpoints.removeAll( insertedNodes );
+        requireGraphElements( context, nodeLookup, endpoints, idType, "Graph relationship requires exactly one source and one target node" );
+    }
+
+
+    private static void validateUpdateTargets( DataContext context, List<Function0<Enumerable<?>>> enumerables,
+            List<PolyType> order, List<Map<Long, PolyValue>> rows ) {
+        Set<PolyString> nodes = new LinkedHashSet<>();
+        Set<PolyString> edges = new LinkedHashSet<>();
+        Set<PolyString> endpoints = new LinkedHashSet<>();
+        for ( Map<Long, PolyValue> row : rows ) {
+            for ( int i = 0; i < order.size(); i++ ) {
+                PolyValue element = row.get( (long) i );
+                if ( element == null || element.isNull() ) {
+                    continue;
+                }
+                if ( order.get( i ) == PolyType.NODE ) {
+                    nodes.add( element.asNode().id );
+                } else if ( order.get( i ) == PolyType.EDGE ) {
+                    PolyEdge edge = element.asEdge();
+                    edges.add( edge.id );
+                    endpoints.add( edge.left );
+                    endpoints.add( edge.right );
+                }
+            }
+        }
+
+        AlgDataType idType = context.getStatement().getTransaction().getTypeFactory().createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE );
+        int nodeIndex = 4 * order.size();
+        Function0<Enumerable<?>> nodeLookup = enumerables.get( nodeIndex );
+        requireGraphElements( context, nodeLookup, nodes, idType, "Graph node disappeared before the update" );
+        if ( !edges.isEmpty() ) {
+            requireGraphElements( context, enumerables.get( nodeIndex + 1 ), edges, idType, "Graph relationship disappeared before the update" );
+            endpoints.removeAll( nodes );
+            requireGraphElements( context, nodeLookup, endpoints, idType, "Graph relationship requires exactly one source and one target node" );
+        }
+    }
+
+
+    private static void requireGraphElements( DataContext context, Function0<Enumerable<?>> lookup, Set<PolyString> ids, AlgDataType idType, String error ) {
+        for ( PolyString id : ids ) {
+            context.resetParameterValues();
+            context.addParameterValues( 0, idType, List.of( id ) );
+            try ( Enumerator<?> matches = lookup.apply().enumerator() ) {
+                if ( !matches.moveNext() ) {
+                    throw new GenericRuntimeException( error );
+                }
+            }
+        }
     }
 
 

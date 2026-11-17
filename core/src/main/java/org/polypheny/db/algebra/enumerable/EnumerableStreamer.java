@@ -107,7 +107,8 @@ public class EnumerableStreamer extends Streamer implements EnumerableAlg {
         MethodCallExpression transformContext = Expressions.call(
                 (returning ? BuiltInMethod.STREAM_GRAPH_ROWS : BuiltInMethod.STREAM_RIGHT).method, arguments );
 
-        builder.add( Expressions.return_( null, builder.append( "test", transformContext ) ) );
+        // Keep returning graph writes in their own statement so a following MATCH cannot start its scan first.
+        builder.add( Expressions.return_( null, builder.append( "rows", transformContext, !returning ) ) );
 
         return implementor.result( returning ? query.physType() : prepared.physType(), builder.toBlock() );
     }

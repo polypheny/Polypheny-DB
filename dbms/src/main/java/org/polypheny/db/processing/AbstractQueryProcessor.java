@@ -985,19 +985,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private AlgNode routeReturningGraphModify( AlgNode node, DmlRouter dmlRouter ) {
-        if ( node instanceof LogicalLpgModify modify && modify.returnsRows() ) {
-            return dmlRouter.routeGraphDml( modify, statement, null, null );
-        }
-        return node.copy( node.getTraitSet(), node.getInputs().stream()
-                .map( input -> containsReturningGraphModify( input ) ? routeReturningGraphModify( input, dmlRouter ) : input )
-                .toList() );
-    }
-
-
     private List<ProposedRoutingPlan> routeGraph( AlgRoot logicalRoot, LogicalQueryInformation queryInformation, DmlRouter dmlRouter ) {
         if ( containsReturningGraphModify( logicalRoot.alg ) ) {
-            AlgNode routed = routeReturningGraphModify( logicalRoot.alg, dmlRouter );
+            // A later MATCH can read from a sibling of the returning write in the algebra tree.
+            AlgNode routed = dmlRouter.routeGraphDml( logicalRoot.alg, statement );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routed, logicalRoot, queryInformation.getQueryHash() ) );
         }
         if ( isGraphInsertReturning( logicalRoot ) ) {

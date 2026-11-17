@@ -55,6 +55,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.functions.CrossModelFunctions;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
@@ -194,7 +195,7 @@ public interface NeoUtil {
     }
 
     static PolyNode asPolyNode( Node node ) {
-        Map<PolyString, PolyValue> map = new HashMap<>( node.asMap( NeoUtil::getComparableOrString ).entrySet().stream().collect( Collectors.toMap( e -> PolyString.of( e.getKey() ), Entry::getValue ) ) );
+        Map<PolyString, PolyValue> map = new HashMap<>( node.asMap( NeoUtil::readGraphProperty ).entrySet().stream().collect( Collectors.toMap( e -> PolyString.of( e.getKey() ), Entry::getValue ) ) );
         PolyString id = map.remove( PolyString.of( "_id" ) ).asString();
         List<PolyString> labels = new ArrayList<>();
         node.labels().forEach( e -> {
@@ -207,12 +208,29 @@ public interface NeoUtil {
 
 
     static PolyEdge asPolyEdge( Relationship relationship ) {
-        Map<PolyString, PolyValue> map = new HashMap<>( relationship.asMap( NeoUtil::getComparableOrString ).entrySet().stream().collect( Collectors.toMap( e -> PolyString.of( e.getKey() ), Entry::getValue ) ) );
+        Map<PolyString, PolyValue> map = new HashMap<>( relationship.asMap( NeoUtil::readGraphProperty ).entrySet().stream().collect( Collectors.toMap( e -> PolyString.of( e.getKey() ), Entry::getValue ) ) );
         String id = map.remove( PolyString.of( "_id" ) ).toString();
         String sourceId = map.remove( PolyString.of( "__sourceId__" ) ).toString();
         String targetId = map.remove( PolyString.of( "__targetId__" ) ).toString();
         return new PolyEdge( PolyString.of( id ), new PolyDictionary( map ), List.of( PolyString.of( relationship.type() ) ), PolyString.of( sourceId ), PolyString.of( targetId ), EdgeDirection.LEFT_TO_RIGHT, null );
     }
+
+    static PolyValue encodeGraphProperty( PolyValue value ) {
+        if ( value != null && !value.isNull()
+                && (value.getType() == PolyType.DECIMAL || value.isList() || value.isMap() || value.isString()) ) {
+            // Neo4j has no exact decimal or nested property representation. Use the graph type codec and escape tagged user strings.
+            return PolyString.of( CrossModelFunctions.graphPropertyStorageValue( value ) );
+        }
+        return value;
+    }
+
+
+    private static PolyValue readGraphProperty( Value value ) {
+        return value instanceof StringValue
+                ? CrossModelFunctions.readGraphPropertyStorageValue( PolyString.of( value.asString() ) )
+                : getComparableOrString( value );
+    }
+
 
     static PolyValue getComparableOrString( Value e ) {
         if ( e.isNull() ) {
@@ -249,10 +267,17 @@ public interface NeoUtil {
     }
 
     static Function1<Record, PolyValue[]> getTypesFunction( NestedPolyType types ) {
+        return getTypesFunction( types, false );
+    }
+
+
+    static Function1<Record, PolyValue[]> getTypesFunction( NestedPolyType types, boolean graph ) {
 
         List<Function1<Value, PolyValue>> functions = new ArrayList<>();
         for ( NestedPolyType type : types.asList().types ) {
-            functions.add( getTypeFunction( type, false ) );
+            functions.add( graph && type.getType() == PolyType.ANY
+                    ? value -> value.isNull() ? PolyNull.NULL : readGraphProperty( value )
+                    : getTypeFunction( type, false ) );
         }
         if ( functions.size() == 1 ) {
             // SCALAR
@@ -263,6 +288,11 @@ public interface NeoUtil {
         return o -> Pair.zip( o.fields(), functions ).stream()
                 .map( e -> e.right.apply( e.left.value() ) )
                 .toArray( PolyValue[]::new );
+    }
+
+
+    static boolean needsGraphValueDecoding( PolyType type ) {
+        return type == PolyType.ANY || type == PolyType.DECIMAL || type == PolyType.ARRAY || type == PolyType.MAP;
     }
 
     static String asParameter( long key, boolean withDollar ) {
@@ -596,10 +626,17 @@ public interface NeoUtil {
     class NeoSupportVisitor extends RexVisitorImpl<Void> {
 
         private boolean supports;
+        private final boolean graph;
 
 
         public NeoSupportVisitor() {
+            this( false );
+        }
+
+
+        public NeoSupportVisitor( boolean graph ) {
             super( true );
+            this.graph = graph;
             this.supports = true;
         }
 
@@ -612,6 +649,10 @@ public interface NeoUtil {
                 case CYPHER_SET_PROPERTY, CYPHER_SET_PROPERTIES, CYPHER_SET_LABELS, CYPHER_REMOVE_LABELS, CYPHER_REMOVE_PROPERTY -> supports = false;
                 default -> {
                     if ( NeoUtil.getOpAsNeo( call.op.getOperatorName(), call.operands, call.type, List.of() ) == null ) {
+                        supports = false;
+                    }
+                    if ( graph && call.operands.stream().anyMatch( operand -> needsGraphValueDecoding( operand.getType().getPolyType() ) )
+                            && call.op.getOperatorName() != OperatorName.IS_NULL && call.op.getOperatorName() != OperatorName.IS_NOT_NULL ) {
                         supports = false;
                     }
                 }

@@ -340,9 +340,8 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
             Map<String, Object> properties = new LinkedHashMap<>();
             element.properties.forEach( (key, value) -> {
                 if ( value != null && !value.isNull() ) {
-                    properties.put( key.value, value.isList() || value.isMap()
-                            ? value.toTypedJson()
-                            : NeoUtil.fixParameterValue( value, new NestedSingleType( value.getType() ), false ) );
+                    PolyValue encoded = NeoUtil.encodeGraphProperty( value );
+                    properties.put( key.value, NeoUtil.fixParameterValue( encoded, new NestedSingleType( encoded.getType() ), false ) );
                 }
             } );
             properties.put( "_id", element.id.value );
@@ -432,7 +431,7 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
          */
         static <T> Function1<Record, T> getter( NestedPolyType types ) {
             //noinspection unchecked
-            return (Function1<Record, T>) NeoUtil.getTypesFunction( types );
+            return (Function1<Record, T>) NeoUtil.getTypesFunction( types, true );
         }
 
 

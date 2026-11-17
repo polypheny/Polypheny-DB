@@ -24,6 +24,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.rex.RexIndexRef;
@@ -65,7 +66,10 @@ public class LaxAggregateCall {
 
 
     public static LaxAggregateCall from( AggregateCall call, AlgNode parent ) {
-        AlgDataType resultType = isExtremum( call.getAggregation() ) ? call.getType() : null;
+        AlgDataType resultType = switch ( call.getAggregation().getKind() ) {
+            case MIN, MAX, SUM, AVG -> call.getType();
+            default -> null;
+        };
         if ( parent == null ) {
             return new LaxAggregateCall( call.name, call.getAggregation(), null, call.isDistinct(), resultType );
         }
@@ -131,8 +135,17 @@ public class LaxAggregateCall {
     }
 
 
-    private static boolean isExtremum( AggFunction function ) {
-        return function.getKind() == Kind.MIN || function.getKind() == Kind.MAX;
+    public static AlgDataType inferGraphNumericType( AlgDataTypeFactory factory, Kind kind, AlgDataType operand ) {
+        if ( kind == Kind.AVG ) {
+            return factory.createTypeWithNullability( factory.createPolyType( PolyType.DOUBLE ), true );
+        }
+        PolyType sumType = switch ( operand.getPolyType() ) {
+            case TINYINT, SMALLINT, INTEGER, BIGINT, NULL -> PolyType.BIGINT;
+            case REAL, FLOAT, DOUBLE -> PolyType.DOUBLE;
+            case DECIMAL -> PolyType.DECIMAL;
+            default -> PolyType.ANY;
+        };
+        return factory.createPolyType( sumType );
     }
 
 }

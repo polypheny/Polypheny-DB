@@ -208,7 +208,7 @@ public class CypherLiteral extends CypherExpression {
                     dataType = list.get( 0 ).getType();
                 }
                 dataType = context.typeFactory.createArrayType( dataType, -1 );
-                yield context.rexBuilder.makeLiteral( PolyList.copyOf( list.stream().map( e -> ((RexLiteral) e).value ).toList() ), dataType, false );
+                yield context.rexBuilder.makeArray( dataType, list.stream().map( e -> ((RexLiteral) e).value ).toList() );
             }
             case MAP, STAR, OCTAL, HEX -> throw new UnsupportedOperationException();
             case STRING -> context.rexBuilder.makeLiteral( (String) value );

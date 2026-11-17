@@ -63,6 +63,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.util.CompositeList;
 import org.polypheny.db.util.Util;
@@ -108,7 +109,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
             return false;
         }
         Aggregate oldAggRel = (Aggregate) call.algs[0];
-        return containsAvgStddevVarCall( oldAggRel.getAggCallList() );
+        return containsReducibleCall( oldAggRel );
     }
 
 
@@ -120,13 +121,11 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
 
 
     /**
-     * Returns whether any of the aggregates are calls to AVG, STDDEV_*, VAR_*.
-     *
-     * @param aggCallList List of aggregate calls
+     * Returns whether any of the aggregates are reduced for this data model.
      */
-    private boolean containsAvgStddevVarCall( List<AggregateCall> aggCallList ) {
-        for ( AggregateCall call : aggCallList ) {
-            if ( isReducible( call.getAggregation().getKind() ) ) {
+    private boolean containsReducibleCall( Aggregate aggregate ) {
+        for ( AggregateCall call : aggregate.getAggCallList() ) {
+            if ( isReducible( call.getAggregation().getKind(), aggregate ) ) {
                 return true;
             }
         }
@@ -137,7 +136,10 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
     /**
      * Returns whether the aggregate call is a reducible function
      */
-    private boolean isReducible( final Kind kind ) {
+    private boolean isReducible( Kind kind, Aggregate aggregate ) {
+        if ( aggregate.getTraitSet().contains( ModelTrait.GRAPH ) && (kind == Kind.SUM || kind == Kind.AVG) ) {
+            return false;
+        }
         if ( Kind.AVG_AGG_FUNCTIONS.contains( kind ) || Kind.COVAR_AVG_AGG_FUNCTIONS.contains( kind ) ) {
             return true;
         }
@@ -194,7 +196,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
 
     private RexNode reduceAgg( Aggregate oldAggAlg, AggregateCall oldCall, List<AggregateCall> newCalls, Map<AggregateCall, RexNode> aggCallMapping, List<RexNode> inputExprs ) {
         final Kind kind = oldCall.getAggregation().getKind();
-        if ( isReducible( kind ) ) {
+        if ( isReducible( kind, oldAggAlg ) ) {
             final Integer y;
             final Integer x;
             switch ( kind ) {

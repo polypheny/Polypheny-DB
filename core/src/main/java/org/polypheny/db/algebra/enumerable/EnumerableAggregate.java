@@ -96,8 +96,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
             if ( aggCall.isDistinct() && !supportsGraphDistinctCount( aggCall ) ) {
                 throw new InvalidAlgException( "distinct aggregation not supported" );
             }
-            AggImplementor implementor2 = RexImpTable.INSTANCE.get( aggCall.getAggregation(), false );
-            if ( implementor2 == null ) {
+            if ( !supportsGraphNumericAggregation( aggCall ) && RexImpTable.INSTANCE.get( aggCall.getAggregation(), false ) == null ) {
                 throw new InvalidAlgException( "aggregation " + aggCall.getAggregation() + " not supported" );
             }
         }
@@ -180,6 +179,52 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
 
     private boolean supportsGraphDistinctCount( AggregateCall call ) {
         return traitSet.contains( ModelTrait.GRAPH ) && call.getAggregation().getKind() == Kind.COUNT && call.getArgList().size() == 1;
+    }
+
+
+    private boolean supportsGraphNumericAggregation( AggregateCall call ) {
+        Kind kind = call.getAggregation().getKind();
+        return traitSet.contains( ModelTrait.GRAPH ) && (kind == Kind.SUM || kind == Kind.AVG);
+    }
+
+
+    private static class GraphNumericImplementor extends StrictAggImplementor {
+
+        @Override
+        protected boolean nonDefaultOnEmptySet( AggContext info ) {
+            return false;
+        }
+
+
+        @Override
+        public List<Type> getNotNullState( AggContext info ) {
+            return List.of( CypherFunctions.NumericAggregate.class );
+        }
+
+
+        @Override
+        protected void implementNotNullReset( AggContext info, AggResetContext reset ) {
+            reset.currentBlock().add( Expressions.statement( Expressions.assign( reset.accumulator().get( 0 ), Expressions.new_( CypherFunctions.NumericAggregate.class ) ) ) );
+        }
+
+
+        @Override
+        protected void implementNotNullAdd( AggContext info, AggAddContext add ) {
+            Expression argument = add.rowTranslator().translate( add.rexArguments().get( 0 ), PolyValue.class );
+            add.currentBlock().add( Expressions.statement( Expressions.call( add.accumulator().get( 0 ), "add", argument ) ) );
+        }
+
+
+        @Override
+        protected Expression implementNotNullResult( AggContext info, AggResultContext result ) {
+            Expression state = result.accumulator().get( 0 );
+            Expression value = info.aggregation().getKind() == Kind.AVG
+                    ? Expressions.call( state, "average" )
+                    : Expressions.call( state, "sum", Expressions.constant( info.returnAlgType().getPolyType() ) );
+            // Keep the actual numeric subtype through StrictAggImplementor's result conversion.
+            return Expressions.convert_( value, info.returnType() );
+        }
+
     }
 
 
@@ -286,6 +331,8 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
             Kind kind = call.e.getAggregation().getKind();
             if ( call.e.isDistinct() ) {
                 aggs.add( new AggImpState( call.i, call.e, new GraphDistinctCountImplementor() ) );
+            } else if ( supportsGraphNumericAggregation( call.e ) ) {
+                aggs.add( new AggImpState( call.i, call.e, new GraphNumericImplementor() ) );
             } else if ( graphKeys && (kind == Kind.MIN || kind == Kind.MAX) ) {
                 aggs.add( new AggImpState( call.i, call.e, new GraphMinMaxImplementor() ) );
             } else {

@@ -59,6 +59,7 @@ import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.functions.CypherFunctions;
 import org.polypheny.db.runtime.Utilities;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyList;
@@ -241,21 +242,20 @@ public class PhysTypeImpl implements PhysType {
 
 
     @Override
-    public Pair<Expression, Expression> generateCollationKey( final List<AlgFieldCollation> collations ) {
+    public Pair<Expression, Expression> generateCollationKey( List<AlgFieldCollation> collations, boolean graph ) {
         final Expression selector;
         if ( collations.size() == 1 ) {
             AlgFieldCollation collation = collations.get( 0 );
             ParameterExpression parameter = Expressions.parameter( javaRowClass, "v" );
-            selector = Expressions.lambda(
-                    Function1.class,
-                    fieldReference( parameter, collation.getFieldIndex() ),
-                    parameter );
+            int index = collation.getFieldIndex();
+            Expression field = graph ? fieldReference( parameter, index, PolyValue.class ) : fieldReference( parameter, index );
+            selector = Expressions.lambda( Function1.class, field, parameter );
+            boolean nullsFirst = collation.nullDirection == AlgFieldCollation.NullDirection.FIRST;
+            boolean descending = collation.getDirection() == AlgFieldCollation.Direction.DESCENDING;
             return Pair.of(
                     selector,
-                    Expressions.call(
-                            BuiltInMethod.NULLS_COMPARATOR.method,
-                            Expressions.constant( collation.nullDirection == AlgFieldCollation.NullDirection.FIRST ),
-                            Expressions.constant( collation.getDirection() == AlgFieldCollation.Direction.DESCENDING ) ) );
+                    graph ? Expressions.call( CypherFunctions.class, "orderingComparator", Expressions.constant( nullsFirst ), Expressions.constant( descending ) )
+                            : Expressions.call( BuiltInMethod.NULLS_COMPARATOR.method, Expressions.constant( nullsFirst ), Expressions.constant( descending ) ) );
         }
         selector = Expressions.call( BuiltInMethod.IDENTITY_SELECTOR.method );
 
@@ -272,25 +272,28 @@ public class PhysTypeImpl implements PhysType {
         body.add( Expressions.declare( mod, parameterC, null ) );
         for ( AlgFieldCollation collation : collations ) {
             final int index = collation.getFieldIndex();
-            Expression arg0 = fieldReference( parameterV0, index );
-            Expression arg1 = fieldReference( parameterV1, index );
-            if ( Objects.requireNonNull( Primitive.flavor( fieldClass( index ) ) ) == Flavor.OBJECT ) {
-                arg0 = Types.castIfNecessary( Comparable.class, arg0 );
-                arg1 = Types.castIfNecessary( Comparable.class, arg1 );
-            }
             final boolean nullsFirst = collation.nullDirection == AlgFieldCollation.NullDirection.FIRST;
             final boolean descending = collation.getDirection() == AlgFieldCollation.Direction.DESCENDING;
-            final Method method =
-                    (fieldNullable( index )
-                            ? (nullsFirst ^ descending
-                            ? BuiltInMethod.COMPARE_NULLS_FIRST
-                            : BuiltInMethod.COMPARE_NULLS_LAST)
-                            : BuiltInMethod.COMPARE).method;
+            Expression comparison;
+            if ( graph ) {
+                comparison = Expressions.call( CypherFunctions.class, "compareForOrdering",
+                        fieldReference( parameterV0, index, PolyValue.class ), fieldReference( parameterV1, index, PolyValue.class ),
+                        Expressions.constant( nullsFirst ^ descending ) );
+            } else {
+                Expression arg0 = fieldReference( parameterV0, index );
+                Expression arg1 = fieldReference( parameterV1, index );
+                if ( Objects.requireNonNull( Primitive.flavor( fieldClass( index ) ) ) == Flavor.OBJECT ) {
+                    arg0 = Types.castIfNecessary( Comparable.class, arg0 );
+                    arg1 = Types.castIfNecessary( Comparable.class, arg1 );
+                }
+                Method method = (fieldNullable( index )
+                        ? (nullsFirst ^ descending ? BuiltInMethod.COMPARE_NULLS_FIRST : BuiltInMethod.COMPARE_NULLS_LAST)
+                        : BuiltInMethod.COMPARE).method;
+                comparison = Expressions.call( method.getDeclaringClass(), method.getName(), arg0, arg1 );
+            }
             body.add(
                     Expressions.statement(
-                            Expressions.assign(
-                                    parameterC,
-                                    Expressions.call( method.getDeclaringClass(), method.getName(), arg0, arg1 ) ) ) );
+                            Expressions.assign( parameterC, comparison ) ) );
             body.add(
                     EnumUtils.ifThen(
                             Expressions.notEqual( parameterC, Expressions.constant( 0 ) ),
