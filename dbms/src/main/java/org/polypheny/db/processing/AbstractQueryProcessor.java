@@ -84,6 +84,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationPolyAlg.PlanType;
 import org.polypheny.db.interpreter.BindableConvention;
@@ -462,7 +463,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getProcessingDuration().start( "Plan Caching" );
         }
         for ( Plan plan : plans ) {
-            if ( plan.cacheKey() != null && this.isQueryPlanCachingActive( statement, plan.proposedRoutingPlan().getRoutedRoot() ) ) {
+            if ( plan.optimalNode() == null && plan.cacheKey() != null
+                    && this.isQueryPlanCachingActive( statement, plan.proposedRoutingPlan().getRoutedRoot() ) ) {
                 AlgNode cachedElem = QueryPlanCache.INSTANCE.getIfPresent( plan.cacheKey() );
                 if ( cachedElem != null ) {
                     plan.optimalNode( cachedElem );
@@ -1189,9 +1191,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private PlanKey createCacheKey( AlgRoot root, AlgDataType parameterRowType, Convention resultConvention ) {
+        Snapshot snapshot = root.alg.getCluster().getSnapshot();
+        // Routing also reads the live catalog. Skip a plan built across a catalog change.
+        if ( snapshot == null || snapshot != Catalog.snapshot() ) {
+            return null;
+        }
         return PlanKeys.forTree( root.alg )
                 .flatMap( tree -> PlanKey.of( tree, root.kind, root.validatedRowType, root.fields, root.collation,
-                        parameterRowType, resultConvention.getName(), root.alg.getCluster().getSnapshot().id() ) )
+                        parameterRowType, resultConvention.getName(), snapshot ) )
                 .orElse( null );
     }
 

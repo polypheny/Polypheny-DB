@@ -31,13 +31,18 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.SpecialOperator;
 import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.snapshot.MockSnapshot;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.VectorType;
 import org.polypheny.db.type.entity.PolyBinary;
+import org.polypheny.db.type.entity.PolySymbol;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
@@ -79,6 +84,49 @@ class PlanKeyTest {
         assertNotEquals( parameter, key( rex.makeDynamicParam( text, 1 ) ) );
         assertNotEquals( parameter, key( rex.makeDynamicParam( types.createPolyType( PolyType.VARCHAR, 40 ), 0 ) ) );
         assertNotEquals( parameter, key( rex.makeDynamicParam( types.createTypeWithNullability( text, true ), 0 ) ) );
+    }
+
+
+    @Test
+    void nameReferenceKeysPreserveThePathUsedByNativeAdapters() {
+        AlgDataType type = types.createPolyType( PolyType.INTEGER );
+        RexNameRef direct = RexNameRef.create( "a.b", null, type );
+        RexNameRef withEmptySegment = RexNameRef.create( "a..b", null, type );
+
+        assertEquals( direct.names, withEmptySegment.names );
+        assertNotEquals( key( direct ), key( withEmptySegment ) );
+    }
+
+
+    @Test
+    void vectorKeysSnapshotTheInheritedArrayDimension() {
+        AlgDataType elementType = types.createPolyType( PolyType.FLOAT );
+        VectorType vector = new VectorType( elementType, false, 8, VectorType.ElementType.FLOAT );
+        PlanKey original = key( vector );
+
+        vector.setDimension( 2 );
+
+        assertEquals( original, key( new VectorType( elementType, false, 8, VectorType.ElementType.FLOAT ) ) );
+        assertNotEquals( original, key( vector ) );
+    }
+
+
+    @Test
+    void symbolKeysDistinguishObjectValuesAndRejectUnsupportedValues() {
+        assertEquals( key( PolySymbol.of( "a" ) ), key( PolySymbol.of( "a" ) ) );
+        assertNotEquals( key( PolySymbol.of( "a" ) ), key( PolySymbol.of( "b" ) ) );
+        assertTrue( PlanKey.of( PolySymbol.of( new Object() ) ).isEmpty() );
+    }
+
+
+    @Test
+    void differentCatalogSnapshotsDoNotShareKeysWhenAnIdIsReused() {
+        Snapshot original = new ReusedIdSnapshot();
+        Snapshot replacement = new ReusedIdSnapshot();
+
+        assertEquals( original.id(), replacement.id() );
+        assertEquals( key( original ), key( original ) );
+        assertNotEquals( key( original ), key( replacement ) );
     }
 
 
@@ -142,6 +190,16 @@ class PlanKeyTest {
 
     private static PlanKey key( Object component ) {
         return PlanKey.of( component ).orElseThrow();
+    }
+
+
+    private static final class ReusedIdSnapshot extends MockSnapshot {
+
+        @Override
+        public long id() {
+            return 1;
+        }
+
     }
 
 }
