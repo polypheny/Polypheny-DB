@@ -305,7 +305,7 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( LogicalConstraintEnforcer enforcer ) {
-        hashBasis.add( LogicalConstraintEnforcer.class.getSimpleName() + "#" + enforcer.algCompareString() );
+        hashBasis.add( LogicalConstraintEnforcer.class.getSimpleName() );
         return super.visit( enforcer );
     }
 

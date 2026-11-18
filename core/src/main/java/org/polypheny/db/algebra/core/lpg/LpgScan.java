@@ -39,13 +39,6 @@ public abstract class LpgScan<E extends Entity> extends Scan<E> implements LpgAl
 
 
     @Override
-    public String algCompareString() {
-        return getClass().getSimpleName() + "$"
-                + entity.id + "&";
-    }
-
-
-    @Override
     public AlgWriter explainTerms( AlgWriter pw ) {
         return super.explainTerms( pw )
                 .item( "id", entity.id )

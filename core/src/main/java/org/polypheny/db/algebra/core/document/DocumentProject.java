@@ -68,12 +68,6 @@ public abstract class DocumentProject extends SingleAlg implements DocumentAlg {
 
 
     @Override
-    public String algCompareString() {
-        return "$" + getClass().getSimpleName() + "$" + includes.hashCode() + "$" + excludes.hashCode() + getInput().algCompareString();
-    }
-
-
-    @Override
     public DocType getDocType() {
         return DocType.PROJECT;
     }

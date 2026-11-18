@@ -310,12 +310,6 @@ public class VolcanoPlannerTraitTest extends SqlLanguageDependent {
             return super.explainTerms( pw ).item( "label", label );
         }
 
-
-        @Override
-        public String algCompareString() {
-            return this.getClass().getSimpleName() + "$" + label + "&";
-        }
-
     }
 
 
@@ -377,12 +371,6 @@ public class VolcanoPlannerTraitTest extends SqlLanguageDependent {
         @Override
         protected AlgDataType deriveRowType() {
             return getInput().getTupleType();
-        }
-
-
-        @Override
-        public String algCompareString() {
-            return this.getClass().getSimpleName() + "$" + input.algCompareString() + "&";
         }
 
     }

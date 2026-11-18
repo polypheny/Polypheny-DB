@@ -79,14 +79,6 @@ public class Collect extends SingleAlg {
     }
 
 
-    @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                input.algCompareString() + "$" +
-                (fieldName != null ? fieldName : "") + "&";
-    }
-
-
     public AlgNode copy( AlgTraitSet traitSet, AlgNode input ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
         return new Collect( getCluster(), traitSet, input, fieldName );

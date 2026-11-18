@@ -405,12 +405,6 @@ public interface AlgNode extends AlgOptNode, Cloneable {
 
 
     /**
-     * Returns the legacy plan signature used in monitoring and routing analysis.
-     * Execution caches use the structural key from {@link PlanKeys}.
-     */
-    String algCompareString();
-
-    /**
      * For optimized trees. Returns whether the involved operators support implementation caching. Default is true.
      * Only override if you need to set this to false.
      */
