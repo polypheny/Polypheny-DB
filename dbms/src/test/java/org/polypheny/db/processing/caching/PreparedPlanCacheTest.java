@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import org.junit.jupiter.api.BeforeAll;
@@ -80,11 +81,19 @@ class PreparedPlanCacheTest {
 
 
     private static int findId( Connection connection, String label ) throws SQLException {
-        try ( PreparedStatement select = connection.prepareStatement( "SELECT id FROM prepared_plan_cache_test WHERE label = ?" ) ) {
+        String sql = "SELECT id AS duplicated, label AS duplicated FROM prepared_plan_cache_test WHERE label = ?";
+        try ( PreparedStatement select = connection.prepareStatement( sql ) ) {
             select.setString( 1, label );
             try ( ResultSet rows = select.executeQuery() ) {
+                ResultSetMetaData metadata = rows.getMetaData();
+                assertEquals( 2, metadata.getColumnCount() );
+                assertEquals( "duplicated", metadata.getColumnName( 1 ) );
+                assertEquals( "duplicated", metadata.getColumnLabel( 1 ) );
+                assertEquals( "duplicated0", metadata.getColumnName( 2 ) );
+                assertEquals( "duplicated0", metadata.getColumnLabel( 2 ) );
                 assertTrue( rows.next() );
                 int id = rows.getInt( 1 );
+                assertEquals( label, rows.getString( 2 ) );
                 assertFalse( rows.next() );
                 return id;
             }
