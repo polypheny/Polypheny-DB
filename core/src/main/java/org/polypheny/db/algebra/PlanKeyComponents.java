@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -94,11 +95,23 @@ import org.polypheny.db.util.Pair;
 
 final class PlanKeyComponents {
 
+    // Cache eligibility must not depend on allowing recursive snapshots to exhaust the stack.
+    private static final int MAX_COMPONENT_DEPTH = 128;
+
+    private final Map<Object, Object> snapshots = new IdentityHashMap<>();
+    private int depth;
+
+
     private PlanKeyComponents() {
     }
 
 
     static List<Object> snapshot( Collection<?> components ) {
+        return new PlanKeyComponents().snapshotComponents( components );
+    }
+
+
+    private List<Object> snapshotComponents( Collection<?> components ) {
         List<Object> snapshot = new ArrayList<>( components.size() );
         for ( Object component : components ) {
             Object value = snapshot( component );
@@ -111,7 +124,7 @@ final class PlanKeyComponents {
     }
 
 
-    private static Object snapshot( Object value ) {
+    private Object snapshot( Object value ) {
         if ( value == null ) {
             return NullComponent.INSTANCE;
         }
@@ -128,6 +141,24 @@ final class PlanKeyComponents {
         if ( value instanceof Float number ) {
             return rawFloat( number );
         }
+        if ( depth == MAX_COMPONENT_DEPTH ) {
+            return null;
+        }
+        Object existing = snapshots.putIfAbsent( value, InProgress.INSTANCE );
+        if ( existing != null ) {
+            return existing == InProgress.INSTANCE ? null : existing;
+        }
+        depth++;
+        Object component = snapshotCompound( value, type );
+        depth--;
+        if ( component != null ) {
+            snapshots.put( value, component );
+        }
+        return component;
+    }
+
+
+    private Object snapshotCompound( Object value, Class<?> type ) {
         if ( value instanceof RexNode rex ) {
             return expression( rex );
         }
@@ -149,7 +180,7 @@ final class PlanKeyComponents {
             return traitSet( traits );
         }
         if ( value instanceof List<?> list ) {
-            return snapshot( list );
+            return snapshotComponent( List.class, list );
         }
         if ( value instanceof Map<?, ?> map ) {
             // Some operators use the entry iteration order to construct the output row.
@@ -168,7 +199,7 @@ final class PlanKeyComponents {
     }
 
 
-    private static Object traitSet( AlgTraitSet traits ) {
+    private Object traitSet( AlgTraitSet traits ) {
         List<Object> slots = new ArrayList<>( traits.size() );
         for ( int i = 0; i < traits.size(); i++ ) {
             AlgTrait<?> trait = traits.getTrait( i );
@@ -178,7 +209,7 @@ final class PlanKeyComponents {
     }
 
 
-    private static Object expression( RexNode rex ) {
+    private Object expression( RexNode rex ) {
         Class<?> type = rex.getClass();
         if ( type == RexLiteral.class && rex instanceof RexLiteral literal ) {
             return tagged( type, literal.getType(), literal.polyType, literal.value );
@@ -212,7 +243,7 @@ final class PlanKeyComponents {
     }
 
 
-    private static Component cypherMatch( RexCall call ) {
+    private Component cypherMatch( RexCall call ) {
         Operator operator = call.getOperator();
         OperatorName name = operator.getOperatorName();
         if ( (name != OperatorName.CYPHER_NODE_MATCH && name != OperatorName.CYPHER_PATH_MATCH)
@@ -284,7 +315,7 @@ final class PlanKeyComponents {
     }
 
 
-    private static Object dataType( AlgDataType dataType ) {
+    private Object dataType( AlgDataType dataType ) {
         Class<?> type = dataType.getClass();
         if ( type == BasicPolyType.class ) {
             return tagged( type, dataType.getPolyType(), dataType.isNullable(), dataType.getRawPrecision(), dataType.getPrecision(),
@@ -319,7 +350,7 @@ final class PlanKeyComponents {
     }
 
 
-    private static Object metadata( Object value ) {
+    private Object metadata( Object value ) {
         Class<?> type = value.getClass();
         if ( type == AlgDataTypeFieldImpl.class && value instanceof AlgDataTypeField field ) {
             return tagged( type, field.getId(), field.getIndex(), field.getName(), field.getPhysicalName(), field.getType(), field.isDynamicStar() );
@@ -356,7 +387,7 @@ final class PlanKeyComponents {
     }
 
 
-    private static Object polyValue( PolyValue value ) {
+    private Object polyValue( PolyValue value ) {
         Class<?> type = value.getClass();
         if ( type == PolyNull.class ) {
             return tagged( type );
@@ -407,7 +438,7 @@ final class PlanKeyComponents {
     }
 
 
-    private static Object graphValue( PolyValue value ) {
+    private Object graphValue( PolyValue value ) {
         Class<?> type = value.getClass();
         if ( type == PolyNode.class && value instanceof PolyNode node ) {
             return tagged( type, node.id, node.variableName, node.labels, node.properties, node.isVariable() );
@@ -429,8 +460,13 @@ final class PlanKeyComponents {
     }
 
 
-    private static Component tagged( Class<?> type, Object... components ) {
-        List<Object> snapshot = snapshot( Arrays.asList( components ) );
+    private Component tagged( Class<?> type, Object... components ) {
+        return snapshotComponent( type, Arrays.asList( components ) );
+    }
+
+
+    private Component snapshotComponent( Class<?> type, Collection<?> components ) {
+        List<Object> snapshot = snapshotComponents( components );
         return snapshot == null ? null : new Component( type, snapshot );
     }
 
@@ -450,7 +486,24 @@ final class PlanKeyComponents {
     }
 
 
-    private record Component( Class<?> type, List<Object> attributes ) {
+    private enum InProgress {
+        INSTANCE
+    }
+
+
+    record Component( Class<?> type, List<Object> attributes, int hash ) {
+
+        Component( Class<?> type, List<Object> attributes ) {
+            // Cache child hashes before a shared value can be referenced by another component.
+            this( type, attributes, 31 * type.hashCode() + attributes.hashCode() );
+        }
+
+
+        @Override
+        public int hashCode() {
+            return hash;
+        }
+
     }
 
 

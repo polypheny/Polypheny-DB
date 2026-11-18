@@ -22,7 +22,9 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.TestHelper;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.PlanKey;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -31,9 +33,8 @@ import org.polypheny.db.prepare.Prepare.PreparedResult;
 import org.polypheny.db.processing.caching.ImplementationCache.CachedImplementation;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.type.PolyType;
-import org.polypheny.db.util.PolyphenyHomeDirManager;
-import org.polypheny.db.util.RunMode;
 
+@Tag("adapter")
 class StructuralPlanCacheTest {
 
     private final AlgDataTypeFactory types = AlgDataTypeFactory.DEFAULT;
@@ -43,10 +44,8 @@ class StructuralPlanCacheTest {
 
 
     @BeforeAll
-    static void initializeTestHome() {
-        if ( PolyphenyHomeDirManager.getMode() == null ) {
-            PolyphenyHomeDirManager.setModeAndGetInstance( RunMode.TEST );
-        }
+    static void startDatabase() {
+        TestHelper.getInstance();
     }
 
 

@@ -54,11 +54,6 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
     }
 
 
-    public ProposedRoutingPlanImpl( RoutingContext context, RoutedAlgBuilder routedAlgBuilder, AlgRoot logicalRoot, String queryClass, CachedProposedRoutingPlan cachedPlan ) {
-        this( context, routedAlgBuilder, logicalRoot, queryClass, cachedPlan.getRouter() );
-    }
-
-
     public ProposedRoutingPlanImpl( AlgNode routedConditional, AlgRoot logicalRoot, String queryClass ) {
         this.queryClass = queryClass;
         this.routedRoot = new AlgRoot( routedConditional, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );

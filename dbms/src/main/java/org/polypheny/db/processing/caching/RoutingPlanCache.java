@@ -21,12 +21,12 @@ import com.google.common.cache.CacheBuilder;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.PlanKey;
 import org.polypheny.db.algebra.PlanKeys;
@@ -53,7 +53,7 @@ import org.polypheny.db.routing.dto.CachedProposedRoutingPlan;
 public class RoutingPlanCache {
 
     public static final RoutingPlanCache INSTANCE = new RoutingPlanCache();
-    private final Cache<PlanKey, List<CachedProposedRoutingPlan>> planCache;
+    private final Cache<PlanKey, CachedProposedRoutingPlan> planCache;
 
     private final AtomicLong hitsCounter = new AtomicLong(); // Number of requests for which the cache contained the value
     private final AtomicLong missesCounter = new AtomicLong(); // Number of requests when the cache didn't contain the value
@@ -84,25 +84,19 @@ public class RoutingPlanCache {
     }
 
 
-    public boolean isKeyPresent( PlanKey key ) {
-        return planCache.getIfPresent( key ) != null;
-    }
-
-
-    public List<CachedProposedRoutingPlan> getIfPresent( PlanKey key ) {
-        List<CachedProposedRoutingPlan> routingPlans = planCache.getIfPresent( key );
-        if ( routingPlans == null ) {
+    public @Nullable CachedProposedRoutingPlan getIfPresent( PlanKey key ) {
+        CachedProposedRoutingPlan plan = planCache.getIfPresent( key );
+        if ( plan == null ) {
             missesCounter.incrementAndGet();
         } else {
             hitsCounter.incrementAndGet();
         }
-
-        return routingPlans != null ? routingPlans : Collections.emptyList();
+        return plan;
     }
 
 
-    public void put( PlanKey key, List<CachedProposedRoutingPlan> routingPlans ) {
-        planCache.put( key, List.copyOf( routingPlans ) );
+    public void put( PlanKey key, CachedProposedRoutingPlan plan ) {
+        planCache.asMap().putIfAbsent( key, plan );
     }
 
 
@@ -225,6 +219,16 @@ public class RoutingPlanCache {
 
     public long getSize() {
         return planCache.size();
+    }
+
+
+    long getHitCount() {
+        return hitsCounter.get();
+    }
+
+
+    long getMissCount() {
+        return missesCounter.get();
     }
 
 }

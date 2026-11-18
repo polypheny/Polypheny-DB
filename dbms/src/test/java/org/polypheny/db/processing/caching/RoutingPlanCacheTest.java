@@ -18,6 +18,7 @@ package org.polypheny.db.processing.caching;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -25,7 +26,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.TestHelper;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -35,26 +38,23 @@ import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.routing.dto.CachedProposedRoutingPlan;
-import org.polypheny.db.routing.dto.ProposedRoutingPlanImpl;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.snapshot.MockSnapshot;
-import org.polypheny.db.util.PolyphenyHomeDirManager;
-import org.polypheny.db.util.RunMode;
 
+@Tag("adapter")
 class RoutingPlanCacheTest {
 
     @BeforeAll
-    static void initializeTestHome() {
-        if ( PolyphenyHomeDirManager.getMode() == null ) {
-            PolyphenyHomeDirManager.setModeAndGetInstance( RunMode.TEST );
-        }
+    static void startDatabase() {
+        TestHelper.getInstance();
     }
 
 
@@ -70,13 +70,13 @@ class RoutingPlanCacheTest {
         assertNotEquals( first, second );
 
         RoutingPlanCache cache = new RoutingPlanCache();
-        CachedProposedRoutingPlan firstPlan = new CachedProposedRoutingPlan( new ProposedRoutingPlanImpl( firstRoot, "first" ), null );
-        CachedProposedRoutingPlan secondPlan = new CachedProposedRoutingPlan( new ProposedRoutingPlanImpl( secondRoot, "second" ), null );
-        cache.put( first, List.of( firstPlan ) );
-        assertTrue( cache.getIfPresent( second ).isEmpty() );
-        cache.put( second, List.of( secondPlan ) );
-        assertEquals( List.of( firstPlan ), cache.getIfPresent( equivalentFirst ) );
-        assertEquals( List.of( secondPlan ), cache.getIfPresent( second ) );
+        CachedProposedRoutingPlan firstPlan = new CachedProposedRoutingPlan( new AllocationTable( 1, 2, 3, 4, 5, 6 ), "first" );
+        CachedProposedRoutingPlan secondPlan = new CachedProposedRoutingPlan( new AllocationTable( 8, 9, 10, 11, 12, 13 ), "second" );
+        cache.put( first, firstPlan );
+        assertNull( cache.getIfPresent( second ) );
+        cache.put( second, secondPlan );
+        assertEquals( firstPlan, cache.getIfPresent( equivalentFirst ) );
+        assertEquals( secondPlan, cache.getIfPresent( second ) );
     }
 
 
