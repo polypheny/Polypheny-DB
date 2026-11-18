@@ -20,8 +20,6 @@ import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Value;
-import org.jetbrains.annotations.Nullable;
-import org.polypheny.db.algebra.PlanKey;
 import org.polypheny.db.routing.ProposedRoutingPlan;
 
 @AllArgsConstructor
@@ -30,8 +28,6 @@ import org.polypheny.db.routing.ProposedRoutingPlan;
 public class ProposedImplementations {
 
     public List<Plan> plans;
-    @Nullable
-    public PlanKey routingCacheKey;
 
 
     public List<ProposedRoutingPlan> getRoutingPlans() {

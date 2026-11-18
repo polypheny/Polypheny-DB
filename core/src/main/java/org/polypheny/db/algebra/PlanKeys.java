@@ -89,6 +89,8 @@ import org.polypheny.db.rex.RexProgram;
 /** Structural cache identities for algebra trees before physical optimization. */
 public final class PlanKeys {
 
+    private static final int MAX_PLAN_DEPTH = 256;
+
     // Use exact classes so a new subclass cannot accidentally inherit an incomplete key.
     private static final Map<Class<?>, Function<AlgNode, List<?>>> ATTRIBUTES = Map.ofEntries(
             attributes( LogicalRelScan.class, node -> List.of( entity( node.entity ) ) ),
@@ -151,14 +153,18 @@ public final class PlanKeys {
 
     /** A plan with an operator or attribute we cannot identify structurally bypasses the caches. */
     public static Optional<PlanKey> forTree( AlgNode node ) {
-        return forNode( node, new IdentityHashMap<>() );
+        return forNode( node, new IdentityHashMap<>(), 0 );
     }
 
 
-    private static Optional<PlanKey> forNode( AlgNode node, Map<AlgNode, PlanKey> keys ) {
-        PlanKey present = keys.get( node );
+    private static Optional<PlanKey> forNode( AlgNode node, Map<AlgNode, Optional<PlanKey>> keys, int depth ) {
+        if ( depth == MAX_PLAN_DEPTH ) {
+            return Optional.empty();
+        }
+        // Treat a back edge to a node currently being visited as an uncacheable plan.
+        Optional<PlanKey> present = keys.putIfAbsent( node, Optional.empty() );
         if ( present != null ) {
-            return Optional.of( present );
+            return present;
         }
         Function<AlgNode, List<?>> attributes = ATTRIBUTES.get( node.getClass() );
         if ( attributes == null ) {
@@ -167,14 +173,14 @@ public final class PlanKeys {
         List<AlgNode> children = node.getInputs();
         List<PlanKey> inputs = new ArrayList<>( children.size() );
         for ( AlgNode input : children ) {
-            Optional<PlanKey> key = forNode( input, keys );
+            Optional<PlanKey> key = forNode( input, keys, depth + 1 );
             if ( key.isEmpty() ) {
                 return Optional.empty();
             }
             inputs.add( key.orElseThrow() );
         }
         Optional<PlanKey> key = PlanKey.of( node.getClass(), node.getTraitSet(), node.getTupleType(), attributes.apply( node ), inputs );
-        key.ifPresent( value -> keys.put( node, value ) );
+        keys.put( node, key );
         return key;
     }
 

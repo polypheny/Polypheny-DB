@@ -18,12 +18,15 @@ package org.polypheny.db.monitoring.events;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.PlanKeys;
 import org.polypheny.db.algebra.enumerable.EnumerableLimit;
@@ -32,6 +35,8 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
+import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.routing.LogicalQueryInformation;
 
 class PlanFingerprintTest {
@@ -58,6 +63,44 @@ class PlanFingerprintTest {
 
 
     @Test
+    void fingerprintRetainsTheVersionOneEncoding() {
+        AlgCluster cluster = mock( AlgCluster.class );
+        AlgNode leaf = new ShapeNode( cluster, List.of() );
+        AlgNode left = new ShapeNode( cluster, List.of( leaf ) );
+        AlgNode root = new ShapeNode( cluster, List.of( leaf, left ) );
+
+        assertEquals( "shape-v1:7549871a97f8fb8825f5b2bda61e8196c7b177bd2cdd3c5e669a35ac864623ac", PlanFingerprint.of( root ) );
+    }
+
+
+    @Test
+    void fingerprintsDeepPlansWithSharedInputs() {
+        AlgCluster cluster = mock( AlgCluster.class );
+        AlgNode leaf = new ShapeNode( cluster, List.of() );
+        AlgNode plan = leaf;
+        for ( int level = 0; level < 8192; level++ ) {
+            plan = new ShapeNode( cluster, List.of( plan, leaf ) );
+        }
+
+        assertTrue( PlanFingerprint.of( plan ).matches( "shape-v1:[0-9a-f]{64}" ) );
+    }
+
+
+    @Test
+    void omitsFingerprintsForCyclicOrIncompletePlans() {
+        AlgNode cyclic = mock( AlgNode.class );
+        when( cyclic.getInputs() ).thenReturn( List.of( cyclic ) );
+        AlgCluster cluster = mock( AlgCluster.class );
+        AlgNode missingInputs = new ShapeNode( cluster, null );
+        AlgNode missingChild = new ShapeNode( cluster, Collections.singletonList( null ) );
+
+        assertNull( PlanFingerprint.of( cyclic ) );
+        assertNull( PlanFingerprint.of( missingInputs ) );
+        assertNull( PlanFingerprint.of( missingChild ) );
+    }
+
+
+    @Test
     void monitoringRetainsTheFingerprintOfAnUncacheablePlan() {
         AlgNode plan = node( EnumerableLimit.class, node( LogicalRelScan.class ) );
         assertTrue( PlanKeys.forTree( plan ).isEmpty() );
@@ -78,6 +121,25 @@ class PlanFingerprintTest {
         AlgNode node = mock( operator );
         when( node.getInputs() ).thenReturn( List.of( inputs ) );
         return node;
+    }
+
+
+    private static final class ShapeNode extends AbstractAlgNode {
+
+        private final List<AlgNode> inputs;
+
+
+        private ShapeNode( AlgCluster cluster, List<AlgNode> inputs ) {
+            super( cluster, AlgTraitSet.createEmpty() );
+            this.inputs = inputs;
+        }
+
+
+        @Override
+        public List<AlgNode> getInputs() {
+            return inputs;
+        }
+
     }
 
 }

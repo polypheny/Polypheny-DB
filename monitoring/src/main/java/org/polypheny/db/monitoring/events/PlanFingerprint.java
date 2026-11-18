@@ -19,9 +19,14 @@ package org.polypheny.db.monitoring.events;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
+import java.util.ArrayDeque;
+import java.util.Collections;
+import java.util.Deque;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nullable;
 import org.polypheny.db.algebra.AlgNode;
 
 /**
@@ -34,29 +39,68 @@ public final class PlanFingerprint {
     }
 
 
+    /** Returns the fingerprint, or {@code null} if the input graph has a cycle or missing nodes. */
+    @Nullable
     public static String of( AlgNode plan ) {
-        return "shape-v1:" + fingerprint( plan, new IdentityHashMap<>() );
+        if ( plan == null ) {
+            return null;
+        }
+
+        // A null value marks a node on the current path. Non-null values can be reused for shared inputs.
+        Map<AlgNode, HashCode> fingerprints = new IdentityHashMap<>();
+        Deque<Frame> pending = new ArrayDeque<>();
+        fingerprints.put( plan, null );
+        pending.push( new Frame( plan ) );
+        while ( !pending.isEmpty() ) {
+            Frame frame = pending.peek();
+            if ( frame.inputs == null ) {
+                return null;
+            }
+            if ( !frame.remaining.hasNext() ) {
+                fingerprints.put( frame.node, fingerprint( frame, fingerprints ) );
+                pending.pop();
+                continue;
+            }
+
+            AlgNode input = frame.remaining.next();
+            if ( fingerprints.get( input ) == null ) {
+                if ( input == null || fingerprints.containsKey( input ) ) {
+                    return null;
+                }
+                fingerprints.put( input, null );
+                pending.push( new Frame( input ) );
+            }
+        }
+        return "shape-v1:" + fingerprints.get( plan );
     }
 
 
-    private static HashCode fingerprint( AlgNode node, Map<AlgNode, HashCode> fingerprints ) {
-        HashCode known = fingerprints.get( node );
-        if ( known != null ) {
-            return known;
-        }
-
-        String operator = node.getClass().getName();
-        List<AlgNode> inputs = node.getInputs();
+    private static HashCode fingerprint( Frame frame, Map<AlgNode, HashCode> fingerprints ) {
+        String operator = frame.node.getClass().getName();
         Hasher hasher = Hashing.sha256().newHasher()
                 .putInt( operator.length() )
                 .putUnencodedChars( operator )
-                .putInt( inputs.size() );
-        for ( AlgNode input : inputs ) {
-            hasher.putBytes( fingerprint( input, fingerprints ).asBytes() );
+                .putInt( frame.inputs.size() );
+        for ( AlgNode input : frame.inputs ) {
+            hasher.putBytes( fingerprints.get( input ).asBytes() );
         }
-        HashCode fingerprint = hasher.hash();
-        fingerprints.put( node, fingerprint );
-        return fingerprint;
+        return hasher.hash();
+    }
+
+
+    private static final class Frame {
+
+        private final AlgNode node;
+        private final List<AlgNode> inputs;
+        private final Iterator<AlgNode> remaining;
+
+
+        private Frame( AlgNode node ) {
+            this.node = node;
+            this.inputs = node.getInputs();
+            this.remaining = inputs == null ? Collections.emptyIterator() : inputs.iterator();
+        }
+
     }
 
 }

@@ -28,12 +28,14 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.algebra.AlgFieldCollation.Direction;
 import org.polypheny.db.algebra.AlgFieldCollation.NullDirection;
+import org.polypheny.db.algebra.logical.common.LogicalContextSwitcher;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -147,6 +149,37 @@ class PlanKeysTest {
 
         assertTrue( PlanKeys.forTree( unsupported ).isEmpty() );
         assertTrue( PlanKeys.forTree( LogicalLpgProject.create( unsupported, projects, names ) ).isEmpty() );
+    }
+
+
+    @Test
+    void cyclicPlanBypassesStructuralKeyCreation() {
+        AlgNode cyclic = parameterProjection( cluster( ModelTrait.RELATIONAL ), 0 );
+        cyclic.replaceInput( 0, cyclic );
+
+        assertTrue( PlanKeys.forTree( cyclic ).isEmpty() );
+    }
+
+
+    @Test
+    void deeplyNestedPlanBypassesStructuralKeyCreation() {
+        AlgNode nested = parameterProjection( cluster( ModelTrait.RELATIONAL ), 0 );
+        for ( int i = 0; i < 4096; i++ ) {
+            nested = new LogicalContextSwitcher( nested );
+        }
+
+        assertTrue( PlanKeys.forTree( nested ).isEmpty() );
+    }
+
+
+    @Test
+    void sharingAcyclicInputsDoesNotChangeThePlanKey() {
+        AlgCluster cluster = cluster( ModelTrait.RELATIONAL );
+        AlgNode shared = parameterProjection( cluster, 0 );
+        AlgNode sharedInputs = LogicalRelUnion.create( List.of( shared, shared ), true );
+        AlgNode separateInputs = LogicalRelUnion.create( List.of( parameterProjection( cluster, 0 ), parameterProjection( cluster, 0 ) ), true );
+
+        assertEquals( key( sharedInputs ), key( separateInputs ) );
     }
 
 
