@@ -18,8 +18,11 @@ package org.polypheny.db.algebra;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +51,7 @@ import org.polypheny.db.type.VectorType;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolySymbol;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.GraphObject;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyEdge;
@@ -245,6 +249,62 @@ class PlanKeyTest {
     @Test
     void arbitraryComponentsBypassStructuralKeyCreation() {
         assertTrue( PlanKey.of( List.of( "supported", new Object() ) ).isEmpty() );
+    }
+
+
+    @Test
+    void cyclicComponentsBypassStructuralKeyCreation() {
+        List<Object> list = new ArrayList<>();
+        list.add( List.of( list ) );
+        assertTrue( PlanKey.of( list ).isEmpty() );
+
+        PolyDocument document = new PolyDocument( new HashMap<>() );
+        document.put( PolyString.of( "self" ), document );
+        assertTrue( PlanKey.of( document ).isEmpty() );
+    }
+
+
+    @Test
+    void sharingAcyclicComponentsDoesNotChangeTheirKeys() {
+        List<String> shared = new ArrayList<>( List.of( "value" ) );
+        assertEquals( key( List.of( shared, shared ) ), key( List.of( List.of( "value" ), List.of( "value" ) ) ) );
+    }
+
+
+    @Test
+    void deeplyNestedComponentsBypassStructuralKeyCreation() {
+        Object nested = "value";
+        for ( int i = 0; i < 4096; i++ ) {
+            nested = List.of( nested );
+        }
+
+        assertTrue( PlanKey.of( nested ).isEmpty() );
+    }
+
+
+    @Test
+    void sharedValueAndPlanKeysCompareWithoutExpandingTheSameSubtreeRepeatedly() {
+        assertTimeoutPreemptively( Duration.ofSeconds( 5 ), () -> {
+            PlanKey original = sharedKey( "Aa" );
+            PlanKey collision = sharedKey( "BB" );
+
+            assertEquals( original, sharedKey( "Aa" ) );
+            assertEquals( original.hashCode(), collision.hashCode() );
+            assertNotEquals( original, collision );
+        } );
+    }
+
+
+    private static PlanKey sharedKey( String literal ) {
+        Object compound = literal;
+        for ( int depth = 0; depth < 48; depth++ ) {
+            compound = List.of( compound, compound );
+        }
+        PlanKey plan = key( compound );
+        for ( int depth = 0; depth < 48; depth++ ) {
+            plan = key( List.of( plan, plan ) );
+        }
+        return plan;
     }
 
 

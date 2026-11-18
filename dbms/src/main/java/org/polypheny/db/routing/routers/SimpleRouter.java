@@ -23,6 +23,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.routing.ColumnDistribution;
 import org.polypheny.db.routing.Router;
@@ -60,12 +61,14 @@ public class SimpleRouter extends AbstractDqlRouter {
     protected List<RoutedAlgBuilder> handleNonePartitioning( AlgNode node, LogicalTable table, List<RoutedAlgBuilder> builders, RoutingContext context ) {
         // Get placements and convert into placement distribution
         List<AllocationEntity> entities = Catalog.snapshot().alloc().getFromLogical( table.id );
+        AllocationEntity allocation = entities.get( 0 );
 
-        List<Long> partitionId = List.of( entities.get( 0 ).partitionId );
+        List<Long> partitionId = List.of( allocation.partitionId );
         context.fieldDistribution = new ColumnDistribution( table.id, table.getColumnIds(), partitionId, partitionId, List.of(), context.getSnapshot() );
+        context.directScanAllocation = allocation.unwrap( AllocationTable.class ).orElse( null );
 
         // Only one builder available
-        super.handleRelScan( builders.get( 0 ), context.getStatement(), entities.get( 0 ) );
+        super.handleRelScan( builders.get( 0 ), context.getStatement(), allocation );
 
         return builders;
     }
