@@ -21,10 +21,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.polypheny.db.TestHelper;
@@ -79,6 +81,24 @@ class PreparedPlanCacheTest {
     }
 
 
+    @Test
+    void cachedImplementationPreservesDuplicateAliasMetadata() throws SQLException {
+        boolean priorImplementationCaching = RuntimeConfig.IMPLEMENTATION_CACHING.getBoolean();
+        RuntimeConfig.IMPLEMENTATION_CACHING.setBoolean( true );
+        try ( JdbcConnection firstConnection = new JdbcConnection( true ); JdbcConnection secondConnection = new JdbcConnection( true ) ) {
+            long hitsBefore = ImplementationCache.INSTANCE.getHitCount();
+            assertDuplicateAliasResult( firstConnection.getConnection(), 1, "Aa" );
+            long hitsAfterFirst = ImplementationCache.INSTANCE.getHitCount();
+            assertEquals( hitsBefore, hitsAfterFirst, "First execution should compile the query" );
+
+            assertDuplicateAliasResult( secondConnection.getConnection(), 2, "BB" );
+            assertTrue( ImplementationCache.INSTANCE.getHitCount() > hitsAfterFirst, "Second execution should reuse the compiled query" );
+        } finally {
+            RuntimeConfig.IMPLEMENTATION_CACHING.setBoolean( priorImplementationCaching );
+        }
+    }
+
+
     private static int findId( Connection connection, String label ) throws SQLException {
         try ( PreparedStatement select = connection.prepareStatement( "SELECT id FROM prepared_plan_cache_test WHERE label = ?" ) ) {
             select.setString( 1, label );
@@ -87,6 +107,30 @@ class PreparedPlanCacheTest {
                 int id = rows.getInt( 1 );
                 assertFalse( rows.next() );
                 return id;
+            }
+        }
+    }
+
+
+    private static void assertDuplicateAliasResult( Connection connection, int id, String label ) throws SQLException {
+        String sql = """
+                SELECT id AS duplicated, label AS duplicated
+                FROM (VALUES (1, 'Aa'), (2, 'BB')) AS fixture(id, label)
+                WHERE id = ?
+                """;
+        try ( PreparedStatement select = connection.prepareStatement( sql ) ) {
+            select.setInt( 1, id );
+            try ( ResultSet rows = select.executeQuery() ) {
+                ResultSetMetaData metadata = rows.getMetaData();
+                assertEquals( 2, metadata.getColumnCount() );
+                assertEquals( "duplicated", metadata.getColumnName( 1 ) );
+                assertEquals( "duplicated", metadata.getColumnLabel( 1 ) );
+                assertEquals( "duplicated0", metadata.getColumnName( 2 ) );
+                assertEquals( "duplicated0", metadata.getColumnLabel( 2 ) );
+                assertTrue( rows.next() );
+                assertEquals( id, rows.getInt( 1 ) );
+                assertEquals( label, rows.getString( 2 ) );
+                assertFalse( rows.next() );
             }
         }
     }

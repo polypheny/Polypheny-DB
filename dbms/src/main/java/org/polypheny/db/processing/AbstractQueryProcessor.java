@@ -438,11 +438,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 CachedImplementation cached = ImplementationCache.INSTANCE.getIfPresent( plan.cacheKey() );
                 if ( cached != null ) {
                     AlgNode optimalNode = cached.optimalNode();
+                    // Expose the same routed row type as a newly compiled implementation.
                     PolyImplementation result = createPolyImplementation(
                             cached.result(),
                             parameterizedRoot.kind,
                             optimalNode,
-                            parameterizedRoot.validatedRowType,
+                            parameterizedRoot.alg.getTupleType(),
                             resultConvention,
                             executionTimeMonitor,
                             Objects.requireNonNull( optimalNode.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).dataModel(),

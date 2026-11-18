@@ -30,22 +30,35 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.nodes.LangFunctionOperator;
+import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.SpecialOperator;
 import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.snapshot.MockSnapshot;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.VectorType;
 import org.polypheny.db.type.entity.PolyBinary;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolySymbol;
+import org.polypheny.db.type.entity.graph.GraphObject;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
+import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
+import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.util.RunMode;
 
@@ -166,6 +179,58 @@ class PlanKeyTest {
 
 
     @Test
+    void cypherNodeMatcherKeysIgnoreOnlyThePatternIdentity() {
+        QueryLanguage cypher = testLanguage( DataModel.GRAPH, "cypher" );
+        QueryLanguage other = testLanguage( DataModel.GRAPH, "plan-key-other-graph" );
+        Operator match = new LangFunctionOperator( "nodeMatch", Kind.CYPHER_FUNCTION, PolyType.NODE );
+        Operator otherMatch = new LangFunctionOperator( "nodeMatch", Kind.CYPHER_FUNCTION, PolyType.NODE );
+        OperatorRegistry.register( cypher, OperatorName.CYPHER_NODE_MATCH, match );
+        OperatorRegistry.register( other, OperatorName.CYPHER_NODE_MATCH, otherMatch );
+        try {
+            AlgDataType type = types.createPolyType( PolyType.NODE );
+            PolyNode first = node( "n", "Person", 1 );
+            PolyNode equivalent = node( "n", "Person", 1 );
+            assertNotEquals( first.id, equivalent.id );
+            assertEquals( matchKey( match, type, first ), matchKey( match, type, equivalent ) );
+            assertNotEquals( matchKey( match, type, first ), matchKey( match, type, node( "n", "Place", 1 ) ) );
+            assertNotEquals( matchKey( match, type, first ), matchKey( match, type, node( "n", "Person", 2 ) ) );
+            assertNotEquals( matchKey( match, type, first ), matchKey( match, type, node( "other", "Person", 1 ) ) );
+            assertNotEquals( matchKey( otherMatch, type, first ), matchKey( otherMatch, type, equivalent ) );
+            assertNotEquals( key( new RexLiteral( first, type, PolyType.NODE ) ), key( new RexLiteral( equivalent, type, PolyType.NODE ) ) );
+        } finally {
+            OperatorRegistry.remove( cypher );
+            OperatorRegistry.remove( other );
+        }
+    }
+
+
+    @Test
+    void cypherPathMatcherKeysPreserveRelationshipSemanticsAndLocalReferences() {
+        QueryLanguage cypher = testLanguage( DataModel.GRAPH, "cypher" );
+        Operator match = new LangFunctionOperator( "pathMatch", Kind.CYPHER_FUNCTION, PolyType.PATH );
+        OperatorRegistry.register( cypher, OperatorName.CYPHER_PATH_MATCH, match );
+        try {
+            PolyNode left = node( "a", "Person", 1 );
+            PolyNode right = node( "b", "Person", 2 );
+            PolyPath first = path( left, right, "KNOWS", EdgeDirection.LEFT_TO_RIGHT, 2 );
+            PolyPath equivalent = path( node( "a", "Person", 1 ), node( "b", "Person", 2 ), "KNOWS", EdgeDirection.LEFT_TO_RIGHT, 2 );
+            AlgDataType type = types.createPathType( first.getPathType( types.createPolyType( PolyType.NODE ), types.createPolyType( PolyType.EDGE ) ) );
+
+            assertNotEquals( first.id, equivalent.id );
+            assertEquals( matchKey( match, type, first ), matchKey( match, type, equivalent ) );
+            assertNotEquals( matchKey( match, type, first ), matchKey( match, type, path( left, right, "LIKES", EdgeDirection.LEFT_TO_RIGHT, 2 ) ) );
+            assertNotEquals( matchKey( match, type, first ), matchKey( match, type, path( left, right, "KNOWS", EdgeDirection.RIGHT_TO_LEFT, 2 ) ) );
+            assertNotEquals( matchKey( match, type, first ), matchKey( match, type, path( left, right, "KNOWS", EdgeDirection.LEFT_TO_RIGHT, 3 ) ) );
+            assertNotEquals( matchKey( match, type, path( left, left, "KNOWS", EdgeDirection.LEFT_TO_RIGHT, 2 ) ),
+                    matchKey( match, type, path( left, node( "a", "Person", 1 ), "KNOWS", EdgeDirection.LEFT_TO_RIGHT, 2 ) ) );
+            assertNotEquals( key( new RexLiteral( first, type, PolyType.PATH ) ), key( new RexLiteral( equivalent, type, PolyType.PATH ) ) );
+        } finally {
+            OperatorRegistry.remove( cypher );
+        }
+    }
+
+
+    @Test
     void binaryKeysSnapshotBytesAndBitCount() {
         byte[] bytes = { 0x08 };
         PlanKey original = key( PolyBinary.of( bytes, 5 ) );
@@ -184,7 +249,30 @@ class PlanKeyTest {
 
 
     private static QueryLanguage testLanguage( String name ) {
-        return new QueryLanguage( DataModel.RELATIONAL, name, List.of(), null, () -> null, null, context -> List.of(), Function.identity() );
+        return testLanguage( DataModel.RELATIONAL, name );
+    }
+
+
+    private static QueryLanguage testLanguage( DataModel model, String name ) {
+        return new QueryLanguage( model, name, List.of(), null, () -> null, null, context -> List.of(), Function.identity() );
+    }
+
+
+    private static PolyNode node( String variable, String label, int value ) {
+        return new PolyNode( new PolyDictionary( Map.of( PolyString.of( "value" ), PolyInteger.of( value ) ) ),
+                List.of( PolyString.of( label ) ), PolyString.of( variable ) );
+    }
+
+
+    private static PolyPath path( PolyNode left, PolyNode right, String label, EdgeDirection direction, int maxLength ) {
+        PolyEdge edge = new PolyEdge( new PolyDictionary(), List.of( PolyString.of( label ) ), left.id, right.id, direction, PolyString.of( "r" ) );
+        edge.fromTo( Pair.of( 1, maxLength ) );
+        return PolyPath.create( List.of( Pair.of( left.variableName, left ), Pair.of( right.variableName, right ) ), List.of( Pair.of( edge.variableName, edge ) ) );
+    }
+
+
+    private PlanKey matchKey( Operator match, AlgDataType type, GraphObject pattern ) {
+        return key( rex.makeCall( type, match, rex.makeInputRef( GraphType.of(), 0 ), new RexLiteral( pattern, type, pattern.getType() ) ) );
     }
 
 

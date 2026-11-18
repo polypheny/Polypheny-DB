@@ -22,6 +22,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -58,6 +59,7 @@ import org.polypheny.db.type.IntervalPolyType;
 import org.polypheny.db.type.MapPolyType;
 import org.polypheny.db.type.MultisetPolyType;
 import org.polypheny.db.type.PathType;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.VectorType;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
@@ -71,6 +73,7 @@ import org.polypheny.db.type.entity.category.PolyTemporal;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
@@ -181,6 +184,10 @@ final class PlanKeyComponents {
             return tagged( type, literal.getType(), literal.polyType, literal.value );
         }
         if ( type == RexCall.class && rex instanceof RexCall call ) {
+            Component match = cypherMatch( call );
+            if ( match != null ) {
+                return match;
+            }
             return tagged( type, call.getType(), call.getOperator(), call.getOperands() );
         }
         if ( type == RexDynamicParam.class && rex instanceof RexDynamicParam parameter ) {
@@ -202,6 +209,78 @@ final class PlanKeyComponents {
             return tagged( type, access.getReferenceExpr(), access.getField() );
         }
         return null;
+    }
+
+
+    private static Component cypherMatch( RexCall call ) {
+        Operator operator = call.getOperator();
+        OperatorName name = operator.getOperatorName();
+        if ( (name != OperatorName.CYPHER_NODE_MATCH && name != OperatorName.CYPHER_PATH_MATCH)
+                || call.getOperands().size() != 2 || !(call.getOperands().get( 1 ) instanceof RexLiteral literal)
+                || literal.getClass() != RexLiteral.class || literal.value == null
+                || !OperatorRegistry.isRegistered( operator, "cypher" ) ) {
+            return null;
+        }
+
+        List<?> pattern = switch ( name ) {
+            case CYPHER_NODE_MATCH -> literal.polyType == PolyType.NODE && literal.value.getClass() == PolyNode.class
+                    ? nodePattern( literal.value.asNode() ) : null;
+            case CYPHER_PATH_MATCH -> literal.polyType == PolyType.PATH && literal.value.getClass() == PolyPath.class
+                    ? pathPattern( literal.value.asPath() ) : null;
+            default -> throw new AssertionError( name );
+        };
+        // These match operators consume the second argument as a predicate pattern. Both the
+        // enumerable and native Neo4j implementations return elements from the input graph.
+        return pattern == null ? null : tagged( RexCall.class, call.getType(), operator, call.getOperands().get( 0 ),
+                literal.getType(), literal.polyType, pattern );
+    }
+
+
+    private static List<?> nodePattern( PolyNode node ) {
+        return Arrays.asList( node.variableName, node.labels, node.properties, node.isVariable() );
+    }
+
+
+    private static List<?> pathPattern( PolyPath path ) {
+        List<PolyNode> nodes = path.getNodes();
+        List<PolyEdge> edges = path.getEdges();
+        List<?> elements = path.getPath();
+        List<PolySegment> segments = path.getSegments();
+        if ( edges.isEmpty() || nodes.size() != edges.size() + 1 || elements.size() != nodes.size() + edges.size()
+                || path.getNames().size() != elements.size() || segments.size() != edges.size() ) {
+            return null;
+        }
+
+        Map<PolyString, Integer> nodeIds = new HashMap<>();
+        List<List<?>> nodePatterns = new ArrayList<>( nodes.size() );
+        for ( int i = 0; i < nodes.size(); i++ ) {
+            PolyNode node = nodes.get( i );
+            if ( node == null || node.getClass() != PolyNode.class || node != elements.get( 2 * i ) || node.id == null || node.id.isNull() ) {
+                return null;
+            }
+            nodePatterns.add( List.of( nodeIds.computeIfAbsent( node.id, id -> nodeIds.size() ), nodePattern( node ) ) );
+        }
+
+        Map<PolyString, Integer> edgeIds = new HashMap<>();
+        List<List<?>> edgePatterns = new ArrayList<>( edges.size() );
+        for ( int i = 0; i < edges.size(); i++ ) {
+            PolyEdge edge = edges.get( i );
+            PolyString left = nodes.get( i ).id;
+            PolyString right = nodes.get( i + 1 ).id;
+            if ( edge == null || edge.getClass() != PolyEdge.class || edge != elements.get( 2 * i + 1 ) || edge.id == null || edge.id.isNull()
+                    || !left.equals( edge.left ) || !right.equals( edge.right ) || !matchesSegment( segments.get( i ), left, edge.id, right ) ) {
+                return null;
+            }
+            edgePatterns.add( Arrays.asList( edgeIds.computeIfAbsent( edge.id, id -> edgeIds.size() ), nodeIds.get( left ), nodeIds.get( right ),
+                    edge.variableName, edge.labels, edge.properties, edge.direction, edge.fromTo ) );
+        }
+        return Arrays.asList( path.variableName, path.getNames(), nodePatterns, edgePatterns );
+    }
+
+
+    private static boolean matchesSegment( PolySegment segment, PolyString left, PolyString edge, PolyString right ) {
+        return segment != null && segment.getClass() == PolySegment.class && segment.isRef && segment.direction == EdgeDirection.NONE
+                && left.equals( segment.sourceId ) && edge.equals( segment.edgeId ) && right.equals( segment.targetId );
     }
 
 
