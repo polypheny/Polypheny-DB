@@ -163,14 +163,6 @@ public abstract class Calc extends SingleAlg {
     }
 
 
-    @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                input.algCompareString() + "$" +
-                (program != null ? program.toString() : "") + "&";
-    }
-
-
     public static RexProgram getProgramFromArgs( PolyAlgArgs args, AlgNode input, RexBuilder b ) {
         List<RexNode> exprs = args.getListArg( "exprs", RexArg.class ).map( RexArg::getNode );
         List<RexArg> projectsArg = args.getListArg( "projects", RexArg.class ).getArgs();

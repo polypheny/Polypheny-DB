@@ -182,14 +182,4 @@ public abstract class Correlate extends BiAlg {
         return planner.getCostFactory().makeCost( rowCount.get() /* generate results */ + leftRowCount /* relScan left results */, 0, 0 ).plus( rescanCost );
     }
 
-
-    @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                left.algCompareString() + "$" +
-                right.algCompareString() + "$" +
-                (requiredColumns != null ? requiredColumns.toString() : "") + "$" +
-                (joinType != null ? joinType.name() : "") + "&";
-    }
-
 }

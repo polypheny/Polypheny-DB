@@ -37,7 +37,6 @@ package org.polypheny.db.algebra.core;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -184,14 +183,6 @@ public abstract class Values extends AbstractAlgNode {
                             .collect( Collectors.joining( ", ", "[", "]" ) ) );
         }
         return algWriter;
-    }
-
-
-    @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                rowType.toString() + "$" +
-                (tuples != null ? tuples.stream().map( t -> t.stream().map( RexLiteral::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) ).collect( Collectors.joining( "$" ) ) : "") + "&";
     }
 
 

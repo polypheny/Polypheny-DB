@@ -32,6 +32,7 @@ import org.polypheny.db.monitoring.events.metrics.QueryDataPointImpl;
 @Slf4j
 public class QueryEvent extends StatementEvent {
 
+    protected String planFingerprint;
     protected boolean updatePostCosts = false;
 
 

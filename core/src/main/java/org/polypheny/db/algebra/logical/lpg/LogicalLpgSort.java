@@ -69,16 +69,6 @@ public class LogicalLpgSort extends LpgSort {
 
 
     @Override
-    public String algCompareString() {
-        return getClass().getSimpleName() + "$"
-                + collation.hashCode() + "$"
-                + input.algCompareString() + "$"
-                + (offset == null ? "" : offset.hashCode()) + "$"
-                + (fetch == null ? "" : fetch.hashCode()) + "&";
-    }
-
-
-    @Override
     public Sort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, ImmutableList<RexNode> nodes, RexNode offset, RexNode fetch ) {
         return new LogicalLpgSort( newInput.getCluster(), traitSet, collation, newInput,
                 offset == null ? null : ((RexLiteral) offset).value.asNumber().intValue(),
