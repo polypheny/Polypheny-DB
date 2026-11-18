@@ -83,12 +83,6 @@ public abstract class LpgValues extends AbstractAlgNode implements LpgAlg {
     }
 
 
-    @Override
-    public String algCompareString() {
-        return LpgAlg.comparisonKey( getClass().getName(), rowType.getFullTypeString(), nodes, edges, values );
-    }
-
-
     public static Triple<Collection<PolyNode>, Collection<PolyEdge>, ImmutableList<ImmutableList<RexLiteral>>> extractArgs( PolyAlgArgs args, AlgCluster cluster ) {
         List<PolyNode> nodes = args.getListArg( "nodes", RexArg.class ).map( n -> ((RexLiteral) n.getNode()).value.asNode() );
         List<PolyPath> paths = args.getListArg( "edges", RexArg.class ).map( n -> ((RexLiteral) n.getNode()).value.asPath() );

@@ -86,12 +86,6 @@ public class LogicalLpgMatch extends LpgMatch {
 
 
     @Override
-    public String algCompareString() {
-        return super.algCompareString() + "$" + enumerableOnly;
-    }
-
-
-    @Override
     public PolyAlgArgs bindArguments() {
         return super.bindArguments().put( "enumerableOnly", new BooleanArg( enumerableOnly ) );
     }

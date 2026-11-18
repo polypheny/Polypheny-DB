@@ -155,13 +155,6 @@ public abstract class RelScan<E extends Entity> extends Scan<E> implements RelAl
 
 
     @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                entity.id + "&";
-    }
-
-
-    @Override
     public boolean isCrossModel() {
         return entity.dataModel != DataModel.RELATIONAL;
     }

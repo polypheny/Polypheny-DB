@@ -160,12 +160,6 @@ PlannerTest {
 
 
         @Override
-        public String algCompareString() {
-            return "$" + SingleDummyNode.class;
-        }
-
-
-        @Override
         public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
             return new SingleDummyNode( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ) );
         }
@@ -196,12 +190,6 @@ PlannerTest {
 
         public LeafDummyNode( AlgCluster cluster, AlgTraitSet traitSet ) {
             super( cluster, traitSet );
-        }
-
-
-        @Override
-        public String algCompareString() {
-            return "$" + LeafDummyNode.class;
         }
 
 

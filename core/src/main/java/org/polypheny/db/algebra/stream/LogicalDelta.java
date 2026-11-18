@@ -83,11 +83,5 @@ public final class LogicalDelta extends Delta {
         return new LogicalDelta( getCluster(), traitSet, AbstractAlgNode.sole( inputs ) );
     }
 
-
-    @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" + input.algCompareString() + "&";
-    }
-
 }
 

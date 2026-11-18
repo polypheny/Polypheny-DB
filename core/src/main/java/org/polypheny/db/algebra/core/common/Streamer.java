@@ -102,15 +102,6 @@ public abstract class Streamer extends BiAlg {
 
 
     @Override
-    public String algCompareString() {
-        return getClass().getSimpleName() + "from[$" +
-                getProvider().algCompareString() + "$" +
-                "],to[" + getCollector().algCompareString() +
-                "$" + returningParameters + "$" + batchGraphWrites + "]&";
-    }
-
-
-    @Override
     public AlgWriter explainTerms( AlgWriter pw ) {
         return super.explainTerms( pw )
                 .input( "provider", getProvider() )

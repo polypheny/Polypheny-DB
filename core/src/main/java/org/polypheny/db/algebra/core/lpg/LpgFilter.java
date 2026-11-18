@@ -52,12 +52,6 @@ public abstract class LpgFilter extends SingleAlg implements LpgAlg {
 
 
     @Override
-    public String algCompareString() {
-        return LpgAlg.comparisonKey( getClass().getName(), condition, getInput().algCompareString() );
-    }
-
-
-    @Override
     public NodeType getNodeType() {
         return NodeType.FILTER;
     }

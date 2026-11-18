@@ -60,11 +60,4 @@ public final class LogicalLpgJoin extends Join implements LpgAlg {
         return NodeType.JOIN;
     }
 
-
-    @Override
-    public String algCompareString() {
-        return LpgAlg.comparisonKey( getClass().getName(), getJoinType(), getCondition(), getVariablesSet(),
-                getLeft().algCompareString(), getRight().algCompareString() );
-    }
-
 }

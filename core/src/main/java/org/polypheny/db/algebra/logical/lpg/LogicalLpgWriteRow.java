@@ -93,12 +93,6 @@ public class LogicalLpgWriteRow extends SingleAlg implements LpgAlg {
 
 
     @Override
-    public String algCompareString() {
-        return getClass().getSimpleName() + "$" + name + "$" + input.algCompareString() + "&";
-    }
-
-
-    @Override
     public AlgNode copy( AlgTraitSet traits, List<AlgNode> inputs ) {
         return new LogicalLpgWriteRow( traits, inputs.get( 0 ), name );
     }

@@ -82,12 +82,6 @@ public abstract class LpgMatch extends SingleAlg implements LpgAlg {
 
 
     @Override
-    public String algCompareString() {
-        return LpgAlg.comparisonKey( getClass().getName(), names, matches, input.algCompareString() );
-    }
-
-
-    @Override
     public NodeType getNodeType() {
         return NodeType.MATCH;
     }

@@ -187,12 +187,6 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
 
 
         @Override
-        public String algCompareString() {
-            return getClass().getSimpleName() + "$" + graph.id + "$" + operation + "$" + parameterCount + "$" + detachDelete + "&";
-        }
-
-
-        @Override
         public AlgWriter explainTerms( AlgWriter writer ) {
             return super.explainTerms( writer ).item( "graph", graph.id ).item( "operation", operation ).item( "parameters", parameterCount )
                     .itemIf( "detachDelete", true, detachDelete );

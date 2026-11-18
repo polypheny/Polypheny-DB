@@ -17,7 +17,6 @@
 package org.polypheny.db.algebra.core.lpg;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
@@ -46,15 +45,6 @@ public class LpgTransformer extends Transformer {
         this.operationOrder = operationOrder;
         this.operation = operation;
         this.detachDelete = detachDelete;
-    }
-
-
-    @Override
-    public String algCompareString() {
-        return getClass().getSimpleName() + "$"
-                + operationOrder.stream().map( PolyType::name ).collect( Collectors.joining( "$" ) ) + "$"
-                + operation + "$" + detachDelete + "$"
-                + getInputs().stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) ) + "&";
     }
 
 

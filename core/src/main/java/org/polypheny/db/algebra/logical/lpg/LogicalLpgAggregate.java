@@ -86,12 +86,6 @@ public class LogicalLpgAggregate extends LpgAggregate {
 
 
     @Override
-    public String algCompareString() {
-        return super.algCompareString() + writeCount;
-    }
-
-
-    @Override
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );
     }

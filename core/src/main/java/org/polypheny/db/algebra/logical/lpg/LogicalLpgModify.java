@@ -89,12 +89,6 @@ public class LogicalLpgModify extends LpgModify<Entity> implements RelationalTra
 
 
     @Override
-    public String algCompareString() {
-        return super.algCompareString() + "$" + returningParameters + "$" + detachDelete;
-    }
-
-
-    @Override
     public AlgWriter explainTerms( AlgWriter writer ) {
         return super.explainTerms( writer ).itemIf( "returningParameters", returningParameters, returnsRows() )
                 .itemIf( "detachDelete", true, detachDelete );

@@ -179,13 +179,6 @@ public class AlgSubset extends AbstractAlgNode {
 
 
     @Override
-    public String algCompareString() {
-        // Compare makes no sense here. Use hashCode() to avoid errors.
-        return this.getClass().getSimpleName() + "$" + hashCode() + "&";
-    }
-
-
-    @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return planner.getCostFactory().makeZeroCost();
     }

@@ -17,8 +17,6 @@
 package org.polypheny.db.algebra.core.lpg;
 
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
@@ -51,15 +49,6 @@ public abstract class LpgAggregate extends SingleAlg implements LpgAlg {
         this.groups = groups;
         this.aggCalls = aggCalls;
         this.rowType = tupleType;
-    }
-
-
-    @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                input.algCompareString() + "$" +
-                groups.hashCode() + "$" +
-                aggCalls.stream().map( Objects::toString ).collect( Collectors.joining( " $ " ) ) + "&";
     }
 
 

@@ -38,7 +38,6 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import org.apache.calcite.linq4j.Ord;
 import org.jetbrains.annotations.Nullable;
@@ -200,17 +199,6 @@ public abstract class Sort extends SingleAlg {
         pw.itemIf( "offset", offset, offset != null );
         pw.itemIf( "fetch", fetch, fetch != null );
         return pw;
-    }
-
-
-    @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                input.algCompareString() + "$" +
-                fieldExps.stream().map( RexNode::toString ).collect( Collectors.joining( "$" ) ) + "$" +
-                (collation != null ? collation.getFieldCollations().stream().map( AlgFieldCollation::getDirection ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
-                (offset != null ? offset.toString() : "") + "$" +
-                (fetch != null ? fetch.toString() : "") + "&";
     }
 
 

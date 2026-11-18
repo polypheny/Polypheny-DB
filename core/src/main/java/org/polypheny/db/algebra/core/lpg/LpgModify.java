@@ -52,12 +52,6 @@ public abstract class LpgModify<E extends Entity> extends Modify<E> implements L
 
 
     @Override
-    public String algCompareString() {
-        return LpgAlg.comparisonKey( getClass().getName(), entity.id, entity.getLayer(), operation, ids, operations, input.algCompareString() );
-    }
-
-
-    @Override
     public AlgWriter explainTerms( AlgWriter pw ) {
         return super.explainTerms( pw )
                 .input( "input", getInput() )

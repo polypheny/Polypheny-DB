@@ -258,16 +258,6 @@ public abstract class Join extends BiAlg {
 
 
     @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                left.algCompareString() + "$" +
-                right.algCompareString() + "$" +
-                (condition != null ? condition.hashCode() : "") + "$" +
-                (joinType != null ? joinType.name() : "") + "&";
-    }
-
-
-    @Override
     public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
 
