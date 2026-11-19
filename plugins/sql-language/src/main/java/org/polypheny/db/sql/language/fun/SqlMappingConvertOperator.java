@@ -27,10 +27,11 @@ import org.polypheny.db.util.Litmus;
 /**
  * Internal operator for converting a mapped field. The operands are the source value and the target field name for diagnostics.
  * The mapping supplies the result type, including its nullability.
+ * New expressions also include the mapping name and qualified target table name.
  */
 public final class SqlMappingConvertOperator extends SqlSpecialOperator {
 
-    private static final OperandCountRange OPERAND_COUNT = PolyOperandCountRanges.of( 2 );
+    private static final OperandCountRange OPERAND_COUNT = PolyOperandCountRanges.of( 4 );
 
 
     public SqlMappingConvertOperator() {
@@ -46,7 +47,7 @@ public final class SqlMappingConvertOperator extends SqlSpecialOperator {
 
     @Override
     public boolean validRexOperands( int count, Litmus litmus ) {
-        return litmus.check( OPERAND_COUNT.isValidCount( count ), "$mappingConvert requires a source value and a target field name" );
+        return litmus.check( OPERAND_COUNT.isValidCount( count ), "$mappingConvert requires a source value, target field name, mapping name and qualified target table name" );
     }
 
 }

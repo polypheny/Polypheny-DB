@@ -35,6 +35,7 @@ import org.polypheny.db.algebra.mapping.MappingScanBuilder;
 import org.polypheny.db.algebra.rules.MappingTransformRule;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.exceptions.MappingExecutionException;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
@@ -123,11 +124,13 @@ final class MappedTablePreview {
             } else if ( project instanceof RexCall call && call.getKind() == Kind.MAPPING_CONVERT ) {
                 var source = (RexIndexRef) call.getOperands().get( 0 );
                 var name = ((RexLiteral) call.getOperands().get( 1 )).getValue().asString();
+                var mappingName = ((RexLiteral) call.getOperands().get( 2 )).getValue().asString().value;
+                var targetTableName = ((RexLiteral) call.getOperands().get( 3 )).getValue().asString().value;
                 var value = row.get( source.getIndex() );
                 try {
-                    values.add( ConversionColumnTransformer.convert( value, name, source.getType(), call.getType(), context ) );
-                } catch ( GenericRuntimeException e ) {
-                    errors.put( values.size(), conversionError( value, e ) );
+                    values.add( ConversionColumnTransformer.convert( value, name, mappingName, targetTableName, source.getType(), call.getType(), context ) );
+                } catch ( MappingExecutionException e ) {
+                    errors.put( values.size(), e.getMessage() );
                     values.add( null );
                 }
             } else {
@@ -135,22 +138,6 @@ final class MappedTablePreview {
             }
         }
         return new PreviewRow( values, errors, ordinal );
-    }
-
-
-    private static String conversionError( PolyValue value, GenericRuntimeException error ) {
-        if ( ScalarConversions.isNull( value ) ) {
-            return error.getMessage();
-        }
-        var cause = error.getCause();
-        String reason = cause instanceof NumberFormatException ? "The value is not a valid number." : cause == null ? null : cause.getMessage();
-        String source = value.isString() ? value.asString().toQuotedJson() : value.toJson();
-        return error.getMessage() + " Source value " + abbreviate( source ) + (reason == null ? "" : " · " + abbreviate( reason ));
-    }
-
-
-    private static String abbreviate( String text ) {
-        return text != null && text.length() > 160 ? text.substring( 0, 160 ) + "…" : text;
     }
 
 

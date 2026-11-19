@@ -108,8 +108,8 @@ class MappedTablePreviewIntegrationTest {
             assertArrayEquals( new String[]{ "1", null, "7" }, first.data[0] );
             assertArrayEquals( new String[]{ "2", "42", null }, first.data[1] );
             assertEquals( 1, first.cellErrors.size() );
-            assertTrue( first.cellErrors.get( 0 ).get( 1 ).contains( "abc" ) );
-            assertTrue( first.cellErrors.get( 0 ).get( 1 ).contains( "not a valid number" ) );
+            assertEquals( "Mapping '%s', target 'public.%s', column 'amount': cannot convert value \"abc\" from VARCHAR(40) to INTEGER."
+                    .formatted( mapped.mapping().name(), mapped.table().name ), first.cellErrors.get( 0 ).get( 1 ) );
             var response = HttpServer.mapper.readTree( first.toJson() );
             assertEquals( first.cellErrors.get( 0 ).get( 1 ), response.path( "cellErrors" ).path( "0" ).path( "1" ).asText() );
             assertTrue( response.path( "data" ).path( 1 ).path( 2 ).isNull() );
@@ -122,9 +122,53 @@ class MappedTablePreviewIntegrationTest {
             assertEquals( 1, filtered.data.length );
             assertArrayEquals( new String[]{ "2", "42", null }, filtered.data[0] );
             assertTrue( filtered.cellErrors.isEmpty() );
-            assertTrue( query( crud, "SELECT amount FROM " + mapped.table().name ).error.contains( "could not convert column 'amount' to INTEGER" ) );
+            assertEquals( first.cellErrors.get( 0 ).get( 1 ), query( crud, "SELECT * FROM public." + mapped.table().name ).error );
 
             verifyAnalyzedMappingPlans( crud, adapterId, source.id, table + "_plan" );
+        } finally {
+            try {
+                if ( Catalog.snapshot().getAdapter( adapter ).isPresent() ) {
+                    assertNull( query( crud, "ALTER ADAPTERS DROP \"" + adapter + "\"" ).error );
+                }
+            } finally {
+                LanguageCrud.crud = previousCrud;
+            }
+        }
+    }
+
+
+    @Test
+    void reportsTheSameTemporalMappingFailureInSqlAndShowData( @TempDir Path directory ) throws Exception {
+        String suffix = UUID.randomUUID().toString().substring( 0, 8 );
+        String adapter = "temporalpreview" + suffix;
+        String table = "temporaldata" + suffix;
+        Files.writeString( directory.resolve( table + ".csv" ), "id:long,gender:string,name:string\n1,Male,Ada\n2,2026-11-19 12:34:56,Max\n" );
+        String location = directory.toString().replace( "\\", "\\\\" );
+        var previousCrud = LanguageCrud.crud;
+        var crud = new Crud( TestHelper.getInstance().getTransactionManager() );
+        try {
+            assertNull( query( crud, "ALTER ADAPTERS ADD \"" + adapter + "\" USING 'CSV' AS 'Source' WITH '"
+                    + "{\"method\":\"link\",\"directoryName\":\"" + location + "\",\"directory\":\"" + location + "\",\"maxStringLength\":\"40\"}'" ).error );
+            long adapterId = Catalog.snapshot().getAdapter( adapter ).orElseThrow().id;
+            var source = Catalog.snapshot().rel().getTable( Catalog.DEFAULT_NAMESPACE_NAME, table ).orElseThrow();
+            var draft = MappingState.draft( Catalog.getInstance(), adapterId, source.id );
+            var columns = draft.columns().stream().map( column -> column.name.equals( "gender" )
+                    ? new MappingUpdate.ColumnName( column.id, "date1", true, PolyType.TIMESTAMP, null )
+                    : new MappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
+            var update = new MappingUpdate( adapterId, -1, draft.revision(), draft.mapping().name(), draft.table().name, columns, draft.namespace().id );
+            var mapped = DdlManager.getInstance().createMapping( source.id, update, TestHelper.getInstance().getTransaction().createStatement() );
+
+            var request = UIRequest.builder().entityId( mapped.table().id ).namespace( Catalog.DEFAULT_NAMESPACE_NAME ).currentPage( 1 ).build();
+            var preview = crud.getTable( request );
+            assertNull( preview.error );
+            String expected = "Mapping '%s', target 'public.%s', column 'date1': cannot convert value \"Male\" from VARCHAR(40) to TIMESTAMP(0)."
+                    .formatted( mapped.mapping().name(), mapped.table().name );
+            assertEquals( expected, preview.cellErrors.get( 0 ).get( 1 ) );
+            assertEquals( "Ada", preview.data[0][2] );
+            assertEquals( "Max", preview.data[1][2] );
+            assertNotNull( preview.data[1][1] );
+            assertEquals( 1, preview.cellErrors.size() );
+            assertEquals( expected, query( crud, "SELECT * FROM public." + mapped.table().name ).error );
         } finally {
             try {
                 if ( Catalog.snapshot().getAdapter( adapter ).isPresent() ) {

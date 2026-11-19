@@ -30,6 +30,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -44,14 +45,19 @@ import org.polypheny.db.algebra.mapping.FieldMappingContext;
 import org.polypheny.db.algebra.mapping.PhysicalMappingBinding;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
 import org.polypheny.db.catalog.entity.mapping.SchemaMappingManager;
 import org.polypheny.db.catalog.entity.mapping.rules.ConversionColumnMappingRule;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.MappingKind;
 import org.polypheny.db.catalog.mapping.MappingState;
+import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.MappingUpdate;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
@@ -367,7 +373,12 @@ class CsvMappingIntegrationTest {
         var mapping = new SchemaMapping( 5, "Amount conversion", MappingKind.PHYSICAL_TO_LOGICAL, null, 3,
                 DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( rule ), 2L );
         var binding = new PhysicalMappingBinding( 2, 3, 4, 6, Map.of( column.id, column ) );
-        var context = new FieldMappingContext( mapping, binding, input, rex );
+        var snapshot = mock( Snapshot.class );
+        var relational = mock( LogicalRelSnapshot.class );
+        when( snapshot.rel() ).thenReturn( relational );
+        when( relational.getTable( 3 ) ).thenReturn( Optional.of( new LogicalTable( 3, "amounts", 1, EntityType.SOURCE, null, false ) ) );
+        when( snapshot.getNamespace( 1 ) ).thenReturn( Optional.of( new LogicalNamespace( 1, "public", DataModel.RELATIONAL, false, false ) ) );
+        var context = new FieldMappingContext( mapping, binding, input, rex, snapshot );
         var row = mock( DataContext.class );
         var executor = new RexExecutorImpl( row );
 
@@ -384,7 +395,7 @@ class CsvMappingIntegrationTest {
                 assertTrue( result == null || ((PolyValue) result).isNull() );
             } else {
                 var error = assertThrows( GenericRuntimeException.class, () -> function.apply( row ) );
-                assertTrue( error.getMessage().contains( "non-nullable column 'amount'" ) );
+                assertTrue( error.getMessage().contains( "column 'amount': cannot map value NULL" ) );
             }
         }
     }

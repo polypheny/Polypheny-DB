@@ -93,7 +93,8 @@ public final class MappingTransformRule extends AlgOptRule {
         AlgNode input = transform.getInput();
 
         // create context
-        FieldMappingContext context = new FieldMappingContext( mapping, transform.getBinding(), input.getTupleType(), input.getCluster().getRexBuilder() );
+        FieldMappingContext context = new FieldMappingContext( mapping, transform.getBinding(), input.getTupleType(),
+                input.getCluster().getRexBuilder(), input.getCluster().getSnapshot() );
 
         // get rules
         Map<Long, ColumnMappingRule> rules = new HashMap<>();

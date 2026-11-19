@@ -22,6 +22,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.mapping.rules.ConversionColumnMappingRule;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.exceptions.MappingExecutionException;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
@@ -56,14 +57,16 @@ public final class ConversionColumnTransformer implements FieldMappingTransforme
         var rex = context.getRexBuilder();
         RexNode input = rex.makeInputRef( source.getType(), source.getIndex() );
         // build MAPPING_CONVERT expression, that planner adds to projection
-        return rex.makeCall( target.getType(), OperatorRegistry.get( OperatorName.MAPPING_CONVERT ), input, rex.makeLiteral( target.getName() ) );
+        return rex.makeCall( target.getType(), OperatorRegistry.get( OperatorName.MAPPING_CONVERT ), input, rex.makeLiteral( target.getName() ),
+                rex.makeLiteral( context.getMapping().name() ), rex.makeLiteral( context.getTargetTableName() ) );
     }
 
 
-    public static PolyValue convert( PolyValue value, PolyString column, PolyType source, PolyType target, int precision, int scale, boolean sameType, boolean nullable, DataContext context ) {
+    public static PolyValue convert( PolyValue value, PolyString column, String mappingName, String targetTableName, String sourceType, String targetType,
+            PolyType source, PolyType target, int precision, int scale, boolean sameType, boolean nullable, DataContext context ) {
         if ( ScalarConversions.isNull( value ) ) {
             if ( !nullable ) {
-                throw new GenericRuntimeException( "Mapping produced NULL for non-nullable column '%s'.", column.value );
+                throw MappingExecutionException.nullNotAllowed( mappingName, targetTableName, column.value, sourceType, targetType );
             }
             return null;
         }
@@ -73,13 +76,14 @@ public final class ConversionColumnTransformer implements FieldMappingTransforme
         try {
             return ScalarConversions.convert( value, source, target, precision, scale, context );
         } catch ( RuntimeException e ) {
-            throw new GenericRuntimeException( "Mapping could not convert column '%s' to %s.", e, column.value, target );
+            throw MappingExecutionException.conversionFailed( mappingName, targetTableName, column.value, value, sourceType, targetType, e );
         }
     }
 
 
-    public static PolyValue convert( PolyValue value, PolyString column, AlgDataType source, AlgDataType target, DataContext context ) {
-        return convert( value, column, source.getPolyType(), target.getPolyType(), target.getPrecision(), target.getScale(),
+    public static PolyValue convert( PolyValue value, PolyString column, String mappingName, String targetTableName, AlgDataType source, AlgDataType target, DataContext context ) {
+        return convert( value, column, mappingName, targetTableName, source.toString(), target.toString(),
+                source.getPolyType(), target.getPolyType(), target.getPrecision(), target.getScale(),
                 PolyTypeUtil.equalSansNullability( context.getTypeFactory(), source, target ), target.isNullable(), context );
     }
 

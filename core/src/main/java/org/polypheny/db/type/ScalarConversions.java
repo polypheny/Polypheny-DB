@@ -26,8 +26,13 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.functions.Functions;
@@ -54,6 +59,9 @@ import org.polypheny.db.util.temporal.DateTimeUtils;
  * */
 public final class ScalarConversions {
 
+    private static final Map<PolyType, Set<PolyType>> SUPPORTED_CONVERSIONS = createSupportedConversions();
+
+
     private ScalarConversions() {
     }
 
@@ -69,7 +77,7 @@ public final class ScalarConversions {
         if ( !isScalar( source ) ) {
             return List.of();
         }
-        return Arrays.stream( PolyType.values() ).filter( target -> supports( source.getPolyType(), target ) ).toList();
+        return List.copyOf( SUPPORTED_CONVERSIONS.get( source.getPolyType() ) );
     }
 
 
@@ -82,27 +90,46 @@ public final class ScalarConversions {
      * The pair must be supported by the conversion rules
      */
     private static boolean supports( PolyType source, PolyType target ) {
-        // Same-type conversions are supported even when the value can only be passed through.
-        if ( source == target ) {
-            return true;
-        }
+        return SUPPORTED_CONVERSIONS.get( source ).contains( target );
+    }
+
+
+    private static Map<PolyType, Set<PolyType>> createSupportedConversions() {
+        Map<PolyType, Set<PolyType>> conversions = new EnumMap<>( PolyType.class );
         // different types conversion
         // define valid source type for target type
-        return switch ( target ) { // type we want to convert to
-            case TINYINT, SMALLINT, INTEGER, BIGINT, DECIMAL, REAL, FLOAT, DOUBLE ->
-                    source.getFamily() == PolyTypeFamily.NUMERIC || isText( source ) || source == PolyType.BOOLEAN;
-            case CHAR, VARCHAR, TEXT -> isText( source ) || source.getFamily() == PolyTypeFamily.NUMERIC
-                    || source == PolyType.BOOLEAN || source == PolyType.DATE || source == PolyType.TIME
-                    || source == PolyType.TIMESTAMP || source == PolyType.JSON || source == PolyType.GEOMETRY
-                    || source.getFamily() == PolyTypeFamily.BINARY;
-            case BOOLEAN -> isText( source ) || source.getFamily() == PolyTypeFamily.NUMERIC;
-            case DATE, TIME -> isText( source ) || source == PolyType.TIMESTAMP;
-            case TIMESTAMP -> isText( source ) || source == PolyType.DATE || source == PolyType.TIME;
-            case BINARY, VARBINARY -> source.getFamily() == PolyTypeFamily.BINARY || isText( source );
-            case JSON, GEOMETRY -> isText( source );
-            case FILE -> source.getFamily() == PolyTypeFamily.MULTIMEDIA;
-            default -> false;
-        };
+        Set<PolyType> textTypes = EnumSet.of( PolyType.CHAR, PolyType.VARCHAR, PolyType.TEXT );
+        Set<PolyType> numericTargets = EnumSet.copyOf( PolyType.NUMERIC_TYPES ); // type we want to convert to
+        numericTargets.addAll( textTypes );
+        numericTargets.add( PolyType.BOOLEAN );
+        PolyType.NUMERIC_TYPES.forEach( source -> conversions.put( source, numericTargets ) );
+        conversions.put( PolyType.BOOLEAN, numericTargets );
+
+        Set<PolyType> textTargets = EnumSet.copyOf( numericTargets );
+        textTargets.addAll( EnumSet.of( PolyType.DATE, PolyType.TIME, PolyType.TIMESTAMP,
+                PolyType.BINARY, PolyType.VARBINARY, PolyType.JSON, PolyType.GEOMETRY ) );
+        textTypes.forEach( source -> conversions.put( source, textTargets ) );
+
+        Set<PolyType> dateTimeTargets = EnumSet.copyOf( textTypes );
+        dateTimeTargets.add( PolyType.TIMESTAMP );
+        conversions.put( PolyType.DATE, dateTimeTargets );
+        conversions.put( PolyType.TIME, dateTimeTargets );
+        conversions.put( PolyType.TIMESTAMP, EnumSet.of( PolyType.CHAR, PolyType.VARCHAR, PolyType.TEXT, PolyType.DATE, PolyType.TIME ) );
+        conversions.put( PolyType.JSON, textTypes );
+        conversions.put( PolyType.GEOMETRY, textTypes );
+
+        Set<PolyType> binaryTargets = EnumSet.copyOf( textTypes );
+        binaryTargets.addAll( PolyType.BINARY_TYPES );
+        PolyType.BINARY_TYPES.forEach( source -> conversions.put( source, binaryTargets ) );
+        PolyType.BLOB_TYPES.forEach( source -> conversions.put( source, EnumSet.of( PolyType.FILE ) ) );
+
+        // Same-type conversions are supported even when the value can only be passed through.
+        for ( PolyType source : PolyType.values() ) {
+            Set<PolyType> targets = EnumSet.of( source );
+            targets.addAll( conversions.getOrDefault( source, Set.of() ) );
+            conversions.put( source, Collections.unmodifiableSet( targets ) );
+        }
+        return Collections.unmodifiableMap( conversions );
     }
 
 

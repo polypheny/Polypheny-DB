@@ -25,6 +25,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.rex.RexBuilder;
 
 
@@ -43,13 +44,15 @@ public final class FieldMappingContext {
     @Getter
     private final RexBuilder rexBuilder;
     private final Map<Long, AlgDataTypeField> inputFields;
+    private final Snapshot snapshot;
 
 
-    public FieldMappingContext( SchemaMapping mapping, PhysicalMappingBinding binding, AlgDataType inputType, RexBuilder rexBuilder ) {
+    public FieldMappingContext( SchemaMapping mapping, PhysicalMappingBinding binding, AlgDataType inputType, RexBuilder rexBuilder, Snapshot snapshot ) {
         binding.validate( mapping );
         this.mapping = mapping;
         this.binding = binding;
         this.rexBuilder = rexBuilder;
+        this.snapshot = snapshot;
         Map<Long, AlgDataTypeField> fields = new HashMap<>();
         for ( AlgDataTypeField field : inputType.getFields() ) {
             if ( field.getId() == null || fields.putIfAbsent( field.getId(), field ) != null ) {
@@ -57,6 +60,13 @@ public final class FieldMappingContext {
             }
         }
         inputFields = Map.copyOf( fields );
+    }
+
+
+    public String getTargetTableName() {
+        Objects.requireNonNull( snapshot, "Mapping conversions require a catalog snapshot." );
+        var table = snapshot.rel().getTable( mapping.targetEntityId() ).orElseThrow();
+        return snapshot.getNamespace( table.namespaceId ).orElseThrow().name + "." + table.name;
     }
 
     /**

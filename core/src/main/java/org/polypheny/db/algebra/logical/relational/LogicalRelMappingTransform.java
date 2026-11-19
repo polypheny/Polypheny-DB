@@ -60,7 +60,8 @@ public final class LogicalRelMappingTransform extends LogicalMappingTransform im
 
 
     public static LogicalRelMappingTransform create( AlgNode input, SchemaMapping mapping, PhysicalMappingBinding binding, AlgDataType targetType ) {
-        new FieldMappingContext( mapping, binding, input.getTupleType(), input.getCluster().getRexBuilder() ).validatePhysicalNames();
+        new FieldMappingContext( mapping, binding, input.getTupleType(),
+                input.getCluster().getRexBuilder(), input.getCluster().getSnapshot() ).validatePhysicalNames();
         // A mapping can reorder fields, so input collations must not be copied.
         return new LogicalRelMappingTransform( input, input.getCluster().traitSetOf( Convention.NONE ), mapping, binding, targetType );
     }

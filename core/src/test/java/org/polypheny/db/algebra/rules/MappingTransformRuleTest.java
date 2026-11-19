@@ -335,7 +335,8 @@ class MappingTransformRuleTest {
         SourceFieldRule rule = new SourceFieldRule( FIRST_ID );
         SchemaMapping mapping = mapping( List.of( rule ) );
         FieldMappingContext context = new FieldMappingContext( mapping,
-                PhysicalMappingBinding.create( mapping, fixture.allocation, fixture.catalog ), input.getTupleType(), input.getCluster().getRexBuilder() );
+                PhysicalMappingBinding.create( mapping, fixture.allocation, fixture.catalog ), input.getTupleType(),
+                input.getCluster().getRexBuilder(), input.getCluster().getSnapshot() );
         FieldMappingTransformers transformers = new FieldMappingTransformers( List.of( new SourceFieldTransformer() ) );
         AlgDataTypeField targetField = logicalType( SECOND_ID ).getFields().get( 0 );
 

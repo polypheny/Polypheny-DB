@@ -36,6 +36,7 @@ package org.polypheny.db.sql;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -45,6 +46,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.catalog.exceptions.MappingExecutionException;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexExecutorImpl;
@@ -95,8 +97,10 @@ public class RexBuilderTest {
         var operator = OperatorRegistry.get( OperatorName.MAPPING_CONVERT );
         var integer = typeFactory.createPolyType( PolyType.INTEGER );
         var nullableInteger = typeFactory.createTypeWithNullability( integer, true );
-        var conversion = builder.makeCall( integer, operator, input, fieldName );
-        var nullableConversion = builder.makeCall( nullableInteger, operator, input, fieldName );
+        var mappingName = builder.makeLiteral( "Amount conversion" );
+        var targetTableName = builder.makeLiteral( "public.amounts" );
+        var conversion = builder.makeCall( integer, operator, input, fieldName, mappingName, targetTableName );
+        var nullableConversion = builder.makeCall( nullableInteger, operator, input, fieldName, mappingName, targetTableName );
 
         assertEquals( Kind.MAPPING_CONVERT, conversion.getKind() );
         assertTrue( conversion.toString().endsWith( ":" + integer.getFullTypeString() ) );
@@ -109,10 +113,29 @@ public class RexBuilderTest {
         var typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
         var builder = new RexBuilder( typeFactory );
         var conversion = builder.makeCall( typeFactory.createPolyType( PolyType.INTEGER ),
-                OperatorRegistry.get( OperatorName.MAPPING_CONVERT ), builder.makeLiteral( "42" ), builder.makeLiteral( "amount" ) );
+                OperatorRegistry.get( OperatorName.MAPPING_CONVERT ), builder.makeLiteral( "42" ), builder.makeLiteral( "amount" ),
+                builder.makeLiteral( "Amount conversion" ), builder.makeLiteral( "public.amounts" ) );
         var executable = new RexExecutorImpl( null ).getExecutable( builder, List.of( conversion ), typeFactory.builder().build() );
 
         assertEquals( PolyInteger.of( 42 ), executable.getFunction().apply( null )[0] );
+    }
+
+
+    @Test
+    public void mappingConversionFailuresRetainContextAndCauseInGeneratedCode() {
+        var typeFactory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+        var builder = new RexBuilder( typeFactory );
+        for ( var type : List.of( PolyType.INTEGER, PolyType.DATE, PolyType.TIMESTAMP ) ) {
+            var inputType = typeFactory.createPolyType( PolyType.VARCHAR, 255 );
+            var input = builder.makeLiteral( "Male", inputType, true );
+            var targetType = typeFactory.createPolyType( type );
+            var conversion = builder.makeCall( targetType, OperatorRegistry.get( OperatorName.MAPPING_CONVERT ),
+                    input, builder.makeLiteral( "date1" ), builder.makeLiteral( "customers mapping" ), builder.makeLiteral( "public.customers_mapped" ) );
+            var executable = new RexExecutorImpl( null ).getExecutable( builder, List.of( conversion ), typeFactory.builder().build() );
+            var error = assertThrows( MappingExecutionException.class, () -> executable.getFunction().apply( null ) );
+            assertEquals( "Mapping 'customers mapping', target 'public.customers_mapped', column 'date1': cannot convert value \"Male\" from VARCHAR(255) to " + targetType + ".", error.getMessage() );
+            assertEquals( type == PolyType.INTEGER ? NumberFormatException.class : java.time.format.DateTimeParseException.class, error.getCause().getClass() );
+        }
     }
 
 }

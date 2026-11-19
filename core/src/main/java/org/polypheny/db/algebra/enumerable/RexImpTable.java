@@ -2419,7 +2419,11 @@ public class RexImpTable {
             Expression value = translator.translate( input );
             Expression column = translator.translate( call.getOperands().get( 1 ) );
             AlgDataType target = call.getType();
+            Expression mappingName = Expressions.field( translator.translate( call.getOperands().get( 2 ) ), "value" );
+            Expression targetTableName = Expressions.field( translator.translate( call.getOperands().get( 3 ) ), "value" );
             Expression converted = Expressions.call( ConversionColumnTransformer.class, "convert", value, column,
+                    mappingName, targetTableName,
+                    Expressions.constant( input.getType().toString() ), Expressions.constant( target.toString() ),
                     Expressions.constant( input.getType().getPolyType() ), Expressions.constant( target.getPolyType() ),
                     Expressions.constant( target.getPrecision() ), Expressions.constant( target.getScale() ),
                     Expressions.constant( PolyTypeUtil.equalSansNullability( translator.typeFactory, input.getType(), target ) ),
