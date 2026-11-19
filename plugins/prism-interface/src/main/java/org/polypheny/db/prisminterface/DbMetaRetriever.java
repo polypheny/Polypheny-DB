@@ -49,6 +49,7 @@ import org.polypheny.prism.Entity;
 import org.polypheny.prism.ForeignKey;
 import org.polypheny.prism.Function;
 import org.polypheny.prism.FunctionsResponse;
+import org.polypheny.prism.Graph;
 import org.polypheny.prism.Index;
 import org.polypheny.prism.Namespace;
 import org.polypheny.prism.NamespacesResponse;
@@ -248,7 +249,10 @@ class DbMetaRetriever {
 
 
     static List<Entity> getGraphEntities( long namespaceId, String entityPattern ) {
-        return null;
+        return Catalog.snapshot().graph().getGraphs( getPatternOrNull( entityPattern ) ).stream()
+                .filter( graph -> graph.namespaceId == namespaceId )
+                .map( graph -> Entity.newBuilder().setGraph( Graph.getDefaultInstance() ).build() )
+                .toList();
     }
 
 

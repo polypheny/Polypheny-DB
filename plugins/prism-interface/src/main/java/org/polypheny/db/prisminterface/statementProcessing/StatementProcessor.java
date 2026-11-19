@@ -48,6 +48,7 @@ public class StatementProcessor {
             ImmutableMap.<DataModel, Executor>builder()
                     .put( DataModel.RELATIONAL, new RelationalExecutor() )
                     .put( DataModel.DOCUMENT, new DocumentExecutor() )
+                    .put( DataModel.GRAPH, new GraphExecutor() )
                     .build();
 
 
@@ -126,9 +127,12 @@ public class StatementProcessor {
 
 
     public static void prepare( PIPreparedStatement piStatement ) {
+        QueryLanguage queryLanguage = piStatement.getLanguage();
+        if ( queryLanguage.dataModel() == DataModel.GRAPH ) {
+            throw new PIServiceException( "Prepared Cypher statements are not supported by Prism" );
+        }
         Transaction transaction = piStatement.getClient().getOrCreateNewTransaction();
         String query = piStatement.getQuery();
-        QueryLanguage queryLanguage = piStatement.getLanguage();
 
         Processor queryProcessor = transaction.getProcessor( queryLanguage );
         Node parsed = queryProcessor.parse( query ).get( 0 );

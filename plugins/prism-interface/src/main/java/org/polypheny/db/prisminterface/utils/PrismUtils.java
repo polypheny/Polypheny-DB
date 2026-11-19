@@ -17,7 +17,6 @@
 package org.polypheny.db.prisminterface.utils;
 
 import java.util.List;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.prisminterface.statements.PIPreparedStatement;
 import org.polypheny.db.prisminterface.statements.PIStatement;
 import org.polypheny.db.type.entity.PolyString;
@@ -26,6 +25,7 @@ import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.prism.ColumnMeta;
 import org.polypheny.prism.DocumentFrame;
 import org.polypheny.prism.Frame;
+import org.polypheny.prism.GraphFrame;
 import org.polypheny.prism.PreparedStatementSignature;
 import org.polypheny.prism.ProtoDocument;
 import org.polypheny.prism.RelationalFrame;
@@ -122,8 +122,16 @@ public class PrismUtils {
     }
 
 
-    public static Frame buildGraphFrame() {
-        throw new GenericRuntimeException( "Feature not implemented" );
+    public static Frame buildGraphFrame( boolean isLast, List<List<PolyValue>> rows ) {
+        GraphFrame.Builder graph = GraphFrame.newBuilder();
+        // GraphFrame is a flat sequence. Preserve projection and traversal order within it.
+        for ( List<PolyValue> row : rows ) {
+            row.forEach( value -> PolyValueSerializer.addGraphElements( graph, value ) );
+        }
+        return Frame.newBuilder()
+                .setIsLast( isLast )
+                .setGraphFrame( graph )
+                .build();
     }
 
 }

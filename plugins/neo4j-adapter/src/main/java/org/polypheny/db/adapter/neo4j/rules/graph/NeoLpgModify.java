@@ -28,8 +28,13 @@ import static org.polypheny.db.adapter.neo4j.util.NeoStatements.set_;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.polypheny.db.adapter.neo4j.NeoGraph;
 import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
@@ -156,13 +161,25 @@ public class NeoLpgModify extends LpgModify<NeoGraph> implements NeoGraphAlg {
 
     private List<NeoStatement> getCreatePath( ImmutableList<PolyNode> nodes, ImmutableList<PolyEdge> edges, NeoGraphImplementor implementor ) {
         Map<PolyString, PolyString> uuidNameMapping = new HashMap<>();
+        Set<String> bindings = Stream.concat( nodes.stream().map( PolyNode::getVariableName ), edges.stream().map( PolyEdge::getVariableName ) )
+                .filter( Objects::nonNull )
+                .map( PolyString::getValue )
+                .collect( Collectors.toCollection( HashSet::new ) );
 
         List<NeoStatement> statements = new ArrayList<>();
-
+        int nextBinding = 0;
         for ( PolyNode node : nodes ) {
-            //String name = "n" + i;
-            uuidNameMapping.put( node.id, node.getVariableName() );
-            statements.add( node_( node, PolyString.of( implementor.getGraph().mappingLabel ), true ) );
+            PolyString name = node.getVariableName();
+            if ( name == null || name.getValue() == null || name.getValue().isEmpty() ) {
+                // Bind anonymous nodes so edge patterns reuse them instead of creating new endpoints.
+                String generated;
+                do {
+                    generated = "polypheny_node_" + nextBinding++;
+                } while ( !bindings.add( generated ) );
+                name = PolyString.of( generated );
+            }
+            uuidNameMapping.put( node.id, name );
+            statements.add( node_( node.copyNamed( name ), PolyString.of( implementor.getGraph().mappingLabel ), true ) );
         }
         for ( PolyEdge edge : edges ) {
             statements.add( path_( node_( uuidNameMapping.get( edge.left ) ), edge_( edge, true ), node_( uuidNameMapping.get( edge.right ) ) ) );

@@ -27,6 +27,9 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
+import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
@@ -36,17 +39,21 @@ import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
+import org.polypheny.prism.GraphElement;
+import org.polypheny.prism.GraphFrame;
 import org.polypheny.prism.ProtoBigDecimal;
 import org.polypheny.prism.ProtoBinary;
 import org.polypheny.prism.ProtoBoolean;
 import org.polypheny.prism.ProtoDate;
 import org.polypheny.prism.ProtoDocument;
 import org.polypheny.prism.ProtoDouble;
+import org.polypheny.prism.ProtoEdge;
 import org.polypheny.prism.ProtoFloat;
 import org.polypheny.prism.ProtoInteger;
 import org.polypheny.prism.ProtoInterval;
 import org.polypheny.prism.ProtoList;
 import org.polypheny.prism.ProtoLong;
+import org.polypheny.prism.ProtoNode;
 import org.polypheny.prism.ProtoNull;
 import org.polypheny.prism.ProtoString;
 import org.polypheny.prism.ProtoTime;
@@ -288,6 +295,55 @@ public class PolyValueSerializer {
         return ProtoValue.newBuilder()
                 .setBigDecimal( protoBigDecimal )
                 .build();
+    }
+
+    static void addGraphElements( GraphFrame.Builder frame, PolyValue value ) {
+        // Prism has no null GraphElement. An optional match can yield no element.
+        if ( value == null || value.isNull() ) {
+            return;
+        }
+        switch ( value.getType() ) {
+            case NODE, EDGE -> addGraphElement( frame, (GraphPropertyHolder) value );
+            case PATH -> value.asPath().getPath().forEach( element -> addGraphElement( frame, element ) );
+            case GRAPH -> {
+                value.asGraph().getNodes().values().forEach( node -> addGraphElement( frame, node ) );
+                value.asGraph().getEdges().values().forEach( edge -> addGraphElement( frame, edge ) );
+            }
+            default -> throw new NotImplementedException( "Prism cannot encode a " + value.getType() + " value in a graph frame" );
+        }
+    }
+
+
+    private static void addGraphElement( GraphFrame.Builder frame, GraphPropertyHolder element ) {
+        List<String> labels = element.getLabels().stream().map( PolyString::getValue ).toList();
+        PolyString variableName = element.getVariableName();
+        String name = variableName == null ? null : variableName.getValue();
+        if ( element instanceof PolyNode node ) {
+            ProtoNode.Builder result = ProtoNode.newBuilder()
+                    .setId( node.getId().getValue() )
+                    .addAllLabels( labels );
+            node.properties.forEach( (key, value) -> result.putProperties( key.getValue(), serialize( value ) ) );
+            if ( name != null ) {
+                result.setName( name );
+            }
+            frame.addElement( GraphElement.newBuilder().setNode( result ) );
+        } else if ( element instanceof PolyEdge edge ) {
+            ProtoEdge.Builder result = ProtoEdge.newBuilder()
+                    .setId( edge.getId().getValue() )
+                    .addAllLabels( labels )
+                    .setLeft( edge.getLeft().getValue() )
+                    .setRight( edge.getRight().getValue() )
+                    .setDirection( switch ( edge.getDirection() ) {
+                        case LEFT_TO_RIGHT -> ProtoEdge.Direction.LEFT_TO_RIGHT;
+                        case RIGHT_TO_LEFT -> ProtoEdge.Direction.RIGHT_TO_LEFT;
+                        case NONE -> ProtoEdge.Direction.NONE;
+                    } );
+            edge.properties.forEach( (key, value) -> result.putProperties( key.getValue(), serialize( value ) ) );
+            if ( name != null ) {
+                result.setName( name );
+            }
+            frame.addElement( GraphElement.newBuilder().setEdge( result ) );
+        }
     }
 
 }

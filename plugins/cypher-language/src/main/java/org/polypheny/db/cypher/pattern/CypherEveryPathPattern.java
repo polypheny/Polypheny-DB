@@ -19,7 +19,6 @@ package org.polypheny.db.cypher.pattern;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -91,9 +90,8 @@ public class CypherEveryPathPattern extends CypherPattern {
                 namedNode = context.getNodeVariable( namedNode.left );
             }
             nodes.add( namedNode );
-            if ( namedNode != null && namedNode.left != null ) {
-                context.addNodes( List.of( Objects.requireNonNull( namedNode ) ) );
-            }
+            // Register immediately so later nodes in this pattern can reuse its binding.
+            context.addNodes( List.of( namedNode ) );
         }
 
         return nodes;
@@ -123,7 +121,6 @@ public class CypherEveryPathPattern extends CypherPattern {
         List<Pair<PolyString, PolyNode>> nodes = getPolyNodes( context );
         List<Pair<PolyString, EdgeVariableHolder>> edges = getPolyEdges( nodes );
 
-        context.addNodes( nodes );
         context.addEdges( edges );
 
     }
