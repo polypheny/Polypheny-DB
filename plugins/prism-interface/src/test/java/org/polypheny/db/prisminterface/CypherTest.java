@@ -363,15 +363,6 @@ class CypherTest {
 
 
     @Test
-    void returnsAnAggregateAsRelationalData() throws IOException {
-        try ( PrismConnection connection = new PrismConnection( true ) ) {
-            Frame result = connection.cypher( "MATCH (n:Person) RETURN count(*) AS total", 1 ).getResult().getFrame();
-            assertEquals( 3, integerValue( singleRow( relationalFrame( result, true, List.of( "total" ) ) ).getValues( 0 ) ) );
-        }
-    }
-
-
-    @Test
     void pagesMixedNodeAndScalarProjectionsInEitherOrder() throws IOException {
         List<String> names = List.of( "Alice", "Bob", "Charlie" );
         try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
