@@ -33,6 +33,7 @@ import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.constant.ResultKind;
 import org.polypheny.db.algebra.constant.SemiJoinType;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.CorrelationId;
@@ -135,7 +136,9 @@ public class PolyAlgToAlgConverter {
                 node instanceof Sort
                         ? ((Sort) node).collation
                         : AlgCollations.EMPTY;
-        return new AlgRoot( node, tupleType, Kind.SELECT, fields, collation );
+        AlgRoot plan = new AlgRoot( node, tupleType, Kind.SELECT, fields, collation );
+        DataModel model = plan.getModel() == null ? null : plan.getModel().dataModel();
+        return plan.withResultKind( ResultKind.forStatement( plan.kind, model, tupleType ) );
     }
 
 

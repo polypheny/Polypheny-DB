@@ -78,6 +78,12 @@ public class LogicalLpgModify extends LpgModify<Entity> implements RelationalTra
     }
 
 
+    public static boolean containsReturningWrite( AlgNode node ) {
+        return node instanceof LogicalLpgModify modify && modify.returnsRows()
+                || node.getInputs().stream().anyMatch( LogicalLpgModify::containsReturningWrite );
+    }
+
+
     public int getReturningParameters() {
         return returningParameters;
     }

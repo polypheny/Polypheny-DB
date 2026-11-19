@@ -16,6 +16,7 @@
 
 package org.polypheny.db.prisminterface.statements;
 
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,8 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.prism.ColumnMeta;
+import org.polypheny.prism.Frame;
 
 @Getter
 @Slf4j
@@ -39,9 +42,7 @@ public abstract class PIStatement {
     protected final StopWatch executionStopWatch;
     protected final QueryLanguage language;
     @Setter
-    private ResultIterator iterator;
-    @Setter
-    private boolean graphFrame;
+    private ResultCursor resultCursor;
     protected LogicalNamespace namespace;
 
 
@@ -58,12 +59,12 @@ public abstract class PIStatement {
 
 
     public void closeResults() {
-        if ( iterator == null ) {
+        if ( resultCursor == null ) {
             return;
         }
         try {
-            iterator.close();
-            iterator = null;
+            resultCursor.iterator().close();
+            resultCursor = null;
         } catch ( Exception e ) {
             throw new GenericRuntimeException( "Closing of open result iterator failed" );
         }
@@ -71,11 +72,20 @@ public abstract class PIStatement {
 
 
     public void closeResultsAndCommitIfAuto() {
-        boolean ownsOpenResult = iterator != null && getTransaction() == client.getCurrentTransaction();
+        boolean ownsOpenResult = resultCursor != null && getTransaction() == client.getCurrentTransaction();
         closeResults();
         if ( ownsOpenResult ) {
             client.commitCurrentTransactionIfAuto();
         }
+    }
+
+
+    public record ResultCursor( ResultIterator iterator, Frame.ResultCase format, List<ColumnMeta> columns ) {
+
+        public ResultCursor {
+            columns = List.copyOf( columns );
+        }
+
     }
 
 

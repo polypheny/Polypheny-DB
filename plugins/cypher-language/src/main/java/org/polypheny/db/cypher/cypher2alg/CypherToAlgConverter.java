@@ -36,6 +36,7 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.constant.ResultKind;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.common.ConditionalExecute.Condition;
@@ -62,6 +63,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph.SubstitutionGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.CypherNode.CypherFamily;
@@ -134,7 +136,7 @@ public class CypherToAlgConverter {
 
         if ( query.isFullScan() ) {
             // simple full graph relScan
-            return AlgRoot.of( buildFullScan( (LogicalGraph) entity ), Kind.SELECT );
+            return AlgRoot.of( buildFullScan( (LogicalGraph) entity ), Kind.SELECT ).withResultKind( ResultKind.GRAPH_ELEMENTS );
         }
 
         if ( !CypherFamily.QUERY.contains( query.getCypherKind() ) ) {
@@ -151,7 +153,13 @@ public class CypherToAlgConverter {
             output = LogicalConditionalExecute.create( context.returningInsert, output, Condition.GREATER_ZERO,
                     GenericRuntimeException.class, "Cypher CREATE did not produce an update result" );
         }
-        return AlgRoot.of( output, context.kind != null ? context.kind : Kind.SELECT );
+        AlgRoot root = AlgRoot.of( output, context.kind != null ? context.kind : Kind.SELECT );
+        ResultKind result = ResultKind.forStatement( root.kind, DataModel.GRAPH, root.validatedRowType );
+        if ( result == ResultKind.UPDATE_COUNT && (context.returningInsert != null
+                || (!(output instanceof LogicalLpgAggregate aggregate && aggregate.isWriteCount()) && LogicalLpgModify.containsReturningWrite( output ))) ) {
+            result = ResultKind.forGraphProjection( root.validatedRowType );
+        }
+        return root.withResultKind( result );
     }
 
 

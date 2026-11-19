@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.constant.ResultKind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.ExecutableStatement;
@@ -83,7 +84,8 @@ public abstract class Processor {
                 null,
                 Kind.CREATE_NAMESPACE, // technically correct, maybe change
                 statement,
-                null );
+                null,
+                ResultKind.COMMAND );
     }
 
 

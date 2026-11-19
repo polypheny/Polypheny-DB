@@ -54,6 +54,7 @@ import org.polypheny.db.algebra.AlgFieldCollation.Direction;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.constant.ResultKind;
 import org.polypheny.db.algebra.core.CorrelationId;
 import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.core.Values;
@@ -362,15 +363,15 @@ public class MqlToAlgConverter {
         return switch ( kind ) {
             case FIND -> {
                 AlgNode find = convertFind( (MqlFind) query, rowType, node );
-                yield AlgRoot.of( find, find.getTupleType(), Kind.SELECT );
+                yield AlgRoot.of( find, find.getTupleType(), Kind.SELECT ).withResultKind( ResultKind.DOCUMENTS );
             }
             case COUNT -> {
                 AlgNode count = convertCount( (MqlCount) query, rowType, node );
-                yield AlgRoot.of( count, count.getTupleType(), Kind.SELECT );
+                yield AlgRoot.of( count, count.getTupleType(), Kind.SELECT ).withResultKind( ResultKind.DOCUMENTS );
             }
             case AGGREGATE -> {
                 AlgNode aggregate = convertAggregate( (MqlAggregate) query, rowType, node );
-                yield AlgRoot.of( aggregate, Kind.SELECT );
+                yield AlgRoot.of( aggregate, Kind.SELECT ).withResultKind( ResultKind.DOCUMENTS );
             }
             /// dmls
             case INSERT -> AlgRoot.of( convertInsert( (MqlInsert) query, entity ), Kind.INSERT );

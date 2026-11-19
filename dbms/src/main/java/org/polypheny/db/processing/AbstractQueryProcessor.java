@@ -54,6 +54,7 @@ import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.constant.ResultKind;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.common.ConditionalExecute.Condition;
@@ -67,7 +68,6 @@ import org.polypheny.db.algebra.logical.common.LogicalBatchIterator;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
-import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
@@ -276,10 +276,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private ProposedImplementations prepareQueries( AlgRoot logicalRoot, AlgDataType parameterRowType, boolean isRouted, boolean isSubQuery ) {
-        boolean dmlReturning = isGraphInsertReturning( logicalRoot )
-                || logicalRoot.getModel() == ModelTrait.GRAPH && logicalRoot.kind.belongsTo( Kind.DML )
-                && !(logicalRoot.alg instanceof LogicalLpgAggregate aggregate && aggregate.isWriteCount())
-                && containsReturningGraphModify( logicalRoot.alg );
         boolean isAnalyze = statement.isAnalyze() && !isSubQuery;
         boolean lock = !isSubQuery;
 
@@ -451,7 +447,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                             resultConvention,
                             executionTimeMonitor,
                             Objects.requireNonNull( optimalNode.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).dataModel(),
-                            dmlReturning );
+                            parameterizedRoot.resultKind );
                     plan.result( result );
                     plan.generatedCodes( cached.result().getCode() );
                     plan.optimalNode( optimalNode );
@@ -516,7 +512,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             final AlgDataType rowType = plan.parameterizedRoot().alg.getTupleType();
             final List<Pair<Integer, String>> fields = Pair.zip( PolyTypeUtil.identity( rowType.getFieldCount() ), rowType.getFieldNames() );
-            AlgRoot optimalRoot = new AlgRoot( plan.optimalNode(), rowType, plan.parameterizedRoot().kind, fields, algCollation( plan.parameterizedRoot().alg ) );
+            AlgRoot optimalRoot = new AlgRoot( plan.optimalNode(), rowType, plan.parameterizedRoot().kind, fields, algCollation( plan.parameterizedRoot().alg ),
+                    plan.parameterizedRoot().resultKind );
 
             PreparedResult<PolyValue> preparedResult = implement( optimalRoot, parameterRowType );
 
@@ -537,7 +534,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     resultConvention,
                     executionTimeMonitor,
                     Objects.requireNonNull( plan.optimalNode().getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).dataModel(),
-                    dmlReturning );
+                    optimalRoot.resultKind );
             plan.result( result );
             plan.generatedCodes( preparedResult.getCode() );
             plan.optimalNode( optimalRoot.alg );
@@ -558,6 +555,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     private PolyImplementation implementPhysicalPlan( AlgRoot root, AlgDataType parameterRowType ) {
         final Convention resultConvention = ENABLE_BINDABLE ? BindableConvention.INSTANCE : EnumerableConvention.INSTANCE;
+        ResultKind resultKind = root.resultKind == ResultKind.UPDATE_COUNT && isGraphInsertReturning( root )
+                ? ResultKind.forGraphProjection( root.validatedRowType )
+                : root.resultKind;
 
         PreparedResult<PolyValue> preparedResult = implement( root, parameterRowType );
         UiRoutingPageUtil.addPhysicalPlanPage( root.alg, statement.getAnalyzer(), shouldAttachTextualPolyAlg() );
@@ -569,7 +569,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 resultConvention,
                 new ExecutionTimeMonitor(),
                 Objects.requireNonNull( root.alg.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).dataModel(),
-                isGraphInsertReturning( root ) );
+                resultKind );
     }
 
 
@@ -800,7 +800,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             };
             final AlgNode newRoot = shuttle.visit( root.alg );
-            return AlgRoot.of( newRoot, root.kind );
+            return AlgRoot.of( newRoot, root.kind ).withResultKind( root.resultKind );
 
         }
         return root;
@@ -895,7 +895,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
         };
         newRoot = newRoot.accept( shuttle2 );
-        return AlgRoot.of( newRoot, logicalRoot.kind );
+        return AlgRoot.of( newRoot, logicalRoot.kind ).withResultKind( logicalRoot.resultKind );
     }
 
 
@@ -989,14 +989,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private static boolean containsReturningGraphModify( AlgNode node ) {
-        return node instanceof LogicalLpgModify modify && modify.returnsRows()
-                || node.getInputs().stream().anyMatch( AbstractQueryProcessor::containsReturningGraphModify );
-    }
-
-
     private List<ProposedRoutingPlan> routeGraph( AlgRoot logicalRoot, LogicalQueryInformation queryInformation, DmlRouter dmlRouter ) {
-        if ( containsReturningGraphModify( logicalRoot.alg ) ) {
+        if ( LogicalLpgModify.containsReturningWrite( logicalRoot.alg ) ) {
             // A later MATCH can read from a sibling of the returning write in the algebra tree.
             AlgNode routed = dmlRouter.routeGraphDml( logicalRoot.alg, statement );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routed, logicalRoot, queryInformation.getQueryHash() ) );
@@ -1089,7 +1083,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 IntStream.range( 0, types.size() ).mapToObj( i -> "?" + i ).toList() );
 
         return new Pair<>(
-                new AlgRoot( parameterized, routedRoot.validatedRowType, routedRoot.kind, routedRoot.fields, routedRoot.collation ),
+                routedRoot.withAlg( parameterized ),
                 newParameterRowType
         );
     }
@@ -1193,7 +1187,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private PolyImplementation createPolyImplementation( PreparedResult<PolyValue> preparedResult, Kind kind, AlgNode optimalNode, AlgDataType validatedRowType, Convention resultConvention, ExecutionTimeMonitor executionTimeMonitor, DataModel dataModel, boolean dmlReturning ) {
+    private PolyImplementation createPolyImplementation( PreparedResult<PolyValue> preparedResult, Kind kind, AlgNode optimalNode, AlgDataType validatedRowType, Convention resultConvention, ExecutionTimeMonitor executionTimeMonitor, DataModel dataModel, ResultKind resultKind ) {
         final AlgDataType jdbcType = QueryProcessorHelpers.makeStruct( optimalNode.getCluster().getTypeFactory(), validatedRowType );
         return new PolyImplementation(
                 jdbcType,
@@ -1203,7 +1197,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 kind,
                 statement,
                 resultConvention,
-                dmlReturning
+                resultKind
         );
     }
 
@@ -1215,7 +1209,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             return null;
         }
         return PlanKeys.forTree( root.alg )
-                .flatMap( tree -> PlanKey.of( tree, root.kind, root.validatedRowType, root.fields, root.collation,
+                .flatMap( tree -> PlanKey.of( tree, root.kind, root.resultKind, root.validatedRowType, root.fields, root.collation,
                         parameterRowType, resultConvention.getName(), snapshot ) )
                 .orElse( null );
     }

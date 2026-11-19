@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.experimental.Accessors;
@@ -33,6 +34,7 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Function1;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.constant.ResultKind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory.Builder;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -59,7 +61,7 @@ public class PolyImplementation {
     public final AlgDataType tupleType;
     private final long maxRowCount = -1;
     private final Kind kind;
-    private final boolean dmlReturning;
+    private final ResultKind resultKind;
     private Bindable<PolyValue[]> bindable;
     private final DataModel dataModel;
     private final ExecutionTimeMonitor executionTimeMonitor;
@@ -94,7 +96,8 @@ public class PolyImplementation {
             Kind kind,
             Statement statement,
             @Nullable Convention resultConvention ) {
-        this( tupleType, dataModel, executionTimeMonitor, preparedResult, kind, statement, resultConvention, false );
+        this( tupleType, dataModel, executionTimeMonitor, preparedResult, kind, statement, resultConvention,
+                ResultKind.forStatement( kind, dataModel, tupleType ) );
     }
 
 
@@ -106,13 +109,13 @@ public class PolyImplementation {
             Kind kind,
             Statement statement,
             @Nullable Convention resultConvention,
-            boolean dmlReturning ) {
+            ResultKind resultKind ) {
 
         this.dataModel = dataModel;
         this.executionTimeMonitor = executionTimeMonitor;
         this.preparedResult = preparedResult;
         this.kind = kind;
-        this.dmlReturning = dmlReturning;
+        this.resultKind = Objects.requireNonNull( resultKind );
         this.statement = statement;
         this.resultConvention = resultConvention;
         this.isDDL = Kind.DDL.contains( kind );
@@ -174,18 +177,20 @@ public class PolyImplementation {
             return fields;
         }
 
-        final AlgDataType x = dmlReturning ? tupleType : switch ( kind ) {
-            case INSERT, DELETE, UPDATE, EXPLAIN ->
-                // FIXME: getValidatedNodeType is wrong for DML
-                    AlgOptUtil.createDmlRowType( kind, statement.getTransaction().getTypeFactory() );
-            default -> tupleType;
-        };
         final List<String> fieldNames = QueryProcessorHelpers.getFieldNames(
-                QueryProcessorHelpers.makeStruct( statement.getTransaction().getTypeFactory(), x ) );
+                QueryProcessorHelpers.makeStruct( statement.getTransaction().getTypeFactory(), getResultRowType() ) );
 
         this.fields = fieldNames;
         return fieldNames;
 
+    }
+
+
+    public AlgDataType getResultRowType() {
+        if ( kind == Kind.EXPLAIN || (resultKind == ResultKind.UPDATE_COUNT && (kind == Kind.INSERT || kind == Kind.DELETE || kind == Kind.UPDATE)) ) {
+            return AlgOptUtil.createDmlRowType( kind, statement.getTransaction().getTypeFactory() );
+        }
+        return tupleType;
     }
 
 

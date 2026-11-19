@@ -1025,6 +1025,15 @@ class CypherTest {
 
 
     @Test
+    void returnsAnAggregateAsRelationalData() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true ) ) {
+            Frame result = connection.cypher( "MATCH (n:Person) RETURN count(*) AS total", 1 ).getResult().getFrame();
+            assertEquals( 3, integerValue( singleRow( relationalFrame( result, true, List.of( "total" ) ) ).getValues( 0 ) ) );
+        }
+    }
+
+
+    @Test
     void pagesMixedNodeAndScalarProjectionsInEitherOrder() throws IOException {
         List<String> names = List.of( "Alice", "Bob", "Charlie" );
         try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
@@ -2753,7 +2762,7 @@ class CypherTest {
     }
 
 
-    private static RelationalFrame relationalFrame( Frame frame, boolean isLast, List<String> labels ) {
+    static RelationalFrame relationalFrame( Frame frame, boolean isLast, List<String> labels ) {
         assertTrue( frame.hasRelationalFrame(), () -> "Expected a relational frame but got " + frame.getResultCase() );
         assertEquals( isLast, frame.getIsLast() );
         RelationalFrame page = frame.getRelationalFrame();
@@ -2766,7 +2775,7 @@ class CypherTest {
     }
 
 
-    private static Row singleRow( RelationalFrame frame ) {
+    static Row singleRow( RelationalFrame frame ) {
         assertEquals( 1, frame.getRowsCount() );
         Row row = frame.getRows( 0 );
         assertEquals( frame.getColumnMetaCount(), row.getValuesCount() );
@@ -2805,7 +2814,7 @@ class CypherTest {
     }
 
 
-    private static long integerValue( ProtoValue value ) {
+    static long integerValue( ProtoValue value ) {
         return switch ( value.getValueCase() ) {
             case INTEGER -> value.getInteger().getInteger();
             case LONG -> value.getLong().getLong();
@@ -2839,7 +2848,7 @@ class CypherTest {
 
 
     /** Uses the JDBC plain transport with the server's unshaded Prism messages. */
-    private static class PrismConnection implements AutoCloseable {
+    static class PrismConnection implements AutoCloseable {
 
         private final PlainTransport transport;
         private long nextRequestId = 1;
