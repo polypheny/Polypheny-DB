@@ -534,11 +534,7 @@ class PIService {
     private Response closeResult( CloseResultRequest request, ResponseMaker<CloseResultResponse> responseObserver ) {
         PIClient client = getClient();
         PIStatement statement = client.getStatementManager().getStatement( request.getStatementId() );
-        if ( statement.getLanguage().dataModel() == DataModel.GRAPH ) {
-            statement.closeResultsAndCommitIfAuto();
-        } else {
-            statement.closeResults();
-        }
+        statement.closeResultsAndCommitIfAuto();
         return responseObserver.makeResponse( CloseResultResponse.newBuilder().build() );
     }
 
