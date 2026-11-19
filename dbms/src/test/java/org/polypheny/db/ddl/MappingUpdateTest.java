@@ -28,6 +28,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -45,7 +46,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.RelationalDataSource;
+import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
@@ -56,6 +61,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalView;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
 import org.polypheny.db.catalog.entity.mapping.SchemaMappingManager;
 import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.ConversionColumnMappingRule;
 import org.polypheny.db.catalog.entity.mapping.rules.MappingRule;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
@@ -78,6 +84,7 @@ import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.util.RunMode;
+import org.polypheny.db.webui.models.mapping.MappingModel;
 
 
 class MappingUpdateTest {
@@ -307,6 +314,133 @@ class MappingUpdateTest {
         verify( transaction, never() ).commit();
         var unique = new MappingUpdate( adapterId, -1, draft.revision(), " New mapping 2 ", draft.table().name, columnNames );
         assertEquals( "New mapping 2", ddl.createMapping( table.id, unique, statement ).mapping().name() );
+    }
+
+
+    @Test
+    void normalizesColumnOptionsAndEditsTheSavedTarget() {
+        var draft = MappingState.draft( catalog, adapterId, table.id );
+        var id = draft.columns().get( 0 );
+        var name = draft.columns().get( 1 );
+        var conversion = new MappingUpdate.ColumnName( name.id, name.name, true, PolyType.INTEGER, false );
+        var requested = List.of( new MappingUpdate.ColumnName( id.id, id.name, true, id.type, id.nullable ), conversion );
+        var create = new MappingUpdate( adapterId, -1, draft.revision(), draft.mapping().name(), draft.table().name, requested );
+        assertEquals( List.of( new MappingUpdate.ColumnName( id.id, id.name, true ), conversion ),
+                draft.validate( create, catalog.getSnapshot() ).columns() );
+
+        var edit = new MappingUpdate( adapterId, original.mapping().id(), original.revision(), original.mapping().name(), table.name, requested );
+        var ddl = new DdlManagerImpl( catalog );
+        var saved = ddl.updateMapping( edit, statement );
+        assertEquals( PolyType.INTEGER, saved.columns().get( 1 ).type );
+        assertFalse( saved.columns().get( 1 ).nullable );
+        assertEquals( PolyType.VARCHAR, saved.physicalTables().get( 0 ).columns.stream()
+                .filter( column -> column.id == name.id ).findFirst().orElseThrow().type );
+        assertTrue( saved.mapping().rules().stream().anyMatch( ConversionColumnMappingRule.class::isInstance ) );
+
+        var reverted = new MappingUpdate( adapterId, saved.mapping().id(), saved.revision(), saved.mapping().name(), table.name,
+                List.of( requested.get( 0 ), new MappingUpdate.ColumnName( name.id, name.name, true, PolyType.VARCHAR, true ) ) );
+        var restored = ddl.updateMapping( reverted, statement );
+        assertEquals( PolyType.VARCHAR, restored.columns().get( 1 ).type );
+        assertEquals( 40, restored.columns().get( 1 ).length );
+        assertTrue( restored.columns().get( 1 ).nullable );
+        assertTrue( restored.mapping().rules().stream().allMatch( DirectColumnMappingRule.class::isInstance ) );
+    }
+
+
+    @Test
+    void restoresAnExplicitSameTypeConversionAfterExcludingTheColumn() {
+        var ddl = new DdlManagerImpl( catalog );
+        var target = original.columns().get( 1 );
+        var keepId = new MappingUpdate.ColumnName( columns.get( 0 ).id, columns.get( 0 ).name, true );
+        var convert = new MappingUpdate.ColumnName( target.id, target.name, true, null, null, null, null, ConversionColumnMappingRule.DEFINITION.id() );
+        var saved = ddl.updateMapping( new MappingUpdate( adapterId, original.mapping().id(), original.revision(),
+                original.mapping().name(), table.name, List.of( keepId, convert ) ), statement );
+        assertTrue( saved.mapping().rules().contains( new ConversionColumnMappingRule( target.id ) ) );
+        assertEquals( target.type, saved.columns().get( 1 ).type );
+
+        var excluded = ddl.updateMapping( selection( saved, true, false ), statement );
+        assertFalse( excluded.isIncluded( target.id ) );
+        assertEquals( convert.ruleType(), excluded.mapping().excludedColumnRules().get( target.id ) );
+        var restored = ddl.updateMapping( selection( excluded, true, true ), statement );
+        assertTrue( restored.mapping().rules().contains( new ConversionColumnMappingRule( target.id ) ) );
+        assertTrue( restored.mapping().excludedColumnRules().isEmpty() );
+
+        var copy = new MappingUpdate.ColumnName( target.id, target.name, true, null, false, null, null, DirectColumnMappingRule.DEFINITION.id() );
+        var copied = ddl.updateMapping( new MappingUpdate( adapterId, restored.mapping().id(), restored.revision(),
+                restored.mapping().name(), table.name, List.of( keepId, copy ) ), statement );
+        assertTrue( copied.mapping().rules().contains( new DirectColumnMappingRule( target.id ) ) );
+        assertFalse( copied.columns().get( 1 ).nullable );
+        assertTrue( SchemaMappingManager.usesColumnTransformations( catalog.getSnapshot(), copied.mapping() ) );
+    }
+
+
+    @Test
+    void clearsSavedScaleWhenRestoringAnUnspecifiedScale() {
+        var ddl = new DdlManagerImpl( catalog );
+        var id = original.columns().get( 0 );
+        var name = original.columns().get( 1 );
+        var keepId = new MappingUpdate.ColumnName( id.id, id.name, true );
+        var convert = new MappingUpdate( adapterId, original.mapping().id(), original.revision(), original.mapping().name(), table.name,
+                List.of( keepId, new MappingUpdate.ColumnName( name.id, name.name, true, PolyType.DECIMAL, false, 10, 2 ) ) );
+        var saved = ddl.updateMapping( convert, statement );
+        assertEquals( 2, saved.columns().get( 1 ).scale );
+
+        var restore = new MappingUpdate( adapterId, saved.mapping().id(), saved.revision(), saved.mapping().name(), table.name,
+                List.of( keepId, new MappingUpdate.ColumnName( name.id, name.name, true, PolyType.DECIMAL, null, 8, AlgDataType.SCALE_NOT_SPECIFIED ) ) );
+        var restored = ddl.updateMapping( restore, statement ).columns().get( 1 );
+        assertEquals( 8, restored.length );
+        assertNull( restored.scale );
+        assertFalse( restored.nullable );
+    }
+
+
+    @Test
+    void describesTheSourceKeyEvenWhenTheMappingTargetHasDifferentColumnIds() {
+        var logical = catalog.getLogicalRel( table.namespaceId );
+        logical.addPrimaryKey( table.id, List.of( columns.get( 0 ).id ), statement );
+        catalog.commit();
+
+        var draft = MappingState.draft( catalog, adapterId, table.id );
+        var requested = draft.columns().stream().map( column -> new MappingUpdate.ColumnName( column.id, "target_" + column.name, true ) ).toList();
+        var created = new DdlManagerImpl( catalog ).createMapping( table.id,
+                new MappingUpdate( adapterId, -1, draft.revision(), "Renamed columns", "renamed_columns", requested ), statement );
+        assertNotEquals( draft.columns().get( 0 ).id, created.columns().get( 0 ).id );
+        assertNull( created.table().primaryKey );
+
+        var saved = MappingState.load( catalog, adapterId, created.mapping().id() );
+        for ( MappingState state : List.of( draft, saved ) ) {
+            var fields = MappingModel.Detail.from( state, catalog ).columns();
+            assertTrue( fields.get( 0 ).physicalReferences().get( 0 ).primary() );
+            assertFalse( fields.get( 1 ).physicalReferences().get( 0 ).primary() );
+        }
+    }
+
+
+    @Test
+    void prefersCsvKeyMetadataWhenTheExportUsesTheFileNameAsItsSchema() {
+        catalog.getLogicalRel( table.namespaceId ).addPrimaryKey( table.id, List.of( columns.get( 0 ).id ), statement );
+        catalog.commit();
+
+        var adapterSource = mock( DataSource.class );
+        var relational = mock( RelationalDataSource.class, CALLS_REAL_METHODS );
+        var id = new ExportedColumn( "id", PolyType.BIGINT, null, null, null, null, null, false, false, "source_file.csv", "source_file", "id", 1, false );
+        var name = new ExportedColumn( "name", PolyType.VARCHAR, null, 40, null, null, null, false, false, "source_file.csv", "source_file", "name", 2, true );
+        when( relational.getExportedColumns() ).thenReturn( Map.of( "source_file", List.of( id, name ) ) );
+        when( adapterSource.supportsRelational() ).thenReturn( true );
+        when( adapterSource.asRelationalDataSource() ).thenReturn( relational );
+        when( AdapterManager.getInstance().getSource( adapterId ) ).thenReturn( Optional.of( adapterSource ) );
+
+        var draft = MappingState.draft( catalog, adapterId, table.id );
+        assertEquals( "files", draft.physicalTables().get( 0 ).namespaceName );
+        var fields = MappingModel.Detail.from( draft, catalog ).columns();
+        assertFalse( fields.get( 0 ).physicalReferences().get( 0 ).primary() );
+        assertTrue( fields.get( 1 ).physicalReferences().get( 0 ).primary() );
+
+        when( relational.getExportedColumns() ).thenReturn( Map.of( "source_file", List.of( id ) ) );
+        assertFalse( MappingModel.Detail.from( draft, catalog ).columns().get( 0 ).physicalReferences().get( 0 ).primary() );
+
+        when( relational.getExportedColumns() ).thenReturn( Map.of() );
+        assertTrue( MappingModel.Detail.from( draft, catalog ).columns().get( 0 ).physicalReferences().get( 0 ).primary() );
     }
 
 

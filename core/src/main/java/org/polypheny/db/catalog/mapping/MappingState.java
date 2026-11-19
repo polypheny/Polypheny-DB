@@ -31,6 +31,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.polypheny.db.algebra.mapping.RuleRepository;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
@@ -42,15 +47,20 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
 import org.polypheny.db.catalog.entity.mapping.SchemaMappingManager;
 import org.polypheny.db.catalog.entity.mapping.rules.ColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.ConversionColumnMappingRule;
 import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
 import org.polypheny.db.catalog.entity.mapping.rules.MappingRule;
+import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.MappingKind;
+import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.ddl.MappingUpdate.ColumnName;
 import org.polypheny.db.ddl.MappingUpdate;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.ScalarConversions;
 
 
 /**
@@ -243,7 +253,7 @@ public record MappingState(
         String reason = null;
         if ( adapter.type != AdapterType.SOURCE || table.entityType != EntityType.SOURCE || table.modifiable ) {
             reason = "Only read-only imported source tables can be edited here.";
-        } else if ( mapping.rules().stream().anyMatch( rule -> !(rule instanceof DirectColumnMappingRule) ) ) {
+        } else if ( mapping.rules().stream().anyMatch( rule -> !supportsRuleInEditor( mapping, rule ) ) ) {
             reason = "This mapping uses rules that this editor does not support.";
         } else if ( allocations.stream().anyMatch( a -> a.adapterId != adapterId )
                 || !adapter.adapterName.equalsIgnoreCase( "CSV" )
@@ -260,13 +270,28 @@ public record MappingState(
                 snapshot.mappings().getMappingsForLogicalEntity( table.id ).size() > 1 ? snapshot.rel().getColumns( table.id ) : List.of() );
     }
 
+
+    private static boolean supportsRuleInEditor( SchemaMapping mapping, MappingRule rule ) {
+        if ( RuleRepository.definitionFor( rule.getClass() ).isEmpty() ) {
+            return false;
+        }
+        return switch ( mapping.sourceModel() ) {
+            case RELATIONAL -> mapping.targetModel() == DataModel.RELATIONAL && rule instanceof ColumnMappingRule;
+            case DOCUMENT, GRAPH -> false;
+        };
+    }
+
+
     /**
      * Validates the proposed changes, target compatibility, and dependencies, then returns a normalized update command.
      */
     public MappingUpdate validate( MappingUpdate update, Snapshot snapshot ) {
+        // checks that the save request refers to the same adapter and mapping that MappingState loaded
         if ( update.adapterId() != adapter.id || update.mappingId() != mapping.id() ) {
             throw notFound();
         }
+
+        // prevents a stale editor from overwriting newer changes
         validateRevision( update.expectedRevision() );
         LogicalNamespace targetNamespace = update.targetNamespaceId() == null ? namespace
                 : snapshot.getNamespace( update.targetNamespaceId() ).orElseThrow( () -> new EditException( "VALIDATION_FAILED",
@@ -319,8 +344,9 @@ public record MappingState(
             if ( included && physicalTables.stream().flatMap( physical -> physical.columns.stream() ).noneMatch( physical -> physical.id == column.id ) ) {
                 errors.put( field, "The selected source does not contain this field." );
             }
-            logicalChanged |= !name.equals( column.name ) || included != isIncluded( column.id );
-            names.add( new ColumnName( column.id, name, included ) );
+            ColumnName normalized = normalizeColumnUpdate( column, requestedColumn, name, included, errors );
+            logicalChanged |= !name.equals( column.name ) || included != isIncluded( column.id ) || normalized.changesTypeOrNullability();
+            names.add( normalized );
         }
         if ( names.stream().noneMatch( ColumnName::included ) ) {
             errors.put( "columns", "Include at least one field in the target entity." );
@@ -348,18 +374,177 @@ public record MappingState(
         if ( logicalChanged && mapping.id() >= 0 ) {
             List<String> dependencies = new ArrayList<>( snapshot.rel().getConnectedViews( table.id ).stream().map( v -> v.name ).toList() );
             Set<Long> excluded = names.stream().filter( c -> !c.included() ).map( ColumnName::logicalColumnId ).collect( Collectors.toSet() );
-            snapshot.rel().getExportedKeys( table.id ).stream().filter( key -> key.referencedKeyFieldIds.stream().anyMatch( excluded::contains ) )
+            Set<Long> changedTypes = names.stream().filter( ColumnName::changesTypeOrNullability ).map( ColumnName::logicalColumnId ).collect( Collectors.toSet() );
+            snapshot.rel().getExportedKeys( table.id ).stream()
+                    .filter( key -> key.referencedKeyFieldIds.stream().anyMatch( id -> excluded.contains( id ) || changedTypes.contains( id ) ) )
                     .map( key -> key.name ).forEach( dependencies::add );
+            if ( !changedTypes.isEmpty() ) {
+                addColumnConversionDependencies( snapshot, names, changedTypes, dependencies );
+            }
             if ( namespaceChanged ) {
                 snapshot.rel().getExportedKeys( table.id ).stream().map( key -> key.name ).forEach( dependencies::add );
                 snapshot.rel().getForeignKeys( table.id ).stream().map( key -> key.name ).forEach( dependencies::add );
             }
             if ( !dependencies.isEmpty() ) {
-                throw new EditException( "DEPENDENCY_CONFLICT", "Dependent views or foreign keys prevent changing this logical schema.", Map.of(), dependencies );
+                String message = changedTypes.isEmpty() ? "Dependent views or foreign keys prevent changing this logical schema."
+                        : "Dependencies prevent changing this logical schema.";
+                throw new EditException( "DEPENDENCY_CONFLICT", message, Map.of(), dependencies.stream().distinct().toList() );
             }
         }
         return new MappingUpdate( adapter.id, mapping.id(), revision, label, tableName, List.copyOf( names ), targetNamespace.id, update.existingTargetEntityId(), update.sourceAllocationId() );
     }
+
+
+    /**
+     * Returns a ColumnName ready for the mapping update
+     */
+    private ColumnName normalizeColumnUpdate( LogicalColumn column, ColumnName requestedColumn, String name, boolean included, Map<String, String> errors ) {
+        if ( requestedColumn == null ) {
+            return new ColumnName( column.id, name, included );
+        }
+        PolyType type = Objects.requireNonNullElse( requestedColumn.targetType(), column.type );
+        Boolean nullable = requestedColumn.targetNullable();
+        if ( nullable != null && nullable == column.nullable ) {
+            nullable = null;
+        }
+        Integer precision = requestedColumn.targetPrecision();
+        Integer scale = requestedColumn.targetScale();
+        boolean clearScale = type.allowsScale() && Objects.equals( scale, AlgDataType.SCALE_NOT_SPECIFIED );
+        if ( Objects.equals( precision, AlgDataType.PRECISION_NOT_SPECIFIED ) && type.allowsPrec() ) {
+            precision = null;
+        } else if ( type != column.type && precision == null ) {
+            var source = physicalColumns( column.id ).filter( field -> field.type == type ).findFirst().orElse( null );
+            if ( source != null ) {
+                precision = source.length;
+                scale = scale == null ? source.scale : scale;
+            }
+        } else if ( type == column.type ) {
+            precision = precision == null ? column.length : precision;
+            scale = scale == null ? column.scale : scale;
+        }
+        if ( clearScale ) {
+            scale = null;
+        }
+        if ( scale != null && precision == null && type.allowsScale() ) {
+            precision = AlgDataTypeSystem.DEFAULT.getDefaultPrecision( type );
+        }
+        boolean typeChanged = type != column.type || !Objects.equals( precision, column.length ) || !Objects.equals( scale, column.scale );
+        String ruleType = requestedColumn.ruleType();
+        if ( ruleType == null && included && !isIncluded( column.id ) ) {
+            ruleType = mapping.excludedColumnRules().get( column.id );
+        }
+        ColumnName normalized = typeChanged
+                ? new ColumnName( column.id, name, included, type, nullable, precision, scale, ruleType )
+                : new ColumnName( column.id, name, included, null, nullable, null, null, ruleType );
+        if ( normalized.changesTypeOrNullability() || normalized.ruleType() != null ) {
+            validateColumnConversion( column, normalized, errors );
+        }
+        return normalized;
+    }
+
+
+    /**
+     * Checks whether a requested type or nullability change is allowed for a column:
+     * - allows changes for included scalar columns with an independently editable logical target
+     * - checks supported conversions
+     * If validation fails, it adds a field-specific error under columns.<id>
+     */
+    private void validateColumnConversion( LogicalColumn column, ColumnName update, Map<String, String> errors ) {
+        String field = "columns." + column.id;
+        PolyType type = update.targetType();
+        // shared or fixed target || column excluded || collection valued column
+        // If all conditions are false, the column is an included scalar field in an independently editable target,
+        // and validation proceeds to check whether the requested type conversion is supported.
+        if ( !update.included() || !canConfigureColumn( column ) ) {
+            errors.put( field, "Rule, type and nullability changes require an included scalar field in an editable, independent target." );
+            return;
+        }
+        if ( type != null && !validTypeParameters( type, update.targetPrecision(), update.targetScale() ) ) {
+            errors.put( field, "Invalid precision, length or scale for %s.".formatted( type ) );
+            return;
+        }
+        if ( update.ruleType() != null ) {
+            var rule = RuleRepository.definitionForId( update.ruleType() ).orElse( null );
+            if ( rule == null || (rule.ruleClass() != DirectColumnMappingRule.class && rule.ruleClass() != ConversionColumnMappingRule.class) ) {
+                errors.put( field, "Unsupported column mapping rule '%s'.".formatted( update.ruleType() ) );
+                return;
+            }
+            if ( rule.ruleClass() == DirectColumnMappingRule.class ) {
+                var target = type == null ? column : column.toBuilder().type( type ).length( update.targetPrecision() ).scale( update.targetScale() ).build();
+                if ( physicalColumns( column.id ).anyMatch( source -> !SchemaMappingManager.hasMatchingValueType( target, source ) ) ) {
+                    errors.put( field, "Copy requires the source type, length and scale. Choose Convert to change the type." );
+                }
+                return;
+            }
+        }
+        var factory = AlgDataTypeFactory.DEFAULT;
+        var targetType = type == null ? column.getAlgDataType( factory )
+                : LogicalColumn.getAlgDataType( factory, update.targetPrecision(), update.targetScale(), type,
+                        null, null, null, column.nullable, column.elementsNullable );
+        physicalColumns( column.id ).filter( source -> !ScalarConversions.supports( source.getAlgDataType( factory ), targetType ) ).findFirst()
+                .ifPresent( source -> errors.put( field, "Conversion from %s to %s is not supported.".formatted( source.type, targetType.getPolyType() ) ) );
+    }
+
+
+    /**
+     * returns the list of target types offered in the mapping editor for that column.
+     */
+    public List<PolyType> targetTypeOptions( LogicalColumn column ) {
+        if ( !canConfigureColumn( column ) ) {
+            return List.of();
+        }
+        return physicalColumns( column.id ).findFirst()
+                .map( source -> ScalarConversions.targetTypes( source.getAlgDataType( AlgDataTypeFactory.DEFAULT ) ) ).orElse( List.of() );
+    }
+
+
+    private boolean canConfigureColumn( LogicalColumn column ) {
+        return editable() && fixedTargetEntityId == null && physicalTables.size() == 1 && column.collectionsType == null
+                && mapping.sourceModel() == DataModel.RELATIONAL && mapping.targetModel() == DataModel.RELATIONAL;
+    }
+
+
+    private Stream<PhysicalColumn> physicalColumns( long columnId ) {
+        return physicalTables.stream().flatMap( physical -> physical.columns.stream() ).filter( column -> column.id == columnId );
+    }
+
+
+    private static boolean validTypeParameters( PolyType type, Integer precision, Integer scale ) {
+        var system = AlgDataTypeSystem.DEFAULT;
+        if ( precision != null ) {
+            int minimum = type == PolyType.TIME || type == PolyType.TIMESTAMP ? 0 : 1;
+            int maximum = system.getMaxPrecision( type );
+            if ( !type.allowsPrec() || precision < minimum || (maximum >= 0 && precision > maximum) ) {
+                return false;
+            }
+        }
+        return scale == null || (type.allowsScale() && scale >= 0
+                && scale <= Objects.requireNonNullElseGet( precision, () -> system.getDefaultPrecision( type ) )
+                && scale <= system.getMaxScale( type ));
+    }
+
+
+    /**
+     * Checks whether changing a column’s type or nullability in a saved mapping would affect objects that depend on the logical table
+     */
+    private void addColumnConversionDependencies( Snapshot snapshot, List<ColumnName> updates, Set<Long> changedColumns, List<String> dependencies ) {
+        snapshot.rel().getForeignKeys( table.id ).stream().filter( key -> key.fieldIds.stream().anyMatch( changedColumns::contains ) )
+                .map( key -> key.name ).forEach( dependencies::add );
+        snapshot.rel().getConstraints( table.id ).stream().filter( constraint -> constraint.key.fieldIds.stream().anyMatch( changedColumns::contains ) )
+                .map( constraint -> constraint.name ).forEach( dependencies::add );
+        snapshot.rel().getIndexes( table.id, false ).stream().filter( index -> index.key.fieldIds.stream().anyMatch( changedColumns::contains ) )
+                .map( index -> index.name ).forEach( dependencies::add );
+        snapshot.rel().getPrimaryKeys().stream().filter( key -> key.entityId == table.id )
+                .filter( key -> updates.stream().anyMatch( update -> key.fieldIds.contains( update.logicalColumnId() )
+                        && (update.targetType() != null || Boolean.TRUE.equals( update.targetNullable() )) ) )
+                .forEach( key -> dependencies.add( "Primary key of " + table.name ) );
+        snapshot.rel().getTables( (Pattern) null, null ).stream().filter( target -> Objects.equals( target.synchronizedSourceEntityId, table.id ) )
+                .map( target -> target.name ).forEach( dependencies::add );
+        columns.stream().filter( column -> column.defaultValue != null )
+                .filter( column -> updates.stream().anyMatch( update -> update.logicalColumnId() == column.id && update.targetType() != null ) )
+                .map( column -> "Default value of " + column.name ).forEach( dependencies::add );
+    }
+
 
     /**
      * Rejects editing when unsupported or when the submitted revision differs from the current state.
@@ -410,6 +595,8 @@ public record MappingState(
                     namespace.id, namespace.name, namespace.caseSensitive, table.id, table.name, table.entityType, table.modifiable );
             adapter.settings.entrySet().stream().sorted( Map.Entry.comparingByKey() ).forEach( e -> hash( digest, e.getKey(), e.getValue() ) );
             mapping.rules().forEach( r -> hash( digest, r.getClass().getName(), r.toString() ) );
+            mapping.excludedColumnRules().entrySet().stream().sorted( Map.Entry.comparingByKey() )
+                    .forEach( entry -> hash( digest, entry.getKey(), entry.getValue() ) );
             columns.forEach( c -> hash( digest, c.id, c.name, c.position, c.type, c.collectionsType, c.length, c.scale, c.dimension, c.cardinality, c.nullable ) );
             allocations.forEach( a -> hash( digest, a.id, a.adapterId, a.placementId, a.partitionId, a.logicalId ) );
             physicalTables.forEach( p -> {

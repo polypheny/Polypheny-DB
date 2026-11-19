@@ -1357,7 +1357,12 @@ public enum Kind {
      */
     CYPHER_FUNCTION,
 
-    ELEMENT_REF;
+    ELEMENT_REF,
+
+    /**
+     * Converts a source value to the target field's type in a schema mapping.
+     */
+    MAPPING_CONVERT;
 
     // Most of the static fields are categories, aggregating several kinds into a set.
 

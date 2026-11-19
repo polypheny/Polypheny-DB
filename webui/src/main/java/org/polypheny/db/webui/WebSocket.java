@@ -217,24 +217,7 @@ public class WebSocket implements Consumer<WsConfig> {
                 try {
                     LogicalNamespace namespace = Catalog.getInstance().getSnapshot().getNamespace( refreshRequest.namespace ).orElse( null );
                     refreshResult = switch ( namespace == null ? DataModel.RELATIONAL : namespace.dataModel ) {
-                        case RELATIONAL -> {
-                            String table = Catalog.snapshot().rel().getTable( refreshRequest.entityId ).map( t -> t.name ).orElse( String.valueOf( refreshRequest.entityId ) );
-                            Crud.SourceMaterializationRefreshResult refresh = crud.refreshSourceSchemaIfNeeded( refreshRequest );
-                            if ( refresh.sourceEntityDeleted() ) {
-                                yield RelationalResult.builder()
-                                        .dataModel( DataModel.RELATIONAL )
-                                        .namespace( refreshRequest.namespace )
-                                        .table( table )
-                                        .changeDescriptions( refresh.changeDescriptions().toArray( new String[0] ) )
-                                        .sourceEntityDeleted( true )
-                                        .build();
-                            }
-                            yield crud.getTable( refreshRequest ).toBuilder()
-                                    .changeDescriptions( refresh.changeDescriptions().toArray( new String[0] ) )
-                                    .dataRefreshRowCount( refresh.dataRefreshRowCount() )
-                                    .sourceEntityDeleted( refresh.sourceEntityDeleted() )
-                                    .build();
-                        }
+                        case RELATIONAL -> crud.refreshTable( refreshRequest );
                         case DOCUMENT -> {
                             String entity = Catalog.snapshot().doc().getCollection( refreshRequest.entityId ).map( c -> c.name ).orElse( "" );
                             if ( "synchronizedApplyWithData".equalsIgnoreCase( refreshRequest.refreshTrigger ) ) {

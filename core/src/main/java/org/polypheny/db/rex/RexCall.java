@@ -174,7 +174,7 @@ public class RexCall extends RexNode {
         // This data race is intentional
         String localDigest = digest;
         if ( localDigest == null ) {
-            localDigest = computeDigest( isA( Kind.CAST ) || isA( Kind.NEW_SPECIFICATION ) );
+            localDigest = computeDigest( isA( Kind.CAST ) || isA( Kind.NEW_SPECIFICATION ) || isA( Kind.MAPPING_CONVERT ) );
             digest = Objects.requireNonNull( localDigest );
         }
         return localDigest;

@@ -17,7 +17,8 @@
 package org.polypheny.db.catalog.entity.mapping.rules;
 
 import io.activej.serializer.annotations.SerializeClass;
+import org.polypheny.db.catalog.entity.mapping.SchemaMapping.ExcludedColumnRules;
 
-@SerializeClass(subclasses = DirectColumnMappingRule.class)
+@SerializeClass(subclasses = { DirectColumnMappingRule.class, ConversionColumnMappingRule.class, ExcludedColumnRules.class })
 public interface MappingRule {
 }

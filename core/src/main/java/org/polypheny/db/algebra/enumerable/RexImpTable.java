@@ -87,6 +87,7 @@ import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.fun.TrimFunction.Flag;
 import org.polypheny.db.algebra.fun.TrimFunction.TrimFlagHolder;
 import org.polypheny.db.algebra.fun.UserDefined;
+import org.polypheny.db.algebra.mapping.ConversionColumnTransformer;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -292,6 +293,8 @@ public class RexImpTable {
         map.put( OperatorRegistry.get( OperatorName.CASE ), new CaseImplementor() );
         map.put( OperatorRegistry.get( OperatorName.COALESCE ), new CoalesceImplementor() );
         map.put( OperatorRegistry.get( OperatorName.CAST ), new CastOptimizedImplementor() );
+        // How to execute MAPPING_CONVERT
+        map.put( OperatorRegistry.get( OperatorName.MAPPING_CONVERT ), new MappingConvertImplementor() );
 
         defineImplementor( OperatorRegistry.get( OperatorName.REINTERPRET ), NullPolicy.STRICT, new ReinterpretImplementor(), false );
 
@@ -2399,6 +2402,29 @@ public class RexImpTable {
                             && !Primitive.is( translatedOperands.get( 0 ).getType() );
             final AlgDataType targetType = translator.nullifyType( call.getType(), nullable );
             return translator.translateCast( sourceType, targetType, translatedOperands.get( 0 ) );
+        }
+
+    }
+
+
+    /**
+     * Handles value conversion when a query runs.
+     * Generates the code that converts the source column’s value into the target column’s value for each row
+     */
+    private static class MappingConvertImplementor implements CallImplementor {
+
+        @Override
+        public Expression implement( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
+            RexNode input = call.getOperands().get( 0 );
+            Expression value = translator.translate( input );
+            Expression column = translator.translate( call.getOperands().get( 1 ) );
+            AlgDataType target = call.getType();
+            Expression converted = Expressions.call( ConversionColumnTransformer.class, "convert", value, column,
+                    Expressions.constant( input.getType().getPolyType() ), Expressions.constant( target.getPolyType() ),
+                    Expressions.constant( target.getPrecision() ), Expressions.constant( target.getScale() ),
+                    Expressions.constant( PolyTypeUtil.equalSansNullability( translator.typeFactory, input.getType(), target ) ),
+                    Expressions.constant( target.isNullable() ), translator.getRoot() );
+            return nullAs.handle( Expressions.convert_( converted, translator.typeFactory.getJavaClass( target ) ) );
         }
 
     }

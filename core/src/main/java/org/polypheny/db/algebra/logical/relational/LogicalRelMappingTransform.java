@@ -20,14 +20,26 @@ import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.logical.common.LogicalMappingTransform;
 import org.polypheny.db.algebra.mapping.FieldMappingContext;
 import org.polypheny.db.algebra.mapping.PhysicalMappingBinding;
+import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.PolyAlgMetadata;
+import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.StringArg;
+import org.polypheny.db.algebra.rules.MappingTransformRule;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.schema.trait.ModelTrait;
 
 
@@ -51,6 +63,45 @@ public final class LogicalRelMappingTransform extends LogicalMappingTransform im
         new FieldMappingContext( mapping, binding, input.getTupleType(), input.getCluster().getRexBuilder() ).validatePhysicalNames();
         // A mapping can reorder fields, so input collations must not be copied.
         return new LogicalRelMappingTransform( input, input.getCluster().traitSetOf( Convention.NONE ), mapping, binding, targetType );
+    }
+
+
+    public static LogicalRelMappingTransform create( PolyAlgArgs args, List<AlgNode> inputs, AlgCluster cluster ) {
+        long mappingId = Long.parseLong( args.getArg( "mappingId", StringArg.class ).getArg() );
+        var snapshot = cluster.getSnapshot();
+        var mapping = snapshot.mappings().getMapping( mappingId )
+                .orElseThrow( () -> new GenericRuntimeException( "Unknown mapping %d.", mappingId ) );
+        AlgNode input = sole( inputs );
+        if ( !(input.getEntity() instanceof PhysicalEntity physical) ) {
+            throw new GenericRuntimeException( "Mapping %d requires a physical source scan.", mappingId );
+        }
+        var allocation = snapshot.alloc().getFromLogical( mapping.targetEntityId() ).stream()
+                .filter( candidate -> candidate.id == physical.allocationId ).findFirst()
+                .orElseThrow( () -> new GenericRuntimeException( "Mapping %d does not use allocation %d.", mappingId, physical.allocationId ) );
+        var binding = PhysicalMappingBinding.create( mapping, allocation, Catalog.getInstance().getAdapterCatalog( allocation.adapterId ).orElseThrow() );
+        if ( binding.physicalEntityId() != physical.id ) {
+            throw new GenericRuntimeException( "Mapping %d does not use physical source %d.", mappingId, physical.id );
+        }
+        return create( input, mapping, binding, allocation.getTupleType() );
+    }
+
+
+    @Override
+    public PolyAlgArgs bindArguments() {
+        return new PolyAlgArgs( getPolyAlgDeclaration() ).put( "mappingId", new StringArg( String.valueOf( getMapping().id() ) ) );
+    }
+
+
+    @Override
+    protected void addPolyAlgMetadata( PolyAlgMetadata metadata, AlgMetadataQuery mq ) {
+        metadata.addBadge( getMapping().name(), "mapping", PolyAlgMetadata.BadgeLevel.INFO );
+        var inputFields = getInput().getTupleType().getFieldNames();
+        for ( var project : MappingTransformRule.REL_INSTANCE.projectFields( this ) ) {
+            if ( project instanceof RexCall call && call.isA( Kind.MAPPING_CONVERT ) ) {
+                var description = PolyAlgUtils.describeMappingConversion( call, inputFields );
+                metadata.addBadge( description, "conversion", PolyAlgMetadata.BadgeLevel.INFO );
+            }
+        }
     }
 
 

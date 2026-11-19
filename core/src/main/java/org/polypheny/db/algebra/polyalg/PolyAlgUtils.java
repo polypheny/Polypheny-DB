@@ -281,6 +281,19 @@ public class PolyAlgUtils {
     }
 
 
+    public static String describeMappingConversion( RexCall conversion, List<String> inputFieldNames ) {
+        var source = conversion.getOperands().get( 0 );
+        var target = ((RexLiteral) conversion.getOperands().get( 1 )).getValue().asString().value;
+        String sourceType = source.getType().toString();
+        String targetType = conversion.getType().toString();
+        if ( source.getType().isNullable() != conversion.getType().isNullable() ) {
+            sourceType += source.getType().isNullable() ? " NULL" : " NOT NULL";
+            targetType += conversion.getType().isNullable() ? " NULL" : " NOT NULL";
+        }
+        return digestWithNames( source, inputFieldNames ) + " (" + sourceType + ") → " + target + " (" + targetType + ")";
+    }
+
+
     public static class NameReplacer implements RexVisitor<String> {
 
         private final List<String> names;
@@ -304,7 +317,7 @@ public class PolyAlgUtils {
                 // DocumentTypes should probably be handled better
                 type = localRef.getType().getPolyType().getTypeName();
             }
-            return RexLocalRef.PREFIX + localRef.getIndex() + ":" + type;
+            return RexLocalRef.PREFIX + localRef.getIndex() + ":" + type + (localRef.getType().isNullable() ? "" : " NOT NULL");
         }
 
 
@@ -330,6 +343,12 @@ public class PolyAlgUtils {
                     sb.append( call.type.getFullTypeString() );
                 }
                 sb.append( ")" );
+            }
+            if ( call.isA( Kind.MAPPING_CONVERT ) ) {
+                sb.append( ':' ).append( call.type );
+                if ( !call.type.isNullable() ) {
+                    sb.append( " NOT NULL" );
+                }
             }
             return sb.toString();
         }

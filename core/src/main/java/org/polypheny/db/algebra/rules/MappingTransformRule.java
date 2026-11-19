@@ -73,6 +73,22 @@ public final class MappingTransformRule extends AlgOptRule {
 
 
     private AlgNode applyRelational( LogicalRelMappingTransform transform ) {
+        AlgNode input = transform.getInput();
+        List<RexNode> projects = projectFields( transform );
+
+        // If the physical scan already has exactly the required row type and column order, return it.
+        if ( input.getTupleType().equals( transform.getTupleType() )
+                && input.getTupleType().getFieldIds().equals( transform.getTupleType().getFieldIds() ) && isIdentity( projects ) ) {
+            return input;
+        }
+
+        // Physical scan returns the right columns in a different order, or returns extra columns.
+        // Build a LogicalRelProject that selects and orders the physical fields into the logical row type.
+        return LogicalRelProject.create( input, projects, transform.getTupleType() );
+    }
+
+
+    public List<RexNode> projectFields( LogicalRelMappingTransform transform ) {
         var mapping = transform.getMapping();
         AlgNode input = transform.getInput();
 
@@ -102,15 +118,7 @@ public final class MappingTransformRule extends AlgOptRule {
             projects.add( transformers.transform( rule, targetField, context ) );
         }
 
-        // If the physical scan already has exactly the required row type and column order, return it.
-        if ( input.getTupleType().equals( transform.getTupleType() )
-                && input.getTupleType().getFieldIds().equals( transform.getTupleType().getFieldIds() ) && isIdentity( projects ) ) {
-            return input;
-        }
-
-        // Physical scan returns the right columns in a different order, or returns extra columns.
-        // Build a LogicalRelProject that selects and orders the physical fields into the logical row type.
-        return LogicalRelProject.create( input, projects, transform.getTupleType() );
+        return projects;
     }
 
 

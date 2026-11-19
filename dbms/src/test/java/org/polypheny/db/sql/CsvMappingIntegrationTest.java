@@ -19,6 +19,8 @@ package org.polypheny.db.sql;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,6 +29,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -35,13 +38,29 @@ import org.junit.jupiter.api.io.TempDir;
 import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.algebra.mapping.ConversionColumnTransformer;
+import org.polypheny.db.algebra.mapping.FieldMappingContext;
+import org.polypheny.db.algebra.mapping.PhysicalMappingBinding;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
 import org.polypheny.db.catalog.entity.mapping.SchemaMappingManager;
+import org.polypheny.db.catalog.entity.mapping.rules.ConversionColumnMappingRule;
+import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.catalog.logistic.MappingKind;
 import org.polypheny.db.catalog.mapping.MappingState;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.MappingUpdate;
+import org.polypheny.db.prepare.JavaTypeFactoryImpl;
+import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexExecutorImpl;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 
 
 @Tag("adapter")
@@ -255,6 +274,117 @@ class CsvMappingIntegrationTest {
         } finally {
             if ( Catalog.snapshot().getAdapter( adapterName ).isPresent() ) {
                 execute( "ALTER ADAPTERS DROP \"" + adapterName + "\"" );
+            }
+        }
+    }
+
+
+    @Test
+    void convertsCsvTextWithTheLogicalTypeAndPreservesTheSourceOnRefresh( @TempDir Path directory ) throws Exception {
+        String suffix = UUID.randomUUID().toString().replace( "-", "" ).substring( 0, 8 );
+        String adapterName = "conversioncsv" + suffix;
+        String sourceName = "conversionfile" + suffix;
+        Path file = directory.resolve( sourceName + ".csv" );
+        String header = "id:long,amount:string\n";
+        Files.writeString( file, header + "1,42\n" );
+        String escapedDirectory = directory.toString().replace( "\\", "\\\\" );
+        try {
+            execute( "ALTER ADAPTERS ADD \"" + adapterName + "\" USING 'CSV' AS 'Source' WITH '"
+                    + "{\"method\":\"link\",\"directoryName\":\"" + escapedDirectory + "\",\"directory\":\"" + escapedDirectory + "\",\"maxStringLength\":\"40\"}'" );
+            long adapterId = Catalog.snapshot().getAdapter( adapterName ).orElseThrow().id;
+            var source = Catalog.snapshot().rel().getTable( Catalog.DEFAULT_NAMESPACE_NAME, sourceName ).orElseThrow();
+            var draft = MappingState.draft( Catalog.getInstance(), adapterId, source.id );
+            var columns = draft.columns().stream().map( column -> column.name.equals( "amount" )
+                    ? new MappingUpdate.ColumnName( column.id, column.name, true, PolyType.INTEGER, true )
+                    : new MappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
+            var request = new MappingUpdate( adapterId, -1, draft.revision(), draft.mapping().name(), draft.table().name, columns, draft.namespace().id );
+            var transaction = TestHelper.getInstance().getTransaction();
+            MappingState created;
+            try {
+                created = DdlManager.getInstance().createMapping( source.id, request, transaction.createStatement() );
+            } finally {
+                if ( transaction.isActive() ) {
+                    transaction.rollback( "Mapping creation test cleanup" );
+                }
+            }
+            var amount = created.columns().stream().filter( column -> column.name.equals( "amount" ) ).findFirst().orElseThrow();
+            assertEquals( PolyType.INTEGER, amount.type );
+            assertTrue( amount.nullable );
+            assertTrue( created.mapping().rules().contains( new ConversionColumnMappingRule( amount.id ) ) );
+            assertEquals( PolyType.VARCHAR, created.physicalTables().get( 0 ).columns.stream()
+                    .filter( column -> column.id == amount.id ).findFirst().orElseThrow().type );
+            String sql = "SELECT amount + 1 FROM " + created.table().name;
+            assertEquals( List.of( "43" ), query( sql ) );
+
+            transaction = TestHelper.getInstance().getTransaction();
+            try {
+                DdlManager.getInstance().refreshSourceSchemaIfNeeded( created.table().id, transaction.createStatement() );
+                transaction.commit();
+            } finally {
+                if ( transaction.isActive() ) {
+                    transaction.rollback( "Mapping refresh test cleanup" );
+                }
+            }
+            assertEquals( created.mapping(), MappingState.load( Catalog.getInstance(), created.mapping().id() ).mapping() );
+            assertEquals( List.of( "43" ), query( sql ) );
+
+            Files.writeString( file, header + "1,abc\n" );
+            assertThrows( SQLException.class, () -> query( sql ) );
+            Files.writeString( file, header + "1,2147483648\n" );
+            assertThrows( SQLException.class, () -> query( sql ) );
+
+            Files.writeString( file, header + "1,42.125\n" );
+            var decimalColumns = created.columns().stream().map( column -> column.id == amount.id
+                    ? new MappingUpdate.ColumnName( column.id, column.name, true, PolyType.DECIMAL, false, 8, 2 )
+                    : new MappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
+            var edit = new MappingUpdate( adapterId, created.mapping().id(), created.revision(), created.mapping().name(),
+                    created.table().name, decimalColumns );
+            transaction = TestHelper.getInstance().getTransaction();
+            try {
+                DdlManager.getInstance().updateMapping( edit, transaction.createStatement() );
+            } finally {
+                if ( transaction.isActive() ) {
+                    transaction.rollback( "Mapping edit test cleanup" );
+                }
+            }
+            assertEquals( List.of( "42.13" ), query( "SELECT amount FROM " + created.table().name ) );
+        } finally {
+            if ( Catalog.snapshot().getAdapter( adapterName ).isPresent() ) {
+                execute( "ALTER ADAPTERS DROP \"" + adapterName + "\"" );
+            }
+        }
+    }
+
+
+    @Test
+    void enforcesTargetNullabilityWhenThePhysicalColumnCanProduceNull() {
+        var factory = new JavaTypeFactoryImpl();
+        var rex = new RexBuilder( factory );
+        var column = new PhysicalColumn( 1, "amount", "amount", 2, 3, 4, 0,
+                PolyType.VARCHAR, null, 40, null, null, null, true, true, null, null );
+        var input = factory.builder().add( column.id, column.logicalName, column.name, column.getAlgDataType( factory ) ).build();
+        var rule = new ConversionColumnMappingRule( column.id );
+        var mapping = new SchemaMapping( 5, "Amount conversion", MappingKind.PHYSICAL_TO_LOGICAL, null, 3,
+                DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( rule ), 2L );
+        var binding = new PhysicalMappingBinding( 2, 3, 4, 6, Map.of( column.id, column ) );
+        var context = new FieldMappingContext( mapping, binding, input, rex );
+        var row = mock( DataContext.class );
+        var executor = new RexExecutorImpl( row );
+
+        for ( boolean nullable : new boolean[]{ true, false } ) {
+            var type = factory.createTypeWithNullability( factory.createPolyType( PolyType.INTEGER ), nullable );
+            var target = new AlgDataTypeFieldImpl( column.id, column.logicalName, null, 0, type );
+            var expression = new ConversionColumnTransformer().transform( rule, target, context );
+            var function = executor.getExecutable( rex, List.of( expression ), input ).getFunction();
+            when( row.get( "inputRecord" ) ).thenReturn( new PolyValue[]{ PolyString.of( "42" ) } );
+            assertEquals( PolyInteger.of( 42 ), function.apply( row )[0] );
+            when( row.get( "inputRecord" ) ).thenReturn( new PolyValue[]{ null } );
+            if ( nullable ) {
+                Object result = function.apply( row )[0];
+                assertTrue( result == null || ((PolyValue) result).isNull() );
+            } else {
+                var error = assertThrows( GenericRuntimeException.class, () -> function.apply( row ) );
+                assertTrue( error.getMessage().contains( "non-nullable column 'amount'" ) );
             }
         }
     }

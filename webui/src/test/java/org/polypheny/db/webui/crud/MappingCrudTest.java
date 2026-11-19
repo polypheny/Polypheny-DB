@@ -42,6 +42,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
 import org.polypheny.db.catalog.entity.mapping.SchemaMappingManager;
 import org.polypheny.db.catalog.entity.mapping.rules.ColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.ConversionColumnMappingRule;
 import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
@@ -121,10 +122,13 @@ class MappingCrudTest {
         assertThrows( EditException.class, () -> MappingCrud.parseRequest( "{\"mappingId\":31}", RemoveRequest.class ) );
         var create = MappingCrud.parseRequest( """
                 {"adapterId":7,"targetEntityId":50,"expectedRevision":"draft","mappingName":"Created",
-                 "logicalTableName":"customers","columns":[{"logicalColumnId":101,"logicalName":"id","included":true}]}
+                 "logicalTableName":"customers","columns":[{"logicalColumnId":101,"logicalName":"id","included":true,"targetType":"INTEGER","targetNullable":false,"ruleType":"CONVERT_COLUMN"}]}
                 """, CreateRequest.class );
         assertEquals( -1, create.toCommand().mappingId() );
         assertEquals( 50, create.targetEntityId() );
+        assertEquals( PolyType.INTEGER, create.toCommand().columns().get( 0 ).targetType() );
+        assertEquals( Boolean.FALSE, create.toCommand().columns().get( 0 ).targetNullable() );
+        assertEquals( ConversionColumnMappingRule.DEFINITION.id(), create.toCommand().columns().get( 0 ).ruleType() );
         assertThrows( EditException.class, () -> MappingCrud.parseRequest( """
                 {"adapterId":7,"targetEntityId":50,"mappingId":31,"expectedRevision":"draft","mappingName":"Created",
                  "logicalTableName":"customers","columns":[]}
@@ -210,6 +214,14 @@ class MappingCrudTest {
 
     @Test
     void serializesSavedRulesPhysicalBindingsAndFullTypes() throws Exception {
+        if ( PolyphenyHomeDirManager.getMode() == null ) {
+            PolyphenyHomeDirManager.setModeAndGetInstance( RunMode.TEST );
+        }
+        Catalog.mode = RunMode.TEST;
+        Catalog.memoryCatalog = true;
+        var catalog = new PolyCatalog();
+        Catalog.setAndGetInstance( catalog );
+        catalog.init();
         var columns = List.of(
                 new LogicalColumn( 101, "scores", 50, 1, 1, PolyType.INTEGER, PolyType.ARRAY, null, null, 2, 8, true, true, null, null ),
                 new LogicalColumn( 102, "amount", 50, 1, 2, PolyType.DECIMAL, null, 12, 3, null, null, false, false, null, null ),
@@ -224,7 +236,7 @@ class MappingCrudTest {
                 new LogicalNamespace( 1, "analytics", DataModel.RELATIONAL, true, false ),
                 new LogicalTable( 50, "customers", 1, EntityType.SOURCE, null, false ), columns,
                 List.of( new PhysicalTable( 70, 60, 50, "customers.csv", physicalColumns, 1, "files", List.of(), 7 ) ), "saved-revision", null, SchemaMappingManager.LAST_SOURCE_MAPPING_REASON );
-        var json = HttpServer.mapper.valueToTree( MappingModel.Detail.from( state ) );
+        var json = HttpServer.mapper.valueToTree( MappingModel.Detail.from( state, catalog ) );
         assertFalse( json.path( "removable" ).asBoolean() );
         assertEquals( SchemaMappingManager.LAST_SOURCE_MAPPING_REASON, json.path( "removalBlockedReason" ).asText() );
         var overview = HttpServer.mapper.valueToTree( new MappingModel.OverviewResponse( List.of( MappingModel.Summary.from( state ) ) ) );
@@ -262,10 +274,13 @@ class MappingCrudTest {
         assertFalse( json.at( "/columns/1/typeDisplay" ).asText().contains( "NOT NULL" ) );
         assertTrue( json.at( "/columns/1/included" ).asBoolean() );
         assertEquals( "DIRECT_COLUMN", json.at( "/availableRules/0/type" ).asText() );
+        assertEquals( "Copy", json.at( "/availableRules/0/label" ).asText() );
+        assertEquals( "CONVERT_COLUMN", json.at( "/availableRules/1/type" ).asText() );
+        assertEquals( "Convert", json.at( "/availableRules/1/label" ).asText() );
         var selectedMapping = new SchemaMapping( mapping.id(), mapping.name(), mapping.kind(), mapping.sourceEntityId(), mapping.targetEntityId(),
                 mapping.sourceModel(), mapping.targetModel(), List.of( new DirectColumnMappingRule( 102 ) ), null );
         var selectedState = new MappingState( state.adapter(), selectedMapping, state.namespace(), state.table(), state.columns(), state.physicalTables(), state.revision(), null, state.removalBlockedReason() );
-        var selectedJson = HttpServer.mapper.valueToTree( MappingModel.Detail.from( selectedState ) );
+        var selectedJson = HttpServer.mapper.valueToTree( MappingModel.Detail.from( selectedState, catalog ) );
         assertEquals( 4, selectedJson.path( "columns" ).size() );
         assertFalse( selectedJson.at( "/columns/0/included" ).asBoolean() );
         assertTrue( selectedJson.at( "/columns/1/included" ).asBoolean() );
@@ -276,6 +291,13 @@ class MappingCrudTest {
         assertEquals( MappingState.IDENTIFIER_PATTERN, validation.path( "identifierPattern" ).asText() );
         assertEquals( MappingState.mappingNameMessage(), validation.path( "mappingNameMessage" ).asText() );
         assertEquals( MappingState.identifierMessage(), validation.path( "identifierMessage" ).asText() );
+    }
+
+
+    @Test
+    void describesTheConversionRuleWithItsRegisteredId() {
+        var rule = new ConversionColumnMappingRule( 103 );
+        assertEquals( "CONVERT_COLUMN", MappingModel.Rule.from( rule ).type() );
     }
 
 

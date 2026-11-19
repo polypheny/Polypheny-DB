@@ -91,6 +91,9 @@ public class UIRequest extends RequestModel {
     @JsonProperty
     public boolean confirmedDataRefresh;
 
+    @JsonProperty
+    public boolean schemaOnly;
+
 
     protected UIRequest() {
         super( null, null, null );

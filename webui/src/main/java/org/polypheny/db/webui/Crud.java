@@ -106,6 +106,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalMaterializedView;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.mapping.SchemaMappingManager;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
@@ -687,6 +688,19 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
+    RelationalResult refreshTable( UIRequest request ) {
+        String table = Catalog.snapshot().rel().getTable( request.entityId ).map( t -> t.name ).orElse( String.valueOf( request.entityId ) );
+        SourceMaterializationRefreshResult refresh = refreshSourceSchemaIfNeeded( request );
+        var result = request.schemaOnly || refresh.sourceEntityDeleted()
+                ? RelationalResult.builder().dataModel( DataModel.RELATIONAL ).namespace( request.namespace ).table( table )
+                : getTable( request ).toBuilder();
+        return result.changeDescriptions( refresh.changeDescriptions().toArray( new String[0] ) )
+                .dataRefreshRowCount( refresh.dataRefreshRowCount() )
+                .sourceEntityDeleted( refresh.sourceEntityDeleted() )
+                .build();
+    }
+
+
     private boolean hasSourceDeletedChange( List<String> changeDescriptions ) {
         return changeDescriptions.stream().anyMatch( description -> description.startsWith( "Source " ) && description.endsWith( " was deleted in the source." ) );
     }
@@ -867,6 +881,13 @@ public class Crud implements InformationObserver, PropertyChangeListener {
      */
     RelationalResult getTable( final UIRequest request ) {
         Transaction transaction = getTransaction();
+        var snapshot = transaction.getSnapshot();
+        LogicalTable table = snapshot.rel().getTable( request.entityId ).orElseThrow();
+        if ( snapshot.mappings().getMappingsForLogicalEntity( table.id ).stream()
+                .anyMatch( mapping -> SchemaMappingManager.usesColumnTransformations( snapshot, mapping ) ) ) {
+            return previewMappedTable( transaction, table, request );
+        }
+
         RelationalResultBuilder<?, ?> resultBuilder;
         QueryLanguage language = QueryLanguage.from( "sql" );
 
@@ -907,7 +928,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         resultBuilder = (RelationalResultBuilder<?, ?>) builder.apply( ec, request, implementationContext.getStatement() );
 
         // determine if it is a view or a table
-        LogicalTable table = Catalog.snapshot().rel().getTable( request.entityId ).orElseThrow();
         resultBuilder.dataModel( table.dataModel );
         if ( table.modifiable ) {
             resultBuilder.type( ResultType.TABLE );
@@ -915,16 +935,56 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             resultBuilder.type( ResultType.VIEW );
         }
 
+        resultBuilder.header( tableHeaders( transaction.getSnapshot(), table, request ).toArray( new UiColumnDefinition[0] ) );
+        resultBuilder.currentPage( request.currentPage ).table( table.name );
+        long tableSize = 0;
+        try {
+            tableSize = getTableSize( transaction, request );
+        } catch ( Exception e ) {
+            log.error( "Caught exception while determining page size", e );
+        }
+        resultBuilder.highestPage( (int) Math.ceil( (double) tableSize / getPageSize() ) );
+        try {
+            transaction.commit();
+        } catch ( TransactionException e ) {
+            transaction.rollback( "Caught exception while committing transaction. " + e );
+        }
+        return resultBuilder.build();
+    }
+
+
+    private RelationalResult previewMappedTable( Transaction transaction, LogicalTable table, UIRequest request ) {
+        try {
+            int pageSize = getPageSize();
+            var preview = MappedTablePreview.read( transaction.createStatement(), table, request, pageSize );
+            var header = tableHeaders( transaction.getSnapshot(), table, request );
+            var data = LanguageCrud.computeResultData( preview.rows(), header, transaction );
+            var result = RelationalResult.builder().dataModel( DataModel.RELATIONAL ).namespace( request.namespace ).table( table.name )
+                    .type( ResultType.VIEW ).header( header.toArray( new UiColumnDefinition[0] ) ).data( data.toArray( new String[0][] ) )
+                    .cellErrors( preview.errors() ).affectedTuples( data.size() ).xid( transaction.getXid().toString() )
+                    .currentPage( request.currentPage ).highestPage( (int) Math.ceil( (double) preview.rowCount() / pageSize ) ).build();
+            transaction.commit();
+            return result;
+        } catch ( Exception e ) {
+            if ( transaction.isActive() ) {
+                transaction.rollback( "Could not read mapped table preview: " + e.getMessage() );
+            }
+            throw e;
+        }
+    }
+
+
+    private List<UiColumnDefinition> tableHeaders( Snapshot snapshot, LogicalTable table, UIRequest request ) {
         //get headers with default values
         List<UiColumnDefinition> cols = new ArrayList<>();
         List<String> primaryColumns;
         if ( table.primaryKey != null ) {
-            LogicalPrimaryKey primaryKey = Catalog.snapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();
+            LogicalPrimaryKey primaryKey = snapshot.rel().getPrimaryKey( table.primaryKey ).orElseThrow();
             primaryColumns = new ArrayList<>( primaryKey.getFieldNames() );
         } else {
             primaryColumns = new ArrayList<>();
         }
-        for ( LogicalColumn logicalColumn : Catalog.snapshot().rel().getColumns( table.id ) ) {
+        for ( LogicalColumn logicalColumn : snapshot.rel().getColumns( table.id ) ) {
             PolyValue defaultValue = logicalColumn.defaultValue == null ? null : logicalColumn.defaultValue.value;
             String collectionsType = logicalColumn.collectionsType == null ? "" : logicalColumn.collectionsType.getName();
             cols.add(
@@ -943,22 +1003,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                             .sort( request.sortState == null ? new SortState() : request.sortState.get( logicalColumn.name ) )
                             .filter( request.filter == null || request.filter.get( logicalColumn.name ) == null ? "" : request.filter.get( logicalColumn.name ) ).build() );
         }
-        resultBuilder.header( cols.toArray( new UiColumnDefinition[0] ) );
-
-        resultBuilder.currentPage( request.currentPage ).table( table.name );
-        long tableSize = 0;
-        try {
-            tableSize = getTableSize( transaction, request );
-        } catch ( Exception e ) {
-            log.error( "Caught exception while determining page size", e );
-        }
-        resultBuilder.highestPage( (int) Math.ceil( (double) tableSize / getPageSize() ) );
-        try {
-            transaction.commit();
-        } catch ( TransactionException e ) {
-            transaction.rollback( "Caught exception while committing transaction. " + e );
-        }
-        return resultBuilder.build();
+        return cols;
     }
 
 

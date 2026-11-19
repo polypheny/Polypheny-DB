@@ -17,15 +17,31 @@
 package org.polypheny.db.webui.models.mapping;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.adapter.DataSource;
+import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
+import org.polypheny.db.algebra.mapping.RuleRepository;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeSystem;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.mapping.rules.ColumnMappingRule;
-import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
 import org.polypheny.db.catalog.entity.mapping.rules.MappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.RuleDefinition;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.MappingKind;
 import org.polypheny.db.catalog.mapping.MappingState;
+import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.type.PolyType;
 
 /**
  * MappingModel defines the mapping data the backend sends to the frontend:
@@ -34,6 +50,7 @@ import org.polypheny.db.catalog.mapping.MappingState;
  * Detail - supplies the editor with names, fields, physical references, rules, editability, revision and validation guidance.
  * Error - supplies error messages, field errors and blocking dependencies.
  */
+@Slf4j
 public final class MappingModel {
 
     private MappingModel() {
@@ -95,13 +112,80 @@ public final class MappingModel {
 
     @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
     public record PhysicalColumnReference( long allocationId, long physicalEntityId, long physicalColumnId, String physicalName, int physicalPosition,
-                                           String typeDisplay, boolean nullable ) {
+                                           String typeDisplay, boolean nullable, PolyType type, Integer precision, Integer scale, boolean primary ) {
+    }
+
+
+    private record SourceTable( long adapterId, String schema, String table ) {
+
+        Set<String> primaryColumns( Catalog catalog, Snapshot snapshot ) {
+            return exportedColumns().map( columns -> columns.stream().filter( ExportedColumn::primary )
+                    .map( ExportedColumn::physicalColumnName ).collect( Collectors.toSet() ) )
+                    .orElseGet( () -> logicalPrimaryColumns( catalog, snapshot ) );
+        }
+
+
+        private Optional<List<ExportedColumn>> exportedColumns() {
+            try {
+                return AdapterManager.getInstance().getSource( adapterId ).filter( DataSource::supportsRelational )
+                        .flatMap( source -> matchingExport( source.asRelationalDataSource().getExportedColumnsFresh() ) );
+            } catch ( RuntimeException e ) {
+                log.debug( "Could not read primary key metadata for source {}.{} on adapter {}", schema, table, adapterId, e );
+                return Optional.empty();
+            }
+        }
+
+
+        private Optional<List<ExportedColumn>> matchingExport( Map<String, List<ExportedColumn>> exports ) {
+            var matchingTables = exports.entrySet().stream().filter( entry -> entry.getValue() != null && !entry.getValue().isEmpty() )
+                    .filter( entry -> table.equals( entry.getKey() ) || table.equals( entry.getValue().get( 0 ).physicalTableName() ) )
+                    .map( Map.Entry::getValue ).toList();
+            var matchingSchemas = matchingTables.stream().filter( columns -> Objects.equals( schema, columns.get( 0 ).physicalSchemaName() ) ).toList();
+            // CSV exports are keyed by table name. Their schema value is the file name, while existing allocations can use the logical namespace.
+            var candidates = matchingSchemas.isEmpty() ? matchingTables : matchingSchemas;
+            return candidates.size() == 1 ? Optional.of( candidates.get( 0 ) ) : Optional.empty();
+        }
+
+
+        private Set<String> logicalPrimaryColumns( Catalog catalog, Snapshot snapshot ) {
+            // The first allocation of an imported table identifies its source. Later attachments can share the logical table's key.
+            var importedSource = catalog.getAdapterCatalog( adapterId ).stream().flatMap( adapter -> adapter.getPhysicals().values().stream() )
+                    .filter( PhysicalTable.class::isInstance ).map( PhysicalTable.class::cast )
+                    .filter( physical -> Objects.equals( schema, physical.namespaceName ) && table.equals( physical.name ) )
+                    .filter( physical -> snapshot.alloc().getFromLogical( physical.logicalId ).stream()
+                            .noneMatch( allocation -> allocation.id < physical.allocationId ) )
+                    .min( Comparator.comparingLong( physical -> physical.allocationId ) );
+            var key = importedSource.flatMap( physical -> snapshot.rel().getTable( physical.logicalId ) )
+                    .flatMap( logical -> logical.primaryKey == null ? Optional.empty() : snapshot.rel().getPrimaryKey( logical.primaryKey ) );
+            if ( key.isPresent() ) {
+                var ids = key.get().fieldIds;
+                return importedSource.orElseThrow().columns.stream().filter( column -> ids.contains( column.id ) )
+                        .map( column -> column.name ).collect( Collectors.toSet() );
+            }
+
+            return Set.of();
+        }
     }
 
 
     @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
     public record Column( long logicalColumnId, String logicalName, int logicalPosition, String typeDisplay, boolean nullable,
-                          List<PhysicalColumnReference> physicalReferences, boolean included ) {
+                          List<PhysicalColumnReference> physicalReferences, boolean included, PolyType type, List<PolyType> targetTypeOptions,
+                          Integer precision, Integer scale ) {
+    }
+
+
+    @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+    public record TypeParameters( Integer minPrecision, Integer maxPrecision, Integer defaultPrecision, Integer maxScale, Integer defaultScale ) {
+
+        static TypeParameters from( PolyType type ) {
+            var system = AlgDataTypeSystem.DEFAULT;
+            int defaultPrecision = system.getDefaultPrecision( type );
+            int maxPrecision = system.getMaxPrecision( type );
+            int minPrecision = type == PolyType.TIME || type == PolyType.TIMESTAMP ? 0 : 1;
+            return new TypeParameters( minPrecision, maxPrecision < 0 ? null : maxPrecision, defaultPrecision < 0 ? null : defaultPrecision,
+                    type.allowsScale() ? system.getMaxScale( type ) : null, type.allowsScale() ? type.getDefaultScale() : null );
+        }
     }
 
 
@@ -114,7 +198,8 @@ public final class MappingModel {
     public record Rule( String type, Long targetLogicalColumnId ) {
 
         public static Rule from( MappingRule rule ) {
-            return new Rule( rule instanceof DirectColumnMappingRule ? "DIRECT_COLUMN" : rule.getClass().getSimpleName(),
+            String type = RuleRepository.definitionFor( rule.getClass() ).map( RuleDefinition::id ).orElseGet( () -> rule.getClass().getSimpleName() );
+            return new Rule( type,
                     rule instanceof ColumnMappingRule columnRule ? columnRule.targetLogicalColumnId() : null );
         }
 
@@ -139,27 +224,42 @@ public final class MappingModel {
                           String revision, long namespaceId, boolean namespaceCaseSensitive, List<Column> columns,
                           List<PhysicalSource> physicalSources, MappingKind kind, Long sourceEntityId, long targetEntityId,
                           DataModel sourceModel, DataModel targetModel, List<Rule> rules, Validation validation, List<RuleOption> availableRules,
-                          boolean removable, String removalBlockedReason, boolean removesTarget, Long fixedTargetEntityId, List<Column> targetColumns ) {
+                          boolean removable, String removalBlockedReason, boolean removesTarget, Long fixedTargetEntityId, List<Column> targetColumns,
+                          Map<PolyType, TypeParameters> typeParameters, Map<Long, String> excludedColumnRules ) {
 
-        public static Detail from( MappingState state ) {
+        public static Detail from( MappingState state, Catalog catalog ) {
+            var snapshot = catalog.getSnapshot();
+            Map<SourceTable, Set<String>> primaryColumns = new HashMap<>();
+            Map<Long, Set<String>> primaryColumnsByPhysicalId = new HashMap<>();
+            for ( var physical : state.physicalTables() ) {
+                var source = new SourceTable( physical.adapterId, physical.namespaceName, physical.name );
+                primaryColumnsByPhysicalId.put( physical.id, primaryColumns.computeIfAbsent( source, key -> key.primaryColumns( catalog, snapshot ) ) );
+            }
             List<Column> columns = state.columns().stream().map( column -> new Column(
                     column.id, column.name, column.position,
                     AlgDataTypeFactory.DEFAULT.createTypeWithNullability( column.getAlgDataType( AlgDataTypeFactory.DEFAULT ), true ).getFullTypeString(),
                     column.nullable,
                     state.physicalTables().stream().flatMap( physical -> physical.columns.stream().filter( c -> c.id == column.id )
                             .map( c -> new PhysicalColumnReference( physical.allocationId, physical.id, c.id, c.name, c.position,
-                                    c.getAlgDataType( AlgDataTypeFactory.DEFAULT ).getFullTypeString(), c.nullable ) ) ).toList(), state.isIncluded( column.id ) ) ).toList();
+                                    c.getAlgDataType( AlgDataTypeFactory.DEFAULT ).getFullTypeString(), c.nullable, c.type, c.length, c.scale,
+                                    primaryColumnsByPhysicalId.get( physical.id ).contains( c.name ) ) ) ).toList(),
+                    state.isIncluded( column.id ), column.type, state.targetTypeOptions( column ), column.length, column.scale ) ).toList();
+            Map<PolyType, TypeParameters> typeParameters = columns.stream().flatMap( column -> column.targetTypeOptions().stream() )
+                    .filter( PolyType::allowsPrec ).distinct()
+                    .collect( Collectors.toMap( type -> type, TypeParameters::from ) );
             return new Detail( state.mapping().id(), state.adapter().id, state.adapter().uniqueName, state.mapping().name(),
                     state.namespace().name, state.table().name, state.editable(), state.readOnlyReason(), state.revision(),
                     state.namespace().id, state.namespace().caseSensitive, columns,
                     state.physicalTables().stream().map( p -> new PhysicalSource( p.allocationId, p.id, p.namespaceName, p.name ) ).toList(),
                     state.mapping().kind(), state.mapping().sourceEntityId(), state.mapping().targetEntityId(), state.mapping().sourceModel(), state.mapping().targetModel(),
                     state.mapping().rules().stream().map( Rule::from ).toList(), Validation.current(),
-                    List.of( new RuleOption( "DIRECT_COLUMN", "Copy source value" ) ), state.removable(), state.removalBlockedReason(),
+                    RuleRepository.definitions().stream().map( definition -> new RuleOption( definition.id(), definition.label() ) ).toList(),
+                    state.removable(), state.removalBlockedReason(),
                     state.fixedTargetEntityId() == null, state.fixedTargetEntityId(),
                     state.targetColumns().stream().map( column -> new Column(
                             column.id, column.name, column.position, AlgDataTypeFactory.DEFAULT.createTypeWithNullability( column.getAlgDataType( AlgDataTypeFactory.DEFAULT ), true ).getFullTypeString(),
-                            column.nullable, List.of(), true ) ).toList() );
+                            column.nullable, List.of(), true, column.type, List.of(), column.length, column.scale ) ).toList(),
+                    typeParameters, state.mapping().excludedColumnRules() );
         }
 
     }

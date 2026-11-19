@@ -94,7 +94,7 @@ public class MappingCrud {
             var request = read( context, MappingIdRequest.class );
             Catalog catalog = Catalog.getInstance();
             synchronized ( catalog ) {
-                return MappingModel.Detail.from( MappingState.load( catalog, request.mappingId() ) );
+                return MappingModel.Detail.from( MappingState.load( catalog, request.mappingId() ), catalog );
             }
         } );
     }
@@ -138,7 +138,7 @@ public class MappingCrud {
                 if ( !state.editable() ) {
                     throw new EditException( "UNSUPPORTED_MAPPING", state.readOnlyReason() );
                 }
-                return MappingModel.Detail.from( state );
+                return MappingModel.Detail.from( state, catalog );
             }
         } );
     }
@@ -152,7 +152,7 @@ public class MappingCrud {
         respond( context, () -> {
             var request = read( context, CreateRequest.class );
             return transact( transaction -> MappingModel.Detail.from( DdlManager.getInstance()
-                    .createMapping( request.targetEntityId(), request.toCommand(), transaction.createStatement() ) ) );
+                    .createMapping( request.targetEntityId(), request.toCommand(), transaction.createStatement() ), Catalog.getInstance() ) );
         } );
     }
 
@@ -218,7 +218,7 @@ public class MappingCrud {
             DetailRequest request = read( context, DetailRequest.class );
             Catalog catalog = Catalog.getInstance();
             synchronized ( catalog ) {
-                return MappingModel.Detail.from( MappingState.load( catalog, request.adapterId(), request.mappingId() ) );
+                return MappingModel.Detail.from( MappingState.load( catalog, request.adapterId(), request.mappingId() ), catalog );
             }
         } );
     }
@@ -231,7 +231,7 @@ public class MappingCrud {
         respond( context, () -> {
             UpdateRequest request = read( context, UpdateRequest.class );
             return transact( transaction -> MappingModel.Detail.from( DdlManager.getInstance()
-                    .updateMapping( request.toCommand(), transaction.createStatement() ) ) );
+                    .updateMapping( request.toCommand(), transaction.createStatement() ), Catalog.getInstance() ) );
         } );
     }
 

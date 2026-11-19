@@ -64,6 +64,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -334,6 +335,9 @@ public class LogicalAlgAnalyzeShuttle extends AlgShuttleImpl {
 
 
     private static long getLogicalId( Scan<?> scan ) {
+        if ( scan.entity instanceof PhysicalEntity physical ) {
+            return physical.getLogicalId();
+        }
         return scan.entity.isLogical() ? scan.entity.id : scan.entity.unwrapOrThrow( AllocationEntity.class ).getLogicalId();
     }
 

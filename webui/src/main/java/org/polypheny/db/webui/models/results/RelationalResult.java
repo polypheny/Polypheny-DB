@@ -18,8 +18,10 @@ package org.polypheny.db.webui.models.results;
 
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import java.util.Map;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.NonFinal;
@@ -61,6 +63,12 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
     public Long dataRefreshRowCount;
     public boolean sourceEntityDeleted;
 
+    /**
+     * Conversion diagnostics indexed by row and column in this page.
+     */
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    public Map<Integer, Map<Integer, String>> cellErrors;
+
 
     @JsonCreator
     public RelationalResult(
@@ -83,6 +91,7 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
             @JsonProperty("changeDescriptions") String[] changeDescriptions,
             @JsonProperty("dataRefreshRowCount") Long dataRefreshRowCount,
             @JsonProperty("sourceEntityDeleted") boolean sourceEntityDeleted,
+            @JsonProperty("cellErrors") Map<Integer, Map<Integer, String>> cellErrors,
             @JsonProperty("hasMoreRows") boolean hasMore,
             @JsonProperty("language") QueryLanguage language,
             @JsonProperty("isRolledBack") boolean isRolledBack ) {
@@ -109,6 +118,7 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
         this.changeDescriptions = changeDescriptions;
         this.dataRefreshRowCount = dataRefreshRowCount;
         this.sourceEntityDeleted = sourceEntityDeleted;
+        this.cellErrors = cellErrors;
     }
 
 

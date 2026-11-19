@@ -464,7 +464,12 @@ public abstract class AbstractAlgNode implements AlgNode {
 
         mq.getTupleCount( this ).ifPresent( aDouble -> meta.addCosts( mq.getNonCumulativeCost( this ), mq.getCumulativeCost( this ), aDouble ) );
 
+        addPolyAlgMetadata( meta, mq );
         return meta.serialize();
+    }
+
+
+    protected void addPolyAlgMetadata( PolyAlgMetadata metadata, AlgMetadataQuery mq ) {
     }
 
 

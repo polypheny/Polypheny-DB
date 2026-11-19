@@ -26,8 +26,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.algebra.mapping.RuleRepository;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
-import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.ColumnMappingRule;
 import org.polypheny.db.catalog.entity.mapping.rules.MappingRule;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.MappingSnapshot;
@@ -58,17 +59,7 @@ public final class MappingSnapshotImpl implements MappingSnapshot {
         Map<Long, List<SchemaMapping>> byLogicalEntity = new HashMap<>();
         for ( SchemaMapping mapping : mappings ) {
             Objects.requireNonNull( mapping, "mappings element" );
-            Set<Long> ruleColumnIds = new HashSet<>();
-            for ( MappingRule rule : mapping.rules() ) {
-                if ( !(rule instanceof DirectColumnMappingRule directRule) ) {
-                    throw new GenericRuntimeException( "Mapping %d has unsupported rule type %s.", mapping.id(), rule.getClass().getName() );
-                }
-                if ( !ruleColumnIds.add( directRule.targetLogicalColumnId() ) ) {
-                    throw new GenericRuntimeException(
-                            "Mapping %d has duplicate logical column ID %d.",
-                            mapping.id(), directRule.targetLogicalColumnId() );
-                }
-            }
+            validateRules( mapping );
 
             if ( byId.putIfAbsent( mapping.id(), mapping ) != null ) {
                 throw new GenericRuntimeException( "Duplicate mapping ID %d.", mapping.id() );
@@ -80,6 +71,24 @@ public final class MappingSnapshotImpl implements MappingSnapshot {
         this.mappingsById = Map.copyOf( byId );
         byLogicalEntity.replaceAll( ( id, values ) -> List.copyOf( values ) );
         this.mappingsByLogicalEntity = Map.copyOf( byLogicalEntity );
+    }
+
+
+    private static void validateRules( SchemaMapping mapping ) {
+        Set<Long> ruleColumnIds = new HashSet<>();
+        for ( MappingRule rule : mapping.rules() ) {
+            if ( RuleRepository.definitionFor( rule.getClass() ).isEmpty() ) {
+                throw new GenericRuntimeException( "Mapping %d has unsupported rule type %s.", mapping.id(), rule.getClass().getName() );
+            }
+            if ( rule instanceof ColumnMappingRule columnRule ) {
+                long columnId = columnRule.targetLogicalColumnId();
+                if ( !ruleColumnIds.add( columnId ) ) {
+                    throw new GenericRuntimeException( "Mapping %d has duplicate logical column ID %d.", mapping.id(), columnId );
+                }
+            } else {
+                throw new GenericRuntimeException( "Mapping %d has no snapshot validation for rule type %s.", mapping.id(), rule.getClass().getName() );
+            }
+        }
     }
 
 

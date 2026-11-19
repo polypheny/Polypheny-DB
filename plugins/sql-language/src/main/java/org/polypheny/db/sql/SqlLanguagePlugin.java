@@ -121,6 +121,7 @@ import org.polypheny.db.sql.language.fun.SqlLikeOperator;
 import org.polypheny.db.sql.language.fun.SqlLiteralChainOperator;
 import org.polypheny.db.sql.language.fun.SqlMapQueryConstructor;
 import org.polypheny.db.sql.language.fun.SqlMapValueConstructor;
+import org.polypheny.db.sql.language.fun.SqlMappingConvertOperator;
 import org.polypheny.db.sql.language.fun.SqlMetaFunction;
 import org.polypheny.db.sql.language.fun.SqlMinMaxAggFunction;
 import org.polypheny.db.sql.language.fun.SqlMonotonicBinaryOperator;
@@ -1429,6 +1430,8 @@ public class SqlLanguagePlugin extends PolyPlugin {
         register( OperatorName.LITERAL_CHAIN, new SqlLiteralChainOperator() );
 
         register( OperatorName.THROW, new SqlThrowOperator() );
+
+        register( OperatorName.MAPPING_CONVERT, new SqlMappingConvertOperator() );
 
         register( OperatorName.JSON_VALUE_EXPRESSION, new SqlJsonValueExpressionOperator( "JSON_VALUE_EXPRESSION", false ) );
 

@@ -30,7 +30,8 @@ import org.polypheny.db.rex.RexNode;
  */
 public final class FieldMappingTransformers {
 
-    public static final FieldMappingTransformers DEFAULT = new FieldMappingTransformers( List.of( new DirectColumnTransformer() ) );
+    // Get transformers from rule repository
+    public static final FieldMappingTransformers DEFAULT = new FieldMappingTransformers( RuleRepository.fieldTransformers() );
 
     private final Map<Class<? extends MappingRule>, FieldMappingTransformer<?>> transformers;
 

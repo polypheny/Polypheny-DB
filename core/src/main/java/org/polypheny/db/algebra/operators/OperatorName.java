@@ -1759,7 +1759,9 @@ public enum OperatorName {
 
     REMOVE_NAMES( LangFunctionOperator.class ),
 
-    EXTRACT_NAME( LangFunctionOperator.class );
+    EXTRACT_NAME( LangFunctionOperator.class ),
+
+    MAPPING_CONVERT( Operator.class );
 
 
     final public static List<OperatorName> MQL_OPERATORS = Arrays.asList(

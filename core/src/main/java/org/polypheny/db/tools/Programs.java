@@ -45,6 +45,7 @@ import org.polypheny.db.algebra.AlgFieldTrimmer;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Calc;
+import org.polypheny.db.algebra.enumerable.EnumerableMappingConvertRule;
 import org.polypheny.db.algebra.enumerable.EnumerableRules;
 import org.polypheny.db.algebra.enumerable.common.EnumerableModifyToStreamerRule;
 import org.polypheny.db.algebra.enumerable.document.DocumentAggregateToAggregateRule;
@@ -121,7 +122,8 @@ public class Programs {
 
                     // REVIEW jvs: Do we still need these two?  Doesn't the combination of CalcMergeRule, FilterToCalcRule, and ProjectToCalcRule have the same effect?
                     FilterCalcMergeRule.INSTANCE,
-                    ProjectCalcMergeRule.INSTANCE );
+                    ProjectCalcMergeRule.INSTANCE,
+                    EnumerableMappingConvertRule.INSTANCE );
 
     /**
      * Program that converts filters and projects to {@link Calc}s.

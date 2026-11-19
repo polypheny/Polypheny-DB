@@ -20,10 +20,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.logical.relational.LogicalRelMappingTransform;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
@@ -51,21 +51,31 @@ public final class MappingScanBuilder {
 
 
     public AlgNode build( AllocationEntity target ) {
+        var branches = mappedBranches( target );
+        if ( branches.isEmpty() ) {
+            var adapter = AdapterManager.getInstance().getAdapter( target.adapterId ).orElseThrow();
+            return createPhysicalScan( adapter, target );
+        }
+        return branches.size() == 1 ? branches.get( 0 ) : combineScans( branches, target.getTupleType() );
+    }
+
+
+    /**
+     * Builds one branch per mapping attached to the target.
+     */
+    public List<LogicalRelMappingTransform> mappedBranches( AllocationEntity target ) {
+        // A branch is one path in the query plan that reads a physical source and applies its mapping to produce rows in the logical targets schema.
         // Find all mappings for the target
         var mappings = snapshot.mappings().getMappingsForLogicalEntity( target.logicalId );
         // One mapping or non
-        if ( mappings.isEmpty() ) {
-            return buildMappedScan( null, target, target );
-        }
-
         // When there are multiple mappings, build one branch per mapping
-        List<AlgNode> branches = new ArrayList<>();
+        List<LogicalRelMappingTransform> branches = new ArrayList<>();
         for ( SchemaMapping mapping : mappings ) {
             // Find source allocation
             AllocationEntity source = resolveAllocation( mapping, target, mappings.size() == 1 );
             branches.add( buildMappedScan( mapping, source, target ) );
         }
-        return branches.size() == 1 ? branches.get( 0 ) : combineScans( branches, target.getTupleType() );
+        return branches;
     }
 
 
@@ -78,16 +88,13 @@ public final class MappingScanBuilder {
     }
 
 
-    private AlgNode buildMappedScan( @Nullable SchemaMapping mapping, AllocationEntity source, AllocationEntity target ) {
+    private LogicalRelMappingTransform buildMappedScan( SchemaMapping mapping, AllocationEntity source, AllocationEntity target ) {
         // Obtain source adapter physical scan
         var adapter = AdapterManager.getInstance().getAdapter( source.adapterId ).orElseThrow();
         AlgNode input = createPhysicalScan( adapter, source );
-        if ( mapping == null ) {
-            return input;
-        }
         // transform() attaches the mapping to the plan
-        return builderFactory.get().push( input ).transform( mapping,
-                PhysicalMappingBinding.create( mapping, source, adapter.getCatalog() ), target.getTupleType() ).build();
+        return LogicalRelMappingTransform.create( input, mapping,
+                PhysicalMappingBinding.create( mapping, source, adapter.getCatalog() ), target.getTupleType() );
     }
 
 
@@ -100,7 +107,7 @@ public final class MappingScanBuilder {
     }
 
 
-    private AlgNode combineScans( List<AlgNode> branches, AlgDataType targetType ) {
+    private AlgNode combineScans( List<? extends AlgNode> branches, AlgDataType targetType ) {
         AlgBuilder union = builderFactory.get();
         branches.forEach( union::push );
         // Append the branches using UNION ALL

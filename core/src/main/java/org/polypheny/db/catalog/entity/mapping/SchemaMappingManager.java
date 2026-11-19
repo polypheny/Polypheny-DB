@@ -16,6 +16,7 @@
 
 package org.polypheny.db.catalog.entity.mapping;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -23,8 +24,15 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
+import org.polypheny.db.algebra.mapping.RuleRepository;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
@@ -33,8 +41,11 @@ import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.mapping.rules.ColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.ConversionColumnMappingRule;
 import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
 import org.polypheny.db.catalog.entity.mapping.rules.MappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.RuleDefinition;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
@@ -45,6 +56,8 @@ import org.polypheny.db.catalog.logistic.MappingKind;
 import org.polypheny.db.catalog.snapshot.AllocSnapshot;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.catalog.snapshot.MappingSnapshot;
+import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.ddl.MappingUpdate.ColumnName;
 import org.polypheny.db.util.Pair;
 
 /**
@@ -123,9 +136,181 @@ public final class SchemaMappingManager {
 
     public static SchemaMapping createMapping( String name, long logicalEntityId, DataModel dataModel, List<Long> columnIds ) {
         long id = IdBuilder.getInstance().getNewMappingId();
-        List<MappingRule> rules = columnIds.stream().<MappingRule>map( DirectColumnMappingRule::new ).toList();
+        List<MappingRule> rules = columnIds.stream().map( SchemaMappingManager::defaultColumnRule ).toList();
 
         return new SchemaMapping( id, name, MappingKind.PHYSICAL_TO_LOGICAL, null, logicalEntityId, dataModel, dataModel, rules, null );
+    }
+
+
+    public static SchemaMapping refreshColumnRules( SchemaMapping mapping, List<LogicalColumn> currentColumns, Set<Long> previousColumnIds ) {
+        Set<Long> currentColumnIds = currentColumns.stream().map( column -> column.id ).collect( Collectors.toSet() );
+        List<MappingRule> rules = new ArrayList<>( mapping.rules().stream()
+                .filter( rule -> retainRuleForColumns( rule, currentColumnIds ) ).toList() );
+        for ( LogicalColumn column : currentColumns ) {
+            if ( !previousColumnIds.contains( column.id ) ) {
+                rules.add( defaultColumnRule( column.id ) );
+            }
+        }
+        var excluded = new HashMap<>( mapping.excludedColumnRules() );
+        excluded.keySet().retainAll( currentColumnIds );
+        return withRules( mapping, rules, mapping.sourceAllocationId(), excluded );
+    }
+
+
+    public static SchemaMapping updateColumnRules( Catalog catalog, SchemaMapping mapping, List<ColumnName> updates,
+            Map<Long, LogicalColumn> targetColumns, List<PhysicalTable> physicalTables ) {
+        Map<Long, ColumnMappingRule> previousRules = mapping.rules().stream()
+                .filter( ColumnMappingRule.class::isInstance ).map( ColumnMappingRule.class::cast )
+                .collect( Collectors.toMap( ColumnMappingRule::targetLogicalColumnId, rule -> rule ) );
+        Map<Long, String> excluded = new HashMap<>( mapping.excludedColumnRules() );
+        Set<Long> retained = new HashSet<>();
+        List<ColumnName> toRebuild = new ArrayList<>();
+        for ( ColumnName update : updates ) {
+            long columnId = update.logicalColumnId();
+            ColumnMappingRule previous = previousRules.get( columnId );
+            if ( !update.included() ) {
+                if ( previous != null ) {
+                    RuleRepository.definitionFor( previous.getClass() ).ifPresent( rule -> excluded.put( columnId, rule.id() ) );
+                }
+                continue;
+            }
+            if ( update.targetType() != null || previous == null
+                    || update.ruleType() != null && !hasRuleType( previous, update.ruleType() ) ) {
+                toRebuild.add( update );
+            } else {
+                retained.add( columnId );
+            }
+        }
+
+        List<MappingRule> rules = new ArrayList<>( mapping.rules().stream().filter( rule -> retainRuleForColumns( rule, retained ) ).toList() );
+        for ( ColumnName update : toRebuild ) {
+            String lastRule = excluded.remove( update.logicalColumnId() );
+            String ruleType = update.ruleType() != null ? update.ruleType() : lastRule;
+            rules.add( restoredColumnRule( targetColumns.get( update.logicalColumnId() ), physicalTables, ruleType ) );
+        }
+
+        Long allocationId = mapping.sourceAllocationId();
+        if ( allocationId == null && requiresExplicitSourceAllocation( rules, targetColumns, physicalTables.stream().flatMap( table -> table.columns.stream() ) ) ) {
+            allocationId = sourceAllocations( catalog, mapping ).get( 0 ).id;
+        }
+        return withRules( mapping, rules, allocationId, excluded );
+    }
+
+
+    private static boolean hasRuleType( MappingRule rule, String id ) {
+        return RuleRepository.definitionFor( rule.getClass() ).map( RuleDefinition::id ).filter( id::equals ).isPresent();
+    }
+
+
+    private static boolean retainRuleForColumns( MappingRule rule, Set<Long> columnIds ) {
+        return !(rule instanceof ColumnMappingRule columnRule) || columnIds.contains( columnRule.targetLogicalColumnId() );
+    }
+
+
+    public static MappingRule defaultColumnRule( long columnId ) {
+        return new DirectColumnMappingRule( columnId );
+    }
+
+
+    /**
+     * Rebuilds a rule when we re-include a previously excluded column or update its type or nullability.
+     */
+    private static MappingRule restoredColumnRule( LogicalColumn target, List<PhysicalTable> physicalTables, String ruleType ) {
+        // Excluding the column removes its rule, so updateMapping needs to reconstruct it when the column is included again
+        Stream<PhysicalColumn> physicalColumns = physicalTables.stream().flatMap( table -> table.columns.stream() )
+                .filter( column -> column.id == target.id );
+        return chooseColumnRule( target, physicalColumns, ruleType );
+    }
+
+
+    /**
+     * Create appropriate mapping rule according to if conversion needed
+     */
+    public static MappingRule chooseColumnRule( LogicalColumn target, Stream<PhysicalColumn> physicalColumns, String ruleType ) {
+        if ( DirectColumnMappingRule.DEFINITION.id().equals( ruleType ) ) {
+            return defaultColumnRule( target.id );
+        }
+        if ( ConversionColumnMappingRule.DEFINITION.id().equals( ruleType ) ) {
+            return new ConversionColumnMappingRule( target.id );
+        }
+        if ( ruleType != null ) {
+            throw new GenericRuntimeException( "Unsupported column mapping rule '%s'.", ruleType );
+        }
+        boolean requiresConversion = physicalColumns.anyMatch( column -> !hasMatchingValueType( target, column ) );
+        return requiresConversion
+                ? new ConversionColumnMappingRule( target.id ) // when the validated request changes the type
+                : defaultColumnRule( target.id ); // otherwise
+    }
+
+
+    public static boolean requiresExplicitSourceAllocation( List<MappingRule> rules, Map<Long, LogicalColumn> targets, Stream<PhysicalColumn> sources ) {
+        return SchemaMapping.hasRule( rules, ConversionColumnMappingRule.class ) || sources.anyMatch( source -> {
+            LogicalColumn target = targets.get( source.id );
+            return target != null && target.nullable != source.nullable;
+        } );
+    }
+
+
+    public static boolean preservesTargetSchemaOnRefresh( SchemaMapping mapping ) {
+        return mapping.sourceAllocationId() != null || mapping.hasRule( ConversionColumnMappingRule.class );
+    }
+
+
+    public static boolean usesColumnTransformations( Snapshot snapshot, SchemaMapping mapping ) {
+        if ( mapping.hasRule( ConversionColumnMappingRule.class ) ) {
+            return true;
+        }
+        if ( mapping.sourceAllocationId() == null || mapping.sourceModel() != DataModel.RELATIONAL || mapping.targetModel() != DataModel.RELATIONAL ) {
+            return false;
+        }
+        Set<Long> included = mappedColumnIds( mapping );
+        return snapshot.alloc().getFromLogical( mapping.targetEntityId() ).stream()
+                .filter( allocation -> allocation.id == mapping.sourceAllocationId() ).findFirst()
+                .flatMap( allocation -> Catalog.getInstance().getAdapterCatalog( allocation.adapterId )
+                        .map( catalog -> catalog.getPhysicalsFromAllocs( allocation.id ) ) )
+                .stream().flatMap( Collection::stream )
+                .map( physical -> physical.unwrap( PhysicalTable.class ) ).flatMap( Optional::stream )
+                .flatMap( table -> table.columns.stream() )
+                .anyMatch( column -> included.contains( column.id ) && snapshot.rel().getColumn( column.id )
+                        .filter( target -> target.nullable != column.nullable ).isPresent() );
+    }
+
+
+    private static SchemaMapping withRules( SchemaMapping mapping, List<MappingRule> rules, Long allocationId, Map<Long, String> excluded ) {
+        return new SchemaMapping( mapping.id(), mapping.name(), mapping.kind(), mapping.sourceEntityId(),
+                mapping.targetEntityId(), mapping.sourceModel(), mapping.targetModel(), rules, allocationId, excluded );
+    }
+
+
+    public static void validateRefreshedSourceColumns( String targetName, SchemaMapping mapping, LogicalRelSnapshot rels,
+            Map<Long, PhysicalColumn> previousColumns, Map<String, ExportedColumn> exportedByName,
+            BiPredicate<LogicalColumn, ExportedColumn> matchesSourceType ) {
+        for ( MappingRule rule : mapping.rules() ) {
+            if ( !(rule instanceof ColumnMappingRule columnRule) ) {
+                throw new GenericRuntimeException( "Cannot refresh unsupported rule in mapping '%s'.", mapping.name() );
+            }
+            long targetId = columnRule.targetLogicalColumnId();
+            LogicalColumn target = rels.getColumn( targetId ).orElseThrow();
+            PhysicalColumn previous = previousColumns.get( targetId );
+            ExportedColumn exported = previous == null ? null : exportedByName.get( previous.name.toLowerCase( Locale.ROOT ) );
+            if ( exported == null || !isCompatibleRefreshedSourceColumn( columnRule, target, exported, matchesSourceType ) ) {
+                String sourceName = previous == null ? target.name : previous.name;
+                throw new GenericRuntimeException( "Source column '%s' in mapping '%s' is missing or incompatible with target column '%s.%s'. Target schema was not changed.",
+                        sourceName, mapping.name(), targetName, target.name );
+            }
+        }
+    }
+
+
+    private static boolean isCompatibleRefreshedSourceColumn( ColumnMappingRule rule, LogicalColumn target, ExportedColumn exported,
+            BiPredicate<LogicalColumn, ExportedColumn> matchesSourceType ) {
+        if ( rule instanceof ConversionColumnMappingRule ) {
+            AlgDataTypeFactory factory = AlgDataTypeFactory.DEFAULT;
+            AlgDataType sourceType = LogicalColumn.getAlgDataType( factory, exported.length(), exported.scale(), exported.type(),
+                    exported.collectionsType(), exported.cardinality(), exported.dimension(), exported.nullable(), exported.elementsNullable() );
+            return ConversionColumnMappingRule.supports( sourceType, target.getAlgDataType( factory ) );
+        }
+        return matchesSourceType.test( target, exported ) && target.elementsNullable == exported.elementsNullable();
     }
 
 
@@ -149,7 +334,7 @@ public final class SchemaMappingManager {
      */
     public static SchemaMapping renameMapping( SchemaMapping mapping, String name ) {
         return new SchemaMapping( mapping.id(), name, mapping.kind(), mapping.sourceEntityId(),
-                mapping.targetEntityId(), mapping.sourceModel(), mapping.targetModel(), mapping.rules(), mapping.sourceAllocationId() );
+                mapping.targetEntityId(), mapping.sourceModel(), mapping.targetModel(), mapping.rules(), mapping.sourceAllocationId(), mapping.excludedColumnRules() );
     }
 
 
@@ -174,8 +359,7 @@ public final class SchemaMappingManager {
         for ( SchemaMapping mapping : mappings.getMappings() ) {
             LogicalTable table = rels.getTable( mapping.targetEntityId() ).orElseThrow();
             if ( table.entityType == EntityType.SOURCE && !table.modifiable ) {
-                Set<Long> included = mapping.rules().stream().filter( DirectColumnMappingRule.class::isInstance )
-                        .map( DirectColumnMappingRule.class::cast ).map( DirectColumnMappingRule::targetLogicalColumnId ).collect( Collectors.toSet() );
+                Set<Long> included = mappedColumnIds( mapping );
                 rels.getColumns( table.id ).stream().map( c -> c.id ).filter( c -> !included.contains( c ) ).forEach( excluded::add );
             }
         }
@@ -213,7 +397,7 @@ public final class SchemaMappingManager {
                     && Objects.equals( other.sourceAllocationId(), mapping.sourceAllocationId() ) )) ) {
                 throw new GenericRuntimeException( "Mappings sharing a target require distinct physical source allocations." );
             }
-            if ( siblings.size() > 1 && siblings.stream().anyMatch( other -> !new HashSet<>( other.rules() ).equals( new HashSet<>( mapping.rules() ) ) ) ) {
+            if ( siblings.size() > 1 && siblings.stream().anyMatch( other -> !mappedColumnIds( other ).equals( mappedColumnIds( mapping ) ) ) ) {
                 throw new GenericRuntimeException( "Mappings sharing a target must cover the same logical columns." );
             }
             if ( siblings.size() > 1 && alloc.getFromLogical( mapping.targetEntityId() ).stream().map( allocation -> allocation.partitionId ).distinct().count() != 1 ) {
@@ -223,9 +407,9 @@ public final class SchemaMappingManager {
             LogicalTable logicalTable = validateTargetTable( mapping, rels );
             List<AllocationEntity> allocations = validateAllocationPresence( mapping, alloc );
             Map<Long, LogicalColumn> logicalColumns = rels.getColumns( mapping.targetEntityId() ).stream().collect( Collectors.toMap( column -> column.id, column -> column ) );
-            Set<Long> mappedColumns = validateLogicalColumnRules( mapping, logicalColumns );
-            validateLogicalColumnCoverage( mapping, logicalTable, logicalColumns, mappedColumns );
-            Map<Long, Set<Long>> physicalColumnsByPartition = validatePhysicalAllocations( mapping, logicalTable, logicalColumns, allocations, alloc, catalog );
+            Map<Long, ColumnMappingRule> columnRules = validateLogicalColumnRules( mapping, logicalColumns );
+            validateLogicalColumnCoverage( mapping, logicalTable, logicalColumns, columnRules.keySet() );
+            Map<Long, Set<Long>> physicalColumnsByPartition = validatePhysicalAllocations( mapping, logicalTable, logicalColumns, columnRules, allocations, alloc, catalog );
             validatePartitionCoverage( mapping, allocations, physicalColumnsByPartition );
         }
     }
@@ -235,6 +419,12 @@ public final class SchemaMappingManager {
         if ( mapping.kind() != MappingKind.PHYSICAL_TO_LOGICAL ) {
             throw new GenericRuntimeException( "Mapping %d has unsupported kind %s; only physical-to-logical mappings can currently be published.", mapping.id(), mapping.kind() );
         }
+    }
+
+
+    private static Set<Long> mappedColumnIds( SchemaMapping mapping ) {
+        return mapping.rules().stream().filter( ColumnMappingRule.class::isInstance ).map( ColumnMappingRule.class::cast )
+                .map( ColumnMappingRule::targetLogicalColumnId ).collect( Collectors.toSet() );
     }
 
 
@@ -261,17 +451,17 @@ public final class SchemaMappingManager {
     }
 
 
-    private static Set<Long> validateLogicalColumnRules( SchemaMapping mapping, Map<Long, LogicalColumn> logicalColumns ) {
-        Set<Long> mappedColumns = new HashSet<>();
+    private static Map<Long, ColumnMappingRule> validateLogicalColumnRules( SchemaMapping mapping, Map<Long, LogicalColumn> logicalColumns ) {
+        Map<Long, ColumnMappingRule> mappedColumns = new HashMap<>();
         Set<Integer> mappedPositions = new HashSet<>();
         for ( var rule : mapping.rules() ) {
-            if ( rule instanceof DirectColumnMappingRule direct ) {
-                long columnId = direct.targetLogicalColumnId();
+            if ( rule instanceof ColumnMappingRule columnRule ) {
+                long columnId = columnRule.targetLogicalColumnId();
                 LogicalColumn logicalColumn = logicalColumns.get( columnId );
                 if ( logicalColumn == null ) {
                     throw new GenericRuntimeException( "Mapping %d references missing logical column %d.", mapping.id(), columnId );
                 }
-                mappedColumns.add( columnId );
+                mappedColumns.put( columnId, columnRule );
                 if ( !mappedPositions.add( logicalColumn.position ) ) {
                     throw new GenericRuntimeException( "Mapping %d has duplicate logical column position %d.", mapping.id(), logicalColumn.position );
                 }
@@ -294,13 +484,13 @@ public final class SchemaMappingManager {
 
 
     private static Map<Long, Set<Long>> validatePhysicalAllocations( SchemaMapping mapping, LogicalTable logicalTable, Map<Long, LogicalColumn> logicalColumns,
-            List<AllocationEntity> allocations, AllocSnapshot alloc, Catalog catalog ) {
+            Map<Long, ColumnMappingRule> columnRules, List<AllocationEntity> allocations, AllocSnapshot alloc, Catalog catalog ) {
         Map<Long, Set<Long>> physicalColumnsByPartition = new HashMap<>();
         for ( AllocationEntity allocation : allocations ) {
             AdapterCatalog adapter = validateAdapterAllocation( mapping, allocation, catalog );
             PhysicalTable table = validatePhysicalTable( mapping, logicalTable, allocation, adapter );
             Map<Long, PhysicalColumn> tableColumns = validatePhysicalColumnUniqueness( mapping, allocation, table );
-            Set<Long> allocatedColumns = validateAllocationColumns( mapping, logicalColumns, allocation, alloc, adapter, tableColumns );
+            Set<Long> allocatedColumns = validateAllocationColumns( mapping, logicalColumns, columnRules, allocation, alloc, adapter, tableColumns );
             if ( !allocatedColumns.isEmpty() ) {
                 physicalColumnsByPartition.computeIfAbsent( allocation.partitionId, ignored -> new HashSet<>() ).addAll( allocatedColumns );
             }
@@ -355,8 +545,8 @@ public final class SchemaMappingManager {
     }
 
 
-    private static Set<Long> validateAllocationColumns( SchemaMapping mapping, Map<Long, LogicalColumn> logicalColumns, AllocationEntity allocation,
-            AllocSnapshot alloc, AdapterCatalog adapter, Map<Long, PhysicalColumn> tableColumns ) {
+    private static Set<Long> validateAllocationColumns( SchemaMapping mapping, Map<Long, LogicalColumn> logicalColumns, Map<Long, ColumnMappingRule> columnRules,
+            AllocationEntity allocation, AllocSnapshot alloc, AdapterCatalog adapter, Map<Long, PhysicalColumn> tableColumns ) {
         Set<Long> allocatedColumns = new HashSet<>();
         for ( AllocationColumn allocatedColumn : alloc.getColumns( allocation.placementId ) ) {
             long columnId = allocatedColumn.columnId;
@@ -367,14 +557,15 @@ public final class SchemaMappingManager {
             if ( logicalColumn == null ) {
                 throw new GenericRuntimeException( "Mapping %d has an allocation for missing logical column %d.", mapping.id(), columnId );
             }
-            validatePhysicalColumn( mapping, logicalColumn, allocation, adapter, tableColumns.get( columnId ) );
+            validatePhysicalColumn( mapping, logicalColumn, columnRules.get( columnId ), allocation, adapter, tableColumns.get( columnId ) );
             allocatedColumns.add( columnId );
         }
         return allocatedColumns;
     }
 
 
-    private static void validatePhysicalColumn( SchemaMapping mapping, LogicalColumn logicalColumn, AllocationEntity allocation, AdapterCatalog adapter, PhysicalColumn tableColumn ) {
+    private static void validatePhysicalColumn( SchemaMapping mapping, LogicalColumn logicalColumn, ColumnMappingRule rule,
+            AllocationEntity allocation, AdapterCatalog adapter, PhysicalColumn tableColumn ) {
         long columnId = logicalColumn.id;
         if ( !(adapter.fields.get( Pair.of( allocation.id, columnId ) ) instanceof PhysicalColumn physicalColumn)
                 || !physicalColumn.equals( tableColumn )
@@ -382,7 +573,14 @@ public final class SchemaMappingManager {
                 || physicalColumn.adapterId != allocation.adapterId ) {
             throw new GenericRuntimeException( "Mapping %d has no matching physical column %d for allocation %d.", mapping.id(), columnId, allocation.id );
         }
-        if ( !hasMatchingType( logicalColumn, physicalColumn ) ) {
+        if ( rule == null && mapping.sourceAllocationId() != null ) {
+            // An excluded field on a bound allocation still has a physical column, but produces no logical value.
+            return;
+        }
+        boolean compatible = rule instanceof ConversionColumnMappingRule
+                ? ConversionColumnMappingRule.supports( physicalColumn.getAlgDataType( AlgDataTypeFactory.DEFAULT ), logicalColumn.getAlgDataType( AlgDataTypeFactory.DEFAULT ) )
+                : hasMatchingValueType( logicalColumn, physicalColumn );
+        if ( !compatible ) {
             throw new GenericRuntimeException( "Mapping %d has incompatible physical column %d in allocation %d.", mapping.id(), columnId, allocation.id );
         }
     }
@@ -392,16 +590,16 @@ public final class SchemaMappingManager {
         for ( AllocationEntity allocation : allocations ) {
             Set<Long> availableColumns = physicalColumnsByPartition.getOrDefault( allocation.partitionId, Set.of() );
             for ( var rule : mapping.rules() ) {
-                if ( rule instanceof DirectColumnMappingRule direct && !availableColumns.contains( direct.targetLogicalColumnId() ) ) {
+                if ( rule instanceof ColumnMappingRule columnRule && !availableColumns.contains( columnRule.targetLogicalColumnId() ) ) {
                     throw new GenericRuntimeException( "Mapping %d references logical column %d unavailable on partition %d.",
-                            mapping.id(), direct.targetLogicalColumnId(), allocation.partitionId );
+                            mapping.id(), columnRule.targetLogicalColumnId(), allocation.partitionId );
                 }
             }
         }
     }
 
 
-    private static boolean hasMatchingType( LogicalColumn logical, PhysicalColumn physical ) {
+    public static boolean hasMatchingValueType( LogicalColumn logical, PhysicalColumn physical ) {
         return logical.type == physical.type
                 && logical.collectionsType == physical.collectionsType
                 && Objects.equals( logical.length, physical.length )
@@ -409,7 +607,6 @@ public final class SchemaMappingManager {
                 && Objects.equals( logical.dimension, physical.dimension )
                 && Objects.equals( logical.cardinality, physical.cardinality )
                 && logical.elementsNullable == physical.elementsNullable
-                && logical.nullable == physical.nullable
                 && logical.collation == physical.collation;
     }
 }

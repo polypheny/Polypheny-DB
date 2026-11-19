@@ -29,6 +29,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.enumerable.EnumerableAggregate;
 import org.polypheny.db.algebra.enumerable.EnumerableCalc;
+import org.polypheny.db.algebra.enumerable.EnumerableMappingConvert;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.enumerable.EnumerableInterpreter;
 import org.polypheny.db.algebra.enumerable.EnumerableIntersect;
@@ -76,6 +77,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelExchange;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
 import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
+import org.polypheny.db.algebra.logical.relational.LogicalRelMappingTransform;
 import org.polypheny.db.algebra.logical.relational.LogicalRelMinus;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
@@ -123,6 +125,11 @@ public class PolyAlgRegistry {
         ImmutableList<OperatorTag> logAllProTags = ImmutableList.of( OperatorTag.LOGICAL, OperatorTag.ALLOCATION, OperatorTag.ADVANCED );
 
         // RELATIONAL
+        declarations.put( LogicalRelMappingTransform.class, PolyAlgDeclaration.builder()
+                .creator( LogicalRelMappingTransform::create ).model( DataModel.RELATIONAL )
+                .opName( "REL_MAPPING" ).numInputs( 1 ).opTags( List.of( OperatorTag.ALLOCATION ) )
+                .param( Parameter.builder().name( "mappingId" ).type( ParamType.STRING ).build() )
+                .build() );
         declarations.put( LogicalRelProject.class, PolyAlgDeclaration.builder()
                 .creator( LogicalRelProject::create ).model( DataModel.RELATIONAL )
                 .opName( "REL_PROJECT" ).opAliases( List.of( "PROJECT", "P", "REL_PROJECT#", "PROJECT#" ) ).numInputs( 1 ).opTags( logAllTags )
@@ -394,6 +401,11 @@ public class PolyAlgRegistry {
         declarations.put( EnumerableCalc.class, PolyAlgDeclaration.builder()
                 .creator( EnumerableCalc::create ).model( null )
                 .opName( "E_CALC" ).convention( c ).numInputs( 1 ).opTags( physTags )
+                .params( getParams( LogicalCalc.class ) )
+                .build() );
+        declarations.put( EnumerableMappingConvert.class, PolyAlgDeclaration.builder()
+                .creator( EnumerableMappingConvert::create ).model( DataModel.RELATIONAL )
+                .opName( "E_MAPPING_CONVERT" ).convention( c ).numInputs( 1 ).opTags( physTags )
                 .params( getParams( LogicalCalc.class ) )
                 .build() );
         declarations.put( EnumerableJoin.class, PolyAlgDeclaration.builder()

@@ -323,6 +323,13 @@ public class PolyAlgToAlgConverter {
         }
         // TODO: handle other special kinds of calls (Kind.NEW_SPECIFICATION can also specify cast type...)
         List<RexNode> operands = exp.getChildExps().stream().map( e -> convertRexNode( e, ctx ) ).toList();
+        if ( operator.getOperatorName() == OperatorName.MAPPING_CONVERT ) {
+            AlgDataType targetType = exp.getAlgDataType();
+            if ( targetType == null ) {
+                throw new GenericRuntimeException( "Mapping conversion requires an explicit result type." );
+            }
+            return builder.makeCall( targetType, operator, operands );
+        }
 
         return builder.makeCall( operator, operands );
     }
@@ -412,12 +419,14 @@ public class PolyAlgToAlgConverter {
 
 
     private Entity convertEntity( PolyAlgExpression exp, Context ctx ) {
-        if ( planType == PlanType.PHYSICAL ) {
-            PhysicalEntity e = getPhysicalEntity( exp.toIdentifier() );
+        String identifier = exp.toIdentifier();
+        // Routed mappings can contain physical scans in the allocation plan.
+        if ( planType == PlanType.PHYSICAL || (planType == PlanType.ALLOCATION && !identifier.contains( "@" )) ) {
+            PhysicalEntity e = getPhysicalEntity( identifier );
             ctx.updateFieldNamesIfEmpty( e );
             return e;
         }
-        String[] atSplit = exp.toIdentifier().split( "@", 2 );
+        String[] atSplit = identifier.split( "@", 2 );
 
         String[] names = atSplit[0].split( "\\.", 2 );
         GenericRuntimeException exception = new GenericRuntimeException( "Invalid entity name: " + String.join( ".", names ) );
@@ -524,6 +533,9 @@ public class PolyAlgToAlgConverter {
         GenericRuntimeException exception = new GenericRuntimeException( "Invalid PhysicalEntity: " + s );
 
         String[] apSplit = s.split( "\\.", 2 ); // [adapterName, physicalId]
+        if ( apSplit.length != 2 ) {
+            throw exception;
+        }
         LogicalAdapter adapter = snapshot.getAdapter( apSplit[0] ).orElseThrow( () -> exception );
         long physicalId = Long.parseLong( apSplit[1] );
         return Catalog.getInstance().getAdapterCatalog( adapter.id ).orElseThrow( () -> exception ).getPhysical( physicalId );

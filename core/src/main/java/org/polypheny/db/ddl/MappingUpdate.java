@@ -18,6 +18,7 @@ package org.polypheny.db.ddl;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
+import org.polypheny.db.type.PolyType;
 
 
 /**
@@ -45,10 +46,27 @@ public record MappingUpdate(
 
     public record ColumnName( @JsonProperty(value = "logicalColumnId", required = true) long logicalColumnId,
                               @JsonProperty(value = "logicalName", required = true) String logicalName,
-                              Boolean included ) {
+                              Boolean included, PolyType targetType, Boolean targetNullable, Integer targetPrecision, Integer targetScale, String ruleType ) {
+
+        public ColumnName( long logicalColumnId, String logicalName, Boolean included, PolyType targetType, Boolean targetNullable,
+                Integer targetPrecision, Integer targetScale ) {
+            this( logicalColumnId, logicalName, included, targetType, targetNullable, targetPrecision, targetScale, null );
+        }
+
+        public ColumnName( long logicalColumnId, String logicalName, Boolean included, PolyType targetType, Boolean targetNullable ) {
+            this( logicalColumnId, logicalName, included, targetType, targetNullable, null, null );
+        }
+
+        public ColumnName( long logicalColumnId, String logicalName, Boolean included ) {
+            this( logicalColumnId, logicalName, included, null, null );
+        }
 
         public ColumnName( long logicalColumnId, String logicalName ) {
             this( logicalColumnId, logicalName, null );
+        }
+
+        public boolean changesTypeOrNullability() {
+            return targetType != null || targetNullable != null;
         }
     }
 

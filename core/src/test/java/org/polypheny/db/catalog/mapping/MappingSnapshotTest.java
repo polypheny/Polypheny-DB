@@ -30,8 +30,9 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
+import org.polypheny.db.catalog.entity.mapping.rules.ColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.ConversionColumnMappingRule;
 import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
-import org.polypheny.db.catalog.entity.mapping.rules.MappingRule;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.MappingKind;
@@ -41,7 +42,7 @@ import org.polypheny.db.catalog.snapshot.impl.MappingSnapshotImpl;
 
 class MappingSnapshotTest {
 
-    private static final DirectColumnMappingRule SECOND_RULE = new DirectColumnMappingRule( 304 );
+    private static final ConversionColumnMappingRule SECOND_RULE = new ConversionColumnMappingRule( 304 );
     private static final DirectColumnMappingRule FIRST_RULE = new DirectColumnMappingRule( 302 );
     private static final SchemaMapping MAPPING_A = mapping( 101, 201 );
     private static final SchemaMapping MAPPING_B = mapping( 102, 202 );
@@ -126,9 +127,9 @@ class MappingSnapshotTest {
 
 
     @Test
-    void rejectsDuplicateDirectRulesForOneLogicalColumn() {
+    void rejectsDifferentRuleTypesForTheSameLogicalColumn() {
         SchemaMapping mapping = new SchemaMapping( 101, "mapping_101", MappingKind.PHYSICAL_TO_LOGICAL, null, 201,
-                DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( FIRST_RULE, new DirectColumnMappingRule( FIRST_RULE.targetLogicalColumnId() ) ), null );
+                DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( FIRST_RULE, new ConversionColumnMappingRule( FIRST_RULE.targetLogicalColumnId() ) ), null );
 
         assertInvalid( () -> new MappingSnapshotImpl( List.of( mapping ) ),
                 "duplicate logical column ID", Long.toString( FIRST_RULE.targetLogicalColumnId() ) );
@@ -137,8 +138,7 @@ class MappingSnapshotTest {
 
     @Test
     void rejectsUnsupportedRuleImplementations() {
-        MappingRule unknownRule = new MappingRule() {
-        };
+        ColumnMappingRule unknownRule = () -> 302;
         SchemaMapping mapping = new SchemaMapping( 101, "mapping_101", MappingKind.PHYSICAL_TO_LOGICAL, null, 201,
                 DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( unknownRule ), null );
 

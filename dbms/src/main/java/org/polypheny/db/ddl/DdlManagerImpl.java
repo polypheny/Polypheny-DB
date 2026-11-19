@@ -18,6 +18,7 @@ package org.polypheny.db.ddl;
 
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Maps;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -32,8 +33,10 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import lombok.Builder;
 import lombok.Value;
@@ -96,8 +99,6 @@ import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
 import org.polypheny.db.catalog.entity.mapping.SchemaMappingManager;
-import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
-import org.polypheny.db.catalog.entity.mapping.rules.MappingRule;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
@@ -115,7 +116,6 @@ import org.polypheny.db.catalog.logistic.NameGenerator;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.logistic.PlacementType;
-import org.polypheny.db.catalog.mapping.MappingState;
 import org.polypheny.db.catalog.snapshot.AllocSnapshot;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
@@ -1094,15 +1094,14 @@ public class DdlManagerImpl extends DdlManager {
 
         List<AllocationEntity> allocs = snapshot.alloc().getFromLogical( logicalTable.id );
         // Handle mappings
-        // Call helper function when the target has multiple allocations or a mapping with an explicit sourceAllocationId
+        // Preserve the target schema for multiple allocations, explicitly bound mappings, or conversion rules.
         List<SchemaMapping> mappings = snapshot.mappings().getMappingsForLogicalEntity( logicalTable.id );
-        if ( allocs.size() > 1 || mappings.stream().anyMatch( mapping -> mapping.sourceAllocationId() != null ) ) {
-            return refreshMappedSourceTables( logicalTable, allocs, mappings, snapshot, statement );
+        if ( allocs.size() > 1 || mappings.stream().anyMatch( SchemaMappingManager::preservesTargetSchemaOnRefresh ) ) {
+            return refreshMappedSources( logicalTable.name, allocs, mappings, statement, snapshot );
         }
         if ( allocs.size() != 1 ) {
             throw new GenericRuntimeException(
-                    "Expected exactly one placement for table '" + logicalTable.name +
-                            "', but found " + allocs.size()
+                    "Expected exactly one placement for table '" + logicalTable.name + "', but found " + allocs.size()
             );
         }
 
@@ -1138,85 +1137,127 @@ public class DdlManagerImpl extends DdlManager {
 
 
     /**
-     * Handles the automatic refresh before querying a target with multiple sources.
+     * Handles the automatic refresh before querying a target with explicitly bound or converted sources.
      * The function:
      * - Handles multiple source allocations.
      * - Preserves the shared target schema and mapping rules.
      * - Refreshes compatible physical metadata changes.
      * - Rejects missing or incompatible sources without altering the target.
      */
-    private List<String> refreshMappedSourceTables( LogicalTable logicalTable, List<AllocationEntity> allocations,
-            List<SchemaMapping> mappings, Snapshot snapshot, Statement statement ) {
-        Map<AllocationTable, PhysicalTable> refreshedTables = new LinkedHashMap<>();
-        List<String> changes = new ArrayList<>();
+    private List<String> refreshMappedSources( String targetName, List<AllocationEntity> allocations, List<SchemaMapping> mappings, Statement statement, Snapshot snapshot ) {
+        Map<Long, SchemaMapping> mappingsByAllocation = indexMappingsByAllocation( allocations, mappings );
+        List<MappedSourceRefresh> refreshes = new ArrayList<>();
+        // Validate every mapping before replacing physical metadata; the shared target stays unchanged.
         for ( AllocationEntity allocation : allocations ) {
-            SchemaMapping mapping = mappings.stream()
-                    .filter( candidate -> Objects.equals( candidate.sourceAllocationId(), allocation.id ) )
-                    .findFirst().orElseThrow( () -> new GenericRuntimeException(
-                            "No mapping identifies source allocation %s for target '%s'.", allocation.id, logicalTable.name ) );
-            DataSource<?> source = AdapterManager.getInstance().getSource( allocation.adapterId ).orElseThrow();
-            if ( !supportsDynamicSourceTableDiscovery( source ) ) {
-                continue;
+            SchemaMapping mapping = mappingsByAllocation.get( allocation.id );
+            if ( mapping == null ) {
+                throw new GenericRuntimeException( "No mapping identifies source allocation %s for target '%s'.", allocation.id, targetName );
             }
-            PhysicalTable physical = catalog.getAdapterCatalog( allocation.adapterId ).orElseThrow()
-                    .getPhysicalsFromAllocs( allocation.id ).get( 0 ).unwrapOrThrow( PhysicalTable.class );
-            List<ExportedColumn> sourceColumns = source.asRelationalDataSource()
-                    .getExportedColumnsForTable( physical.namespaceName, physical.name );
-            if ( sourceColumns == null || sourceColumns.isEmpty() ) {
-                sourceColumns = findRenamedSourceTableColumns( source, physical.namespaceName, physical.name );
-            }
-            if ( sourceColumns == null || sourceColumns.isEmpty() ) {
-                throw new GenericRuntimeException( "Source table '%s' for mapping '%s' is no longer available. Target '%s' was not changed.",
-                        physical.name, mapping.name(), logicalTable.name );
-            }
-            List<ExportedColumn> orderedColumns = sourceColumns.stream()
-                    .sorted( Comparator.comparingInt( ExportedColumn::physicalPosition ) ).toList();
-            Map<String, ExportedColumn> exportedByName = orderedColumns.stream()
-                    .collect( Collectors.toMap( column -> normalizeIdentifier( column.physicalColumnName() ), column -> column ) );
-            Map<Long, PhysicalColumn> physicalById = physical.columns.stream().collect( Collectors.toMap( column -> column.id, column -> column ) );
-            // Validate every mapping before replacing physical metadata; the shared target stays unchanged.
-            for ( MappingRule rule : mapping.rules() ) {
-                if ( !(rule instanceof DirectColumnMappingRule direct) ) {
-                    throw new GenericRuntimeException( "Cannot refresh unsupported rule in mapping '%s'.", mapping.name() );
-                }
-                LogicalColumn targetColumn = snapshot.rel().getColumn( direct.targetLogicalColumnId() ).orElseThrow();
-                PhysicalColumn sourceColumn = physicalById.get( targetColumn.id );
-                ExportedColumn exported = sourceColumn == null ? null : exportedByName.get( normalizeIdentifier( sourceColumn.name ) );
-                if ( exported == null || hasDifferentType( targetColumn, exported ) || targetColumn.elementsNullable != exported.elementsNullable() ) {
-                    throw new GenericRuntimeException( "Source column '%s' in mapping '%s' is missing or incompatible with target column '%s.%s'. Target schema was not changed.",
-                            sourceColumn == null ? targetColumn.name : sourceColumn.name, mapping.name(), logicalTable.name, targetColumn.name );
-                }
-            }
-            Map<String, PhysicalColumn> previousByName = physical.columns.stream()
-                    .collect( Collectors.toMap( column -> normalizeIdentifier( column.name ), column -> column ) );
-            List<PhysicalColumn> columns = new ArrayList<>();
-            for ( ExportedColumn exported : orderedColumns ) {
-                PhysicalColumn previous = previousByName.get( normalizeIdentifier( exported.physicalColumnName() ) );
-                columns.add( new PhysicalColumn(
-                        previous == null ? IdBuilder.getInstance().getNewFieldId() : previous.id,
-                        exported.physicalColumnName(), previous == null ? exported.name() : previous.logicalName,
-                        allocation.id, logicalTable.id, allocation.adapterId, columns.size(),
-                        exported.type(), exported.collectionsType(), exported.length(), exported.scale(), exported.dimension(), exported.cardinality(),
-                        exported.nullable(), exported.elementsNullable(), previous == null ? Collation.getDefaultCollation() : previous.collation,
-                        previous == null ? null : previous.defaultValue ) );
-            }
-            PhysicalTable refreshed = new PhysicalTable( physical.id, allocation.id, logicalTable.id,
-                    orderedColumns.get( 0 ).physicalTableName(), columns, physical.namespaceId,
-                    orderedColumns.get( 0 ).physicalSchemaName(), physical.uniqueFieldIds, allocation.adapterId );
-            if ( !physical.normalize().equals( refreshed ) ) {
-                refreshedTables.put( allocation.unwrapOrThrow( AllocationTable.class ), refreshed );
-                changes.add( "Refreshed physical source '" + physical.name + "' for mapping '" + mapping.name() + "'." );
-            }
+            relationalMappedSourceRefresh( targetName, allocation, mapping, snapshot ).ifPresent( refreshes::add );
         }
-        for ( var entry : refreshedTables.entrySet() ) {
-            AdapterManager.getInstance().getSource( entry.getKey().adapterId ).orElseThrow()
-                    .restoreTable( entry.getKey(), List.of( entry.getValue() ), statement.getPrepareContext() );
+        if ( refreshes.isEmpty() ) {
+            return List.of();
         }
-        if ( !refreshedTables.isEmpty() ) {
-            catalog.updateSnapshot();
-            statement.getQueryProcessor().resetCaches();
+
+        List<String> changes = new ArrayList<>();
+        for ( MappedSourceRefresh refresh : refreshes ) {
+            refresh.apply().accept( statement );
+            changes.add( refresh.description() );
         }
+        catalog.updateSnapshot();
+        statement.getQueryProcessor().resetCaches();
         return changes;
+    }
+
+
+    private Map<Long, SchemaMapping> indexMappingsByAllocation( List<AllocationEntity> allocations, List<SchemaMapping> mappings ) {
+        Map<Long, SchemaMapping> byAllocation = new HashMap<>();
+        for ( SchemaMapping mapping : mappings ) {
+            Long allocationId = mapping.sourceAllocationId();
+            if ( allocationId == null && allocations.size() == 1 ) {
+                allocationId = allocations.get( 0 ).id;
+            }
+            if ( allocationId != null ) {
+                byAllocation.putIfAbsent( allocationId, mapping );
+            }
+        }
+        return byAllocation;
+    }
+
+
+    private Optional<MappedSourceRefresh> relationalMappedSourceRefresh( String targetName, AllocationEntity allocation, SchemaMapping mapping, Snapshot snapshot ) {
+        DataSource<?> source = AdapterManager.getInstance().getSource( allocation.adapterId ).orElseThrow();
+        if ( !source.supportsRelational() || !supportsDynamicSourceTableDiscovery( source ) ) {
+            return Optional.empty();
+        }
+
+        PhysicalTable physical = getMappedPhysicalTable( allocation );
+        List<ExportedColumn> sourceColumns = loadMappedSourceColumns( source, physical );
+        if ( sourceColumns == null || sourceColumns.isEmpty() ) {
+            throw new GenericRuntimeException( "Source table '%s' for mapping '%s' is no longer available. Target '%s' was not changed.", physical.name, mapping.name(), targetName );
+        }
+
+        List<ExportedColumn> orderedColumns = new ArrayList<>( sourceColumns );
+        orderedColumns.sort( Comparator.comparingInt( ExportedColumn::physicalPosition ) );
+        validateMappedSourceColumns( targetName, mapping, snapshot, physical, orderedColumns );
+        PhysicalTable refreshed = buildRefreshedMappedTable( allocation, mapping.targetEntityId(), physical, orderedColumns );
+        if ( physical.normalize().equals( refreshed ) ) {
+            return Optional.empty();
+        }
+
+        AllocationTable tableAllocation = allocation.unwrapOrThrow( AllocationTable.class );
+        String description = "Refreshed physical source '" + physical.name + "' for mapping '" + mapping.name() + "'.";
+        return Optional.of( new MappedSourceRefresh( description, statement -> source.restoreTable( tableAllocation, List.of( refreshed ), statement.getPrepareContext() ) ) );
+    }
+
+
+    private PhysicalTable getMappedPhysicalTable( AllocationEntity allocation ) {
+        AdapterCatalog adapterCatalog = catalog.getAdapterCatalog( allocation.adapterId ).orElseThrow();
+        List<PhysicalEntity> physicals = adapterCatalog.getPhysicalsFromAllocs( allocation.id );
+        if ( physicals == null || physicals.isEmpty() ) {
+            throw new GenericRuntimeException( "No physical entity found for allocation %s", allocation.id );
+        }
+        return physicals.get( 0 ).unwrapOrThrow( PhysicalTable.class );
+    }
+
+
+    private List<ExportedColumn> loadMappedSourceColumns( DataSource<?> source, PhysicalTable physical ) {
+        List<ExportedColumn> columns = source.asRelationalDataSource().getExportedColumnsForTable( physical.namespaceName, physical.name );
+        if ( columns == null || columns.isEmpty() ) {
+            return findRenamedSourceTableColumns( source, physical.namespaceName, physical.name );
+        }
+        return columns;
+    }
+
+
+    private void validateMappedSourceColumns( String targetName, SchemaMapping mapping, Snapshot snapshot, PhysicalTable physical, List<ExportedColumn> sourceColumns ) {
+        Map<String, ExportedColumn> exportedByName = Maps.uniqueIndex( sourceColumns, column -> normalizeIdentifier( column.physicalColumnName() ) );
+        SchemaMappingManager.validateRefreshedSourceColumns( targetName, mapping, snapshot.rel(), indexPhysicalColumnsById( physical.columns ),
+                exportedByName, ( target, exported ) -> !hasDifferentValueType( target, exported ) );
+    }
+
+
+    private PhysicalTable buildRefreshedMappedTable( AllocationEntity allocation, long targetId, PhysicalTable physical, List<ExportedColumn> orderedColumns ) {
+        Map<String, PhysicalColumn> previousByName = Maps.uniqueIndex( physical.columns, column -> normalizeIdentifier( column.name ) );
+        List<PhysicalColumn> columns = new ArrayList<>();
+        for ( ExportedColumn exported : orderedColumns ) {
+            PhysicalColumn previous = previousByName.get( normalizeIdentifier( exported.physicalColumnName() ) );
+            columns.add( new PhysicalColumn(
+                    previous == null ? IdBuilder.getInstance().getNewFieldId() : previous.id,
+                    exported.physicalColumnName(), previous == null ? exported.name() : previous.logicalName,
+                    allocation.id, targetId, allocation.adapterId, columns.size(),
+                    exported.type(), exported.collectionsType(), exported.length(), exported.scale(), exported.dimension(), exported.cardinality(),
+                    exported.nullable(), exported.elementsNullable(), previous == null ? Collation.getDefaultCollation() : previous.collation,
+                    previous == null ? null : previous.defaultValue ) );
+        }
+        ExportedColumn first = orderedColumns.get( 0 );
+        return new PhysicalTable( physical.id, allocation.id, targetId, first.physicalTableName(), columns, physical.namespaceId,
+                first.physicalSchemaName(), physical.uniqueFieldIds, allocation.adapterId );
+    }
+
+
+    private Map<Long, PhysicalColumn> indexPhysicalColumnsById( List<PhysicalColumn> columns ) {
+        return Maps.uniqueIndex( columns, column -> column.id );
     }
 
 
@@ -2634,20 +2675,23 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private boolean hasDifferentType( LogicalColumn logicalColumn, ExportedColumn sourceColumn ) {
+        return hasDifferentValueType( logicalColumn, sourceColumn ) || logicalColumn.nullable != sourceColumn.nullable();
+    }
+
+
+    private boolean hasDifferentValueType( LogicalColumn logicalColumn, ExportedColumn sourceColumn ) {
         if ( isTextCompatibleVarchar( logicalColumn.type, logicalColumn.length, sourceColumn.type(), sourceColumn.length() ) ) {
             return logicalColumn.collectionsType != sourceColumn.collectionsType()
                     || !Objects.equals( logicalColumn.scale, sourceColumn.scale() )
                     || !Objects.equals( logicalColumn.dimension, sourceColumn.dimension() )
-                    || !Objects.equals( logicalColumn.cardinality, sourceColumn.cardinality() )
-                    || logicalColumn.nullable != sourceColumn.nullable();
+                    || !Objects.equals( logicalColumn.cardinality, sourceColumn.cardinality() );
         }
         return logicalColumn.type != sourceColumn.type()
                 || logicalColumn.collectionsType != sourceColumn.collectionsType()
                 || !Objects.equals( logicalColumn.length, sourceColumn.length() )
                 || !Objects.equals( logicalColumn.scale, sourceColumn.scale() )
                 || !Objects.equals( logicalColumn.dimension, sourceColumn.dimension() )
-                || !Objects.equals( logicalColumn.cardinality, sourceColumn.cardinality() )
-                || logicalColumn.nullable != sourceColumn.nullable();
+                || !Objects.equals( logicalColumn.cardinality, sourceColumn.cardinality() );
     }
 
 
@@ -2736,8 +2780,7 @@ public class DdlManagerImpl extends DdlManager {
 
         DataSource<?> adapter = AdapterManager.getInstance()
                 .getSource( allocationTable.adapterId )
-                .orElseThrow( () -> new GenericRuntimeException(
-                        "No source adapter found for adapter %s", allocationTable.adapterId ) );
+                .orElseThrow( () -> new GenericRuntimeException( "No source adapter found for adapter %s", allocationTable.adapterId ) );
 
         // capture the previous column IDs before physical metadata is replaced
         Set<Long> previousColumnIds = catalog.getAdapterCatalog( allocationTable.adapterId ).orElseThrow()
@@ -2754,17 +2797,10 @@ public class DdlManagerImpl extends DdlManager {
         // keep the existing mapping consistent with refreshed source metadata
         // Remove obsolete rules and add rules for new columns
         // then update the existing mapping
-        Set<Long> currentColumnIds = logicalColumns.stream().map( column -> column.id ).collect( Collectors.toSet() );
         for ( SchemaMapping mapping : catalog.getSchemaMappings().values() ) {
-            if ( mapping.targetEntityId() != table.id ) {
-                continue;
+            if ( mapping.targetEntityId() == table.id ) {
+                catalog.updateSchemaMapping( SchemaMappingManager.refreshColumnRules( mapping, logicalColumns, previousColumnIds ) );
             }
-            List<MappingRule> rules = new ArrayList<>( mapping.rules().stream()
-                    .filter( rule -> rule instanceof DirectColumnMappingRule direct && currentColumnIds.contains( direct.targetLogicalColumnId() ) ).toList() );
-            logicalColumns.stream().filter( column -> !previousColumnIds.contains( column.id ) )
-                    .map( column -> new DirectColumnMappingRule( column.id ) ).forEach( rules::add );
-            catalog.updateSchemaMapping( new SchemaMapping( mapping.id(), mapping.name(), mapping.kind(), mapping.sourceEntityId(),
-                    mapping.targetEntityId(), mapping.sourceModel(), mapping.targetModel(), rules, mapping.sourceAllocationId() ) );
         }
     }
 
@@ -4012,21 +4048,23 @@ public class DdlManagerImpl extends DdlManager {
     public MappingState updateMapping( MappingUpdate update, Statement statement ) {
         statement.getQueryProcessor().lock( statement );
         synchronized ( catalog ) {
+            // load mapping from screen
             MappingState state = MappingState.load( catalog, update.adapterId(), update.mappingId() );
+            // validate mapping
             MappingUpdate validated = state.validate( update, catalog.getSnapshot() );
+            // apply changes
             runMappingChange( statement, () -> {
+                // Rename logical target table and column names in catalog if needed
                 applyMappingNames( state, validated );
+                // update the logical target columns in the catalog
+                applyMappingColumnTypes( state, validated );
+                // change namespace
                 moveMappingTarget( state, validated.targetNamespaceId(), statement );
+                // rename mapping
                 SchemaMapping mapping = SchemaMappingManager.renameMapping( state.mapping(), validated.mappingName() );
-                Set<Long> included = validated.columns().stream().filter( MappingUpdate.ColumnName::included )
-                        .map( MappingUpdate.ColumnName::logicalColumnId ).collect( Collectors.toSet() );
-                List<MappingRule> rules = new ArrayList<>( mapping.rules().stream()
-                        .filter( rule -> included.contains( ((DirectColumnMappingRule) rule).targetLogicalColumnId() ) ).toList() );
-                validated.columns().stream().filter( column -> column.included() && !state.isIncluded( column.logicalColumnId() ) )
-                        .map( column -> new DirectColumnMappingRule( column.logicalColumnId() ) ).forEach( rules::add );
-                mapping = new SchemaMapping( mapping.id(), mapping.name(), mapping.kind(), mapping.sourceEntityId(), mapping.targetEntityId(),
-                        mapping.sourceModel(), mapping.targetModel(), rules, mapping.sourceAllocationId() );
-                catalog.updateSchemaMapping( mapping );
+                var targetColumns = catalog.getLogicalRel( validated.targetNamespaceId() ).getColumns();
+                // update schema mapping in catalog
+                catalog.updateSchemaMapping( SchemaMappingManager.updateColumnRules( catalog, mapping, validated.columns(), targetColumns, state.physicalTables() ) );
             } );
             return MappingState.load( catalog, update.adapterId(), update.mappingId() );
         }
@@ -4069,27 +4107,52 @@ public class DdlManagerImpl extends DdlManager {
         LogicalTable target = relational.addTable( update.logicalTableName(), EntityType.SOURCE, false );
         var partition = createSinglePartition( target.namespaceId, target ).left;
         var placement = allocations.addPlacement( target.id, target.namespaceId, source.adapter().id );
+        // link the new logical table to allocation
         var allocation = allocations.addAllocation( source.adapter().id, placement.id, partition.id, target.id );
         Map<Long, MappingUpdate.ColumnName> requested = update.columns().stream().collect( Collectors.toMap( MappingUpdate.ColumnName::logicalColumnId, c -> c ) );
         Map<Long, LogicalColumn> targetColumns = new HashMap<>();
         for ( LogicalColumn column : source.columns() ) {
-            var targetColumn = relational.addColumn( requested.get( column.id ).logicalName(), target.id, column.position, column.type,
-                    column.collectionsType, column.length, column.scale, column.dimension, column.cardinality, column.nullable, column.elementsNullable, column.collation );
+            // create one logical column in the new mapping target
+            var field = requested.get( column.id ); // get editor settings for current source column
+            PolyType type = Objects.requireNonNullElse( field.targetType(), column.type );
+            boolean nullable = Objects.requireNonNullElse( field.targetNullable(), column.nullable );
+            var targetColumn = relational.addColumn( field.logicalName(), target.id, column.position, type,
+                    column.collectionsType, field.targetType() == null ? column.length : field.targetPrecision(),
+                    field.targetType() == null ? column.scale : field.targetScale(),
+                    column.dimension, column.cardinality, nullable, column.elementsNullable, column.collation );
             targetColumns.put( column.id, targetColumn );
             allocations.addColumn( placement.id, target.id, targetColumn.id, source.adapter().id, PlacementType.STATIC, column.position );
         }
+
         PhysicalTable physicalSource = source.physicalTables().get( 0 );
-        List<PhysicalColumn> physicalColumns = physicalSource.columns.stream().map( column -> new PhysicalColumn(
-                column.name, target.id, allocation.id, source.adapter().id, column.position, targetColumns.get( column.id ) ) ).toList();
+        List<PhysicalColumn> physicalColumns = physicalSource.columns.stream().map( column -> {
+            LogicalColumn targetColumn = targetColumns.get( column.id );
+            return new PhysicalColumn( targetColumn.id, column.name, targetColumn.name, allocation.id, target.id, source.adapter().id, column.position,
+                    column.type, column.collectionsType, column.length, column.scale, column.dimension, column.cardinality,
+                    column.nullable, column.elementsNullable, column.collation, column.defaultValue );
+        } ).toList();
+
+        // PhysicalTable that tells adapter how to read the source file for the new logical target
         PhysicalTable physicalTarget = new PhysicalTable( IdBuilder.getInstance().getNewPhysicalId(), allocation.id, target.id,
                 physicalSource.name, physicalColumns, target.namespaceId, physicalSource.namespaceName, List.of(), source.adapter().id );
+
         // Register a separate scan of the existing file; no physical source is created or changed.
         AdapterManager.getInstance().getAdapter( source.adapter().id ).orElseThrow()
                 .restoreTable( allocation, List.of( physicalTarget ), statement.getPrepareContext() );
-        var rules = update.columns().stream().filter( MappingUpdate.ColumnName::included )
-                .<MappingRule>map( column -> new DirectColumnMappingRule( targetColumns.get( column.logicalColumnId() ).id ) ).toList();
+
+        Map<Long, PhysicalColumn> physicalColumnsById = indexPhysicalColumnsById( physicalColumns );
+        // build one mapping rule for each included column
+        var rules = update.columns().stream().filter( MappingUpdate.ColumnName::included ) // keep fields selected in editor
+                .map( column -> {
+                    LogicalColumn targetColumn = targetColumns.get( column.logicalColumnId() );
+                    return SchemaMappingManager.chooseColumnRule( targetColumn, Stream.of( physicalColumnsById.get( targetColumn.id ) ), column.ruleType() );
+                } ).toList();
+
+        // add schema mapping definition to catalog
+        Long sourceAllocationId = SchemaMappingManager.requiresExplicitSourceAllocation( rules, Maps.uniqueIndex( targetColumns.values(), column -> column.id ), physicalColumns.stream() )
+                ? allocation.id : null;
         catalog.addSchemaMapping( new SchemaMapping( mappingId, update.mappingName(), source.mapping().kind(), null, target.id,
-                source.mapping().sourceModel(), source.mapping().targetModel(), rules, null ) );
+                source.mapping().sourceModel(), source.mapping().targetModel(), rules, sourceAllocationId ) );
     }
 
 
@@ -4132,7 +4195,7 @@ public class DdlManagerImpl extends DdlManager {
                 physicalColumns, target.namespaceId, physicalSource.namespaceName, List.of(), source.adapter().id );
         AdapterManager.getInstance().getAdapter( source.adapter().id ).orElseThrow()
                 .restoreTable( allocation, List.of( physical ), statement.getPrepareContext() );
-        var rules = targetColumns.stream().<MappingRule>map( column -> new DirectColumnMappingRule( column.id ) ).toList();
+        var rules = targetColumns.stream().map( column -> SchemaMappingManager.defaultColumnRule( column.id ) ).toList();
         catalog.addSchemaMapping( new SchemaMapping( mappingId, update.mappingName(), source.mapping().kind(), null, target.id,
                 source.mapping().sourceModel(), source.mapping().targetModel(), rules, allocation.id ) );
     }
@@ -4172,6 +4235,9 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
+    /**
+     * Applies changes to the logical target table and column names. It renames the table in the catalog if its name changed.
+     */
     private void applyMappingNames( MappingState state, MappingUpdate update ) {
         var relational = catalog.getLogicalRel( state.namespace().id );
         Adapter<?> adapter = AdapterManager.getInstance().getAdapter( update.adapterId() ).orElseThrow( MappingState::notFound );
@@ -4183,6 +4249,21 @@ public class DdlManagerImpl extends DdlManager {
             if ( !oldName.equals( column.logicalName() ) ) {
                 relational.renameColumn( column.logicalColumnId(), column.logicalName() );
                 adapter.renameLogicalColumn( column.logicalColumnId(), column.logicalName() );
+            }
+        }
+    }
+
+
+    private void applyMappingColumnTypes( MappingState state, MappingUpdate update ) {
+        var relational = catalog.getLogicalRel( state.namespace().id );
+        for ( var field : update.columns() ) {
+            if ( field.targetType() != null ) {
+                LogicalColumn column = relational.getColumns().get( field.logicalColumnId() );
+                relational.setColumnType( column.id, field.targetType(), null, field.targetPrecision(), field.targetScale(),
+                        null, null, column.elementsNullable );
+            }
+            if ( field.targetNullable() != null ) {
+                relational.setNullable( field.logicalColumnId(), field.targetNullable() );
             }
         }
     }
@@ -5810,6 +5891,10 @@ public class DdlManagerImpl extends DdlManager {
     @Override
     public void dropType() {
         throw new GenericRuntimeException( "Not supported yet" );
+    }
+
+
+    private record MappedSourceRefresh( String description, Consumer<Statement> apply ) {
     }
 
 

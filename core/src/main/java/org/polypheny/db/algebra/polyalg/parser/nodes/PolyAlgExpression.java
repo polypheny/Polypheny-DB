@@ -255,22 +255,29 @@ public class PolyAlgExpression extends PolyAlgNode {
         String str = getLiteralsAsString();
         String upper = str.toUpperCase( Locale.ROOT );
 
-        Operator op = OperatorRegistry.getFromUniqueName( model, upper );
+        Operator op = findOperator( model, str, upper );
         if ( op == null ) {
             if ( model == DataModel.RELATIONAL ) {
                 // We might have a common operator -> also test GRAPH and DOCUMENT
-                op = OperatorRegistry.getFromUniqueName( DataModel.GRAPH, upper );
+                op = findOperator( DataModel.GRAPH, str, upper );
                 if ( op == null ) {
-                    op = OperatorRegistry.getFromUniqueName( DataModel.DOCUMENT, upper );
+                    op = findOperator( DataModel.DOCUMENT, str, upper );
                 }
             } else {
-                op = OperatorRegistry.getFromUniqueName( DataModel.RELATIONAL, upper ); // generic operator fallback
+                op = findOperator( DataModel.RELATIONAL, str, upper ); // generic operator fallback
             }
             if ( op == null ) {
                 throw new GenericRuntimeException( "Operator '" + str + "' is not yet supported" );
             }
         }
         return op;
+    }
+
+
+    private static Operator findOperator( DataModel model, String name, String uppercase ) {
+        // PolyAlgebra serializes the registry's spelling, including mixed-case internal names.
+        Operator operator = OperatorRegistry.getFromUniqueName( model, name );
+        return operator == null && !name.equals( uppercase ) ? OperatorRegistry.getFromUniqueName( model, uppercase ) : operator;
     }
 
 
