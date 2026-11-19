@@ -431,7 +431,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                             preparedResult,
                             parameterizedRoot.kind,
                             optimalNode,
-                            parameterizedRoot.validatedRowType,
+                            parameterizedRoot.alg.getTupleType(),
                             resultConvention,
                             executionTimeMonitor,
                             Objects.requireNonNull( optimalNode.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).dataModel(),
