@@ -34,6 +34,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.PlanKey;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.constant.ResultKind;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
@@ -107,6 +108,16 @@ class RoutingPlanCacheTest {
         AlgRoot firstRoot = constraintCheck( first, "Aa" );
         assertTrue( RoutingPlanCache.keyFor( firstRoot, Map.of(), next ).isEmpty() );
         assertNotEquals( key( firstRoot, Map.of(), first ), key( constraintCheck( next, "Aa" ), Map.of(), next ) );
+    }
+
+
+    @Test
+    void routingKeyDistinguishesDeclaredResultKindsForTheSamePlan() {
+        Snapshot snapshot = new MockSnapshot();
+        AlgRoot updateCount = constraintCheck( snapshot, "Aa" );
+        AlgRoot returnedRows = updateCount.withResultKind( ResultKind.ROWS );
+
+        assertNotEquals( key( updateCount, Map.of(), snapshot ), key( returnedRows, Map.of(), snapshot ) );
     }
 
 

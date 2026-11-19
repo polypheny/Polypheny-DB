@@ -216,10 +216,10 @@ public class StatementManager {
     public boolean hasOpenResult( boolean graphOnly ) {
         Transaction transaction = client.getCurrentTransaction();
         return transaction != null && transaction.isActive() && openStatements.values().stream()
-                .filter( statement -> statement.getIterator() != null && statement.getTransaction() == transaction )
+                .filter( statement -> statement.getResultCursor() != null && statement.getTransaction() == transaction )
                 .filter( statement -> statement.getLanguage().dataModel() == DataModel.GRAPH || !graphOnly )
                 .filter( statement -> !isBatchMember( statement ) )
-                .anyMatch( statement -> statement.getIterator().hasMoreRows() );
+                .anyMatch( statement -> statement.getResultCursor().iterator().hasMoreRows() );
     }
 
 

@@ -41,6 +41,7 @@ import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.constant.ResultKind;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.rex.RexBuilder;
@@ -99,6 +100,7 @@ public class AlgRoot {
     public final AlgNode alg;
     public final AlgDataType validatedRowType;
     public final Kind kind;
+    public final ResultKind resultKind;
     public final ImmutableList<Pair<Integer, String>> fields;
     public final AlgCollation collation;
     public final AlgInformation info;
@@ -112,9 +114,15 @@ public class AlgRoot {
      */
 
     public AlgRoot( AlgNode alg, AlgDataType validatedRowType, Kind kind, List<Pair<Integer, String>> fields, AlgCollation collation ) {
+        this( alg, validatedRowType, kind, fields, collation, ResultKind.forStatement( kind ) );
+    }
+
+
+    public AlgRoot( AlgNode alg, AlgDataType validatedRowType, Kind kind, List<Pair<Integer, String>> fields, AlgCollation collation, ResultKind resultKind ) {
         this.alg = alg;
         this.validatedRowType = validatedRowType;
         this.kind = kind;
+        this.resultKind = Objects.requireNonNull( resultKind );
         this.fields = ImmutableList.copyOf( fields );
         this.collation = Objects.requireNonNull( collation );
         this.info = buildTreeInfo();
@@ -127,7 +135,7 @@ public class AlgRoot {
 
 
     public AlgRoot unfoldView() {
-        return new AlgRoot( alg.unfoldView( null, -1, alg.getCluster() ), validatedRowType, kind, fields, collation );
+        return withAlg( alg.unfoldView( null, -1, alg.getCluster() ) );
     }
 
 
@@ -166,7 +174,7 @@ public class AlgRoot {
         if ( alg == this.alg ) {
             return this;
         }
-        return new AlgRoot( alg, validatedRowType, kind, fields, collation );
+        return new AlgRoot( alg, validatedRowType, kind, fields, collation, resultKind );
     }
 
 
@@ -177,12 +185,20 @@ public class AlgRoot {
         if ( kind == this.kind ) {
             return this;
         }
-        return new AlgRoot( alg, validatedRowType, kind, fields, collation );
+        return new AlgRoot( alg, validatedRowType, kind, fields, collation, resultKind );
     }
 
 
     public AlgRoot withCollation( AlgCollation collation ) {
-        return new AlgRoot( alg, validatedRowType, kind, fields, collation );
+        return new AlgRoot( alg, validatedRowType, kind, fields, collation, resultKind );
+    }
+
+
+    public AlgRoot withResultKind( ResultKind resultKind ) {
+        if ( resultKind == this.resultKind ) {
+            return this;
+        }
+        return new AlgRoot( alg, validatedRowType, kind, fields, collation, resultKind );
     }
 
 

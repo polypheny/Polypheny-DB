@@ -80,7 +80,7 @@ public class RoutingPlanCache {
                 .map( entry -> List.of( entry.getKey(), entry.getValue() ) )
                 .toList();
         return PlanKeys.forTree( root.alg )
-                .flatMap( tree -> PlanKey.of( tree, root.kind, root.validatedRowType, root.fields, root.collation, partitions, snapshot ) );
+                .flatMap( tree -> PlanKey.of( tree, root.kind, root.resultKind, root.validatedRowType, root.fields, root.collation, partitions, snapshot ) );
     }
 
 
