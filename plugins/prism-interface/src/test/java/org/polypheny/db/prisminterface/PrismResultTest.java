@@ -19,7 +19,6 @@ package org.polypheny.db.prisminterface;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.polypheny.db.prisminterface.CypherTest.integerValue;
 import static org.polypheny.db.prisminterface.CypherTest.relationalFrame;
 import static org.polypheny.db.prisminterface.CypherTest.singleRow;
 
@@ -38,6 +37,7 @@ import org.polypheny.db.prisminterface.utils.PrismValueDeserializer;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.ProtoDocument;
 import org.polypheny.prism.ProtoPolyType;
+import org.polypheny.prism.ProtoValue;
 import org.polypheny.prism.RelationalFrame;
 import org.polypheny.prism.StatementResponse;
 import org.polypheny.prism.StatementResult;
@@ -107,8 +107,7 @@ class PrismResultTest {
                 Frame count = connection.execute( namespace, "mongo", "db.entries.aggregate([{\"$count\":\"total\"}])", 1 ).getResult().getFrame();
                 ProtoDocument aggregate = singleDocument( count, true );
                 assertFalse( aggregate.containsEntries( "updateCount" ) );
-                assertEquals( 2, PrismValueDeserializer.deserializeProtoValue( aggregate.getEntriesOrThrow( "total" ) )
-                        .asNumber().bigDecimalValue().longValueExact() );
+                assertEquals( 2, integerValue( aggregate.getEntriesOrThrow( "total" ) ) );
 
                 Frame documentsAsRows = connection.execute(
                         Catalog.DEFAULT_NAMESPACE_NAME, "sql", "SELECT d AS payload FROM prismresultdocs.entries", -1 ).getResult().getFrame();
@@ -142,6 +141,11 @@ class PrismResultTest {
     private static void assertScalar( StatementResult result, long expected ) {
         assertFalse( result.hasFrame() );
         assertEquals( expected, result.getScalar() );
+    }
+
+
+    private static long integerValue( ProtoValue value ) {
+        return PrismValueDeserializer.deserializeProtoValue( value ).asNumber().bigDecimalValue().longValueExact();
     }
 
 }
