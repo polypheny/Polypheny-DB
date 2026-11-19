@@ -50,7 +50,7 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
         this.physicalQueryClass = queryClass + (context.getFieldDistribution() == null ? "" : context.getFieldDistribution().hashCode());
         this.router = routerClass;
         AlgNode alg = routedAlgBuilder.build();
-        this.routedRoot = new AlgRoot( alg, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
+        this.routedRoot = logicalRoot.withAlg( alg );
     }
 
 
@@ -61,7 +61,7 @@ public class ProposedRoutingPlanImpl implements ProposedRoutingPlan {
 
     public ProposedRoutingPlanImpl( AlgNode routedConditional, AlgRoot logicalRoot, String queryClass ) {
         this.queryClass = queryClass;
-        this.routedRoot = new AlgRoot( routedConditional, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
+        this.routedRoot = logicalRoot.withAlg( routedConditional );
     }
 
 
