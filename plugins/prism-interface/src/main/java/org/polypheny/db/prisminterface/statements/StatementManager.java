@@ -188,7 +188,7 @@ public class StatementManager {
         }
         PIStatement statement = openStatements.get( statementId );
         try {
-            if ( statement != null && statement.getLanguage().dataModel() == DataModel.GRAPH ) {
+            if ( statement != null ) {
                 statement.closeResultsAndCommitIfAuto();
             }
         } finally {
@@ -217,23 +217,31 @@ public class StatementManager {
     }
 
 
-    public boolean hasOpenResult( boolean graphOnly ) {
-        Transaction transaction = client.getCurrentTransaction();
-        return transaction != null && transaction.isActive() && openStatements.values().stream()
-                .filter( statement -> statement.getResultCursor() != null && statement.getTransaction() == transaction )
-                .filter( statement -> statement.getLanguage().dataModel() == DataModel.GRAPH || !graphOnly )
-                .filter( statement -> !isBatchMember( statement ) )
-                .anyMatch( statement -> statement.getResultCursor().iterator().hasMoreRows() );
+    public void commitIfAutocommitAndNoOpenResults( Transaction transaction ) {
+        // Overlapping SQL and MQL results can share the transaction.
+        if ( client.isAutoCommit() && transaction == client.getCurrentTransaction()
+                && transaction.isActive() && !hasOpenResult( transaction, false ) ) {
+            client.commitCurrentTransactionIfAuto();
+        }
     }
 
 
-    private boolean isBatchMember( PIStatement statement ) {
-        // Batch responses expose only the batch ID and update counts, so members cannot be fetched.
-        return openUnparameterizedBatches.values().stream().anyMatch( batch -> batch.getStatements().contains( statement ) );
+    public boolean hasOpenResult( boolean graphOnly ) {
+        Transaction transaction = client.getCurrentTransaction();
+        return transaction != null && transaction.isActive() && hasOpenResult( transaction, graphOnly );
+    }
+
+
+    private boolean hasOpenResult( Transaction transaction, boolean graphOnly ) {
+        return openStatements.values().stream()
+                .filter( statement -> !graphOnly || statement.getLanguage().dataModel() == DataModel.GRAPH )
+                .map( PIStatement::getResultCursor )
+                .anyMatch( cursor -> cursor != null && cursor.transaction() == transaction );
     }
 
 
     private void rebindPreparedStatement( PIPreparedStatement statement ) {
+        statement.closeResultsAndCommitIfAuto();
         Statement s = statement.getStatement();
         if ( s != null && s.getTransaction().getId() != client.getOrCreateNewTransaction().getId() ) {
             statement.setStatement( client.getCurrentTransaction().createStatement() );

@@ -68,7 +68,10 @@ public class PIUnparameterizedStatementBatch {
         int fetchSize = PropertyUtils.DEFAULT_FETCH_SIZE;
         List<Long> updateCounts = new ArrayList<>( statements.size() );
         for ( int i = 0; i < statements.size(); i++ ) {
-            updateCounts.add( statements.get( i ).executeBatchMember( parsedStatements.get( i ), fetchSize ).getScalar() );
+            PIUnparameterizedStatement statement = statements.get( i );
+            updateCounts.add( statement.executeBatchMember( parsedStatements.get( i ), fetchSize ).getScalar() );
+            // The batch response exposes counts only and cannot be used to fetch a member cursor.
+            statement.closeResultsAndCommitIfAuto();
         }
         return updateCounts;
     }
