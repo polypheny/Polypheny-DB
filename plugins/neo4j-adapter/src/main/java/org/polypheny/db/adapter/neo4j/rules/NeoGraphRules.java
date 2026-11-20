@@ -345,7 +345,7 @@ public interface NeoGraphRules {
             // bindings at an enumerable boundary when a segment has zero or an open number of hops.
             boolean hasBindings = path.getNames().stream().anyMatch( NeoGraphMatchRule::isNamed );
             return path.getEdges().stream().filter( edge -> edge.fromTo() != null ).noneMatch( edge ->
-                    isNamed( edge.getVariableName() ) || edge.labels.size() > 1
+                    edge.hasEmptyRange() || isNamed( edge.getVariableName() ) || edge.labels.size() > 1
                             || (hasBindings && (edge.getMinLength() == 0 || edge.getMaxLength() == null)) );
         }
 

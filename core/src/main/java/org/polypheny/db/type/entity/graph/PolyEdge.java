@@ -138,6 +138,12 @@ public class PolyEdge extends GraphPropertyHolder {
     }
 
 
+    public boolean hasEmptyRange() {
+        Integer maxLength = getMaxLength();
+        return maxLength != null && maxLength < getMinLength();
+    }
+
+
     public String getRangeDescriptor() {
         if ( fromTo == null ) {
             return "";

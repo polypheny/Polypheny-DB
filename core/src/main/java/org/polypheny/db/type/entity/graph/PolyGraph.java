@@ -128,6 +128,9 @@ public class PolyGraph extends GraphObject {
 
 
     public Iterable<PolyPath> matchPaths( PolyPath pattern ) {
+        if ( pattern.getEdges().stream().anyMatch( PolyEdge::hasEmptyRange ) ) {
+            return List.of();
+        }
         if ( pattern.getEdges().isEmpty() ) {
             PolyNode template = pattern.getNodes().get( 0 );
             PolyString variable = template.getVariableName();

@@ -1197,6 +1197,35 @@ class CypherTest {
 
 
     @Test
+    void emptyRelationshipIntervalsHaveNoMatches() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            expect( setCypherResultFormat( connection, "relational" ), Response.TypeCase.SET_CLIENT_INFO_PROPERTIES_RESPONSE );
+            for ( String range : List.of( "2..1", "1..0", "..0" ) ) {
+                String pattern = "(:Person {name:'Alice'})-[:KNOWS*%s]->(:Person)".formatted( range );
+                Frame frame = connection.cypher( "MATCH p=" + pattern + " RETURN p", -1 ).getResult().getFrame();
+                assertEquals( 0, relationalFrame( frame, true, List.of( "p" ) ).getRowsCount(), range );
+
+                Frame optional = connection.cypher( "MATCH (a:Person {name:'Alice'}) "
+                        + "OPTIONAL MATCH p=(a)-[r:KNOWS*%s]->(b:Person) ".formatted( range )
+                        + "RETURN a.name AS origin, p, r, b", -1 ).getResult().getFrame();
+                Row row = singleRow( relationalFrame( optional, true, List.of( "origin", "p", "r", "b" ) ) );
+                assertEquals( "Alice", row.getValues( 0 ).getString().getString() );
+                assertTrue( row.getValuesList().subList( 1, 4 ).stream().allMatch( ProtoValue::hasNull ), range );
+            }
+
+            Frame zero = connection.cypher( "MATCH p=(:Person {name:'Alice'})-[r:ABSENT*0..0]->(b:Person) "
+                    + "RETURN p, r, b.name AS target", -1 ).getResult().getFrame();
+            Row row = singleRow( relationalFrame( zero, true, List.of( "p", "r", "target" ) ) );
+            assertEquals( 1, row.getValues( 0 ).getPath().getNodesCount() );
+            assertEquals( 0, row.getValues( 0 ).getPath().getEdgesCount() );
+            assertTrue( row.getValues( 1 ).hasList() );
+            assertEquals( 0, row.getValues( 1 ).getList().getValuesCount() );
+            assertEquals( "Alice", row.getValues( 2 ).getString().getString() );
+        }
+    }
+
+
+    @Test
     void returnsUnboundedRelationshipBindingsAsOrderedLists() throws IOException {
         try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
             expect( setCypherResultFormat( connection, "relational" ), Response.TypeCase.SET_CLIENT_INFO_PROPERTIES_RESPONSE );

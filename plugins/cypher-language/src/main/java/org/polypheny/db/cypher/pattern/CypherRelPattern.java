@@ -94,9 +94,6 @@ public class CypherRelPattern extends CypherPattern {
             Integer lower = parseBound( pathLength.getFrom() );
             int min = lower == null ? 1 : lower;
             Integer max = parseBound( pathLength.getTo() );
-            if ( max != null && max < min ) {
-                throw new GenericRuntimeException( "Cypher relationship length upper bound must be at least the lower bound." );
-            }
             edge.fromTo( Pair.of( min, max ) );
         }
 
