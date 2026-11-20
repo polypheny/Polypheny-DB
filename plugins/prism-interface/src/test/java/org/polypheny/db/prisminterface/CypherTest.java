@@ -1226,6 +1226,62 @@ class CypherTest {
 
 
     @Test
+    void enforcesRelationshipUniquenessAcrossPatternsInTheFirstMatch() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            String path = "(:Person {name:'Alice'})-[:KNOWS*]->(:Person {name:'Bob'})";
+            for ( var entry : Map.of(
+                    "MATCH p=" + path + ", q=" + path, 0,
+                    "MATCH " + path + ", " + path, 0,
+                    "MATCH p=" + path + " MATCH q=" + path, 1,
+                    "MATCH ()-[:KNOWS]->(), ()-[:KNOWS]->()", 2,
+                    "MATCH ()-[:KNOWS*]->(), ()-[:KNOWS*]->(), ()-[:KNOWS*]->()", 0,
+                    "MATCH ()-[*0]->(), ()-[*0]->()", 9,
+                    "MATCH ()-[:KNOWS]->(), ()", 6 ).entrySet() ) {
+                Frame frame = connection.cypher( entry.getKey() + " RETURN count(*) AS total", -1 ).getResult().getFrame();
+                assertEquals( entry.getValue().longValue(), integerValue( singleRow( relationalFrame( frame, true, List.of( "total" ) ) ).getValues( 0 ) ), entry.getKey() );
+            }
+        }
+    }
+
+
+    @Test
+    void joinsSharedNodesAndFiltersTheFirstMatch() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            String start = "MATCH (a)-[:KNOWS*]->(middle:Person {name:'Bob'}), ";
+            String projection = " RETURN a.name AS origin, middle.name AS midpoint, c.name AS target";
+            List<String> columns = List.of( "origin", "midpoint", "target" );
+            Frame matched = connection.cypher( start + "(middle)-[:KNOWS*]->(c) WHERE a.name = 'Alice' AND c.name = 'Charlie'" + projection, -1 ).getResult().getFrame();
+            Row row = singleRow( relationalFrame( matched, true, columns ) );
+            assertEquals( List.of( "Alice", "Bob", "Charlie" ), row.getValuesList().stream().map( value -> value.getString().getString() ).toList() );
+
+            Frame absent = connection.cypher( start + "(middle:Person {name:'Charlie'})<-[:KNOWS*]-(c) WHERE c.name = 'Bob'" + projection, -1 ).getResult().getFrame();
+            assertEquals( 0, relationalFrame( absent, true, columns ).getRowsCount() );
+        }
+    }
+
+
+    @Test
+    void writesOnlyRowsWithValidJoinedMatchBindings() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            connection.execute( WRITE_RETURN_NAMESPACE, "cypher", "CREATE (:JoinedWriteSource {name:'left'})"
+                    + "-[:JOINED_WRITE_LINK]->(:JoinedWriteMiddle)-[:JOINED_WRITE_LINK]->(:JoinedWriteTarget {name:'right'})", -1 );
+            String query = """
+                    MATCH (a:JoinedWriteSource)-[:JOINED_WRITE_LINK*]->(middle:JoinedWriteMiddle),
+                          (middle)-[:JOINED_WRITE_LINK*]->(b:JoinedWriteTarget)
+                    CREATE (a)-[:JOINED_WRITE_CREATED]->(b)
+                    RETURN a.name AS origin, b.name AS target
+                    """;
+            Frame frame = connection.execute( WRITE_RETURN_NAMESPACE, "cypher", query, -1 ).getResult().getFrame();
+            Row row = singleRow( relationalFrame( frame, true, List.of( "origin", "target" ) ) );
+            assertEquals( List.of( "left", "right" ), row.getValuesList().stream().map( value -> value.getString().getString() ).toList() );
+            Frame persisted = connection.execute( WRITE_RETURN_NAMESPACE, "cypher",
+                    "MATCH ()-[:JOINED_WRITE_CREATED]->() RETURN count(*) AS total", -1 ).getResult().getFrame();
+            assertEquals( 1, integerValue( singleRow( relationalFrame( persisted, true, List.of( "total" ) ) ).getValues( 0 ) ) );
+        }
+    }
+
+
+    @Test
     void returnsUnboundedRelationshipBindingsAsOrderedLists() throws IOException {
         try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
             expect( setCypherResultFormat( connection, "relational" ), Response.TypeCase.SET_CLIENT_INFO_PROPERTIES_RESPONSE );

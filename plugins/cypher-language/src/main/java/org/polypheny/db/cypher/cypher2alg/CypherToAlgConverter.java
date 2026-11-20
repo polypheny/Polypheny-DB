@@ -410,7 +410,7 @@ public class CypherToAlgConverter {
         setKindIfNull( context, Kind.SELECT );
         context.active = clause;
         List<CypherExpression> inlinePredicates = clause.getPatterns().stream().flatMap( pattern -> pattern.getPredicates().stream() ).toList();
-        if ( clause.isOptional() || !context.stack.isEmpty() || !inlinePredicates.isEmpty() ) {
+        if ( clause.isOptional() || clause.getPatterns().size() > 1 || !context.stack.isEmpty() || !inlinePredicates.isEmpty() ) {
             convertJoinedMatch( clause, context, inlinePredicates );
             return;
         }
