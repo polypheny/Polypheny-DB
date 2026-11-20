@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -31,6 +32,17 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.prisminterface.CypherTest.PrismConnection;
 import org.polypheny.prism.CloseResultRequest;
 import org.polypheny.prism.CloseStatementRequest;
+import org.polypheny.prism.ExecuteIndexedStatementBatchRequest;
+import org.polypheny.prism.ExecuteIndexedStatementRequest;
+import org.polypheny.prism.ExecuteNamedStatementRequest;
+import org.polypheny.prism.ExecuteUnparameterizedStatementBatchRequest;
+import org.polypheny.prism.ExecuteUnparameterizedStatementRequest;
+import org.polypheny.prism.Frame;
+import org.polypheny.prism.IndexedParameters;
+import org.polypheny.prism.NamedParameters;
+import org.polypheny.prism.PrepareStatementRequest;
+import org.polypheny.prism.ProtoInteger;
+import org.polypheny.prism.ProtoValue;
 import org.polypheny.prism.Request;
 import org.polypheny.prism.Response;
 import org.polypheny.prism.StatementResponse;
@@ -38,6 +50,10 @@ import org.polypheny.prism.StatementResponse;
 @Tag("adapter")
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
 class PrismAutocommitTest {
+
+    private static final String SQL_NAMESPACE = Catalog.DEFAULT_NAMESPACE_NAME;
+    private static final String SQL_PAGE_QUERY = "SELECT n FROM (VALUES (1), (2)) AS pairs(n)";
+
 
     @BeforeAll
     static void startDatabase() {
@@ -47,7 +63,196 @@ class PrismAutocommitTest {
 
     @Test
     void sqlCompletesTheTransactionAfterTheLastCursor() throws IOException {
-        verifyCursorLifecycle( Catalog.DEFAULT_NAMESPACE_NAME, "sql", "SELECT n FROM (VALUES (1), (2)) AS pairs(n)" );
+        verifyCursorLifecycle( SQL_NAMESPACE, "sql", SQL_PAGE_QUERY );
+    }
+
+
+    @Test
+    void rejectsSqlWritesAndDdlUntilTheOpenResultFinishes() throws IOException {
+        String table = "prismautocommitwrites";
+        String ddlTable = "prismautocommitddl";
+        String createTable = "CREATE TABLE " + ddlTable + " (id INTEGER NOT NULL, PRIMARY KEY (id))";
+        String insert = "INSERT INTO " + table + " VALUES (41)";
+        try {
+            try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+                createSqlFixture( connection, table );
+                long initiallyActive = activeTransactions();
+                int paged = openCursor( connection, SQL_NAMESPACE, "sql", SQL_PAGE_QUERY );
+                assertOpenResultError( connection.send( statementRequest( SQL_NAMESPACE, "sql", insert ) ) );
+                assertOpenResultError( connection.send( statementRequest( SQL_NAMESPACE, "sql", createTable ) ) );
+                assertEquals( initiallyActive + 1, activeTransactions() );
+                assertLastSqlPage( connection, paged );
+                assertEquals( initiallyActive, activeTransactions() );
+
+                assertEquals( 1, connection.execute( SQL_NAMESPACE, "sql", createTable, -1 ).getResult().getScalar() );
+                assertEquals( 1, connection.execute( SQL_NAMESPACE, "sql", insert, -1 ).getResult().getScalar() );
+            }
+
+            assertPersistedSqlRows( table, 1 );
+        } finally {
+            dropSqlFixtures( table, ddlTable );
+        }
+    }
+
+
+    @Test
+    void rejectsMqlWritesUntilTheOpenResultFinishes() throws IOException {
+        String namespace = "prismautocommitmqlwrites";
+        String insert = "db.pairs.insertOne({value:41})";
+        try {
+            try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+                connection.execute( SQL_NAMESPACE, "sql", "CREATE DOCUMENT NAMESPACE " + namespace, -1 );
+                connection.execute( namespace, "mongo", "db.createCollection(\"pairs\")", -1 );
+                long initiallyActive = activeTransactions();
+                int paged = openCursor( connection, SQL_NAMESPACE, "sql", SQL_PAGE_QUERY );
+                assertOpenResultError( connection.send( statementRequest( namespace, "mongo", insert ) ) );
+                assertOpenResultError( connection.send( statementRequest( namespace, "mongo", "db.missing.find({})" ) ) );
+                assertEquals( initiallyActive + 1, activeTransactions() );
+                assertLastSqlPage( connection, paged );
+                assertEquals( initiallyActive, activeTransactions() );
+
+                Frame update = connection.execute( namespace, "mongo", insert, -1 ).getResult().getFrame();
+                assertTrue( update.hasDocumentFrame() );
+                assertTrue( update.getIsLast() );
+                assertEquals( 1, update.getDocumentFrame().getDocumentsCount() );
+                assertEquals( 1, connection.execute( namespace, "mongo", "db.createCollection(\"missing\")", -1 ).getResult().getScalar() );
+
+                StatementResponse pendingWrite = connection.execute( namespace, "mongo", "db.pairs.insertOne({value:42})", 0 );
+                Frame emptyPage = pendingWrite.getResult().getFrame();
+                assertTrue( emptyPage.hasDocumentFrame() );
+                assertFalse( emptyPage.getIsLast() );
+                assertEquals( 0, emptyPage.getDocumentFrame().getDocumentsCount() );
+                assertOpenResultError( connection.send( statementRequest( SQL_NAMESPACE, "sql", SQL_PAGE_QUERY ) ) );
+                Frame writeCount = connection.fetch( pendingWrite.getStatementId(), 1 );
+                assertTrue( writeCount.getIsLast() );
+                assertEquals( 1, writeCount.getDocumentFrame().getDocumentsCount() );
+                assertEquals( initiallyActive, activeTransactions() );
+            }
+
+            try ( PrismConnection observer = new PrismConnection( true, 3 ) ) {
+                Frame docs = observer.execute( namespace, "mongo", "db.pairs.find({})", -1 ).getResult().getFrame();
+                assertTrue( docs.hasDocumentFrame() );
+                assertEquals( 2, docs.getDocumentFrame().getDocumentsCount() );
+            }
+        } finally {
+            try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+                connection.execute( SQL_NAMESPACE, "sql", "DROP NAMESPACE IF EXISTS " + namespace, -1 );
+            }
+        }
+    }
+
+
+    @Test
+    void rejectsPreparedAndBatchedWritesUntilTheOpenResultFinishes() throws IOException {
+        String table = "prismautocommitpreparedwrites";
+        String insert = "INSERT INTO " + table + " VALUES ";
+        try {
+            try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+                createSqlFixture( connection, table );
+                int indexedId = prepareInsert( connection, insert + "(?)", false );
+                int namedId = prepareInsert( connection, insert + "(:id)", true );
+                Request.Builder indexed = Request.newBuilder().setExecuteIndexedStatementRequest(
+                        ExecuteIndexedStatementRequest.newBuilder().setStatementId( indexedId )
+                                .setParameters( IndexedParameters.newBuilder().addParameters( integer( 51 ) ) ) );
+                Request.Builder named = Request.newBuilder().setExecuteNamedStatementRequest(
+                        ExecuteNamedStatementRequest.newBuilder().setStatementId( namedId )
+                                .setParameters( NamedParameters.newBuilder().putParameters( "id", integer( 52 ) ) ) );
+                Request.Builder indexedBatch = Request.newBuilder().setExecuteIndexedStatementBatchRequest(
+                        ExecuteIndexedStatementBatchRequest.newBuilder().setStatementId( indexedId )
+                                .addParameters( IndexedParameters.newBuilder().addParameters( integer( 53 ) ) ) );
+                Request.Builder batch = Request.newBuilder().setExecuteUnparameterizedStatementBatchRequest(
+                        ExecuteUnparameterizedStatementBatchRequest.newBuilder()
+                                .addStatements( statementRequest( SQL_NAMESPACE, "sql", insert + "(54)" ).getExecuteUnparameterizedStatementRequest() ) );
+
+                int paged = openCursor( connection, SQL_NAMESPACE, "sql", SQL_PAGE_QUERY );
+                for ( Request.Builder request : List.of( indexed, named, indexedBatch, batch ) ) {
+                    assertOpenResultError( connection.send( request ) );
+                }
+                assertLastSqlPage( connection, paged );
+
+                assertEquals( 1, expect( connection.send( indexed ), Response.TypeCase.STATEMENT_RESULT ).getStatementResult().getScalar() );
+                assertEquals( 1, expect( connection.send( named ), Response.TypeCase.STATEMENT_RESULT ).getStatementResult().getScalar() );
+                assertEquals( List.of( 1L ), expect( connection.send( indexedBatch ), Response.TypeCase.STATEMENT_BATCH_RESPONSE ).getStatementBatchResponse().getScalarsList() );
+                assertEquals( List.of( 1L ), expect( connection.send( batch ), Response.TypeCase.STATEMENT_BATCH_RESPONSE ).getStatementBatchResponse().getScalarsList() );
+            }
+
+            assertPersistedSqlRows( table, 4 );
+        } finally {
+            dropSqlFixtures( table );
+        }
+    }
+
+
+    private static void createSqlFixture( PrismConnection connection, String table ) throws IOException {
+        connection.execute( SQL_NAMESPACE, "sql", "CREATE TABLE " + table + " (id INTEGER NOT NULL, PRIMARY KEY (id))", -1 );
+    }
+
+
+    private static void dropSqlFixtures( String... tables ) throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            for ( String table : tables ) {
+                connection.execute( SQL_NAMESPACE, "sql", "DROP TABLE IF EXISTS " + table, -1 );
+            }
+        }
+    }
+
+
+    private static void assertPersistedSqlRows( String table, int expected ) throws IOException {
+        try ( PrismConnection observer = new PrismConnection( true, 3 ) ) {
+            Frame rows = observer.execute( SQL_NAMESPACE, "sql", "SELECT id FROM " + table, -1 ).getResult().getFrame();
+            assertTrue( rows.hasRelationalFrame() );
+            assertEquals( expected, rows.getRelationalFrame().getRowsCount() );
+        }
+    }
+
+
+    private static int prepareInsert( PrismConnection connection, String query, boolean named ) throws IOException {
+        PrepareStatementRequest preparation = PrepareStatementRequest.newBuilder()
+                .setLanguageName( "sql" )
+                .setNamespaceName( SQL_NAMESPACE )
+                .setStatement( query )
+                .build();
+        Request.Builder request = Request.newBuilder();
+        if ( named ) {
+            request.setPrepareNamedStatementRequest( preparation );
+        } else {
+            request.setPrepareIndexedStatementRequest( preparation );
+        }
+        return expect( connection.send( request ), Response.TypeCase.PREPARED_STATEMENT_SIGNATURE ).getPreparedStatementSignature().getStatementId();
+    }
+
+
+    private static ProtoValue integer( int value ) {
+        return ProtoValue.newBuilder().setInteger( ProtoInteger.newBuilder().setInteger( value ) ).build();
+    }
+
+
+    private static Request.Builder statementRequest( String namespace, String language, String query ) {
+        return Request.newBuilder().setExecuteUnparameterizedStatementRequest( ExecuteUnparameterizedStatementRequest.newBuilder()
+                .setNamespaceName( namespace )
+                .setLanguageName( language )
+                .setStatement( query )
+                .setFetchSize( -1 ) );
+    }
+
+
+    private static void assertLastSqlPage( PrismConnection connection, int statementId ) throws IOException {
+        Frame last = connection.fetch( statementId, 1 );
+        assertTrue( last.hasRelationalFrame() );
+        assertTrue( last.getIsLast() );
+        assertEquals( 1, last.getRelationalFrame().getRowsCount() );
+    }
+
+
+    private static void assertOpenResultError( Response response ) {
+        String message = expect( response, Response.TypeCase.ERROR_RESPONSE ).getErrorResponse().getMessage();
+        assertTrue( message.contains( "open result" ) && message.contains( "autocommit" ), message );
+    }
+
+
+    private static Response expect( Response response, Response.TypeCase type ) {
+        assertEquals( type, response.getTypeCase(), () -> response.getErrorResponse().getMessage() );
+        return response;
     }
 
 

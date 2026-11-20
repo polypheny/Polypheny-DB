@@ -21,8 +21,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -30,6 +32,8 @@ import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.PIServiceException;
+import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
+import org.polypheny.db.prisminterface.statements.PIStatement.ResultCursor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.prism.ExecuteUnparameterizedStatementRequest;
@@ -206,8 +210,10 @@ public class StatementManager {
 
 
     public void checkAutocommitExecution( boolean graphStatement ) {
-        // A graph statement can end the shared transaction, as can another statement while a graph result is open.
-        if ( client.isAutoCommit() && hasOpenResult( !graphStatement ) ) {
+        // Graph statements and unfinished write results require a transaction to themselves.
+        if ( client.isAutoCommit() && hasOpenResult( (statement, cursor) -> graphStatement
+                || statement.getLanguage().dataModel() == DataModel.GRAPH
+                || Kind.DML.contains( cursor.iterator().getImplementation().getKind() ) ) ) {
             throw new PIServiceException( "Close or finish the open result before executing another statement in autocommit mode" );
         }
     }
@@ -216,27 +222,33 @@ public class StatementManager {
     public void commitIfAutocommitAndNoOpenResults( Transaction transaction ) {
         // Overlapping SQL and MQL results can share the transaction.
         if ( client.isAutoCommit() && transaction == client.getCurrentTransaction()
-                && transaction.isActive() && !hasOpenResult( transaction, false ) ) {
+                && transaction.isActive() && !hasOpenResult( transaction, (statement, cursor) -> true ) ) {
             client.commitCurrentTransactionIfAuto();
         }
     }
 
 
     public boolean hasOpenResult( boolean graphOnly ) {
-        Transaction transaction = client.getCurrentTransaction();
-        return transaction != null && transaction.isActive() && hasOpenResult( transaction, graphOnly );
+        return hasOpenResult( (statement, cursor) -> !graphOnly || statement.getLanguage().dataModel() == DataModel.GRAPH );
     }
 
 
-    private boolean hasOpenResult( Transaction transaction, boolean graphOnly ) {
-        return openStatements.values().stream()
-                .filter( statement -> !graphOnly || statement.getLanguage().dataModel() == DataModel.GRAPH )
-                .map( PIStatement::getResultCursor )
-                .anyMatch( cursor -> cursor != null && cursor.transaction() == transaction );
+    private boolean hasOpenResult( BiPredicate<PIStatement, ResultCursor> predicate ) {
+        Transaction transaction = client.getCurrentTransaction();
+        return transaction != null && transaction.isActive() && hasOpenResult( transaction, predicate );
+    }
+
+
+    private boolean hasOpenResult( Transaction transaction, BiPredicate<PIStatement, ResultCursor> predicate ) {
+        return openStatements.values().stream().anyMatch( statement -> {
+            ResultCursor cursor = statement.getResultCursor();
+            return cursor != null && cursor.transaction() == transaction && predicate.test( statement, cursor );
+        } );
     }
 
 
     private void rebindPreparedStatement( PIPreparedStatement statement ) {
+        StatementProcessor.parseWithOpenAutocommitResult( statement );
         statement.closeResultsAndCommitIfAuto();
         Statement s = statement.getStatement();
         if ( s != null && s.getTransaction().getId() != client.getOrCreateNewTransaction().getId() ) {
