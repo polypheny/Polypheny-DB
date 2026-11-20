@@ -16,9 +16,11 @@
 
 package org.polypheny.db.prisminterface.statements;
 
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -26,6 +28,7 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.prism.StatementResult;
@@ -53,23 +56,24 @@ public class PIUnparameterizedStatement extends PIStatement {
 
 
     public StatementResult execute( int fetchSize ) {
+        List<ParsedQueryContext> preParsedQueries = StatementProcessor.parseWithOpenAutocommitResult( this );
         Node parsedStatement = language.dataModel() == DataModel.GRAPH ? StatementProcessor.parseGraphStatement( this ) : null;
-        prepare( parsedStatement );
+        prepare( parsedStatement, preParsedQueries );
         return StatementProcessor.executeAndGetResult( this, fetchSize );
     }
 
 
-    StatementResult executeBatchMember( Node parsedStatement, int fetchSize ) {
-        prepare( parsedStatement );
+    StatementResult executeBatchMember( @Nullable Node parsedStatement, int fetchSize, @Nullable List<ParsedQueryContext> preParsedQueries ) {
+        prepare( parsedStatement, preParsedQueries );
         return parsedStatement == null
                 ? StatementProcessor.executeAndGetResult( this, fetchSize )
                 : StatementProcessor.executeAndGetResult( this );
     }
 
 
-    private void prepare( Node parsedStatement ) {
+    private void prepare( @Nullable Node parsedStatement, @Nullable List<ParsedQueryContext> preParsedQueries ) {
         statement = client.getOrCreateNewTransaction().createStatement();
-        StatementProcessor.implement( this, parsedStatement );
+        StatementProcessor.implement( this, parsedStatement, preParsedQueries );
     }
 
 

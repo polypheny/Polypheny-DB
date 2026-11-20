@@ -1079,6 +1079,44 @@ class CypherTest {
 
 
     @Test
+    void comparesMissingPropertiesAsNullableBooleans() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            Frame frame = connection.cypher(
+                    "MATCH (n:Person) RETURN n, n.missing = n.missing AS comparison", -1 ).getResult().getFrame();
+            RelationalFrame result = relationalFrame( frame, true, List.of( "n", "comparison" ) );
+            assertEquals( ProtoPolyType.BOOLEAN, result.getColumnMeta( 1 ).getTypeMeta().getProtoValueType() );
+            assertTrue( result.getColumnMeta( 1 ).getIsNullable() );
+            assertEquals( 3, result.getRowsCount() );
+            for ( Row row : result.getRowsList() ) {
+                assertTrue( row.getValues( 0 ).hasNode() );
+                assertTrue( row.getValues( 1 ).hasNull() );
+            }
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void reprojectsMissingPropertiesUnderAnExistingAlias() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            Frame frame = connection.cypher( """
+                    MATCH (n:Person)
+                    WITH n.name AS picked, n
+                    RETURN n.missing AS picked, n
+                    """, -1 ).getResult().getFrame();
+            RelationalFrame result = relationalFrame( frame, true, List.of( "picked", "n" ) );
+            assertTrue( result.getColumnMeta( 0 ).getIsNullable() );
+            assertEquals( 3, result.getRowsCount() );
+            for ( Row row : result.getRowsList() ) {
+                assertTrue( row.getValues( 0 ).hasNull() );
+                assertTrue( row.getValues( 1 ).hasNode() );
+            }
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
     void preservesEdgeAndEndpointCellsAlongsideScalarValues() throws IOException {
         try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
             Frame frame = connection.cypher(

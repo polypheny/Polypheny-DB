@@ -26,6 +26,7 @@ import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.PIServiceException;
 import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
 import org.polypheny.db.prisminterface.utils.PropertyUtils;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 
 @Getter
 public class PIUnparameterizedStatementBatch {
@@ -66,10 +67,13 @@ public class PIUnparameterizedStatementBatch {
 
     private List<Long> executeMembers( List<Node> parsedStatements ) {
         int fetchSize = PropertyUtils.DEFAULT_FETCH_SIZE;
+        List<List<ParsedQueryContext>> preParsedQueries = statements.stream()
+                .map( StatementProcessor::parseWithOpenAutocommitResult )
+                .toList();
         List<Long> updateCounts = new ArrayList<>( statements.size() );
         for ( int i = 0; i < statements.size(); i++ ) {
             PIUnparameterizedStatement statement = statements.get( i );
-            updateCounts.add( statement.executeBatchMember( parsedStatements.get( i ), fetchSize ).getScalar() );
+            updateCounts.add( statement.executeBatchMember( parsedStatements.get( i ), fetchSize, preParsedQueries.get( i ) ).getScalar() );
             // The batch response exposes counts only and cannot be used to fetch a member cursor.
             statement.closeResultsAndCommitIfAuto();
         }
