@@ -1324,6 +1324,40 @@ class CypherTest {
 
 
     @Test
+    void matchesRequiredNodeLabelsIndependentOfAdditionalLabelsAndOrder() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            connection.execute( WRITE_RETURN_NAMESPACE, "cypher", """
+                    CREATE (:RangeArtist:RangeArtistA {name:'A'})-[:RANGE_COLLABORATION {year:1987}]->
+                           (:RangeArtist:RangeArtistB {name:'B'})-[:RANGE_COLLABORATION {year:1988}]->
+                           (:RangeArtist:RangeArtistC {name:'C'})
+                    """, -1 );
+            String projection = " RETURN a.name AS origin, b.name AS target";
+            List<String> columns = List.of( "origin", "target" );
+            for ( String pattern : List.of(
+                    "(a:RangeArtist)-[:RANGE_COLLABORATION* {year:1988}]->(b:RangeArtist)",
+                    "(a:RangeArtistB:RangeArtist)-[:RANGE_COLLABORATION* {year:1988}]->(b:RangeArtistC:RangeArtist)" ) ) {
+                Frame frame = connection.execute( WRITE_RETURN_NAMESPACE, "cypher", "MATCH " + pattern + projection, -1 ).getResult().getFrame();
+                Row row = singleRow( relationalFrame( frame, true, columns ) );
+                assertEquals( List.of( "B", "C" ), row.getValuesList().stream().map( value -> value.getString().getString() ).toList() );
+            }
+
+            Frame absent = connection.execute( WRITE_RETURN_NAMESPACE, "cypher",
+                    "MATCH (a:RangeArtistB:RangeArtist)-[:RANGE_COLLABORATION*]->(b:RangeArtistC:RangeArtistA)" + projection, -1 ).getResult().getFrame();
+            assertEquals( 0, relationalFrame( absent, true, columns ).getRowsCount() );
+
+            Frame zero = connection.execute( WRITE_RETURN_NAMESPACE, "cypher",
+                    "MATCH (a:RangeArtistB)-[:RANGE_NEVER_USED*0]->(b:RangeArtist)" + projection, -1 ).getResult().getFrame();
+            Row sameNode = singleRow( relationalFrame( zero, true, columns ) );
+            assertEquals( List.of( "B", "B" ), sameNode.getValuesList().stream().map( value -> value.getString().getString() ).toList() );
+
+            Frame nodeOnly = connection.execute( WRITE_RETURN_NAMESPACE, "cypher",
+                    "MATCH (n:RangeArtistB:RangeArtistB) RETURN n.name AS artist", -1 ).getResult().getFrame();
+            assertEquals( "B", singleRow( relationalFrame( nodeOnly, true, List.of( "artist" ) ) ).getValues( 0 ).getString().getString() );
+        }
+    }
+
+
+    @Test
     void returnsUnboundedRelationshipBindingsAsOrderedLists() throws IOException {
         try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
             expect( setCypherResultFormat( connection, "relational" ), Response.TypeCase.SET_CLIENT_INFO_PROPERTIES_RESPONSE );
