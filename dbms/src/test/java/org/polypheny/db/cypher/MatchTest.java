@@ -18,6 +18,7 @@ package org.polypheny.db.cypher;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
 import java.util.List;
@@ -278,12 +279,13 @@ public class MatchTest extends CypherTestTemplate {
         String query = "MATCH p=(:Place {name:'A'})-[:ROAD*%s]->(:Place) RETURN p";
         List<List<String>> twoHops = List.of( List.of( "A", "B", "C" ), List.of( "A", "B", "E" ) );
         List<List<String>> twoOrThreeHops = List.of( List.of( "A", "B", "C" ), List.of( "A", "B", "E" ), List.of( "A", "B", "C", "A" ) );
-        for ( String exact : List.of( "2", "0x2", "0X2", "0o2", "0_2", "02" ) ) {
+        for ( String exact : List.of( "2", "0x2", "0o2" ) ) {
             assertPaths( query.formatted( exact ), twoHops );
         }
         assertPaths( query.formatted( "0x2 .. 0o3" ), twoOrThreeHops );
         assertPaths( query.formatted( "0o2.." ), twoOrThreeHops );
         assertPaths( query.formatted( "..0x2" ), List.of( List.of( "A", "B" ), List.of( "A", "B", "C" ), List.of( "A", "B", "E" ) ) );
+        assertPaths( query.formatted( "2..0xF" ), twoOrThreeHops );
         assertPaths( query.formatted( "0x0" ), List.of( List.of( "A" ) ) );
     }
 
@@ -293,14 +295,42 @@ public class MatchTest extends CypherTestTemplate {
         createHopGraph();
         String query = "MATCH p=(:Place {name:'A'})-[:ROAD*%s]->(:Place) RETURN p";
         List<List<String>> twoOrThreeHops = List.of( List.of( "A", "B", "C" ), List.of( "A", "B", "E" ), List.of( "A", "B", "C", "A" ) );
-        assertPaths( query.formatted( "2..2_147_483_648" ), twoOrThreeHops );
-        assertPaths( query.formatted( "0o2..0x7fff_ffff_ffff_ffff" ), twoOrThreeHops );
+        assertPaths( query.formatted( "2..2147483648" ), twoOrThreeHops );
+        assertPaths( query.formatted( "0o2..0x7fffffffffffffff" ), twoOrThreeHops );
         assertPaths( query.formatted( "2147483648" ), List.of() );
         assertPaths( query.formatted( "0x80000000.." ), List.of() );
         assertPaths( query.formatted( "9223372036854775807..0o2" ), List.of() );
-        for ( String invalid : List.of( "0x", "0o8", "0__2", "2_", "-2", "9223372036854775808" ) ) {
+        for ( String overflow : List.of( "9223372036854775808", "0x8000000000000000" ) ) {
+            assertNotNull( CypherConnection.executeGetResponse( query.formatted( overflow ) ).getError(), overflow );
+        }
+    }
+
+
+    @Test
+    void rejectsNonStandardRangeLiteralsDuringParsing() {
+        String query = "MATCH p=()-[:ROAD*%s]->() RETURN p";
+        for ( String invalid : List.of( "01", "0_1", "1_2", "0x_1", "0o_1", "0X1", "0O1", "0x", "0o8", "-2", "1..02", "0x_1..2" ) ) {
             assertNotNull( CypherConnection.executeGetResponse( query.formatted( invalid ) ).getError(), invalid );
         }
+        String createError = CypherConnection.executeGetResponse( "CREATE ()-[:ROAD*01]->()" ).getError();
+        assertNotNull( createError );
+        assertTrue( createError.contains( "Invalid Cypher relationship length: 01" ), createError );
+    }
+
+
+    @Test
+    void repeatedZeroHopRelationshipCannotMatchWithinOneClause() {
+        createHopGraph();
+
+        String source = "(a:Place {name:'A'})-[r:ROAD*0]->(b)";
+        assertPaths( "MATCH p=" + source + "-[r:ROAD*0]->(c) RETURN p", List.of() );
+        assertPaths( "MATCH p=" + source + ", (a)-[r:ROAD*0]->(c) RETURN p", List.of() );
+        assertPaths( "MATCH p=" + source + "-[s:ROAD*0]->(c) RETURN p", List.of( List.of( "A" ) ) );
+        assertPaths( "MATCH p=" + source + ", (a)-[s:ROAD*0]->(c) RETURN p", List.of( List.of( "A" ) ) );
+
+        GraphResult result = execute( "MATCH (a:Place {name:'A'}) OPTIONAL MATCH p=(a)-[r:ROAD*0]->(b), (a)-[r:ROAD*0]->(c) RETURN p IS NULL AS missing" );
+        assertEquals( 1, result.getData().length );
+        assertTrue( PolyValue.fromTypedJson( result.getData()[0][0], PolyValue.class ).asBoolean().value );
     }
 
 

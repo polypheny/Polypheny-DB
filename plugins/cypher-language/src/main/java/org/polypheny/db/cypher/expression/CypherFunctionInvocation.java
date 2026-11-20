@@ -28,6 +28,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.cypher.cypher2alg.CypherSyntaxException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -198,9 +199,10 @@ public class CypherFunctionInvocation extends CypherExpression {
                 return getVectorDistanceRex( context, type );
             case LAST, CYPHER_LAST: {
                 if ( arguments.size() != 1 ) {
-                    throw new GenericRuntimeException( "last() requires exactly one argument." );
+                    throw new CypherSyntaxException( "last() requires exactly one argument." );
                 }
                 RexNode list = arguments.get( 0 ).getRex( context, type ).right;
+                requireListOperand( list, "last() requires a list." );
                 AlgDataType component = list.getType().getComponentType();
                 AlgDataType result = component == null ? context.typeFactory.createPolyType( PolyType.ANY ) : component;
                 return context.rexBuilder.makeCall( context.typeFactory.createTypeWithNullability( result, true ),

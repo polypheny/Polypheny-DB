@@ -82,6 +82,34 @@ class CypherExpressionSemanticsTest extends CypherTestTemplate {
 
 
     @Test
+    void checksListOperandTypesBeforeEvaluatingRows() {
+        for ( String prefix : List.of( "RETURN ", "MATCH (missing:Absent) RETURN ", "MATCH (found:Origin) RETURN " ) ) {
+            for ( String operand : List.of( "true", "123", "123.4", "'foo'", "{x: []}" ) ) {
+                assertQueryError( prefix + "1 IN " + operand + " AS result", "IN requires a list" );
+                assertQueryError( prefix + "last(" + operand + ") AS result", "last() requires a list" );
+            }
+        }
+        assertQueryError( "MATCH (missing:Absent) WITH 3 AS operand RETURN last(operand) AS result", "last() requires a list" );
+        assertQueryError( "RETURN last() AS result", "last() requires exactly one argument" );
+    }
+
+
+    @Test
+    void evaluatesListExpressionsWithoutMatchAndAcceptsNullOperands() {
+        GraphResult expressionOnly = execute( "RETURN 1 IN [1] AS member, last([1, 2]) AS tail, last([]) AS empty" );
+        assertEquals( 1, expressionOnly.getData().length );
+        assertTrue( cell( expressionOnly, 0, 0 ).asBoolean().value );
+        assertEquals( 2, cell( expressionOnly, 0, 1 ).asNumber().intValue() );
+        assertNull( cell( expressionOnly, 0, 2 ) );
+
+        GraphResult nullOperand = execute( "WITH null AS value RETURN 1 IN value AS member, last(value) AS tail" );
+        assertEquals( 1, nullOperand.getData().length );
+        assertNull( cell( nullOperand, 0, 0 ) );
+        assertNull( cell( nullOperand, 0, 1 ) );
+    }
+
+
+    @Test
     void ordersPathsAndRelationshipListsLexicographically() {
         String match = """
                 MATCH p=(:Origin)-[rs*]->(:Destination {name:'B'}),
@@ -121,6 +149,13 @@ class CypherExpressionSemanticsTest extends CypherTestTemplate {
                 assertTrue( invalid.getError().contains( "Variable 'r' has incompatible bindings" ), invalid.getError() );
             }
         }
+    }
+
+
+    private static void assertQueryError( String query, String expected ) {
+        String error = CypherConnection.executeGetResponse( query ).getError();
+        assertNotNull( error, query );
+        assertTrue( error.contains( expected ), error );
     }
 
 

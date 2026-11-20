@@ -33,7 +33,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
@@ -509,7 +508,9 @@ public class CypherToAlgConverter {
         rightBindings.forEach( ( name, value ) -> {
             RexNode current = scope.putIfAbsent( name, value );
             if ( current != null ) {
-                conditions.add( sameBinding( name, current, value ) );
+                // Multiple patterns in one MATCH cannot share a relationship binding, even an empty list.
+                boolean repeatedRelationship = clausePatterns && isRelationshipList( current.getType() ) && isRelationshipList( value.getType() );
+                conditions.add( repeatedRelationship ? rexBuilder.makeLiteral( false ) : sameBinding( name, current, value ) );
             }
         } );
         // Patterns in the same clause cannot reuse a relationship, even when that relationship is unnamed.
@@ -938,26 +939,14 @@ public class CypherToAlgConverter {
 
 
         public AlgNode asValues( List<Pair<PolyString, RexNode>> nameAndValues ) {
-            if ( nameAndValues.stream().allMatch( v -> v.right.isA( Kind.LITERAL ) ) ) {
-                List<AlgDataTypeField> fields = new ArrayList<>();
-                int i = 0;
-                for ( Pair<PolyString, RexNode> nameAndValue : nameAndValues ) {
-                    fields.add( new AlgDataTypeFieldImpl( -1L, nameAndValue.left.value, i, nameAndValue.right.getType() ) );
-                    i++;
-                }
-
-                return new LogicalLpgValues(
-                        cluster,
-                        cluster.traitSet(),
-                        List.of(),
-                        List.of(),
-                        ImmutableList.of( ImmutableList.copyOf( nameAndValues.stream().map( e -> (RexLiteral) e.getValue() ).toList() ) ),
-                        new AlgRecordType( fields ) );
-            } else if ( nameAndValues.stream().allMatch( v -> v.right.isA( Kind.CYPHER_FUNCTION ) ) ) {
-                throw new NotImplementedException( "RETURN statement with function call without MATCH currently not supported" );
-            } else {
-                throw new UnsupportedOperationException();
+            List<AlgDataTypeField> fields = new ArrayList<>();
+            ImmutableList.Builder<RexLiteral> values = ImmutableList.builder();
+            for ( Pair<PolyString, RexNode> nameAndValue : nameAndValues ) {
+                fields.add( new AlgDataTypeFieldImpl( -1L, nameAndValue.left.value, fields.size(), nameAndValue.right.getType() ) );
+                values.add( (RexLiteral) nameAndValue.right );
             }
+            return LogicalLpgValues.create( cluster, cluster.traitSet(),
+                    new AlgRecordType( fields ), ImmutableList.of( values.build() ) );
         }
 
 

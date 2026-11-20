@@ -25,6 +25,7 @@ import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgFieldCollation.Direction;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
@@ -193,7 +194,10 @@ public class CypherReturnClause extends CypherClause {
         AlgNode node = context.pop();
 
         if ( node == null ) {
-            node = context.asValues( nameAndProject );
+            // A projection without input evaluates once, including when it contains expressions.
+            List<Pair<PolyString, RexNode>> literals = nameAndProject.stream().allMatch( pair -> pair.right.isA( Kind.LITERAL ) )
+                    ? nameAndProject : List.of();
+            node = context.asValues( literals );
         }
         if ( nameAndProject.isEmpty() ) {
             // use all e.g. count(*)

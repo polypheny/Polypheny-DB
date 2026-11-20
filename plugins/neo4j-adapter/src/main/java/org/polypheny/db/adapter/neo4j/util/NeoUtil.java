@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.neo4j.util;
 
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.edge_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.node_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.quoteIdentifier;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -83,6 +84,7 @@ import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.numerical.PolyLong;
+import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.spatial.PolyPoint;
@@ -357,6 +359,11 @@ public interface NeoUtil {
 
     }
 
+    private static String propertyIdentifier( RexNode operand ) {
+        return quoteIdentifier( operand.unwrapOrThrow( RexLiteral.class ).value.asString().value );
+    }
+
+
     static String quoteStringLiteral( String value ) {
         return "'" + value.replace( "\\", "\\\\" )
                 .replace( "'", "\\'" )
@@ -436,15 +443,9 @@ public interface NeoUtil {
             };
             case CYPHER_SET_PROPERTIES -> throw new GenericRuntimeException( "No values should land here" );
             case CYPHER_SET_PROPERTY -> o -> String.format( "%s.%s = %s", o.get( 0 ), maybeUnquote( o.get( 1 ) ), o.get( 2 ) );
-            case CYPHER_EXTRACT_PROPERTY -> o -> {
-                String name = o.get( 0 );
-                if ( name.contains( "." ) ) {
-                    name = name.split( "\\." )[0];
-                }
-                return String.format( "%s.%s", name, NeoUtil.maybeUnquote( o.get( 1 ) ) );
-            };
+            case CYPHER_EXTRACT_PROPERTY -> o -> String.format( "%s.%s", o.get( 0 ), propertyIdentifier( operands.get( 1 ) ) );
             case CYPHER_EXTRACT_ID -> o -> String.format( " %s.id ", o.get( 0 ) );
-            case CYPHER_HAS_PROPERTY -> o -> String.format( " EXISTS(%s.%s) ", o.get( 0 ), NeoUtil.maybeUnquote( o.get( 1 ) ) );
+            case CYPHER_HAS_PROPERTY -> o -> String.format( " EXISTS(%s.%s) ", o.get( 0 ), propertyIdentifier( operands.get( 1 ) ) );
             case COUNT -> o -> String.format( "count(%s)", String.join( ",", o ) );
             case AVG -> o -> String.format( "avg(%s)", o.get( 0 ) );
             case MIN -> o -> String.format( "min(%s)", o.get( 0 ) );
@@ -698,11 +699,21 @@ public interface NeoUtil {
                 // Native Cypher literals do not preserve byte arrays or exact decimals.
                 supports = false;
             }
+            if ( graph && containsMap( literal.value ) ) {
+                // The native graph translator and decoder do not preserve Polypheny map values.
+                supports = false;
+            }
             if ( literal.getType() instanceof ArrayType arrayType && arrayType.getDimension() < 1 ) {
                 // The native result decoder needs a declared dimension to decode arrays.
                 supports = false;
             }
             return super.visitLiteral( literal );
+        }
+
+
+        private static boolean containsMap( PolyValue value ) {
+            return value instanceof PolyMap<?, ?>
+                    || value instanceof PolyList<?> list && list.stream().anyMatch( NeoSupportVisitor::containsMap );
         }
 
     }

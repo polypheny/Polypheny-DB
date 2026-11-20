@@ -39,7 +39,6 @@ import org.polypheny.db.adapter.neo4j.NeoGraph;
 import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements;
-import org.polypheny.db.adapter.neo4j.util.NeoStatements.LiteralStatement;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.NeoStatement;
 import org.polypheny.db.adapter.neo4j.util.Translator;
 import org.polypheny.db.algebra.AlgNode;
@@ -201,7 +200,7 @@ public class NeoLpgModify extends LpgModify<NeoGraph> implements NeoGraphAlg {
 
 
     private void handleDelete( NeoGraphImplementor implementor ) {
-        List<LiteralStatement> fieldNames = ids.stream().map( NeoStatements::literal_ ).toList();
+        List<NeoStatement> fieldNames = ids.stream().map( id -> NeoStatements.quotedIdentifier_( id.value ) ).toList();
         implementor.add( delete_( false, list_( fieldNames ) ) );
     }
 

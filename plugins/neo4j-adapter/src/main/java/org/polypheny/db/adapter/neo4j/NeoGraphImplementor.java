@@ -204,7 +204,7 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
             }
             return list_( values, "[", "]" );
         }
-        return literal_( PolyString.of( field.getName() ) );
+        return quotedIdentifier_( field.getName() );
     }
 
 

@@ -37,6 +37,7 @@ import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
@@ -538,6 +539,9 @@ public class CypherFunctions {
         if ( left instanceof PolyList<?> leftList && right instanceof PolyList<?> rightList ) {
             return equalLists( leftList, rightList );
         }
+        if ( left.isMap() && right.isMap() ) {
+            return equalMaps( left.asMap(), right.asMap() );
+        }
         return Functions.eq( left, right );
     }
 
@@ -549,6 +553,22 @@ public class CypherFunctions {
         boolean hasUnknown = false;
         for ( int i = 0; i < left.size(); i++ ) {
             PolyBoolean equal = equal( left.get( i ), right.get( i ) );
+            if ( PolyBoolean.FALSE.equals( equal ) ) {
+                return PolyBoolean.FALSE;
+            }
+            hasUnknown |= equal == null;
+        }
+        return hasUnknown ? null : PolyBoolean.TRUE;
+    }
+
+
+    private static PolyBoolean equalMaps( Map<PolyValue, PolyValue> left, Map<PolyValue, PolyValue> right ) {
+        if ( !left.keySet().equals( right.keySet() ) ) {
+            return PolyBoolean.FALSE;
+        }
+        boolean hasUnknown = false;
+        for ( Map.Entry<PolyValue, PolyValue> entry : left.entrySet() ) {
+            PolyBoolean equal = equal( entry.getValue(), right.get( entry.getKey() ) );
             if ( PolyBoolean.FALSE.equals( equal ) ) {
                 return PolyBoolean.FALSE;
             }
@@ -611,6 +631,11 @@ public class CypherFunctions {
         }
         if ( value instanceof List<?> list ) {
             return list.stream().map( CypherFunctions::aggregationKey ).toList();
+        }
+        if ( value instanceof PolyMap<?, ?> map && map.isMap() ) {
+            Map<PolyValue, Object> entries = new HashMap<>();
+            map.forEach( (key, element) -> entries.put( key, aggregationKey( element ) ) );
+            return entries;
         }
         return value;
     }
@@ -676,6 +701,9 @@ public class CypherFunctions {
                 }
             }
             return Integer.compare( a.size(), b.size() );
+        }
+        if ( left.isMap() && right.isMap() ) {
+            return compareMaps( left.asMap(), right.asMap(), false );
         }
         return left.compareTo( right );
     }
@@ -783,7 +811,7 @@ public class CypherFunctions {
             return PolyBoolean.of( !Double.isNaN( a.doubleValue() ) && !Double.isNaN( b.doubleValue() )
                     && test.test( compareNumbers( a, b ) ) );
         }
-        if ( left.isList() || right.isList() || left instanceof GraphObject || right instanceof GraphObject ) {
+        if ( left.isList() || right.isList() || left.isMap() || right.isMap() || left instanceof GraphObject || right instanceof GraphObject ) {
             Integer comparison = compareStructuredValues( left, right );
             return comparison == null ? null : PolyBoolean.of( test.test( comparison ) );
         }
@@ -810,7 +838,44 @@ public class CypherFunctions {
             }
             return Integer.compare( a.size(), b.size() );
         }
+        if ( left.isMap() && right.isMap() ) {
+            return compareMaps( left.asMap(), right.asMap(), true );
+        }
         return left.compareTo( right );
+    }
+
+
+    private static Integer compareMaps( Map<PolyValue, PolyValue> left, Map<PolyValue, PolyValue> right, boolean predicate ) {
+        // A map with a null entry is incomparable in predicates. ORDER BY still orders such maps.
+        if ( predicate && Stream.concat( left.values().stream(), right.values().stream() ).anyMatch( value -> value == null || value.isNull() ) ) {
+            return null;
+        }
+        int sizeOrder = Integer.compare( left.size(), right.size() );
+        if ( sizeOrder != 0 ) {
+            return sizeOrder;
+        }
+        List<PolyValue> leftKeys = left.keySet().stream().sorted().toList();
+        List<PolyValue> rightKeys = right.keySet().stream().sorted().toList();
+        for ( int i = 0; i < leftKeys.size(); i++ ) {
+            int keyOrder = leftKeys.get( i ).compareTo( rightKeys.get( i ) );
+            if ( keyOrder != 0 ) {
+                return keyOrder;
+            }
+        }
+        for ( int i = 0; i < leftKeys.size(); i++ ) {
+            PolyValue leftValue = left.get( leftKeys.get( i ) );
+            PolyValue rightValue = right.get( rightKeys.get( i ) );
+            Integer valueOrder;
+            if ( predicate ) {
+                valueOrder = compareStructuredValues( leftValue, rightValue );
+            } else {
+                valueOrder = compareForOrdering( leftValue, rightValue, false );
+            }
+            if ( valueOrder == null || valueOrder != 0 ) {
+                return valueOrder;
+            }
+        }
+        return 0;
     }
 
 

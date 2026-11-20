@@ -1347,6 +1347,94 @@ class CypherTest {
 
 
     @Test
+    void preservesEscapedPathNamesAndAliases() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            Frame paths = connection.cypher( """
+                    MATCH `route name`=(:Person {name:'Alice'})-[:KNOWS*]->(:Person)
+                    WITH `route name` AS `path.result`
+                    RETURN [`path.result`] AS `path list`
+                    """, -1 ).getResult().getFrame();
+            RelationalFrame rows = relationalFrame( paths, true, List.of( "path list" ) );
+            assertEquals( List.of( 1, 2 ), rows.getRowsList().stream().map( row ->
+                    row.getValues( 0 ).getList().getValues( 0 ).getPath().getEdgesCount() ).sorted().toList() );
+
+            Frame fixed = connection.cypher( """
+                    MATCH p=(`start node`:Person {name:'Alice'})-[`route edge`:KNOWS]->(`end.node`:Person)
+                    RETURN p AS `path.result`, `end.node`.name AS `end name`, `route edge` AS `chosen edge`, NULL AS missing
+                    """, -1 ).getResult().getFrame();
+            Row row = singleRow( relationalFrame( fixed, true, List.of( "path.result", "end name", "chosen edge", "missing" ) ) );
+            assertEquals( "Bob", row.getValues( 1 ).getString().getString() );
+            assertEquals( 1, row.getValues( 0 ).getPath().getEdgesCount() );
+            assertEquals( row.getValues( 0 ).getPath().getEdges( 0 ).getId(), row.getValues( 2 ).getEdge().getId() );
+            assertTrue( row.getValues( 3 ).hasNull() );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void preservesEscapedNodeAndPropertyAliasesInNativeProjections() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            Frame frame = connection.cypher( """
+                    MATCH (`n dot.name`:Person)
+                    RETURN `n dot.name`.name AS `person.result` ORDER BY `person.result`
+                    """, -1 ).getResult().getFrame();
+            RelationalFrame rows = relationalFrame( frame, true, List.of( "person.result" ) );
+            assertEquals( List.of( "Alice", "Bob", "Charlie" ), rows.getRowsList().stream()
+                    .map( row -> row.getValues( 0 ).getString().getString() ).toList() );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void preservesEscapedLabelsTypesAndPropertyKeys() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            connection.execute( WRITE_RETURN_NAMESPACE, "cypher", """
+                    CREATE (:`Quoted Start` {`given name`:'A'})-[:`Quoted Link`]->
+                           (:`Quoted End` {`given name`:'B'})
+                    """, -1 );
+            Frame frame = connection.execute( WRITE_RETURN_NAMESPACE, "cypher", """
+                    MATCH p=(`start node`:`Quoted Start` {`given name`:'A'})-[:`Quoted Link`]->(`end node`:`Quoted End`)
+                    RETURN p, `end node`.`given name` AS `end name`
+                    """, -1 ).getResult().getFrame();
+            Row row = singleRow( relationalFrame( frame, true, List.of( "p", "end name" ) ) );
+            assertEquals( "B", row.getValues( 1 ).getString().getString() );
+            ProtoPath path = row.getValues( 0 ).getPath();
+            assertEquals( List.of( "Quoted Start" ), path.getNodes( 0 ).getLabelsList() );
+            assertEquals( List.of( "Quoted Link" ), path.getEdges( 0 ).getLabelsList() );
+            assertEquals( List.of( "Quoted End" ), path.getNodes( 1 ).getLabelsList() );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void evaluatesMapLiteralsBeforeReducingThemToScalarResults() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            Frame counted = connection.cypher( "MATCH (n:Person) RETURN count({a:1}) AS total", -1 ).getResult().getFrame();
+            assertEquals( 3, integerValue( singleRow( relationalFrame( counted, true, List.of( "total" ) ) ).getValues( 0 ) ) );
+
+            Frame filtered = connection.cypher( "MATCH (n:Person) WITH {a:1} AS payload RETURN payload IS NOT NULL AS present", -1 ).getResult().getFrame();
+            RelationalFrame rows = relationalFrame( filtered, true, List.of( "present" ) );
+            assertEquals( 3, rows.getRowsCount() );
+            assertTrue( rows.getRowsList().stream().allMatch( row -> row.getValues( 0 ).getBoolean().getBoolean() ) );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void matchesAnonymousLabelledNodesBeforeReturningScalars() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            Frame frame = connection.cypher( "MATCH (:Person) RETURN count(*) AS total", -1 ).getResult().getFrame();
+            assertEquals( 3, integerValue( singleRow( relationalFrame( frame, true, List.of( "total" ) ) ).getValues( 0 ) ) );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
     void preservesImplicitFixedPathBindingsInEnumerableProjections() throws IOException {
         try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
             Frame frame = connection.cypher( "MATCH ()-[r:KNOWS]->() RETURN r, NULL AS missing", -1 ).getResult().getFrame();

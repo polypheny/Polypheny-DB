@@ -128,8 +128,13 @@ public class PolyGraph extends GraphObject {
 
 
     public Iterable<PolyPath> matchPaths( PolyPath pattern ) {
-        if ( pattern.getEdges().stream().anyMatch( PolyEdge::hasEmptyRange ) ) {
-            return List.of();
+        Set<PolyString> relationshipNames = new HashSet<>();
+        for ( PolyEdge edge : pattern.getEdges() ) {
+            PolyString name = edge.getVariableName();
+            // A repeated relationship variable makes this pattern unsatisfiable, also for zero-hop segments.
+            if ( edge.hasEmptyRange() || (hasName( name ) && !relationshipNames.add( name )) ) {
+                return List.of();
+            }
         }
         if ( pattern.getEdges().isEmpty() ) {
             PolyNode template = pattern.getNodes().get( 0 );
@@ -162,7 +167,6 @@ public class PolyGraph extends GraphObject {
         // Positions of pattern nodes in the physical path. A zero-hop segment shares its two positions.
         private final int[] nodePositions;
         private final int[] previousNodeBindings;
-        private final int[] previousEdgeBindings;
         private final long[] remainingMinHops;
 
 
@@ -172,7 +176,6 @@ public class PolyGraph extends GraphObject {
             int length = pattern.getNodes().size();
             this.nodePositions = new int[length];
             this.previousNodeBindings = previousBindings( pattern.getNodes() );
-            this.previousEdgeBindings = previousBindings( pattern.getEdges() );
             this.remainingMinHops = new long[length];
             for ( int i = length - 2; i >= 0; i-- ) {
                 remainingMinHops[i] = remainingMinHops[i + 1] + pattern.getEdges().get( i ).getMinLength();
@@ -196,16 +199,12 @@ public class PolyGraph extends GraphObject {
                 // Try finishing this segment here once, then try its longer continuations.
                 if ( frame.candidates == null ) {
                     long minHops = Math.max( 0, template.getMinLength() - hops ) + remainingMinHops[frame.segment + 1];
-                    int previous = previousEdgeBindings[frame.segment];
-                    // Two occurrences of a relationship list can share a binding only if both are empty.
-                    boolean repeated = previous >= 0;
-                    if ( minHops > edges.size() - depth
-                            || (repeated && (template.getMinLength() != 0 || nodePositions[previous] != nodePositions[previous + 1])) ) {
+                    if ( minHops > edges.size() - depth ) {
                         backtrack();
                         continue;
                     }
                     Integer maxHops = template.getMaxLength();
-                    frame.candidates = repeated || (maxHops != null && hops >= maxHops)
+                    frame.candidates = maxHops != null && hops >= maxHops
                             ? Collections.emptyIterator()
                             : incidentEdges.getOrDefault( current.id, List.of() ).iterator();
 

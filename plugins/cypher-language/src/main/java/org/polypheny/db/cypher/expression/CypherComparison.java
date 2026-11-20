@@ -54,6 +54,7 @@ public class CypherComparison extends CypherExpression {
         Pair<PolyString, RexNode> namedRight = right.getRex( context, type );
 
         if ( operatorName == OperatorName.IN ) {
+            requireListOperand( namedRight.right, "IN requires a list on its right side." );
             return Pair.of( null, context.rexBuilder.makeCall(
                     context.typeFactory.createTypeWithNullability( context.booleanType, true ),
                     OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_IN ), List.of( namedLeft.right, namedRight.right ) ) );

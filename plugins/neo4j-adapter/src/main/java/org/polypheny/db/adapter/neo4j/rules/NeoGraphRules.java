@@ -328,6 +328,7 @@ public interface NeoGraphRules {
 
         private static boolean supports( LogicalLpgMatch match ) {
             return !match.isEnumerableOnly() && !containsSort( match.getInput() )
+                    && match.getNames().stream().allMatch( NeoGraphMatchRule::isNamed )
                     && match.getMatches().stream().flatMap( call -> call.operands.stream() ).allMatch( operand -> {
                         if ( operand instanceof RexLiteral literal && literal.value instanceof GraphPropertyHolder holder ) {
                             return supportsPatternProperties( holder );
@@ -353,7 +354,7 @@ public interface NeoGraphRules {
 
 
         private static boolean isNamed( PolyString name ) {
-            return name != null && !name.isNull();
+            return name != null && !name.isNull() && !name.value.isEmpty();
         }
 
 

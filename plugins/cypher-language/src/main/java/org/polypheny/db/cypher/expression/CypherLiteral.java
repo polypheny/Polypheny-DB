@@ -201,7 +201,7 @@ public class CypherLiteral extends CypherExpression {
         RexNode node = switch ( literalType ) {
             case TRUE -> context.rexBuilder.makeLiteral( true );
             case FALSE -> context.rexBuilder.makeLiteral( false );
-            case NULL -> context.rexBuilder.makeLiteral( null, context.typeFactory.createPolyType( PolyType.VARCHAR, 255 ), false );
+            case NULL -> context.rexBuilder.constantNull();
             case LIST -> {
                 List<RexNode> list = listValue.stream().map( e -> e.getRex( context, type ).right ).toList();
                 AlgDataType dataType = context.typeFactory.createPolyType( PolyType.ANY );

@@ -137,7 +137,7 @@ class PolyGraphPathTest {
 
 
     @Test
-    void repeatedRelationshipListVariableRequiresIdenticalBindings() {
+    void repeatedRelationshipListVariableMakesThePatternUnsatisfiable() {
         PolyNode a = node( "a", "Start" );
         PolyNode b = node( "b", "Other" );
         PolyNode c = node( "c", "Other" );
@@ -150,11 +150,7 @@ class PolyGraphPathTest {
                 patternEdge( "r", a, any, EdgeDirection.LEFT_TO_RIGHT, 1, null ),
                 patternEdge( "r", any, any, EdgeDirection.LEFT_TO_RIGHT, 1, null ) ) );
 
-        List<PolyPath> matches = graph.extract( optional );
-
-        assertEquals( 1, matches.size() );
-        assertEquals( List.of( a ), matches.get( 0 ).getNodes() );
-        assertTrue( binding( matches.get( 0 ), "r" ).asList().isEmpty() );
+        assertTrue( graph.extract( optional ).isEmpty() );
         assertTrue( graph.extract( positive ).isEmpty() );
     }
 

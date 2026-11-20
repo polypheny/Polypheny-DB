@@ -25,6 +25,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.cypher.CypherNode;
+import org.polypheny.db.cypher.cypher2alg.CypherSyntaxException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.pattern.CypherPattern;
@@ -33,6 +34,7 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
@@ -105,6 +107,15 @@ public class CypherExpression extends CypherNode {
                 context.booleanType,
                 OperatorRegistry.get( operatorName ),
                 List.of( context.rexBuilder.makeInputRef( context.graphType, 0 ), where.getRex( context, type ).right ) ) );
+    }
+
+
+    static void requireListOperand( RexNode operand, String diagnostic ) {
+        PolyType type = operand.getType().getPolyType();
+        if ( type != PolyType.ARRAY && type != PolyType.ANY && type != PolyType.NULL
+                && !(operand instanceof RexLiteral literal && literal.isNull()) ) {
+            throw new CypherSyntaxException( diagnostic );
+        }
     }
 
 
