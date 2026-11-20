@@ -1282,6 +1282,48 @@ class CypherTest {
 
 
     @Test
+    void matchesFixedTypeAlternativesBesideAnUnboundedSegment() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            expect( setCypherResultFormat( connection, "relational" ), Response.TypeCase.SET_CLIENT_INFO_PROPERTIES_RESPONSE );
+            connection.execute( WRITE_RETURN_NAMESPACE, "cypher", """
+                    CREATE (start:TypeAlternativeStart)-[:TYPE_OPTION_A]->()-[:TYPE_CONTINUATION]->(:TypeAlternativeEnd),
+                           (start)-[:TYPE_OPTION_B]->()-[:TYPE_CONTINUATION]->(:TypeAlternativeEnd),
+                           (start)-[:TYPE_OPTION_C]->()-[:TYPE_CONTINUATION]->(:TypeAlternativeEnd)
+                    """, -1 );
+            Frame frame = connection.execute( WRITE_RETURN_NAMESPACE, "cypher", """
+                    MATCH p=(:TypeAlternativeStart)-[:TYPE_OPTION_A|TYPE_OPTION_B]->()-[:TYPE_CONTINUATION*]->(:TypeAlternativeEnd)
+                    RETURN p
+                    """, -1 ).getResult().getFrame();
+            RelationalFrame rows = relationalFrame( frame, true, List.of( "p" ) );
+            assertEquals( 2, rows.getRowsCount() );
+            List<String> types = rows.getRowsList().stream().map( row -> {
+                ProtoPath path = row.getValues( 0 ).getPath();
+                assertEquals( 2, path.getEdgesCount() );
+                assertEquals( List.of( "TYPE_CONTINUATION" ), path.getEdges( 1 ).getLabelsList() );
+                return path.getEdges( 0 ).getLabels( 0 );
+            } ).sorted().toList();
+            assertEquals( List.of( "TYPE_OPTION_A", "TYPE_OPTION_B" ), types );
+        }
+    }
+
+
+    @Test
+    void preservesImplicitBoundedPathEndpointsInEnumerableProjections() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            for ( String bounds : List.of( "..2", "1..2" ) ) {
+                Frame frame = connection.cypher( "MATCH (a:Person {name:'Alice'})-[:KNOWS*%s]->(b:Person) ".formatted( bounds )
+                        + "RETURN b.name AS endpoint, NULL AS missing", -1 ).getResult().getFrame();
+                RelationalFrame rows = relationalFrame( frame, true, List.of( "endpoint", "missing" ) );
+                assertEquals( 2, rows.getRowsCount() );
+                assertEquals( List.of( "Bob", "Charlie" ), rows.getRowsList().stream()
+                        .map( row -> row.getValues( 0 ).getString().getString() ).sorted().toList() );
+                assertTrue( rows.getRowsList().stream().allMatch( row -> row.getValues( 1 ).hasNull() ) );
+            }
+        }
+    }
+
+
+    @Test
     void returnsUnboundedRelationshipBindingsAsOrderedLists() throws IOException {
         try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
             expect( setCypherResultFormat( connection, "relational" ), Response.TypeCase.SET_CLIENT_INFO_PROPERTIES_RESPONSE );

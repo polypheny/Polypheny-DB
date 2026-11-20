@@ -341,12 +341,11 @@ public interface NeoGraphRules {
             if ( !path.getPath().stream().allMatch( NeoGraphRules::supportsPatternProperties ) ) {
                 return false;
             }
-            // A native path carries its nodes and relationships, but cannot reconstruct variable
-            // bindings at an enumerable boundary when a segment has zero or an open number of hops.
-            boolean hasBindings = path.getNames().stream().anyMatch( NeoGraphMatchRule::isNamed );
-            return path.getEdges().stream().filter( edge -> edge.fromTo() != null ).noneMatch( edge ->
-                    edge.hasEmptyRange() || isNamed( edge.getVariableName() ) || edge.labels.size() > 1
-                            || (hasBindings && (edge.getMinLength() == 0 || edge.getMaxLength() == null)) );
+            // The native path does not preserve the positions of quantified segment bindings
+            // across a Neo4j-to-Enumerable boundary. Keep those matches in the Enumerable engine.
+            boolean hasBindings = path.getPath().stream().anyMatch( element -> isNamed( element.getVariableName() ) );
+            return path.getEdges().stream().noneMatch( edge -> edge.labels.size() > 1 || edge.hasEmptyRange()
+                    || (hasBindings && edge.fromTo() != null) );
         }
 
 
