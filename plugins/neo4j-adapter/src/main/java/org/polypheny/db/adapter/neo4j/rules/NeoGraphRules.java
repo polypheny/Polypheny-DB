@@ -50,6 +50,7 @@ import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyPath;
 
@@ -329,10 +330,28 @@ public interface NeoGraphRules {
                             return supportsPatternProperties( holder );
                         }
                         if ( operand instanceof RexLiteral literal && literal.value instanceof PolyPath path ) {
-                            return path.getPath().stream().allMatch( NeoGraphRules::supportsPatternProperties );
+                            return supportsPath( path );
                         }
                         return true;
                     } );
+        }
+
+
+        private static boolean supportsPath( PolyPath path ) {
+            if ( !path.getPath().stream().allMatch( NeoGraphRules::supportsPatternProperties ) ) {
+                return false;
+            }
+            // A native path carries its nodes and relationships, but cannot reconstruct variable
+            // bindings at an enumerable boundary when a segment has zero or an open number of hops.
+            boolean hasBindings = path.getNames().stream().anyMatch( NeoGraphMatchRule::isNamed );
+            return path.getEdges().stream().filter( edge -> edge.fromTo() != null ).noneMatch( edge ->
+                    isNamed( edge.getVariableName() ) || edge.labels.size() > 1
+                            || (hasBindings && (edge.getMinLength() == 0 || edge.getMaxLength() == null)) );
+        }
+
+
+        private static boolean isNamed( PolyString name ) {
+            return name != null && !name.isNull();
         }
 
 

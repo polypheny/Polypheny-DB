@@ -16,7 +16,11 @@
 
 package org.polypheny.db.cypher;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,6 +28,8 @@ import org.polypheny.db.cypher.helper.TestEdge;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.cypher.helper.TestPath;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
 
@@ -236,6 +242,66 @@ public class MatchTest extends CypherTestTemplate {
                 Row.of( TestNode.from( List.of( "Animal" ), Pair.of( "name", "Kira" ) ) ),
                 // double hop match
                 Row.of( TestNode.from( List.of( "Animal" ), Pair.of( "name", "Kira" ) ) ) );
+    }
+
+
+    @Test
+    void unboundedHopsReturnEveryNonemptyTrailWithoutReusingAnEdge() {
+        createHopGraph();
+
+        assertPaths( "MATCH p=(:Place {name:'A'})-[*]->(:Place) RETURN p", List.of(
+                List.of( "A", "B" ), List.of( "A", "B", "C" ), List.of( "A", "B", "C", "A" ),
+                List.of( "A", "B", "D" ), List.of( "A", "B", "E" ) ) );
+        assertPaths( "MATCH p=(:Place {name:'Isolated'})-[*]->(:Place) RETURN p", List.of() );
+    }
+
+
+    @Test
+    void openHopBoundsRespectDirectionAndRelationshipConstraints() {
+        createHopGraph();
+
+        assertPaths( "MATCH p=(:Place {name:'A'})<-[:ROAD*2.. {open:true}]-(:Place) RETURN p", List.of(
+                List.of( "A", "C", "B" ), List.of( "A", "C", "B", "A" ) ) );
+        assertPaths( "MATCH p=(:Place {name:'A'})-[:ROAD*1.. {open:true}]->(:Place) RETURN p", List.of(
+                List.of( "A", "B" ), List.of( "A", "B", "C" ), List.of( "A", "B", "C", "A" ) ) );
+        assertPaths( "MATCH p=(:Place {name:'A'})-[:ROAD*..2 {open:true}]->(:Place) RETURN p", List.of(
+                List.of( "A", "B" ), List.of( "A", "B", "C" ) ) );
+        assertPaths( "MATCH p=(:Place {name:'Isolated'})-[*0..]->(:Place) RETURN p", List.of( List.of( "Isolated" ) ) );
+    }
+
+
+    @Test
+    void joinsAnUnboundedSegmentWithAFixedHopAndSharedEndpoint() {
+        createHopGraph();
+
+        assertPaths( "MATCH p=(a:Place {name:'A'})-[:ROAD]->()-[:ROAD*]->(a) RETURN p",
+                List.of( List.of( "A", "B", "C", "A" ) ) );
+    }
+
+
+    private static void createHopGraph() {
+        execute( """
+                CREATE (a:Place {name:'A'})-[:ROAD {open:true}]->(b:Place {name:'B'})
+                    -[:ROAD {open:true}]->(c:Place {name:'C'})-[:ROAD {open:true}]->(a),
+                    (b)-[:RAIL {open:true}]->(:Place {name:'D'}),
+                    (b)-[:ROAD {open:false}]->(:Place {name:'E'}), (:Place {name:'Isolated'})
+                """ );
+    }
+
+
+    private static void assertPaths( String query, List<List<String>> expected ) {
+        List<List<String>> names = Arrays.stream( execute( query ).getData() )
+                .map( row -> PolyValue.fromTypedJson( row[0], PolyValue.class ).asPath() )
+                .map( path -> {
+                    assertEquals( path.getNodes().size() - 1, path.getEdges().size() );
+                    assertEquals( path.getEdges().size(), path.getEdges().stream().map( edge -> edge.id ).distinct().count() );
+                    return path.getNodes().stream()
+                            .map( node -> node.getProperties().get( PolyString.of( "name" ) ).asString().getValue() )
+                            .toList();
+                } )
+                .toList();
+        assertEquals( expected.size(), names.size(), query );
+        assertEquals( Set.copyOf( expected ), Set.copyOf( names ), query );
     }
 
 

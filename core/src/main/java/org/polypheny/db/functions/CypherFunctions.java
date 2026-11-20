@@ -87,7 +87,7 @@ public class CypherFunctions {
      */
     @SuppressWarnings("unused")
     public static Enumerable<PolyPath> pathMatch( PolyGraph graph, PolyPath comp ) {
-        return Linq4j.asEnumerable( graph.extract( comp ) );
+        return Linq4j.asEnumerable( graph.matchPaths( comp ) );
     }
 
 
@@ -263,8 +263,8 @@ public class CypherFunctions {
      * @param variableName the name of the given variable
      */
     @SuppressWarnings("unused")
-    public static GraphObject extractFrom( PolyPath path, PolyString variableName ) {
-        return path == null ? null : path.get( variableName );
+    public static PolyValue extractFrom( PolyPath path, PolyString variableName ) {
+        return path == null ? null : path.getBinding( variableName );
     }
 
 
@@ -535,7 +535,26 @@ public class CypherFunctions {
                 || left instanceof GraphObject && right instanceof GraphObject ) {
             return PolyBoolean.of( aggregationKey( left ).equals( aggregationKey( right ) ) );
         }
+        if ( left instanceof PolyList<?> leftList && right instanceof PolyList<?> rightList ) {
+            return equalLists( leftList, rightList );
+        }
         return Functions.eq( left, right );
+    }
+
+
+    private static PolyBoolean equalLists( PolyList<?> left, PolyList<?> right ) {
+        if ( left.size() != right.size() ) {
+            return PolyBoolean.FALSE;
+        }
+        boolean hasUnknown = false;
+        for ( int i = 0; i < left.size(); i++ ) {
+            PolyBoolean equal = equal( left.get( i ), right.get( i ) );
+            if ( PolyBoolean.FALSE.equals( equal ) ) {
+                return PolyBoolean.FALSE;
+            }
+            hasUnknown |= equal == null;
+        }
+        return hasUnknown ? null : PolyBoolean.TRUE;
     }
 
 

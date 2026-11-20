@@ -26,8 +26,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -1159,6 +1161,139 @@ class CypherTest {
             assertEdge( path.getEdges( 0 ), alice, bob, 2020 );
             assertEdge( path.getEdges( 1 ), bob, charlie, 2021 );
             connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void pagesUnboundedPathsInRelationalFrames() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            expect( setCypherResultFormat( connection, "relational" ), Response.TypeCase.SET_CLIENT_INFO_PROPERTIES_RESPONSE );
+            StatementResponse statement = connection.cypher( "MATCH p=(:Person {name:'Alice'})-[*]->(:Person) RETURN p AS path", 1 );
+            RelationalFrame first = relationalFrame( statement.getResult().getFrame(), false, List.of( "path" ) );
+            connection.checkTransactions( 1 );
+            RelationalFrame second = relationalFrame( connection.fetch( statement.getStatementId(), 1 ), true, List.of( "path" ) );
+
+            List<ProtoPath> paths = List.of( first, second ).stream().map( page -> {
+                assertEquals( ProtoPolyType.PATH, page.getColumnMeta( 0 ).getTypeMeta().getProtoValueType() );
+                ProtoValue value = singleRow( page ).getValues( 0 );
+                assertTrue( value.hasPath() );
+                return value.getPath();
+            } ).sorted( Comparator.comparingInt( ProtoPath::getEdgesCount ) ).toList();
+            assertEquals( 2, paths.get( 0 ).getNodesCount() );
+            assertEquals( 1, paths.get( 0 ).getEdgesCount() );
+            assertEquals( 3, paths.get( 1 ).getNodesCount() );
+            assertEquals( 2, paths.get( 1 ).getEdgesCount() );
+            ProtoNode alice = assertNode( paths.get( 1 ).getNodes( 0 ), "Alice", 1 );
+            ProtoNode bob = assertNode( paths.get( 1 ).getNodes( 1 ), "Bob", 2 );
+            ProtoNode charlie = assertNode( paths.get( 1 ).getNodes( 2 ), "Charlie", 3 );
+            assertEquals( List.of( alice, bob ), paths.get( 0 ).getNodesList() );
+            assertEdge( paths.get( 0 ).getEdges( 0 ), alice, bob, 2020 );
+            assertEdge( paths.get( 1 ).getEdges( 0 ), alice, bob, 2020 );
+            assertEdge( paths.get( 1 ).getEdges( 1 ), bob, charlie, 2021 );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void returnsUnboundedRelationshipBindingsAsOrderedLists() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            expect( setCypherResultFormat( connection, "relational" ), Response.TypeCase.SET_CLIENT_INFO_PROPERTIES_RESPONSE );
+            String query = "MATCH (:Person {name:'Alice'})-[hops:KNOWS*%s]->(b:Person) RETURN b.name AS target, hops";
+            for ( var range : Map.of(
+                    "", Map.of( "Bob", List.of( 2020L ), "Charlie", List.of( 2020L, 2021L ) ),
+                    "0..", Map.of( "Alice", List.<Long>of(), "Bob", List.of( 2020L ), "Charlie", List.of( 2020L, 2021L ) ),
+                    "2..", Map.of( "Charlie", List.of( 2020L, 2021L ) ) ).entrySet() ) {
+                Frame frame = connection.cypher( query.formatted( range.getKey() ), -1 ).getResult().getFrame();
+                RelationalFrame page = relationalFrame( frame, true, List.of( "target", "hops" ) );
+                var type = page.getColumnMeta( 1 ).getTypeMeta();
+                assertEquals( ProtoPolyType.ARRAY, type.getProtoValueType() );
+                assertEquals( ProtoPolyType.EDGE, type.getArrayMeta().getElementType().getProtoValueType() );
+                assertEquals( range.getValue().size(), page.getRowsCount() );
+                Map<String, List<Long>> hops = new HashMap<>();
+                for ( Row row : page.getRowsList() ) {
+                    String target = row.getValues( 0 ).getString().getString();
+                    ProtoValue value = row.getValues( 1 );
+                    assertTrue( value.hasList() );
+                    hops.put( target, value.getList().getValuesList().stream().map( element -> {
+                        assertTrue( element.hasEdge() );
+                        ProtoEdge edge = element.getEdge();
+                        assertEquals( List.of( "KNOWS" ), edge.getLabelsList() );
+                        return integerValue( edge.getPropertiesOrThrow( "since" ) );
+                    } ).toList() );
+                }
+                assertEquals( range.getValue(), hops );
+            }
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void reusesAnUnboundedRelationshipBindingInTraversalOrder() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            String first = "MATCH (:Person {name:'Alice'})-[hops:KNOWS*]->(:Person {name:'Charlie'}) ";
+            String projection = " RETURN a.name AS origin, b.name AS target";
+            List<String> columns = List.of( "origin", "target" );
+
+            Frame sameOrder = connection.cypher( first + "MATCH (a:Person)-[hops:KNOWS*]->(b:Person)" + projection, -1 ).getResult().getFrame();
+            Row row = singleRow( relationalFrame( sameOrder, true, columns ) );
+            assertEquals( List.of( "Alice", "Charlie" ), row.getValuesList().stream().map( value -> value.getString().getString() ).toList() );
+
+            Frame reversed = connection.cypher( first + "MATCH (a:Person)<-[hops:KNOWS*]-(b:Person)" + projection, -1 ).getResult().getFrame();
+            assertEquals( 0, relationalFrame( reversed, true, columns ).getRowsCount() );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void reusesAnAliasedRelationshipListAcrossMatchesWithMultipleRoutes() throws IOException {
+        String namespace = "cypherrangealias";
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            connection.execute( Catalog.DEFAULT_NAMESPACE_NAME, "sql", "CREATE GRAPH NAMESPACE " + namespace, 1 );
+            try {
+                connection.execute( namespace, "cypher", """
+                        CREATE (a:Stop {name:'A'})-[:LINK {hop:1}]->(:Stop {name:'B'})-[:LINK {hop:2}]->(c:Stop {name:'C'}),
+                            (a)-[:LINK {hop:3}]->(c)
+                        """, -1 );
+                Frame frame = connection.execute( namespace, "cypher", """
+                        MATCH (a:Stop {name:'A'})-[original:LINK*]->(b:Stop {name:'C'})
+                        WITH a, b, original AS rels
+                        MATCH (a)-[rels:LINK*]->(b)
+                        RETURN b.name AS name, rels
+                        """, -1 ).getResult().getFrame();
+                RelationalFrame page = relationalFrame( frame, true, List.of( "name", "rels" ) );
+                assertEquals( 2, page.getRowsCount() );
+                Set<List<Long>> routes = page.getRowsList().stream().map( row -> {
+                    assertEquals( "C", row.getValues( 0 ).getString().getString() );
+                    ProtoValue relationships = row.getValues( 1 );
+                    assertTrue( relationships.hasList() );
+                    return relationships.getList().getValuesList().stream()
+                            .map( relationship -> integerValue( relationship.getEdge().getPropertiesOrThrow( "hop" ) ) ).toList();
+                } ).collect( Collectors.toSet() );
+                assertEquals( Set.of( List.of( 1L, 2L ), List.of( 3L ) ), routes );
+            } finally {
+                connection.execute( Catalog.DEFAULT_NAMESPACE_NAME, "sql", "DROP NAMESPACE " + namespace, 1 );
+            }
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void rejectsVariableLengthRelationshipsInCreate() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            for ( String query : List.of(
+                    "CREATE (:InvalidRangeCreate)-[:KNOWS*]->(:InvalidRangeCreate)",
+                    "MATCH (n:Person {name:'Alice'}) CREATE (n)-[:KNOWS*]->(:InvalidRangeCreate)" ) ) {
+                Response response = expect( connection.send( statementRequest( NAMESPACE, "cypher", query, -1 ) ), Response.TypeCase.ERROR_RESPONSE );
+                assertTrue( response.getErrorResponse().getMessage().toLowerCase( Locale.ROOT ).contains( "variable-length relationships" ) );
+                connection.checkTransactions( 0 );
+                Frame absent = connection.cypher( "MATCH (n:InvalidRangeCreate) RETURN n", -1 ).getResult().getFrame();
+                assertTrue( graphElements( absent, true ).isEmpty() );
+            }
         }
     }
 

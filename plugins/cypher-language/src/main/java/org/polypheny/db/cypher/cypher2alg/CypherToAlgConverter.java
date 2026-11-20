@@ -560,11 +560,22 @@ public class CypherToAlgConverter {
 
 
     private RexNode sameBinding( PolyString name, RexNode left, RexNode right ) {
+        if ( isRelationshipList( left.getType() ) && isRelationshipList( right.getType() ) ) {
+            AlgDataTypeFactory types = cluster.getTypeFactory();
+            AlgDataType result = types.createTypeWithNullability( types.createPolyType( PolyType.BOOLEAN ),
+                    left.getType().isNullable() || right.getType().isNullable() );
+            return rexBuilder.makeCall( result, OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EQUALS ), List.of( left, right ) );
+        }
         PolyType type = left.getType().getPolyType();
         if ( type != right.getType().getPolyType() || (type != PolyType.NODE && type != PolyType.EDGE) ) {
             throw new GenericRuntimeException( "Variable " + name + " must refer to the same type of node or relationship in each pattern." );
         }
         return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.EQUALS ), elementId( left ), elementId( right ) );
+    }
+
+
+    private static boolean isRelationshipList( AlgDataType type ) {
+        return type.getPolyType() == PolyType.ARRAY && type.getComponentType().getPolyType() == PolyType.EDGE;
     }
 
 
@@ -954,6 +965,9 @@ public class CypherToAlgConverter {
         public void combineValues() {
             List<Pair<PolyString, PolyNode>> nodes = popNodeValues();
             List<Pair<PolyString, EdgeVariableHolder>> edges = popEdgeValues();
+            if ( edges.stream().anyMatch( binding -> binding.right.edge.fromTo() != null ) ) {
+                throw new GenericRuntimeException( "Variable-length relationships are not supported in CREATE" );
+            }
 
             if ( usesCreateExpressions() ) {
                 createRows( nodes, edges );
@@ -1033,7 +1047,7 @@ public class CypherToAlgConverter {
             rowId = graphValues.get( inputNames.size() );
             for ( Pair<PolyString, EdgeVariableHolder> binding : edges ) {
                 PolyEdge edge = orientCreatedEdge( binding.right.edge );
-                if ( edge.direction == EdgeDirection.NONE || edge.labels.size() != 1 || edge.fromTo() != null ) {
+                if ( edge.direction == EdgeDirection.NONE || edge.labels.size() != 1 ) {
                     throw new GenericRuntimeException( "CREATE relationships require a direction and one type" );
                 }
                 int slot = graphValues.size();
