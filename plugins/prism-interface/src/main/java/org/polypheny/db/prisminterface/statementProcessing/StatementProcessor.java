@@ -38,6 +38,7 @@ import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Pair;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.StatementResult;
@@ -65,7 +66,7 @@ public class StatementProcessor {
             return null;
         }
 
-        QueryContext context = queryContext( piStatement, client.getCurrentTransaction() );
+        QueryContext context = queryContext( piStatement, client.getTransactionManager() );
         // The registered MQL parser may also generate DDL for a missing collection.
         List<ParsedQueryContext> parsed = piStatement.getLanguage().parser().apply( context );
         if ( parsed.isEmpty() ) {
@@ -104,7 +105,7 @@ public class StatementProcessor {
                     9003
             );
         }
-        QueryContext context = queryContext( piStatement, statement.getTransaction() );
+        QueryContext context = queryContext( piStatement, statement.getTransaction().getTransactionManager() );
         if ( parsedStatement != null ) {
             context = ParsedQueryContext.fromQuery( context.getQuery(), parsedStatement, context );
         }
@@ -125,12 +126,12 @@ public class StatementProcessor {
     }
 
 
-    private static QueryContext queryContext( PIStatement piStatement, Transaction transaction ) {
+    private static QueryContext queryContext( PIStatement piStatement, TransactionManager transactionManager ) {
         return QueryContext.builder()
                 .query( piStatement.getQuery() )
                 .language( piStatement.getLanguage() )
                 .namespaceId( piStatement.getNamespace().id )
-                .transactionManager( transaction.getTransactionManager() )
+                .transactionManager( transactionManager )
                 .origin( ORIGIN )
                 .build();
     }

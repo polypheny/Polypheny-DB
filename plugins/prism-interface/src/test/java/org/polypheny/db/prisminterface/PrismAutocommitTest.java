@@ -20,7 +20,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.Closeable;
 import java.io.IOException;
+import java.sql.Statement;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeAll;
@@ -28,6 +30,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.polypheny.db.TestHelper;
+import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.prisminterface.CypherTest.PrismConnection;
 import org.polypheny.prism.CloseResultRequest;
@@ -45,6 +48,7 @@ import org.polypheny.prism.ProtoInteger;
 import org.polypheny.prism.ProtoValue;
 import org.polypheny.prism.Request;
 import org.polypheny.prism.Response;
+import org.polypheny.prism.RollbackRequest;
 import org.polypheny.prism.StatementResponse;
 
 @Tag("adapter")
@@ -68,6 +72,67 @@ class PrismAutocommitTest {
 
 
     @Test
+    void failedOverlappingReadsLeaveTheOtherCursorUsable() throws Exception {
+        String table = "prismautocommitzero";
+        String store = "prismautocommitreadfailure";
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement adapterManagement = jdbc.getConnection().createStatement() ) {
+            TestHelper.addHsqldb( store, adapterManagement );
+            try ( AutoCloseable removeStore = () -> TestHelper.dropAdapter( store, adapterManagement );
+                    Closeable removeTable = () -> dropSqlFixtures( table );
+                    PrismConnection connection = new PrismConnection( true, 3 ) ) {
+                connection.execute( SQL_NAMESPACE, "sql", "CREATE TABLE " + table
+                        + " (id INTEGER NOT NULL, PRIMARY KEY (id)) ON STORE " + store, -1 );
+                connection.execute( SQL_NAMESPACE, "sql", "INSERT INTO " + table + " VALUES (0), (1)", -1 );
+                String pagedRead = "SELECT id FROM " + table + " ORDER BY id";
+                long initiallyActive = activeTransactions();
+
+                int first = openCursor( connection, SQL_NAMESPACE, "sql", pagedRead );
+                Request.Builder direct = statementRequest( SQL_NAMESPACE, "sql", "SELECT 10 / id AS quotient FROM " + table );
+                assertReadExecutionError( connection.send( direct ) );
+                assertEquals( initiallyActive + 1, activeTransactions() );
+                assertLastSqlPage( connection, first );
+                assertEquals( initiallyActive, activeTransactions() );
+
+                int second = openCursor( connection, SQL_NAMESPACE, "sql", pagedRead );
+                int prepared = prepareStatement( connection, "SELECT CAST(? AS INTEGER) / id AS quotient FROM " + table, false );
+                Request.Builder indexed = Request.newBuilder().setExecuteIndexedStatementRequest(
+                        ExecuteIndexedStatementRequest.newBuilder().setStatementId( prepared )
+                                .setParameters( IndexedParameters.newBuilder().addParameters( integer( 10 ) ) ) );
+                assertReadExecutionError( connection.send( indexed ) );
+                assertEquals( initiallyActive + 1, activeTransactions() );
+                assertLastSqlPage( connection, second );
+                assertEquals( initiallyActive, activeTransactions() );
+
+                assertReadExecutionError( connection.send( direct ) );
+                assertEquals( initiallyActive, activeTransactions() );
+                assertPersistedSqlRows( table, 2 );
+            }
+        }
+    }
+
+
+    @Test
+    void rollbackAndDisconnectReleaseAllOverlappingReadTransactions() throws IOException {
+        long initiallyActive = activeTransactions();
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            int first = openCursor( connection, SQL_NAMESPACE, "sql", SQL_PAGE_QUERY );
+            int second = openCursor( connection, SQL_NAMESPACE, "sql", SQL_PAGE_QUERY );
+            assertEquals( initiallyActive + 2, activeTransactions() );
+            expect( connection.send( Request.newBuilder().setRollbackRequest( RollbackRequest.getDefaultInstance() ) ),
+                    Response.TypeCase.ROLLBACK_RESPONSE );
+            assertEquals( initiallyActive, activeTransactions() );
+            expect( connection.fetchResponse( first, 1 ), Response.TypeCase.ERROR_RESPONSE );
+            expect( connection.fetchResponse( second, 1 ), Response.TypeCase.ERROR_RESPONSE );
+
+            openCursor( connection, SQL_NAMESPACE, "sql", SQL_PAGE_QUERY );
+            openCursor( connection, SQL_NAMESPACE, "sql", SQL_PAGE_QUERY );
+            assertEquals( initiallyActive + 2, activeTransactions() );
+        }
+        assertEquals( initiallyActive, activeTransactions() );
+    }
+
+
+    @Test
     void rejectsSqlWritesAndDdlUntilTheOpenResultFinishes() throws IOException {
         String table = "prismautocommitwrites";
         String ddlTable = "prismautocommitddl";
@@ -77,7 +142,11 @@ class PrismAutocommitTest {
             try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
                 createSqlFixture( connection, table );
                 long initiallyActive = activeTransactions();
+                int first = openCursor( connection, SQL_NAMESPACE, "sql", SQL_PAGE_QUERY );
                 int paged = openCursor( connection, SQL_NAMESPACE, "sql", SQL_PAGE_QUERY );
+                assertEquals( initiallyActive + 2, activeTransactions() );
+                assertLastSqlPage( connection, first );
+                assertEquals( initiallyActive + 1, activeTransactions() );
                 assertOpenResultError( connection.send( statementRequest( SQL_NAMESPACE, "sql", insert ) ) );
                 assertOpenResultError( connection.send( statementRequest( SQL_NAMESPACE, "sql", createTable ) ) );
                 assertEquals( initiallyActive + 1, activeTransactions() );
@@ -149,8 +218,8 @@ class PrismAutocommitTest {
         try {
             try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
                 createSqlFixture( connection, table );
-                int indexedId = prepareInsert( connection, insert + "(?)", false );
-                int namedId = prepareInsert( connection, insert + "(:id)", true );
+                int indexedId = prepareStatement( connection, insert + "(?)", false );
+                int namedId = prepareStatement( connection, insert + "(:id)", true );
                 Request.Builder indexed = Request.newBuilder().setExecuteIndexedStatementRequest(
                         ExecuteIndexedStatementRequest.newBuilder().setStatementId( indexedId )
                                 .setParameters( IndexedParameters.newBuilder().addParameters( integer( 51 ) ) ) );
@@ -206,7 +275,7 @@ class PrismAutocommitTest {
     }
 
 
-    private static int prepareInsert( PrismConnection connection, String query, boolean named ) throws IOException {
+    private static int prepareStatement( PrismConnection connection, String query, boolean named ) throws IOException {
         PrepareStatementRequest preparation = PrepareStatementRequest.newBuilder()
                 .setLanguageName( "sql" )
                 .setNamespaceName( SQL_NAMESPACE )
@@ -247,6 +316,12 @@ class PrismAutocommitTest {
     private static void assertOpenResultError( Response response ) {
         String message = expect( response, Response.TypeCase.ERROR_RESPONSE ).getErrorResponse().getMessage();
         assertTrue( message.contains( "open result" ) && message.contains( "autocommit" ), message );
+    }
+
+
+    private static void assertReadExecutionError( Response response ) {
+        String message = expect( response, Response.TypeCase.ERROR_RESPONSE ).getErrorResponse().getMessage();
+        assertTrue( message.contains( "While executing SQL" ), message );
     }
 
 
@@ -295,7 +370,9 @@ class PrismAutocommitTest {
 
             int first = openCursor( connection, namespace, language, query );
             int second = openCursor( connection, namespace, language, query );
+            assertEquals( initiallyActive + 2, activeTransactions() );
             assertTrue( connection.execute( namespace, language, query, -1 ).getResult().getFrame().getIsLast() );
+            assertEquals( initiallyActive + 2, activeTransactions() );
             closeResult( connection, first );
             assertEquals( initiallyActive + 1, activeTransactions() );
             assertTrue( connection.fetch( second, 1 ).getIsLast() );
