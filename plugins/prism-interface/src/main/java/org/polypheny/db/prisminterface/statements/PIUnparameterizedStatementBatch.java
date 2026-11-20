@@ -20,7 +20,9 @@ import java.util.LinkedList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.prisminterface.PIClient;
+import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
 import org.polypheny.db.prisminterface.utils.PropertyUtils;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 
 @Getter
 public class PIUnparameterizedStatementBatch {
@@ -39,9 +41,13 @@ public class PIUnparameterizedStatementBatch {
 
     public List<Long> executeBatch() {
         int fetchSize = PropertyUtils.DEFAULT_FETCH_SIZE;
+        List<List<ParsedQueryContext>> preParsedQueries = statements.stream()
+                .map( StatementProcessor::parseWithOpenAutocommitResult )
+                .toList();
         List<Long> updateCounts = new LinkedList<>();
-        for ( PIUnparameterizedStatement statement : statements ) {
-            updateCounts.add( statement.execute( fetchSize ).getScalar() );
+        for ( int i = 0; i < statements.size(); i++ ) {
+            PIUnparameterizedStatement statement = statements.get( i );
+            updateCounts.add( statement.execute( fetchSize, preParsedQueries.get( i ) ).getScalar() );
             // The batch response exposes counts only and cannot be used to fetch a member cursor.
             statement.closeResultsAndCommitIfAuto();
         }

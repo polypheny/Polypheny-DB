@@ -80,14 +80,16 @@ public class PIPreparedNamedStatement extends PIPreparedStatement {
 
     @Override
     public void close() {
-        statement.close();
+        if ( statement != null ) {
+            statement.close();
+        }
         closeResults();
     }
 
 
     @Override
     public Transaction getTransaction() {
-        return statement.getTransaction();
+        return statement != null ? statement.getTransaction() : null;
     }
 
 }
