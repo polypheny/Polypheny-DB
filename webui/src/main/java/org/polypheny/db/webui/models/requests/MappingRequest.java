@@ -69,6 +69,13 @@ public final class MappingRequest {
     }
 
 
+    public record ValidationRequest( @JsonProperty(value = "adapterId", required = true) long adapterId,
+                                     @JsonProperty(value = "expectedRevision", required = true) String expectedRevision,
+                                     @JsonProperty(value = "columns", required = true) List<MappingUpdate.ColumnName> columns,
+                                     Long mappingId, Long targetEntityId, Long existingTargetEntityId, Long sourceAllocationId ) {
+    }
+
+
     public record UpdateRequest( @JsonProperty(value = "adapterId", required = true) long adapterId,
                                  @JsonProperty(value = "mappingId", required = true) long mappingId,
                                  @JsonProperty(value = "expectedRevision", required = true) String expectedRevision,

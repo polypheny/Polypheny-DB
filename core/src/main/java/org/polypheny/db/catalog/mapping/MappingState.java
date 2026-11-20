@@ -402,7 +402,30 @@ public record MappingState(
 
 
     /**
-     * Returns a ColumnName ready for the mapping update
+     * Resolves a proposed field using the same type and rule validation as a mapping update, without changing the catalog.
+     */
+    public LogicalColumn previewColumn( ColumnName requested ) {
+        if ( requested == null || Boolean.FALSE.equals( requested.included() ) ) {
+            throw MappingError.Validation.fields( Map.of( "columns", "Supply an included field to check." ) );
+        }
+        LogicalColumn column = columns.stream().filter( field -> field.id == requested.logicalColumnId() ).findFirst()
+                .orElseThrow( () -> MappingError.Missing.logicalColumn( mapping.id(), requested.logicalColumnId() ) );
+        Map<String, String> errors = new LinkedHashMap<>();
+        ColumnName normalized = normalizeColumnUpdate( column, requested, column.name, true, errors );
+        if ( !errors.isEmpty() ) {
+            throw MappingError.Validation.fields( errors );
+        }
+        return column.toBuilder()
+                .type( normalized.targetType() == null ? column.type : normalized.targetType() )
+                .length( normalized.targetType() == null ? column.length : normalized.targetPrecision() )
+                .scale( normalized.targetType() == null ? column.scale : normalized.targetScale() )
+                .nullable( normalized.targetNullable() == null ? column.nullable : normalized.targetNullable() )
+                .build();
+    }
+
+
+    /**
+     * Returns a ColumnName ready for the mapping update.
      */
     private ColumnName normalizeColumnUpdate( LogicalColumn column, ColumnName requestedColumn, String name, boolean included, Map<String, String> errors ) {
         if ( requestedColumn == null ) {

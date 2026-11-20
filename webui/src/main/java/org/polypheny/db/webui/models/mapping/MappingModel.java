@@ -58,6 +58,21 @@ public final class MappingModel {
 
 
     @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+    public record ConversionValidation( List<ColumnCheck> columns ) {
+    }
+
+
+    @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+    public record ColumnCheck( long logicalColumnId, int checkedRecords, List<ConversionFailure> errors ) {
+    }
+
+
+    @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+    public record ConversionFailure( int recordNumber, Error error ) {
+    }
+
+
+    @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
     public record Summary( long mappingId, long adapterId, String adapterName, String mappingName,
                            String namespaceName, String logicalTableName, boolean editable, String readOnlyReason,
                            MappingKind kind, Long sourceEntityId, long targetEntityId, DataModel sourceModel, DataModel targetModel,

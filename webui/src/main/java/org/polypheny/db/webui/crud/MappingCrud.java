@@ -54,6 +54,7 @@ import org.polypheny.db.webui.models.requests.MappingRequest.OverviewRequest;
 import org.polypheny.db.webui.models.requests.MappingRequest.RemoveRequest;
 import org.polypheny.db.webui.models.requests.MappingRequest.SourceRequest;
 import org.polypheny.db.webui.models.requests.MappingRequest.UpdateRequest;
+import org.polypheny.db.webui.models.requests.MappingRequest.ValidationRequest;
 
 /**
 HTTP boundary for existing, allocation-backed mappings.
@@ -239,6 +240,41 @@ public class MappingCrud {
             UpdateRequest request = read( context, UpdateRequest.class );
             return transact( transaction -> MappingModel.Detail.from( DdlManager.getInstance()
                     .updateMapping( request.toCommand(), transaction.createStatement() ), Catalog.getInstance() ) );
+        } );
+    }
+
+
+    public void validateMappingConversions( Context context ) {
+        respond( context, () -> {
+            var request = read( context, ValidationRequest.class );
+            Catalog catalog = Catalog.getInstance();
+            MappingState state;
+            synchronized ( catalog ) {
+                if ( request.mappingId() != null ) {
+                    if ( request.mappingId() < 0 || request.targetEntityId() != null
+                            || request.existingTargetEntityId() != null || request.sourceAllocationId() != null ) {
+                        throw MappingError.Validation.request();
+                    }
+                    state = MappingState.load( catalog, request.adapterId(), request.mappingId() );
+                } else {
+                    if ( request.targetEntityId() == null ) {
+                        throw MappingError.Validation.request();
+                    }
+                    state = MappingState.draft( catalog, request.adapterId(), request.targetEntityId(), request.existingTargetEntityId(), request.sourceAllocationId() );
+                }
+                if ( !state.editable() ) {
+                    throw MappingError.Unsupported.editor( state.readOnlyReason() );
+                }
+                state.validateRevision( request.expectedRevision() );
+            }
+            Transaction transaction = crud.getTransaction();
+            try {
+                return MappingConversionValidator.validate( state, request.columns(), transaction.createStatement() );
+            } finally {
+                if ( transaction.isActive() ) {
+                    transaction.rollback( "Mapping conversion validation finished" );
+                }
+            }
         } );
     }
 

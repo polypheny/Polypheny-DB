@@ -176,6 +176,8 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/updateMapping", crud.mappingCrud::updateMapping );
 
+        webuiServer.post( "/validateMappingConversions", crud.mappingCrud::validateMappingConversions );
+
         webuiServer.post( "/removeMapping", crud.mappingCrud::removeMapping );
 
         webuiServer.post( "/getAdapterMappings", crud.mappingCrud::getAdapterMappings );
