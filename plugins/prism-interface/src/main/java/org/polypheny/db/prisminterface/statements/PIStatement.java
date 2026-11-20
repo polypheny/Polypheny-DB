@@ -17,6 +17,7 @@
 package org.polypheny.db.prisminterface.statements;
 
 import java.util.List;
+import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -54,6 +55,33 @@ public abstract class PIStatement {
         this.language = language;
         this.executionStopWatch = new StopWatch();
         this.namespace = namespace;
+    }
+
+
+    protected <T> T executeInTransaction( boolean validatedOverlappingRead, Supplier<T> execution ) {
+        closeResultsAndCommitIfAuto();
+        Transaction transaction = validatedOverlappingRead && client.getStatementManager().hasOpenResult( false )
+                ? client.startIsolatedReadTransaction()
+                : client.getOrCreateNewTransaction();
+        try {
+            Statement previous = getStatement();
+            if ( previous == null || previous.getTransaction() != transaction ) {
+                if ( previous != null ) {
+                    previous.close();
+                }
+                setStatement( transaction.createStatement() );
+            } else {
+                previous.getDataContext().resetParameterValues();
+            }
+            return execution.get();
+        } catch ( Throwable failure ) {
+            try {
+                client.rollbackAutocommitTransaction( transaction, "Prism statement failed" );
+            } catch ( RuntimeException cleanupFailure ) {
+                failure.addSuppressed( cleanupFailure );
+            }
+            throw failure;
+        }
     }
 
 

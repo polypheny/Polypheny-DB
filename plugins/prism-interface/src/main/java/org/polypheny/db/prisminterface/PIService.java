@@ -292,7 +292,7 @@ class PIService {
 
 
     private void checkAutocommitExecution( Request request, PIClient client ) {
-        if ( !client.isAutoCommit() || client.hasNoTransaction() ) {
+        if ( !client.isAutoCommit() ) {
             return;
         }
         boolean graphStatement;
@@ -559,9 +559,12 @@ class PIService {
     private Response updateConnectionProperties( ConnectionPropertiesUpdateRequest request, ResponseMaker<ConnectionPropertiesUpdateResponse> responseObserver ) {
         PIClient client = getClient();
         ConnectionProperties properties = request.getConnectionProperties();
-        if ( properties.hasIsAutoCommit() && properties.getIsAutoCommit() != client.isAutoCommit()
-                && client.getStatementManager().hasOpenResult( true ) ) {
+        boolean changesAutocommit = properties.hasIsAutoCommit() && properties.getIsAutoCommit() != client.isAutoCommit();
+        if ( changesAutocommit && client.getStatementManager().hasOpenResult( true ) ) {
             throw new PIServiceException( "Close or finish the open Cypher result before changing autocommit mode" );
+        }
+        if ( changesAutocommit && client.hasActiveIsolatedReadTransactions() ) {
+            throw new PIServiceException( "Close or finish the open results before changing autocommit mode" );
         }
         if ( properties.hasIsAutoCommit() ) {
             client.setAutoCommit( properties.getIsAutoCommit() );

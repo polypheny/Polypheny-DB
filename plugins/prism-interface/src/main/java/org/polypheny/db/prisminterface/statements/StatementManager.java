@@ -32,9 +32,7 @@ import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.PIServiceException;
-import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
 import org.polypheny.db.prisminterface.statements.PIStatement.ResultCursor;
-import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.prism.ExecuteUnparameterizedStatementRequest;
 import org.polypheny.prism.PrepareStatementRequest;
@@ -224,10 +222,8 @@ public class StatementManager {
 
 
     public void commitIfAutocommitAndNoOpenResults( Transaction transaction ) {
-        // Overlapping SQL and MQL results can share the transaction.
-        if ( client.isAutoCommit() && transaction == client.getCurrentTransaction()
-                && transaction.isActive() && !hasOpenResult( transaction, (statement, cursor) -> true ) ) {
-            client.commitCurrentTransactionIfAuto();
+        if ( client.isAutoCommit() && !hasOpenResult( (statement, cursor) -> cursor.transaction() == transaction ) ) {
+            client.commitAutocommitTransaction( transaction );
         }
     }
 
@@ -238,26 +234,10 @@ public class StatementManager {
 
 
     private boolean hasOpenResult( BiPredicate<PIStatement, ResultCursor> predicate ) {
-        Transaction transaction = client.getCurrentTransaction();
-        return transaction != null && transaction.isActive() && hasOpenResult( transaction, predicate );
-    }
-
-
-    private boolean hasOpenResult( Transaction transaction, BiPredicate<PIStatement, ResultCursor> predicate ) {
         return openStatements.values().stream().anyMatch( statement -> {
             ResultCursor cursor = statement.getResultCursor();
-            return cursor != null && cursor.transaction() == transaction && predicate.test( statement, cursor );
+            return cursor != null && cursor.transaction().isActive() && predicate.test( statement, cursor );
         } );
-    }
-
-
-    private void rebindPreparedStatement( PIPreparedStatement statement ) {
-        StatementProcessor.parseWithOpenAutocommitResult( statement );
-        statement.closeResultsAndCommitIfAuto();
-        Statement s = statement.getStatement();
-        if ( s != null && s.getTransaction().getId() != client.getOrCreateNewTransaction().getId() ) {
-            statement.setStatement( client.getCurrentTransaction().createStatement() );
-        }
     }
 
 
@@ -265,9 +245,6 @@ public class StatementManager {
         PIStatement statement = getStatement( statementId );
         if ( !(statement instanceof PIPreparedNamedStatement prepared) ) {
             throw new PIServiceException( "A named prepared statement with id " + statementId + " does not exist for that client" );
-        }
-        if ( prepared.getLanguage().dataModel() != DataModel.GRAPH ) {
-            rebindPreparedStatement( prepared );
         }
         return prepared;
     }
@@ -278,7 +255,6 @@ public class StatementManager {
         if ( !(statement instanceof PIPreparedIndexedStatement prepared) ) {
             throw new PIServiceException( "A prepared indexed statement with id " + statementId + " does not exist for that client" );
         }
-        rebindPreparedStatement( prepared );
         return prepared;
     }
 

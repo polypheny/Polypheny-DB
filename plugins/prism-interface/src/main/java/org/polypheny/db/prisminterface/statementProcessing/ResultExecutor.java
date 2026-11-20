@@ -211,15 +211,16 @@ final class ResultExecutor {
             failure.addSuppressed( cleanupFailure );
         }
         PIClient client = statement.getClient();
-        // A Cypher write may reach the store before a later clause fails. Prism has no statement savepoint.
-        boolean rollback = client.isAutoCommit()
-                || (isGraphStatement( statement ) && Kind.DML.contains( statement.getImplementation().getKind() ));
-        if ( rollback && client.getCurrentTransaction() == transaction ) {
-            try {
+        try {
+            if ( client.isAutoCommit() ) {
+                client.rollbackAutocommitTransaction( transaction, failure.getMessage() );
+            } else if ( isGraphStatement( statement ) && Kind.DML.contains( statement.getImplementation().getKind() )
+                    && client.getCurrentTransaction() == transaction ) {
+                // A Cypher write may reach the store before a later clause fails. Prism has no statement savepoint.
                 client.rollbackCurrentTransaction( failure.getMessage() );
-            } catch ( RuntimeException cleanupFailure ) {
-                failure.addSuppressed( cleanupFailure );
             }
+        } catch ( RuntimeException cleanupFailure ) {
+            failure.addSuppressed( cleanupFailure );
         }
     }
 

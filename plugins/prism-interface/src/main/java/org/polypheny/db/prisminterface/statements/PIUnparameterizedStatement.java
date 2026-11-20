@@ -58,22 +58,20 @@ public class PIUnparameterizedStatement extends PIStatement {
     public StatementResult execute( int fetchSize ) {
         List<ParsedQueryContext> preParsedQueries = StatementProcessor.parseWithOpenAutocommitResult( this );
         Node parsedStatement = language.dataModel() == DataModel.GRAPH ? StatementProcessor.parseGraphStatement( this ) : null;
-        prepare( parsedStatement, preParsedQueries );
-        return StatementProcessor.executeAndGetResult( this, fetchSize );
+        return executeInTransaction( preParsedQueries != null, () -> {
+            StatementProcessor.implement( this, parsedStatement, preParsedQueries );
+            return StatementProcessor.executeAndGetResult( this, fetchSize );
+        } );
     }
 
 
     StatementResult executeBatchMember( @Nullable Node parsedStatement, int fetchSize, @Nullable List<ParsedQueryContext> preParsedQueries ) {
-        prepare( parsedStatement, preParsedQueries );
-        return parsedStatement == null
-                ? StatementProcessor.executeAndGetResult( this, fetchSize )
-                : StatementProcessor.executeAndGetResult( this );
-    }
-
-
-    private void prepare( @Nullable Node parsedStatement, @Nullable List<ParsedQueryContext> preParsedQueries ) {
-        statement = client.getOrCreateNewTransaction().createStatement();
-        StatementProcessor.implement( this, parsedStatement, preParsedQueries );
+        return executeInTransaction( preParsedQueries != null, () -> {
+            StatementProcessor.implement( this, parsedStatement, preParsedQueries );
+            return parsedStatement == null
+                    ? StatementProcessor.executeAndGetResult( this, fetchSize )
+                    : StatementProcessor.executeAndGetResult( this );
+        } );
     }
 
 
