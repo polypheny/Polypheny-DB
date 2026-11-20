@@ -862,6 +862,8 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_LABELS ), BuiltInMethod.CYPHER_EXTRACT_LABELS.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_LABEL ), BuiltInMethod.CYPHER_EXTRACT_LABEL.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_TO_LIST ), BuiltInMethod.CYPHER_TO_LIST.method, NullPolicy.NONE );
+        defineImplementor( OperatorRegistry.get( cypher, OperatorName.CYPHER_LIST_CONSTRUCTOR ), NullPolicy.NONE,
+                ( translator, call, operands ) -> Expressions.call( BuiltInMethod.LIST_N.method, Expressions.newArrayInit( PolyValue.class, operands ) ), false );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_ADJUST_EDGE ), BuiltInMethod.CYPHER_ADJUST_EDGE.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_CREATE_NODE ), BuiltInMethod.CYPHER_CREATE_NODE.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_CREATE_EDGE ), BuiltInMethod.CYPHER_CREATE_EDGE.method, NullPolicy.NONE );

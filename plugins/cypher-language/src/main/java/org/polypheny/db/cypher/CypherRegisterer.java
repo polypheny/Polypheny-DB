@@ -75,6 +75,7 @@ public class CypherRegisterer {
         register( OperatorName.CYPHER_HAS_LABEL, new LangFunctionOperator( OperatorName.CYPHER_HAS_LABEL.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
 
         register( OperatorName.CYPHER_TO_LIST, new LangFunctionOperator( OperatorName.CYPHER_TO_LIST.name(), Kind.CYPHER_FUNCTION, PolyType.ARRAY, PolyType.ANY ) );
+        register( OperatorName.CYPHER_LIST_CONSTRUCTOR, new LangFunctionOperator( OperatorName.CYPHER_LIST_CONSTRUCTOR.name(), Kind.CYPHER_FUNCTION, PolyType.ARRAY, PolyType.ANY ) );
 
         register( OperatorName.CYPHER_ADJUST_EDGE, new LangFunctionOperator( OperatorName.CYPHER_ADJUST_EDGE.name(), Kind.CYPHER_FUNCTION, PolyType.EDGE ) );
         register( OperatorName.CYPHER_CREATE_NODE, new LangFunctionOperator( OperatorName.CYPHER_CREATE_NODE.name(), Kind.CYPHER_FUNCTION, PolyType.NODE ) );

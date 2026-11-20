@@ -34,7 +34,9 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.parser.StringPos;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
@@ -207,8 +209,12 @@ public class CypherLiteral extends CypherExpression {
                 if ( !list.isEmpty() && list.stream().allMatch( e -> PolyTypeUtil.equalSansNullability( context.typeFactory, e.getType(), list.get( 0 ).getType() ) ) ) {
                     dataType = list.get( 0 ).getType();
                 }
-                dataType = context.typeFactory.createArrayType( dataType, -1 );
-                yield context.rexBuilder.makeArray( dataType, list.stream().map( e -> ((RexLiteral) e).value ).toList() );
+                if ( list.stream().allMatch( RexLiteral.class::isInstance ) ) {
+                    AlgDataType literalType = context.typeFactory.createArrayType( dataType, list.isEmpty() ? 0 : -1 );
+                    yield context.rexBuilder.makeArray( literalType, list.stream().map( e -> ((RexLiteral) e).value ).toList() );
+                }
+                AlgDataType arrayType = context.typeFactory.createArrayType( dataType, -1, 1 );
+                yield context.rexBuilder.makeCall( arrayType, OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_LIST_CONSTRUCTOR ), list );
             }
             case MAP, STAR, OCTAL, HEX -> throw new UnsupportedOperationException();
             case STRING -> context.rexBuilder.makeLiteral( (String) value );

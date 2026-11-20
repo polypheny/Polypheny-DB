@@ -19,6 +19,7 @@ package org.polypheny.db.cypher.cypher2alg;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -26,6 +27,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.Set;
 import java.util.Stack;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -81,9 +83,12 @@ import org.polypheny.db.cypher.clause.CypherWhere;
 import org.polypheny.db.cypher.clause.CypherWith;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherLiteral;
-import org.polypheny.db.cypher.expression.CypherExpression;
+import org.polypheny.db.cypher.expression.CypherVariable;
+import org.polypheny.db.cypher.pattern.CypherEveryPathPattern;
 import org.polypheny.db.cypher.pattern.CypherNamedPattern;
+import org.polypheny.db.cypher.pattern.CypherNodePattern;
 import org.polypheny.db.cypher.pattern.CypherPattern;
+import org.polypheny.db.cypher.pattern.CypherRelPattern;
 import org.polypheny.db.cypher.query.CypherSingleQuery;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
@@ -98,6 +103,7 @@ import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
@@ -407,6 +413,7 @@ public class CypherToAlgConverter {
 
 
     private void convertMatch( CypherMatch clause, CypherContext context ) {
+        validateMatchBindings( clause.getPatterns() );
         setKindIfNull( context, Kind.SELECT );
         context.active = clause;
         List<CypherExpression> inlinePredicates = clause.getPatterns().stream().flatMap( pattern -> pattern.getPredicates().stream() ).toList();
@@ -433,6 +440,46 @@ public class CypherToAlgConverter {
     }
 
 
+    private static void validateMatchBindings( List<CypherPattern> patterns ) {
+        Map<String, PolyType> bindings = new HashMap<>();
+        Set<String> fixedRelationships = new HashSet<>();
+        for ( CypherPattern pattern : patterns ) {
+            if ( pattern instanceof CypherNamedPattern named ) {
+                registerMatchBinding( bindings, named.getVariable(), PolyType.PATH );
+                pattern = named.getAnonymousPattern();
+            }
+            if ( pattern instanceof CypherEveryPathPattern path ) {
+                for ( CypherNodePattern node : path.getNodes() ) {
+                    registerMatchBinding( bindings, node.getVariable(), PolyType.NODE );
+                }
+                for ( CypherRelPattern edge : path.getEdges() ) {
+                    CypherVariable variable = edge.getVariable();
+                    PolyType type = edge.getPathLength() == null ? PolyType.EDGE : PolyType.ARRAY;
+                    registerMatchBinding( bindings, variable, type );
+                    if ( variable != null && type == PolyType.EDGE && !fixedRelationships.add( variable.getName() ) ) {
+                        throw new CypherSyntaxException( "Relationship variable '" + variable.getName() + "' is repeated in the same MATCH." );
+                    }
+                }
+            }
+        }
+    }
+
+
+    private static void registerMatchBinding( Map<String, PolyType> bindings, @Nullable CypherVariable variable, PolyType type ) {
+        if ( variable == null ) {
+            return;
+        }
+        String name = variable.getName();
+        PolyType previous = bindings.putIfAbsent( name, type );
+        if ( previous != null && previous != type ) {
+            throw new CypherSyntaxException( "Variable '" + name + "' has conflicting types in MATCH: " + previous + " and " + type + "." );
+        }
+        if ( previous == PolyType.PATH ) {
+            throw new CypherSyntaxException( "Path variable '" + name + "' is already bound." );
+        }
+    }
+
+
     private void convertJoinedMatch( CypherMatch clause, CypherContext context, List<CypherExpression> inlinePredicates ) {
         MatchRows right = null;
         boolean checkRelationshipUniqueness = clause.getPatterns().size() > 1;
@@ -452,6 +499,7 @@ public class CypherToAlgConverter {
             right = right == null ? bindings : joinBindings( right, bindings, JoinAlgType.INNER, List.of(), context, true );
         }
 
+        materializePathBindings( context );
         AlgNode left = context.pop();
         if ( left == null ) {
             // The first OPTIONAL MATCH has one input row with no variables.
@@ -463,7 +511,6 @@ public class CypherToAlgConverter {
             predicates.add( clause.getWhere().getExpression() );
         }
         context.add( joinBindings( new MatchRows( left, 0 ), Objects.requireNonNull( right ), joinType, predicates, context, false ).node() );
-        context.implicitPathBindings.clear();
     }
 
 
@@ -471,7 +518,7 @@ public class CypherToAlgConverter {
         AlgNode left = leftRows.node();
         AlgNode right = rightRows.node();
         int offset = left.getTupleType().getFieldCount();
-        Map<PolyString, RexNode> leftBindings = matchBindings( leftRows, 0, clausePatterns ? Map.of() : context.implicitPathBindings );
+        Map<PolyString, RexNode> leftBindings = matchBindings( leftRows, 0, Map.of() );
         Map<PolyString, RexNode> rightBindings = matchBindings( rightRows, offset, Map.of() );
         List<RexNode> conditions = new ArrayList<>();
         Map<PolyString, RexNode> scope = new LinkedHashMap<>( leftBindings );
@@ -568,14 +615,16 @@ public class CypherToAlgConverter {
         }
         PolyType type = left.getType().getPolyType();
         if ( type != right.getType().getPolyType() || (type != PolyType.NODE && type != PolyType.EDGE) ) {
-            throw new GenericRuntimeException( "Variable " + name + " must refer to the same type of node or relationship in each pattern." );
+            throw new CypherSyntaxException( "Variable '" + name.value + "' has incompatible bindings in MATCH: "
+                    + left.getType() + " and " + right.getType() + "." );
         }
         return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.EQUALS ), elementId( left ), elementId( right ) );
     }
 
 
     private static boolean isRelationshipList( AlgDataType type ) {
-        return type.getPolyType() == PolyType.ARRAY && type.getComponentType().getPolyType() == PolyType.EDGE;
+        // A statically empty list has no element to constrain and can bind a zero-hop segment.
+        return type instanceof ArrayType array && (array.getCardinality() == 0 || array.getComponentType().getPolyType() == PolyType.EDGE);
     }
 
 

@@ -412,7 +412,7 @@ public interface NeoUtil {
             case TAN -> o -> String.format( "tan(toFloat(%s))", o.get( 0 ) );
             case CAST -> handleCast( operands );
             case ITEM -> o -> String.format( "%s[toInteger(%s - 1)]", o.get( 0 ), o.get( 1 ) );
-            case ARRAY_VALUE_CONSTRUCTOR -> o -> "[" + String.join( ", ", o ) + "]";
+            case ARRAY_VALUE_CONSTRUCTOR, CYPHER_LIST_CONSTRUCTOR -> o -> "[" + String.join( ", ", o ) + "]";
             case CYPHER_EXTRACT_FROM_PATH -> o -> o.get( 0 );
             case CYPHER_ADJUST_EDGE -> o -> String.format( "%s%s%s", o.get( 1 ), o.get( 0 ), o.get( 2 ) );
             case CYPHER_REMOVE_LABELS -> Object::toString;
@@ -649,6 +649,11 @@ public interface NeoUtil {
                 case CYPHER_SET_PROPERTY, CYPHER_SET_PROPERTIES, CYPHER_SET_LABELS, CYPHER_REMOVE_LABELS, CYPHER_REMOVE_PROPERTY -> supports = false;
                 default -> {
                     if ( NeoUtil.getOpAsNeo( call.op.getOperatorName(), call.operands, call.type, List.of() ) == null ) {
+                        supports = false;
+                    }
+                    if ( call.op.getOperatorName() == OperatorName.CYPHER_LIST_CONSTRUCTOR
+                            && needsGraphValueDecoding( call.type.getComponentType().getPolyType() ) ) {
+                        // The native decoder cannot recover the original types inside a heterogeneous list.
                         supports = false;
                     }
                     if ( graph && call.operands.stream().anyMatch( operand -> needsGraphValueDecoding( operand.getType().getPolyType() ) )

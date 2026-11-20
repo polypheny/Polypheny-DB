@@ -1358,6 +1358,85 @@ class CypherTest {
 
 
     @Test
+    void matchesAConstructedRelationshipListInTraversalOrder() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            String start = "MATCH ()-[r1:KNOWS]->()-[r2:KNOWS]->() WITH %s AS rs LIMIT 1 ";
+            String projection = " RETURN first.name AS origin, rs, second.name AS target";
+            List<String> columns = List.of( "origin", "rs", "target" );
+            for ( boolean reversed : List.of( false, true ) ) {
+                String list = reversed ? "[r2, r1]" : "[r1, r2]";
+                String matching = reversed ? "MATCH (first)<-[rs*]-(second)" : "MATCH (first)-[rs*]->(second)";
+                RelationalFrame matches = relationalFrame( connection.cypher( start.formatted( list ) + matching + projection, -1 )
+                        .getResult().getFrame(), true, columns );
+                Row row = singleRow( matches );
+                assertEquals( reversed ? "Charlie" : "Alice", row.getValues( 0 ).getString().getString() );
+                assertEquals( reversed ? "Alice" : "Charlie", row.getValues( 2 ).getString().getString() );
+                assertEquals( ProtoPolyType.EDGE, matches.getColumnMeta( 1 ).getTypeMeta().getArrayMeta().getElementType().getProtoValueType() );
+                List<Long> years = row.getValues( 1 ).getList().getValuesList().stream()
+                        .map( value -> integerValue( value.getEdge().getPropertiesOrThrow( "since" ) ) ).toList();
+                assertEquals( reversed ? List.of( 2021L, 2020L ) : List.of( 2020L, 2021L ), years );
+            }
+
+            Frame absent = connection.cypher( start.formatted( "[r2, r1]" ) + "MATCH (first)-[rs*]->(second)" + projection, -1 ).getResult().getFrame();
+            assertEquals( 0, relationalFrame( absent, true, columns ).getRowsCount() );
+
+            Frame scalarList = connection.cypher( "MATCH (n:Person {name:'Alice'}) RETURN [n.name, NULL] AS items", -1 ).getResult().getFrame();
+            ProtoList items = singleRow( relationalFrame( scalarList, true, List.of( "items" ) ) ).getValues( 0 ).getList();
+            assertEquals( 2, items.getValuesCount() );
+            assertEquals( "Alice", items.getValues( 0 ).getString().getString() );
+            assertTrue( items.getValues( 1 ).hasNull() );
+
+            Frame mixedList = connection.cypher( "MATCH (n:Person {name:'Alice'}) RETURN [n, 1] AS items", -1 ).getResult().getFrame();
+            ProtoList mixed = singleRow( relationalFrame( mixedList, true, List.of( "items" ) ) ).getValues( 0 ).getList();
+            assertEquals( 2, mixed.getValuesCount() );
+            assertNode( mixed.getValues( 0 ).getNode(), "Alice", 1 );
+            assertEquals( 1, integerValue( mixed.getValues( 1 ) ) );
+        }
+    }
+
+
+    @Test
+    void matchesAnEmptyBoundListOnlyWhenZeroHopsAreAllowed() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            String query = "WITH [] AS rs MATCH (:Person)-[rs*%s]->(:Person) RETURN count(*) AS total";
+            for ( var expected : Map.of( "0..", 3L, "0", 3L, "", 0L ).entrySet() ) {
+                Frame frame = connection.cypher( query.formatted( expected.getKey() ), -1 ).getResult().getFrame();
+                Row row = singleRow( relationalFrame( frame, true, List.of( "total" ) ) );
+                assertEquals( expected.getValue().longValue(), integerValue( row.getValues( 0 ) ), expected.getKey() );
+            }
+        }
+    }
+
+
+    @Test
+    void rejectsConflictingPatternBindingsBeforeScanningTheGraph() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            List<String> conflicting = List.of(
+                    "MATCH (r)-[]-()-[r*]-() RETURN r",
+                    "MATCH ()-[]-(r)-[r*]-() RETURN r",
+                    "MATCH r=()-[r*]->() RETURN r",
+                    "MATCH r=()-[]-(), ()-[r*]-() RETURN r",
+                    "MATCH ()-[r]->()-[r*]->() RETURN r",
+                    "MATCH (r:NoSuchLabel), ()-[r*]->() RETURN r",
+                    "WITH [1] AS r MATCH ()-[r*]->() RETURN r",
+                    "MATCH ()-[r]->() MATCH ()-[r*]->() RETURN r" );
+            for ( String query : conflicting ) {
+                Response error = expect( connection.send( statementRequest( NAMESPACE, "cypher", query, -1 ) ), Response.TypeCase.ERROR_RESPONSE );
+                assertTrue( error.getErrorResponse().getMessage().contains( "Variable 'r' has" ), query );
+                connection.checkTransactions( 0 );
+            }
+
+            for ( String duplicate : List.of( "MATCH (a)-[r]->()-[r]->(a) RETURN r", "MATCH ()-[r]->(), ()-[r]->() RETURN r" ) ) {
+                Response error = expect( connection.send( statementRequest( NAMESPACE, "cypher", duplicate, -1 ) ), Response.TypeCase.ERROR_RESPONSE );
+                assertTrue( error.getErrorResponse().getMessage().contains( "Relationship variable 'r' is repeated in the same MATCH" ), duplicate );
+            }
+            Frame valid = connection.cypher( "MATCH ()-[r:KNOWS]->() MATCH ()-[r:KNOWS]->() RETURN count(*) AS total", -1 ).getResult().getFrame();
+            assertEquals( 2, integerValue( singleRow( relationalFrame( valid, true, List.of( "total" ) ) ).getValues( 0 ) ) );
+        }
+    }
+
+
+    @Test
     void returnsUnboundedRelationshipBindingsAsOrderedLists() throws IOException {
         try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
             expect( setCypherResultFormat( connection, "relational" ), Response.TypeCase.SET_CLIENT_INFO_PROPERTIES_RESPONSE );
