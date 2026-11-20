@@ -25,12 +25,12 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.PIServiceException;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.Transaction;
 import org.polypheny.prism.ExecuteUnparameterizedStatementRequest;
 import org.polypheny.prism.PrepareStatementRequest;
 
@@ -183,7 +183,7 @@ public class StatementManager {
         }
         PIStatement statement = openStatements.get( statementId );
         try {
-            if ( statement != null ) {
+            if ( statement != null && statement.getLanguage().dataModel() == DataModel.GRAPH ) {
                 statement.closeResultsAndCommitIfAuto();
             }
         } finally {
@@ -204,22 +204,7 @@ public class StatementManager {
     }
 
 
-    public void commitIfAutocommitAndNoOpenResults( Transaction transaction ) {
-        if ( !client.isAutoCommit() || transaction != client.getCurrentTransaction() || !transaction.isActive() ) {
-            return;
-        }
-        boolean hasOpenResults = openStatements.values().stream()
-                .map( PIStatement::getResultCursor )
-                .anyMatch( cursor -> cursor != null && cursor.transaction() == transaction );
-        // Overlapping SQL and MQL results can share the transaction.
-        if ( !hasOpenResults ) {
-            client.commitCurrentTransactionIfAuto();
-        }
-    }
-
-
     private void rebindPreparedStatement( PIPreparedStatement statement ) {
-        statement.closeResultsAndCommitIfAuto();
         Statement s = statement.getStatement();
         if ( s != null && s.getTransaction().getId() != client.getOrCreateNewTransaction().getId() ) {
             statement.setStatement( client.getCurrentTransaction().createStatement() );

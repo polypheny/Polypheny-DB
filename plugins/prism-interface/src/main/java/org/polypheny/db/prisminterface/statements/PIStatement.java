@@ -25,6 +25,7 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.transaction.Statement;
@@ -58,24 +59,28 @@ public abstract class PIStatement {
 
 
     public void closeResults() {
-        ResultCursor cursor = resultCursor;
-        resultCursor = null;
-        if ( cursor != null ) {
-            cursor.iterator().close();
+        if ( resultCursor == null ) {
+            return;
+        }
+        try {
+            resultCursor.iterator().close();
+            resultCursor = null;
+        } catch ( Exception e ) {
+            throw new GenericRuntimeException( "Closing of open result iterator failed" );
         }
     }
 
 
     public void closeResultsAndCommitIfAuto() {
-        ResultCursor cursor = resultCursor;
+        boolean ownsOpenResult = resultCursor != null && getTransaction() == client.getCurrentTransaction();
         closeResults();
-        if ( cursor != null ) {
-            client.getStatementManager().commitIfAutocommitAndNoOpenResults( cursor.transaction() );
+        if ( ownsOpenResult ) {
+            client.commitCurrentTransactionIfAuto();
         }
     }
 
 
-    public record ResultCursor( ResultIterator iterator, Transaction transaction, Frame.ResultCase format, List<ColumnMeta> columns ) {
+    public record ResultCursor( ResultIterator iterator, Frame.ResultCase format, List<ColumnMeta> columns ) {
 
         public ResultCursor {
             columns = List.copyOf( columns );

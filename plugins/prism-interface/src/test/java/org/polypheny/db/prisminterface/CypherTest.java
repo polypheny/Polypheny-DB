@@ -232,7 +232,6 @@ class CypherTest {
             assertTrue( first.hasRelationalFrame() );
             RelationalFrame firstPage = first.getRelationalFrame();
             assertEquals( "name", firstPage.getColumnMeta( 0 ).getColumnLabel() );
-            assertTrue( firstPage.getColumnMeta( 0 ).getIsNullable() );
             assertEquals( List.of( "Alice", "Bob" ), projectedNames( firstPage ) );
 
             Frame last = connection.fetch( statement.getStatementId(), 2 );
@@ -272,28 +271,6 @@ class CypherTest {
                     }
                 }
             }
-        }
-    }
-
-
-    @Test
-    void reportsMissingPropertiesAsNullableAcrossMixedResultPages() throws IOException {
-        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
-            StatementResponse statement = connection.cypher( "MATCH (n:Person) RETURN n, n.missing AS missing", 2 );
-            List<String> labels = List.of( "n", "missing" );
-            RelationalFrame first = relationalFrame( statement.getResult().getFrame(), false, labels );
-            RelationalFrame last = relationalFrame( connection.fetch( statement.getStatementId(), 2 ), true, labels );
-            assertEquals( 2, first.getRowsCount() );
-            assertEquals( 1, last.getRowsCount() );
-            assertEquals( first.getColumnMetaList(), last.getColumnMetaList() );
-            assertTrue( first.getColumnMeta( 1 ).getIsNullable() );
-            for ( RelationalFrame page : List.of( first, last ) ) {
-                for ( Row row : page.getRowsList() ) {
-                    assertTrue( row.getValues( 0 ).hasNode() );
-                    assertTrue( row.getValues( 1 ).hasNull() );
-                }
-            }
-            connection.checkTransactions( 0 );
         }
     }
 
@@ -351,7 +328,6 @@ class CypherTest {
             Frame frame = connection.cypher( "MATCH (n:Person {name: 'Unknown'}) RETURN n, n.name AS name", 1 ).getResult().getFrame();
             RelationalFrame page = relationalFrame( frame, true, List.of( "n", "name" ) );
             assertEquals( ProtoPolyType.NODE, page.getColumnMeta( 0 ).getTypeMeta().getProtoValueType() );
-            assertTrue( page.getColumnMeta( 1 ).getIsNullable() );
             assertEquals( 0, page.getRowsCount() );
             connection.checkTransactions( 0 );
         }

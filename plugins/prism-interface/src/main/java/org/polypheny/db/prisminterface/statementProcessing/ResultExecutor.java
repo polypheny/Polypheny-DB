@@ -29,7 +29,6 @@ import org.polypheny.db.prisminterface.relational.RelationalMetaRetriever;
 import org.polypheny.db.prisminterface.statements.PIStatement;
 import org.polypheny.db.prisminterface.statements.PIStatement.ResultCursor;
 import org.polypheny.db.prisminterface.utils.PrismUtils;
-import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
@@ -73,18 +72,22 @@ final class ResultExecutor {
             return updateCount( statement, implementation );
         }
 
-        Transaction transaction = statement.getTransaction();
         try {
             ResultCase format = selectFrame( statement, implementation );
             List<ColumnMeta> columns = format == ResultCase.RELATIONAL_FRAME
                     ? RelationalMetaRetriever.retrieveColumnMetas( implementation )
                     : List.of();
             ResultIterator iterator = implementation.execute( statement.getStatement(), fetchSize );
-            ResultCursor cursor = new ResultCursor( iterator, transaction, format, columns );
+            ResultCursor cursor = new ResultCursor( iterator, format, columns );
             statement.setResultCursor( cursor );
-            return StatementResult.newBuilder().setFrame( readFrame( statement, cursor, fetchSize ) ).build();
+            Frame frame = readFrame( statement, cursor, fetchSize );
+            // Keep the existing SQL and MQL behavior for results consumed in the execute response.
+            if ( frame.getIsLast() && !isGraphStatement( statement ) ) {
+                statement.getClient().commitCurrentTransactionIfAuto();
+            }
+            return StatementResult.newBuilder().setFrame( frame ).build();
         } catch ( RuntimeException e ) {
-            discardFailedResult( statement, transaction, e );
+            discardFailedGraphResult( statement, e );
             throw e;
         }
     }
@@ -92,16 +95,16 @@ final class ResultExecutor {
 
     static Frame fetch( PIStatement statement, int fetchSize ) {
         ResultCursor cursor = statement.getResultCursor();
-        if ( cursor == null || !cursor.transaction().isActive() ) {
-            if ( isGraphStatement( statement ) ) {
-                throw new PIServiceException( "No open Cypher result exists for this statement" );
-            }
-            throw new PIServiceException( "No open result exists for this statement", "I9002", 9002 );
+        if ( isGraphStatement( statement ) && (cursor == null || !statement.getTransaction().isActive()) ) {
+            throw new PIServiceException( "No open Cypher result exists for this statement" );
+        }
+        if ( cursor == null ) {
+            throw new PIServiceException( "Can't fetch from an unexecuted statement.", "I9002", 9002 );
         }
         try {
             return readFrame( statement, cursor, fetchSize );
         } catch ( RuntimeException e ) {
-            discardFailedResult( statement, cursor.transaction(), e );
+            discardFailedGraphResult( statement, e );
             throw e;
         }
     }
@@ -155,7 +158,9 @@ final class ResultExecutor {
         if ( last ) {
             stopwatch.stop();
             iterator.getExecutionTimeMonitor().setExecutionTime( stopwatch.getNanoTime() );
-            statement.closeResultsAndCommitIfAuto();
+            if ( isGraphStatement( statement ) ) {
+                statement.closeResultsAndCommitIfAuto();
+            }
         } else {
             stopwatch.suspend();
         }
@@ -164,16 +169,15 @@ final class ResultExecutor {
 
 
     private static StatementResult updateCount( PIStatement statement, PolyImplementation implementation ) {
-        Transaction transaction = statement.getTransaction();
         try {
             long count;
             try ( ResultIterator iterator = implementation.execute( statement.getStatement(), -1 ) ) {
                 count = PolyImplementation.getRowsChanged( statement.getStatement(), iterator.getIterator(), MonitoringType.from( implementation.getKind() ) );
             }
-            statement.getClient().getStatementManager().commitIfAutocommitAndNoOpenResults( transaction );
+            statement.getClient().commitCurrentTransactionIfAuto();
             return scalar( count );
         } catch ( RuntimeException e ) {
-            discardFailedResult( statement, transaction, e );
+            discardFailedGraphResult( statement, e );
             throw e;
         }
     }
@@ -201,16 +205,19 @@ final class ResultExecutor {
     }
 
 
-    private static void discardFailedResult( PIStatement statement, Transaction transaction, RuntimeException failure ) {
+    private static void discardFailedGraphResult( PIStatement statement, RuntimeException failure ) {
+        if ( !isGraphStatement( statement ) ) {
+            return;
+        }
         try {
             statement.closeResults();
         } catch ( RuntimeException cleanupFailure ) {
             failure.addSuppressed( cleanupFailure );
         }
         PIClient client = statement.getClient();
-        if ( client.isAutoCommit() && client.getCurrentTransaction() == transaction ) {
+        if ( client.isAutoCommit() && client.getCurrentTransaction() == statement.getTransaction() ) {
             try {
-                client.rollbackCurrentTransaction( "Prism result could not be produced" );
+                client.rollbackCurrentTransaction( "Cypher result could not be produced" );
             } catch ( RuntimeException cleanupFailure ) {
                 failure.addSuppressed( cleanupFailure );
             }

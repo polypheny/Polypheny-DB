@@ -28,6 +28,7 @@ import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
@@ -506,7 +507,11 @@ class PIService {
     private Response closeResult( CloseResultRequest request, ResponseMaker<CloseResultResponse> responseObserver ) {
         PIClient client = getClient();
         PIStatement statement = client.getStatementManager().getStatement( request.getStatementId() );
-        statement.closeResultsAndCommitIfAuto();
+        if ( statement.getLanguage().dataModel() == DataModel.GRAPH ) {
+            statement.closeResultsAndCommitIfAuto();
+        } else {
+            statement.closeResults();
+        }
         return responseObserver.makeResponse( CloseResultResponse.newBuilder().build() );
     }
 

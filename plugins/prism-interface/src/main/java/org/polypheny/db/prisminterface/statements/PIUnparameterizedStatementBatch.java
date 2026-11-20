@@ -42,8 +42,6 @@ public class PIUnparameterizedStatementBatch {
         List<Long> updateCounts = new LinkedList<>();
         for ( PIUnparameterizedStatement statement : statements ) {
             updateCounts.add( statement.execute( fetchSize ).getScalar() );
-            // The batch response exposes counts only and cannot be used to fetch a member cursor.
-            statement.closeResultsAndCommitIfAuto();
         }
         return updateCounts;
     }
