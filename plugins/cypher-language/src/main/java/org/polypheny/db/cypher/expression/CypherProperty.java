@@ -16,15 +16,11 @@
 
 package org.polypheny.db.cypher.expression;
 
-import java.util.List;
 import lombok.Getter;
-import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.parser.StringPos;
-import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
@@ -69,16 +65,6 @@ public class CypherProperty extends CypherExpression {
 
         Pair<PolyString, RexNode> namedSubject = this.subject.getRex( context, type );
         assert namedSubject.left.equals( PolyString.of( subject ) );
-
-        if ( type == RexType.FILTER ) {
-            // first check if property even exist, this is use if it is used as filter
-            RexNode hasProperty = context.rexBuilder.makeCall(
-                    context.booleanType,
-                    OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_HAS_PROPERTY ),
-                    List.of( namedSubject.right, context.rexBuilder.makeLiteral( key ) ) );
-
-            context.add( Pair.of( PolyString.of( subject + "." + key ), hasProperty ) );
-        }
 
         return context.getPropertyExtract( key, subject, namedSubject.right );
     }

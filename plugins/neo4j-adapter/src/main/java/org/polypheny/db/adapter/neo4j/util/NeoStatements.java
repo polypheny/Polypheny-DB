@@ -138,9 +138,7 @@ public interface NeoStatements {
             i++;
         }
 
-        PolyString name = path.getVariableName() == null ? identifier : path.getVariableName();
-
-        return new PathStatement( name, elements );
+        return new PathStatement( identifier, elements );
     }
 
     static PropertyStatement property_( PolyString key, NeoStatement value ) {
@@ -203,6 +201,10 @@ public interface NeoStatements {
 
     static NeoStatement identifier_( String identifier ) {
         return new LiteralStatement( identifier );
+    }
+
+    static NeoStatement quotedIdentifier_( String identifier ) {
+        return identifier_( "`" + identifier.replace( "`", "``" ) + "`" );
     }
 
     static LabelsStatement labels_( PolyString... labels ) {
@@ -557,7 +559,7 @@ public interface NeoStatements {
 
         @Override
         public String build() {
-            String namedPath = identifier == null || identifier.value.contains( "$" ) ? "" : String.format( "%s = ", identifier );
+            String namedPath = identifier == null || identifier.isNull() ? "" : quotedIdentifier_( identifier.value ).build() + " = ";
             return namedPath + pathElements.stream().map( NeoStatement::build ).collect( Collectors.joining() );
         }
 

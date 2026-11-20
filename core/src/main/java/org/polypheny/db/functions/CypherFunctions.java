@@ -558,6 +558,37 @@ public class CypherFunctions {
     }
 
 
+    public static PolyBoolean in( PolyValue value, PolyValue list ) {
+        if ( list == null || list.isNull() ) {
+            return null;
+        }
+        if ( !list.isList() ) {
+            throw new GenericRuntimeException( "IN requires a list on its right side." );
+        }
+        boolean hasUnknown = false;
+        for ( PolyValue candidate : list.asList() ) {
+            PolyBoolean equal = equal( value, candidate );
+            if ( PolyBoolean.TRUE.equals( equal ) ) {
+                return PolyBoolean.TRUE;
+            }
+            hasUnknown |= equal == null;
+        }
+        return hasUnknown ? null : PolyBoolean.FALSE;
+    }
+
+
+    public static PolyValue last( PolyValue list ) {
+        if ( list == null || list.isNull() ) {
+            return null;
+        }
+        if ( !list.isList() ) {
+            throw new GenericRuntimeException( "last() requires a list." );
+        }
+        PolyList<?> values = list.asList();
+        return values.isEmpty() ? null : values.get( values.size() - 1 );
+    }
+
+
     /**
      * Uses the same exact decimal normalization as numeric equality, so values
      * with different numeric types or scales also agree as hash keys.
@@ -752,7 +783,34 @@ public class CypherFunctions {
             return PolyBoolean.of( !Double.isNaN( a.doubleValue() ) && !Double.isNaN( b.doubleValue() )
                     && test.test( compareNumbers( a, b ) ) );
         }
+        if ( left.isList() || right.isList() || left instanceof GraphObject || right instanceof GraphObject ) {
+            Integer comparison = compareStructuredValues( left, right );
+            return comparison == null ? null : PolyBoolean.of( test.test( comparison ) );
+        }
         return fallback.apply( left, right );
+    }
+
+
+    private static Integer compareStructuredValues( PolyValue left, PolyValue right ) {
+        if ( left == null || right == null || left.isNull() || right.isNull() ) {
+            return null;
+        }
+        if ( left instanceof PolyNumber a && right instanceof PolyNumber b ) {
+            return Double.isNaN( a.doubleValue() ) || Double.isNaN( b.doubleValue() ) ? null : compareNumbers( a, b );
+        }
+        if ( !left.isSameType( right ) ) {
+            return null;
+        }
+        if ( left instanceof PolyList<?> a && right instanceof PolyList<?> b ) {
+            for ( int i = 0; i < Math.min( a.size(), b.size() ); i++ ) {
+                Integer order = compareStructuredValues( a.get( i ), b.get( i ) );
+                if ( order == null || order != 0 ) {
+                    return order;
+                }
+            }
+            return Integer.compare( a.size(), b.size() );
+        }
+        return left.compareTo( right );
     }
 
 

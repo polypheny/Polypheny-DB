@@ -113,10 +113,19 @@ public class CypherReturnClause extends CypherClause {
             }
         }
 
-        if ( context.containsAggs() ) {
-            return getAggregate( context, projections, operands, requestedOrder );
+        AlgNode result = context.containsAggs()
+                ? getAggregate( context, projections, operands, requestedOrder )
+                : getProject( context, projections );
+        if ( !distinct ) {
+            return result;
         }
-        return getProject( context, projections );
+        List<RexNameRef> keys = result.getTupleType().getFields().stream()
+                .map( field -> RexNameRef.create( field.getName(), field.getIndex(), field.getType() ) )
+                .toList();
+        if ( keys.isEmpty() ) {
+            return LogicalLpgSort.create( AlgCollations.EMPTY, result, null, 1 );
+        }
+        return LogicalLpgAggregate.create( result, keys, List.of() );
     }
 
 

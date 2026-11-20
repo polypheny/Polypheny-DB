@@ -83,6 +83,7 @@ import org.polypheny.db.cypher.clause.CypherWhere;
 import org.polypheny.db.cypher.clause.CypherWith;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherLiteral;
+import org.polypheny.db.cypher.expression.CypherProperty;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.cypher.pattern.CypherEveryPathPattern;
 import org.polypheny.db.cypher.pattern.CypherNamedPattern;
@@ -294,18 +295,20 @@ public class CypherToAlgConverter {
         if ( clause.getReturnItems().stream().anyMatch( CypherReturn::isStar ) ) {
             materializePathBindings( context );
         }
+        AlgNode inputScope = context.stack.isEmpty() ? null : context.peek();
         AlgNode node = clause.getGraphProject( context );
 
         if ( clause.getOrder() != null && !clause.getOrder().isEmpty() || clause.getLimit() != null || clause.getSkip() != null ) {
             AlgDataType rowType = node.getTupleType();
-            List<String> missingNames = clause
-                    .getSortFields( rowType.getFieldNames() )
-                    .stream().filter( n -> !rowType.getFieldNames().contains( n ) )
+            List<String> sortFields = clause.getSortFields( rowType.getFieldNames() );
+            List<String> missingNames = sortFields
+                    .stream()
+                    .filter( n -> !rowType.getFieldNames().contains( n ) )
                     .toList();
 
             if ( !missingNames.isEmpty() ) {
                 // hidden names are used for sort but are not yet present
-                node = addHiddenRows( context, node, missingNames );
+                node = addHiddenRows( context, inputScope, node, clause, sortFields );
             }
 
             context.add( node );
@@ -344,57 +347,38 @@ public class CypherToAlgConverter {
     }
 
 
-    private AlgNode addHiddenRows( CypherContext context, AlgNode node, List<String> missingNames ) {
-
-        AlgNode input;
-        if ( node instanceof LogicalLpgProject ) {
-            input = node.getInput( 0 );
-        } else {
-            input = node;
-        }
-
-        List<Pair<PolyString, RexNode>> additional = new ArrayList<>();
-        for ( AlgDataTypeField field : input.getTupleType().getFields() ) {
-            for ( String name : missingNames ) {
-                String[] split = name.split( "\\." );
-                if ( split.length > 1 && split[0].equals( field.getName() ) ) {
-                    // missing property
-                    additional.add( context.getPropertyExtract( split[1], split[0], context.rexBuilder.makeInputRef( field.getType(), field.getIndex() ) ) );
-                } else if ( name.equals( field.getName() ) ) {
-                    // missing field ( edge, node, string, etc )
-                    additional.add( Pair.of( PolyString.of( name ), context.rexBuilder.makeInputRef( field.getType(), field.getIndex() ) ) );
-                }
+    private AlgNode addHiddenRows( CypherContext context, @Nullable AlgNode inputScope, AlgNode node, CypherReturnClause clause, List<String> sortFields ) {
+        // Only a projection built by this clause can expose its original input to ORDER BY.
+        // A grouped or DISTINCT projection, or an earlier WITH, has already changed that scope.
+        LogicalLpgProject project = node instanceof LogicalLpgProject projection && projection.getInput() == inputScope ? projection : null;
+        AlgNode input = project == null ? node : project.getInput();
+        List<String> projectedNames = node.getTupleType().getFieldNames();
+        List<RexNode> values = new ArrayList<>( project == null
+                ? node.getTupleType().getFields().stream().map( field -> (RexNode) rexBuilder.makeInputRef( node, field.getIndex() ) ).toList()
+                : project.getProjects() );
+        List<PolyString> names = projectedNames.stream().map( PolyString::of ).collect( Collectors.toCollection( ArrayList::new ) );
+        Map<PolyString, RexNode> inputBindings = input == inputScope
+                ? matchBindings( new MatchRows( input, 0 ), 0, context.implicitPathBindings )
+                : Map.of();
+        for ( int i = 0; i < sortFields.size(); i++ ) {
+            String name = sortFields.get( i );
+            PolyString fieldName = PolyString.of( name );
+            if ( names.contains( fieldName ) ) {
+                continue;
             }
+            CypherExpression expression = clause.getOrder().get( i ).getExpression();
+            String bindingName = expression instanceof CypherProperty property ? property.getSubjectName() : name;
+            int index = projectedNames.indexOf( bindingName );
+            RexNode binding = index >= 0 ? values.get( index ) : inputBindings.get( PolyString.of( bindingName ) );
+            if ( binding == null ) {
+                throw new GenericRuntimeException( "Unknown sort expression: %s", name );
+            }
+            values.add( expression instanceof CypherProperty property
+                    ? context.getPropertyExtract( property.getPropertyKey(), bindingName, binding ).right
+                    : binding );
+            names.add( fieldName );
         }
-        List<RexNode> nodes;
-        List<PolyString> names;
-        if ( node instanceof LogicalLpgProject ) {
-            // we can extend the Project
-            LogicalLpgProject project = (LogicalLpgProject) node;
-
-            nodes = new ArrayList<>( project.getProjects() );
-            names = new ArrayList<>( project.getNames() );
-
-            nodes.addAll( Pair.right( additional ) );
-            names.addAll( Pair.left( additional ) );
-
-            node = new LogicalLpgProject( node.getCluster(), node.getTraitSet(), input, nodes, names );
-        } else {
-            // we can add a project
-            nodes = new ArrayList<>();
-            names = new ArrayList<>();
-
-            node.getTupleType().getFields().forEach( f -> {
-                nodes.add( context.rexBuilder.makeInputRef( f.getType(), f.getIndex() ) );
-                names.add( PolyString.of( f.getName() ) );
-            } );
-
-            nodes.addAll( Pair.right( additional ) );
-            names.addAll( Pair.left( additional ) );
-
-            node = new LogicalLpgProject( node.getCluster(), node.getTraitSet(), input, nodes, names );
-        }
-        return node;
+        return new LogicalLpgProject( node.getCluster(), node.getTraitSet(), input, values, names );
     }
 
 

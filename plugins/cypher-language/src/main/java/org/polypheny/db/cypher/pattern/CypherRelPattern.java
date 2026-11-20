@@ -19,7 +19,6 @@ package org.polypheny.db.cypher.pattern;
 import java.util.List;
 import javax.annotation.Nullable;
 import lombok.Getter;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.CypherPathLength;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.expression.CypherExpression;
@@ -91,28 +90,13 @@ public class CypherRelPattern extends CypherPattern {
 
         PolyEdge edge = new PolyEdge( properties, PolyList.copyOf( labels ), leftId, rightId, direction, PolyString.of( name ) );
         if ( pathLength != null ) {
-            Integer lower = parseBound( pathLength.getFrom() );
-            int min = lower == null ? 1 : lower;
-            Integer max = parseBound( pathLength.getTo() );
-            edge.fromTo( Pair.of( min, max ) );
+            edge.fromTo( pathLength.getLengthRange() );
         }
 
         if ( project ) {
             context.addCreateProperties( edge.id, this.properties );
         }
         return Pair.of( PolyString.of( name ), edge );
-    }
-
-
-    private static @Nullable Integer parseBound( @Nullable String bound ) {
-        if ( bound == null || bound.isEmpty() ) {
-            return null;
-        }
-        try {
-            return Integer.valueOf( bound );
-        } catch ( NumberFormatException e ) {
-            throw new GenericRuntimeException( "Cypher relationship length is outside the supported integer range.", e );
-        }
     }
 
 

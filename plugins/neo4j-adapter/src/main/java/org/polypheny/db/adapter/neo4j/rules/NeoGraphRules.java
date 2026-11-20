@@ -16,6 +16,7 @@
 
 package org.polypheny.db.adapter.neo4j.rules;
 
+import static org.polypheny.db.adapter.neo4j.util.NeoUtil.isStructuralGraphType;
 import static org.polypheny.db.adapter.neo4j.util.NeoUtil.needsGraphValueDecoding;
 
 import java.util.function.Predicate;
@@ -229,8 +230,10 @@ public interface NeoGraphRules {
 
 
         private static boolean supports( LpgSort sort ) {
-            return !containsSort( sort.getInput() ) && sort.collation.getFieldCollations().stream().noneMatch( field ->
-                    needsGraphValueDecoding( sort.getInput().getTupleType().getFields().get( field.getFieldIndex() ).getType().getPolyType() ) );
+            return !containsSort( sort.getInput() ) && sort.collation.getFieldCollations().stream().allMatch( field -> {
+                PolyType type = sort.getInput().getTupleType().getFields().get( field.getFieldIndex() ).getType().getPolyType();
+                return !isStructuralGraphType( type ) && !needsGraphValueDecoding( type );
+            } );
         }
 
 

@@ -20,7 +20,6 @@ import static org.polypheny.db.adapter.neo4j.util.NeoStatements.labels_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.list_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.match_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.node_;
-import static org.polypheny.db.adapter.neo4j.util.NeoStatements.path_;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -71,7 +70,7 @@ public class NeoLpgMatch extends LpgMatch implements NeoGraphAlg {
                     neoMatches.add( node_( node, PolyString.of( mappingLabel ), false ) );
                     break;
                 case CYPHER_PATH_MATCH:
-                    neoMatches.add( path_( match.left, ((RexLiteral) match.right.operands.get( 1 )).value.asPath(), PolyString.of( mappingLabel ), false ) );
+                    neoMatches.add( implementor.matchPath( match.left, ((RexLiteral) match.right.operands.get( 1 )).value.asPath() ) );
                     break;
             }
         }

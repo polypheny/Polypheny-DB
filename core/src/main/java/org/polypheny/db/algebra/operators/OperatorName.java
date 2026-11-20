@@ -1732,6 +1732,10 @@ public enum OperatorName {
 
     CYPHER_LIST_CONSTRUCTOR( LangFunctionOperator.class ),
 
+    CYPHER_IN( LangFunctionOperator.class ),
+
+    CYPHER_LAST( LangFunctionOperator.class ),
+
     CYPHER_ADJUST_EDGE( LangFunctionOperator.class ),
     CYPHER_CREATE_NODE( LangFunctionOperator.class ),
     CYPHER_CREATE_EDGE( LangFunctionOperator.class ),

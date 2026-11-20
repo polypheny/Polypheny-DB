@@ -528,6 +528,8 @@ public enum BuiltInMethod {
     CYPHER_LIKE( CypherFunctions.class, "like", PolyValue.class, PolyValue.class ),
     CYPHER_EQUALS( CypherFunctions.class, "equal", PolyValue.class, PolyValue.class ),
     CYPHER_NOT_EQUALS( CypherFunctions.class, "notEqual", PolyValue.class, PolyValue.class ),
+    CYPHER_IN( CypherFunctions.class, "in", PolyValue.class, PolyValue.class ),
+    CYPHER_LAST( CypherFunctions.class, "last", PolyValue.class ),
     CYPHER_LESS_THAN( CypherFunctions.class, "lessThan", PolyValue.class, PolyValue.class ),
     CYPHER_LESS_THAN_OR_EQUAL( CypherFunctions.class, "lessThanOrEqual", PolyValue.class, PolyValue.class ),
     CYPHER_GREATER_THAN( CypherFunctions.class, "greaterThan", PolyValue.class, PolyValue.class ),

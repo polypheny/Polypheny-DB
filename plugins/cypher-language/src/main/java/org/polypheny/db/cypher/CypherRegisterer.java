@@ -42,6 +42,8 @@ public class CypherRegisterer {
         register( OperatorName.CYPHER_LIKE, new LangFunctionOperator( OperatorName.CYPHER_LIKE.name(), Kind.LIKE, PolyType.BOOLEAN ) );
         register( OperatorName.CYPHER_EQUALS, new LangFunctionOperator( OperatorName.CYPHER_EQUALS.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
         register( OperatorName.CYPHER_NOT_EQUALS, new LangFunctionOperator( OperatorName.CYPHER_NOT_EQUALS.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
+        register( OperatorName.CYPHER_IN, new LangFunctionOperator( OperatorName.CYPHER_IN.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
+        register( OperatorName.CYPHER_LAST, new LangFunctionOperator( OperatorName.CYPHER_LAST.name(), Kind.CYPHER_FUNCTION, PolyType.ANY ) );
         register( OperatorName.CYPHER_LESS_THAN, new LangFunctionOperator( OperatorName.CYPHER_LESS_THAN.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
         register( OperatorName.CYPHER_LESS_THAN_OR_EQUAL, new LangFunctionOperator( OperatorName.CYPHER_LESS_THAN_OR_EQUAL.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
         register( OperatorName.CYPHER_GREATER_THAN, new LangFunctionOperator( OperatorName.CYPHER_GREATER_THAN.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );

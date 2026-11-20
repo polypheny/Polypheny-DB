@@ -2236,15 +2236,23 @@ CypherPathLength PathLengthLiteral( Token t ) :
     Token v2 = null;
 }
 {
-    LOOKAHEAD( 2 ) ( v1=<UNSIGNED_DECIMAL_INTEGER> )? t=<DOTDOT> ( v2=<UNSIGNED_DECIMAL_INTEGER> )?
+    LOOKAHEAD( 2 ) ( v1=PathLengthBound() )? t=<DOTDOT> ( v2=PathLengthBound() )?
         {
-            return CypherFactory.createPathLength( pos( t ), v1 == null ? null : pos ( v1 ), v2 == null ? null : pos ( v2 ),  v1 == null ? "" : v1.image, v2 == null ? "" : v2.image );
+            return CypherFactory.createPathLength( pos( t ), v1 == null ? null : pos( v1 ), v2 == null ? null : pos( v2 ), v1 == null ? null : v1.image, v2 == null ? null : v2.image );
         }
-    | v1=<UNSIGNED_DECIMAL_INTEGER>
+    | v1=PathLengthBound()
         {
-            String v = v1 == null ? "" : v1.image;
-            return CypherFactory.createPathLength( pos( t ), v1 == null ? null : pos ( v1 ), v1 == null ? null : pos ( v1 ), v, v);
+            return CypherFactory.createPathLength( pos( t ), pos( v1 ), pos( v1 ), v1.image, v1.image );
         }
+}
+
+Token PathLengthBound() :
+{
+    Token bound;
+}
+{
+    ( bound=<UNSIGNED_DECIMAL_INTEGER> | bound=<UNSIGNED_HEX_INTEGER> | bound=<UNSIGNED_OCTAL_INTEGER> )
+    { return bound; }
 }
 
 // CypherExpressionS

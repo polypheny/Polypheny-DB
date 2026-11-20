@@ -36,7 +36,6 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalPoint2D;
 import org.neo4j.driver.internal.value.FloatValue;
 import org.neo4j.driver.internal.value.IntegerValue;
@@ -47,6 +46,7 @@ import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Path;
 import org.neo4j.driver.types.Point;
 import org.neo4j.driver.types.Relationship;
+import org.polypheny.db.adapter.neo4j.types.NestedListType;
 import org.polypheny.db.adapter.neo4j.types.NestedPolyType;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Filter;
@@ -135,11 +135,19 @@ public interface NeoUtil {
             case NODE -> o -> asPolyNode( o.asNode() );
             case EDGE -> o -> asPolyEdge( o.asRelationship() );
             case PATH -> o -> {
-
-                if ( o instanceof ListValue ) {
-                    return asPolyPath( ((InternalPath) o.asList().get( 0 )), type.asList().names );
+                if ( !(o instanceof ListValue) ) {
+                    return asPolyPath( o.asPath() );
                 }
-                return asPolyPath( o.asPath(), type.asList().names );
+                NestedListType pathType = type.asList();
+                if ( o.size() != pathType.names.size() + 1 ) {
+                    throw new GenericRuntimeException( "Unexpected Neo4j path binding result." );
+                }
+                Map<PolyString, PolyValue> bindings = new HashMap<>();
+                for ( int i = 0; i < pathType.names.size(); i++ ) {
+                    PolyValue value = getTypeFunction( pathType.types.get( i ), false ).apply( o.get( i + 1 ) );
+                    bindings.put( PolyString.of( pathType.names.get( i ) ), value );
+                }
+                return asPolyPath( o.get( 0 ).asPath() ).withBindings( bindings );
             };
             case GEOMETRY -> NeoUtil::asPolyGeometry;
             default -> throw new GenericRuntimeException( String.format( "Object of type %s was not transformable.", type ) );
@@ -176,14 +184,13 @@ public interface NeoUtil {
         throw new GenericRuntimeException( String.format( "Could not transform object of type %s to PolyGeometry", value.type() ) );
     }
 
-    static PolyPath asPolyPath( Path path, List<String> names ) {
+    static PolyPath asPolyPath( Path path ) {
         Iterator<Node> nodeIter = path.nodes().iterator();
         Iterator<Relationship> edgeIter = path.relationships().iterator();
-        Iterator<String> nameIter = names.iterator();
         List<Pair<PolyString, PolyNode>> nodes = new ArrayList<>();
         List<Pair<PolyString, PolyEdge>> edges = new ArrayList<>();
         while ( nodeIter.hasNext() ) {
-            nodes.add( Pair.of( nameIter.hasNext() ? PolyString.of( nameIter.next() ) : null, asPolyNode( nodeIter.next() ) ) );
+            nodes.add( Pair.of( null, asPolyNode( nodeIter.next() ) ) );
             if ( nodeIter.hasNext() ) {
                 edges.add( Pair.of( null, asPolyEdge( edgeIter.next() ) ) );
             }
@@ -293,6 +300,10 @@ public interface NeoUtil {
 
     static boolean needsGraphValueDecoding( PolyType type ) {
         return type == PolyType.ANY || type == PolyType.DECIMAL || type == PolyType.ARRAY || type == PolyType.MAP;
+    }
+
+    static boolean isStructuralGraphType( PolyType type ) {
+        return type == PolyType.NODE || type == PolyType.EDGE || type == PolyType.PATH || type == PolyType.GRAPH;
     }
 
     static String asParameter( long key, boolean withDollar ) {
@@ -643,6 +654,10 @@ public interface NeoUtil {
 
         @Override
         public Void visitCall( RexCall call ) {
+            if ( graph && ordersGraphValues( call ) ) {
+                // Polypheny orders graph elements by their stored IDs, which need not follow Neo4j's internal IDs.
+                supports = false;
+            }
             // Graph mutations in a projection construct values for the row writer.
             // Their native spelling is a SET/REMOVE clause, never a return expression.
             switch ( call.op.getOperatorName() ) {
@@ -663,6 +678,16 @@ public interface NeoUtil {
                 }
             }
             return super.visitCall( call );
+        }
+
+
+        private static boolean ordersGraphValues( RexCall call ) {
+            return switch ( call.op.getOperatorName() ) {
+                case LESS_THAN, LESS_THAN_OR_EQUAL, GREATER_THAN, GREATER_THAN_OR_EQUAL,
+                        CYPHER_LESS_THAN, CYPHER_LESS_THAN_OR_EQUAL, CYPHER_GREATER_THAN, CYPHER_GREATER_THAN_OR_EQUAL ->
+                        call.operands.stream().anyMatch( operand -> isStructuralGraphType( operand.getType().getPolyType() ) );
+                default -> false;
+            };
         }
 
 

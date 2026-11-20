@@ -26,6 +26,7 @@ import java.util.Locale;
 import lombok.Getter;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
@@ -195,6 +196,16 @@ public class CypherFunctionInvocation extends CypherExpression {
                         ) );
             case VECTOR_DISTANCE:
                 return getVectorDistanceRex( context, type );
+            case LAST, CYPHER_LAST: {
+                if ( arguments.size() != 1 ) {
+                    throw new GenericRuntimeException( "last() requires exactly one argument." );
+                }
+                RexNode list = arguments.get( 0 ).getRex( context, type ).right;
+                AlgDataType component = list.getType().getComponentType();
+                AlgDataType result = component == null ? context.typeFactory.createPolyType( PolyType.ANY ) : component;
+                return context.rexBuilder.makeCall( context.typeFactory.createTypeWithNullability( result, true ),
+                        OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_LAST ), List.of( list ) );
+            }
             default:
                 throw new NotImplementedException( "Cypher Function to alg conversion missing: " + getOperatorName() );
         }

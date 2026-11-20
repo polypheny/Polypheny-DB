@@ -159,18 +159,14 @@ public class PolyPath extends GraphObject {
         if ( !isSameType( o ) ) {
             return -1;
         }
-        PolyPath other = o.asPath();
-
-        if ( nodes.size() > other.nodes.size() ) {
-            return 1;
+        List<GraphPropertyHolder> otherPath = o.asPath().path;
+        for ( int i = 0; i < Math.min( path.size(), otherPath.size() ); i++ ) {
+            int order = path.get( i ).id.compareTo( otherPath.get( i ).id );
+            if ( order != 0 ) {
+                return order;
+            }
         }
-        if ( nodes.size() < other.nodes.size() ) {
-            return -1;
-        }
-        if ( nodes.equals( other.nodes ) && edges.equals( other.edges ) ) {
-            return 0;
-        }
-        return -1;
+        return Integer.compare( path.size(), otherPath.size() );
     }
 
 

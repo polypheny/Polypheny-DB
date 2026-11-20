@@ -216,7 +216,9 @@ public class CypherLiteral extends CypherExpression {
                 AlgDataType arrayType = context.typeFactory.createArrayType( dataType, -1, 1 );
                 yield context.rexBuilder.makeCall( arrayType, OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_LIST_CONSTRUCTOR ), list );
             }
-            case MAP, STAR, OCTAL, HEX -> throw new UnsupportedOperationException();
+            case MAP -> new RexLiteral( getComparable(), context.typeFactory.createMapType(
+                    context.typeFactory.createPolyType( PolyType.VARCHAR ), context.typeFactory.createPolyType( PolyType.ANY ) ), PolyType.MAP );
+            case STAR, OCTAL, HEX -> throw new UnsupportedOperationException();
             case STRING -> context.rexBuilder.makeLiteral( (String) value );
             case DOUBLE -> context.rexBuilder.makeApproxLiteral( BigDecimal.valueOf( (Double) value ) );
             case DECIMAL -> context.rexBuilder.makeExactLiteral( BigDecimal.valueOf( (Integer) value ) );

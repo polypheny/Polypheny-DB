@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.neo4j.rules.graph;
 
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.as_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.distinct_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.list_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.literal_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.with_;
@@ -96,7 +97,7 @@ public class NeoLpgAggregate extends LpgAggregate implements NeoGraphAlg {
                     .apply( List.of( argument ) );
             result.set( resultNames.indexOf( aggregate.name ), alias( expression, aggregate.name ) );
         }
-        implementor.add( with_( list_( result ) ) );
+        implementor.add( with_( aggCalls.isEmpty() ? distinct_( list_( result ) ) : list_( result ) ) );
     }
 
 

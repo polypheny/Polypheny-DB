@@ -17,6 +17,7 @@
 package org.polypheny.db.cypher;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.Arrays;
 import java.util.List;
@@ -24,6 +25,7 @@ import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.TestHelper.CypherConnection;
 import org.polypheny.db.cypher.helper.TestEdge;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.cypher.helper.TestNode;
@@ -267,6 +269,38 @@ public class MatchTest extends CypherTestTemplate {
         assertPaths( "MATCH p=(:Place {name:'A'})-[:ROAD*..2 {open:true}]->(:Place) RETURN p", List.of(
                 List.of( "A", "B" ), List.of( "A", "B", "C" ) ) );
         assertPaths( "MATCH p=(:Place {name:'Isolated'})-[*0..]->(:Place) RETURN p", List.of( List.of( "Isolated" ) ) );
+    }
+
+
+    @Test
+    void acceptsOpenCypherIntegerLiteralsInHopRanges() {
+        createHopGraph();
+        String query = "MATCH p=(:Place {name:'A'})-[:ROAD*%s]->(:Place) RETURN p";
+        List<List<String>> twoHops = List.of( List.of( "A", "B", "C" ), List.of( "A", "B", "E" ) );
+        List<List<String>> twoOrThreeHops = List.of( List.of( "A", "B", "C" ), List.of( "A", "B", "E" ), List.of( "A", "B", "C", "A" ) );
+        for ( String exact : List.of( "2", "0x2", "0X2", "0o2", "0_2", "02" ) ) {
+            assertPaths( query.formatted( exact ), twoHops );
+        }
+        assertPaths( query.formatted( "0x2 .. 0o3" ), twoOrThreeHops );
+        assertPaths( query.formatted( "0o2.." ), twoOrThreeHops );
+        assertPaths( query.formatted( "..0x2" ), List.of( List.of( "A", "B" ), List.of( "A", "B", "C" ), List.of( "A", "B", "E" ) ) );
+        assertPaths( query.formatted( "0x0" ), List.of( List.of( "A" ) ) );
+    }
+
+
+    @Test
+    void comparesWideIntegerBoundsBeforeNarrowingToGraphCapacity() {
+        createHopGraph();
+        String query = "MATCH p=(:Place {name:'A'})-[:ROAD*%s]->(:Place) RETURN p";
+        List<List<String>> twoOrThreeHops = List.of( List.of( "A", "B", "C" ), List.of( "A", "B", "E" ), List.of( "A", "B", "C", "A" ) );
+        assertPaths( query.formatted( "2..2_147_483_648" ), twoOrThreeHops );
+        assertPaths( query.formatted( "0o2..0x7fff_ffff_ffff_ffff" ), twoOrThreeHops );
+        assertPaths( query.formatted( "2147483648" ), List.of() );
+        assertPaths( query.formatted( "0x80000000.." ), List.of() );
+        assertPaths( query.formatted( "9223372036854775807..0o2" ), List.of() );
+        for ( String invalid : List.of( "0x", "0o8", "0__2", "2_", "-2", "9223372036854775808" ) ) {
+            assertNotNull( CypherConnection.executeGetResponse( query.formatted( invalid ) ).getError(), invalid );
+        }
     }
 
 

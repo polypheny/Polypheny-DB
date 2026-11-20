@@ -163,8 +163,7 @@ public class PolyEdge extends GraphPropertyHolder {
         if ( !this.isSameType( o ) ) {
             return -1;
         }
-        return this.equals( o.asEdge() ) ? 0 : -1;
-
+        return id.compareTo( o.asEdge().id );
     }
 
 
