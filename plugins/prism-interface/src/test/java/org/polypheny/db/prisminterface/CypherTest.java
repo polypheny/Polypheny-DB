@@ -39,6 +39,7 @@ import org.polypheny.prism.CloseStatementRequest;
 import org.polypheny.prism.CommitRequest;
 import org.polypheny.prism.ConnectionProperties;
 import org.polypheny.prism.ConnectionRequest;
+import org.polypheny.prism.ConnectionResponse;
 import org.polypheny.prism.DisconnectRequest;
 import org.polypheny.prism.EntitiesRequest;
 import org.polypheny.prism.EntitiesResponse;
@@ -48,10 +49,13 @@ import org.polypheny.prism.Frame;
 import org.polypheny.prism.GraphElement;
 import org.polypheny.prism.ProtoEdge;
 import org.polypheny.prism.ProtoNode;
+import org.polypheny.prism.ProtoPath;
+import org.polypheny.prism.ProtoPolyType;
 import org.polypheny.prism.ProtoValue;
 import org.polypheny.prism.RelationalFrame;
 import org.polypheny.prism.Request;
 import org.polypheny.prism.Response;
+import org.polypheny.prism.Row;
 import org.polypheny.prism.StatementResponse;
 import org.polypheny.prism.StatementResult;
 
@@ -241,13 +245,103 @@ class CypherTest {
 
 
     @Test
-    void rejectsMixedGraphAndScalarProjectionsInEitherOrder() throws IOException {
+    void pagesMixedNodeAndScalarProjectionsInEitherOrder() throws IOException {
+        List<String> names = List.of( "Alice", "Bob", "Charlie" );
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            for ( boolean nodeFirst : List.of( true, false ) ) {
+                String projection = nodeFirst ? "n, n.name AS name" : "n.name AS name, n";
+                int nodeColumn = nodeFirst ? 0 : 1;
+                int nameColumn = 1 - nodeColumn;
+                List<String> labels = nodeFirst ? List.of( "n", "name" ) : List.of( "name", "n" );
+                StatementResponse statement = connection.cypher( "MATCH (n:Person) RETURN " + projection + " ORDER BY name", 1 );
+                Frame frame = statement.getResult().getFrame();
+
+                for ( int i = 0; i < names.size(); i++ ) {
+                    boolean last = i == names.size() - 1;
+                    RelationalFrame page = relationalFrame( frame, last, labels );
+                    assertEquals( ProtoPolyType.NODE, page.getColumnMeta( nodeColumn ).getTypeMeta().getProtoValueType() );
+                    Row row = singleRow( page );
+                    assertEquals( ProtoValue.ValueCase.NODE, row.getValues( nodeColumn ).getValueCase() );
+                    assertNode( row.getValues( nodeColumn ).getNode(), names.get( i ), i + 1 );
+                    assertEquals( ProtoValue.ValueCase.STRING, row.getValues( nameColumn ).getValueCase() );
+                    assertEquals( names.get( i ), row.getValues( nameColumn ).getString().getString() );
+                    connection.checkTransactions( last ? 0 : 1 );
+                    if ( !last ) {
+                        frame = connection.fetch( statement.getStatementId(), 1 );
+                    }
+                }
+            }
+        }
+    }
+
+
+    @Test
+    void preservesEdgeAndEndpointCellsAlongsideScalarValues() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            Frame frame = connection.cypher(
+                    "MATCH (a:Person {name: 'Alice'})-[r:KNOWS]->(b:Person) RETURN a, r, b, b.name AS name", 1 )
+                    .getResult().getFrame();
+            RelationalFrame page = relationalFrame( frame, true, List.of( "a", "r", "b", "name" ) );
+            assertEquals( ProtoPolyType.NODE, page.getColumnMeta( 0 ).getTypeMeta().getProtoValueType() );
+            assertEquals( ProtoPolyType.EDGE, page.getColumnMeta( 1 ).getTypeMeta().getProtoValueType() );
+            assertEquals( ProtoPolyType.NODE, page.getColumnMeta( 2 ).getTypeMeta().getProtoValueType() );
+            Row row = singleRow( page );
+            assertEquals( ProtoValue.ValueCase.NODE, row.getValues( 0 ).getValueCase() );
+            assertEquals( ProtoValue.ValueCase.EDGE, row.getValues( 1 ).getValueCase() );
+            assertEquals( ProtoValue.ValueCase.NODE, row.getValues( 2 ).getValueCase() );
+            ProtoNode alice = assertNode( row.getValues( 0 ).getNode(), "Alice", 1 );
+            ProtoNode bob = assertNode( row.getValues( 2 ).getNode(), "Bob", 2 );
+            assertEdge( row.getValues( 1 ).getEdge(), alice, bob, 2020 );
+            assertEquals( "Bob", row.getValues( 3 ).getString().getString() );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void preservesThePathAsASingleOrderedCell() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            Frame frame = connection.cypher(
+                    "MATCH p=(:Person {name: 'Alice'})-[:KNOWS*1..3]->(:Person {name: 'Charlie'}) RETURN p, 'route' AS title", 1 )
+                    .getResult().getFrame();
+            RelationalFrame page = relationalFrame( frame, true, List.of( "p", "title" ) );
+            assertEquals( ProtoPolyType.PATH, page.getColumnMeta( 0 ).getTypeMeta().getProtoValueType() );
+            Row row = singleRow( page );
+            assertEquals( ProtoValue.ValueCase.PATH, row.getValues( 0 ).getValueCase() );
+            assertEquals( "route", row.getValues( 1 ).getString().getString() );
+            ProtoPath path = row.getValues( 0 ).getPath();
+            assertEquals( 3, path.getNodesCount() );
+            assertEquals( 2, path.getEdgesCount() );
+            ProtoNode alice = assertNode( path.getNodes( 0 ), "Alice", 1 );
+            ProtoNode bob = assertNode( path.getNodes( 1 ), "Bob", 2 );
+            ProtoNode charlie = assertNode( path.getNodes( 2 ), "Charlie", 3 );
+            assertEdge( path.getEdges( 0 ), alice, bob, 2020 );
+            assertEdge( path.getEdges( 1 ), bob, charlie, 2021 );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void emptyMixedResultsStillExposeTheGraphColumn() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            Frame frame = connection.cypher( "MATCH (n:Person {name: 'Unknown'}) RETURN n, n.name AS name", 1 ).getResult().getFrame();
+            RelationalFrame page = relationalFrame( frame, true, List.of( "n", "name" ) );
+            assertEquals( ProtoPolyType.NODE, page.getColumnMeta( 0 ).getTypeMeta().getProtoValueType() );
+            assertEquals( 0, page.getRowsCount() );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void olderClientsReceiveAnUpgradeHintForMixedProjections() throws IOException {
         try ( PrismConnection connection = new PrismConnection( true ) ) {
             for ( String projection : List.of( "n, n.name", "n.name, n" ) ) {
                 Response response = connection.send( statementRequest( NAMESPACE, "cypher", "MATCH (n:Person) RETURN " + projection, 1 ) );
                 expect( response, Response.TypeCase.ERROR_RESPONSE );
                 String message = response.getErrorResponse().getMessage();
-                assertTrue( message.contains( "graph" ) && message.contains( "scalar" ), message );
+                assertTrue( message.contains( "2.3" ), message );
                 connection.checkTransactions( 0 );
             }
             Frame next = connection.cypher( "MATCH (n:Person) RETURN n ORDER BY n.id", 3 ).getResult().getFrame();
@@ -284,9 +378,34 @@ class CypherTest {
     }
 
 
+    static RelationalFrame relationalFrame( Frame frame, boolean isLast, List<String> labels ) {
+        assertTrue( frame.hasRelationalFrame(), () -> "Expected a relational frame but got " + frame.getResultCase() );
+        assertEquals( isLast, frame.getIsLast() );
+        RelationalFrame page = frame.getRelationalFrame();
+        assertEquals( labels.size(), page.getColumnMetaCount() );
+        for ( int i = 0; i < labels.size(); i++ ) {
+            assertEquals( labels.get( i ), page.getColumnMeta( i ).getColumnLabel() );
+            assertEquals( i, page.getColumnMeta( i ).getColumnIndex() );
+        }
+        return page;
+    }
+
+
+    static Row singleRow( RelationalFrame frame ) {
+        assertEquals( 1, frame.getRowsCount() );
+        Row row = frame.getRows( 0 );
+        assertEquals( frame.getColumnMetaCount(), row.getValuesCount() );
+        return row;
+    }
+
+
     private static ProtoNode assertNode( GraphElement element, String name, int id ) {
         assertTrue( element.hasNode() );
-        ProtoNode node = element.getNode();
+        return assertNode( element.getNode(), name, id );
+    }
+
+
+    private static ProtoNode assertNode( ProtoNode node, String name, int id ) {
         assertFalse( node.getId().isBlank() );
         assertEquals( List.of( "Person" ), node.getLabelsList() );
         assertEquals( name, node.getPropertiesOrThrow( "name" ).getString().getString() );
@@ -297,7 +416,11 @@ class CypherTest {
 
     private static void assertEdge( GraphElement element, ProtoNode from, ProtoNode to, int since ) {
         assertTrue( element.hasEdge() );
-        ProtoEdge edge = element.getEdge();
+        assertEdge( element.getEdge(), from, to, since );
+    }
+
+
+    private static void assertEdge( ProtoEdge edge, ProtoNode from, ProtoNode to, int since ) {
         assertFalse( edge.getId().isBlank() );
         assertEquals( List.of( "KNOWS" ), edge.getLabelsList() );
         assertEquals( since, integerValue( edge.getPropertiesOrThrow( "since" ) ) );
@@ -307,7 +430,7 @@ class CypherTest {
     }
 
 
-    private static long integerValue( ProtoValue value ) {
+    static long integerValue( ProtoValue value ) {
         return switch ( value.getValueCase() ) {
             case INTEGER -> value.getInteger().getInteger();
             case LONG -> value.getLong().getLong();
@@ -339,22 +462,31 @@ class CypherTest {
 
 
     /** Uses the JDBC plain transport with the server's unshaded Prism messages. */
-    private static class PrismConnection implements AutoCloseable {
+    static class PrismConnection implements AutoCloseable {
 
         private final PlainTransport transport;
         private long nextRequestId = 1;
 
 
         PrismConnection( boolean autocommit ) throws IOException {
+            this( autocommit, 2 );
+        }
+
+
+        PrismConnection( boolean autocommit, int minorVersion ) throws IOException {
             transport = new PlainTransport( "localhost", 20590 );
             try {
                 Response response = send( Request.newBuilder().setConnectionRequest( ConnectionRequest.newBuilder()
                         .setMajorApiVersion( 2 )
-                        .setMinorApiVersion( 2 )
+                        .setMinorApiVersion( minorVersion )
                         .setUsername( "pa" )
                         .setPassword( "" )
                         .setConnectionProperties( ConnectionProperties.newBuilder().setIsAutoCommit( autocommit ) ) ) );
-                assertTrue( expect( response, Response.TypeCase.CONNECTION_RESPONSE ).getConnectionResponse().getIsCompatible() );
+                ConnectionResponse handshake = expect( response, Response.TypeCase.CONNECTION_RESPONSE ).getConnectionResponse();
+                assertTrue( handshake.getIsCompatible() );
+                if ( minorVersion == 3 ) {
+                    assertTrue( handshake.getMinorApiVersion() >= 3 );
+                }
             } catch ( IOException | AssertionError e ) {
                 transport.close();
                 throw e;

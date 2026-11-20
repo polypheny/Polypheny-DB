@@ -16,9 +16,7 @@
 
 package org.polypheny.db.prisminterface.statementProcessing;
 
-import com.google.common.collect.ImmutableMap;
 import java.util.List;
-import java.util.Map;
 import lombok.SneakyThrows;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -43,14 +41,6 @@ import org.polypheny.prism.StatementResult;
 public class StatementProcessor {
 
     private static final String ORIGIN = "prism-interface";
-
-    private static final Map<DataModel, Executor> RESULT_RETRIEVERS =
-            ImmutableMap.<DataModel, Executor>builder()
-                    .put( DataModel.RELATIONAL, new RelationalExecutor() )
-                    .put( DataModel.DOCUMENT, new DocumentExecutor() )
-                    .put( DataModel.GRAPH, new GraphExecutor() )
-                    .build();
-
 
     // @SneakyThrows is needed for rethrowing implementation.get( 0 ).getException() without
     // having to annotate everything with "throws Throwable" or wrapping it in another Exception
@@ -88,41 +78,17 @@ public class StatementProcessor {
 
 
     public static StatementResult executeAndGetResult( PIStatement piStatement ) {
-        Executor executor = RESULT_RETRIEVERS.get( piStatement.getLanguage().dataModel() );
-        if ( executor == null ) {
-            throw new PIServiceException( "No result retriever registered for namespace type "
-                    + piStatement.getLanguage().dataModel(),
-                    "I9004",
-                    9004
-            );
-        }
-        return executor.executeAndGetResult( piStatement );
+        return ResultExecutor.executeCount( piStatement );
     }
 
 
     public static StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) {
-        Executor executor = RESULT_RETRIEVERS.get( piStatement.getLanguage().dataModel() );
-        if ( executor == null ) {
-            throw new PIServiceException( "No result retriever registered for namespace type "
-                    + piStatement.getLanguage().dataModel(),
-                    "I9004",
-                    9004
-            );
-        }
-        return executor.executeAndGetResult( piStatement, fetchSize );
+        return ResultExecutor.execute( piStatement, fetchSize );
     }
 
 
     public static Frame fetch( PIStatement piStatement, int fetchSize ) {
-        Executor executor = RESULT_RETRIEVERS.get( piStatement.getLanguage().dataModel() );
-        if ( executor == null ) {
-            throw new PIServiceException( "No result retriever registered for namespace type "
-                    + piStatement.getLanguage().dataModel(),
-                    "I9004",
-                    9004
-            );
-        }
-        return executor.fetch( piStatement, fetchSize );
+        return ResultExecutor.fetch( piStatement, fetchSize );
     }
 
 

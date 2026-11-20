@@ -107,7 +107,7 @@ public class ConstraintEnforceAttacher {
     public static AlgRoot attachOnQueryConstraints( AlgRoot root, Statement statement ) {
         return AlgRoot.of(
                 LogicalConstraintEnforcer.create( root.alg, statement ),
-                root.kind );
+                root.kind ).withResultKind( root.resultKind );
     }
 
 
@@ -577,7 +577,7 @@ public class ConstraintEnforceAttacher {
             }
         }
 
-        AlgRoot enforcementRoot = new AlgRoot( lceRoot, logicalRoot.validatedRowType, logicalRoot.kind, logicalRoot.fields, logicalRoot.collation );
+        AlgRoot enforcementRoot = logicalRoot.withAlg( lceRoot );
         // Send the generated tree with all unoptimized constraint enforcement checks to the UI
         if ( statement.isAnalyze() ) {
             ObjectMapper objectMapper = new ObjectMapper();

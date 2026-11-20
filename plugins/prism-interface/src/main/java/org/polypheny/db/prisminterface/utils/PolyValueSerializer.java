@@ -19,6 +19,7 @@ package org.polypheny.db.prisminterface.utils;
 import com.google.protobuf.ByteString;
 import java.util.List;
 import org.apache.commons.lang3.NotImplementedException;
+import org.polypheny.db.prisminterface.PIServiceException;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyInterval;
@@ -29,7 +30,9 @@ import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyEdge;
+import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
@@ -49,12 +52,14 @@ import org.polypheny.prism.ProtoDocument;
 import org.polypheny.prism.ProtoDouble;
 import org.polypheny.prism.ProtoEdge;
 import org.polypheny.prism.ProtoFloat;
+import org.polypheny.prism.ProtoGraph;
 import org.polypheny.prism.ProtoInteger;
 import org.polypheny.prism.ProtoInterval;
 import org.polypheny.prism.ProtoList;
 import org.polypheny.prism.ProtoLong;
 import org.polypheny.prism.ProtoNode;
 import org.polypheny.prism.ProtoNull;
+import org.polypheny.prism.ProtoPath;
 import org.polypheny.prism.ProtoString;
 import org.polypheny.prism.ProtoTime;
 import org.polypheny.prism.ProtoTimestamp;
@@ -63,12 +68,25 @@ import org.polypheny.prism.ProtoValue;
 public class PolyValueSerializer {
 
 
-    public static List<ProtoValue> serializeList( List<PolyValue> valuesList ) {
-        return valuesList.stream().map( PolyValueSerializer::serialize ).toList();
+    private final boolean supportsGraphValues;
+
+
+    PolyValueSerializer( boolean supportsGraphValues ) {
+        this.supportsGraphValues = supportsGraphValues;
+    }
+
+
+    List<ProtoValue> serializeList( List<PolyValue> valuesList ) {
+        return valuesList.stream().map( this::serializeValue ).toList();
     }
 
 
     public static ProtoValue serialize( PolyValue polyValue ) {
+        return new PolyValueSerializer( true ).serializeValue( polyValue );
+    }
+
+
+    private ProtoValue serializeValue( PolyValue polyValue ) {
         if ( polyValue == null || polyValue.isNull() ) {
             return serializeAsProtoNull();
         }
@@ -90,7 +108,8 @@ public class PolyValueSerializer {
             case DOCUMENT -> serializeAsProtoDocument( polyValue.asDocument() );
             case GEOMETRY -> serializeGeometry( polyValue.asGeometry() );
             case IMAGE, VIDEO, AUDIO, FILE -> serializeAsProtoFile( polyValue.asBlob() ); // used
-            case MAP, GRAPH, NODE, EDGE, PATH, DISTINCT, STRUCTURED, ROW, OTHER, CURSOR, COLUMN_LIST, DYNAMIC_STAR, SYMBOL, JSON, MULTISET, USER_DEFINED_TYPE, ANY -> throw new NotImplementedException( "Serialization of " + polyValue.getType() + " to proto not implemented" );
+            case NODE, EDGE, PATH, GRAPH -> serializeGraphValue( polyValue );
+            case MAP, DISTINCT, STRUCTURED, ROW, OTHER, CURSOR, COLUMN_LIST, DYNAMIC_STAR, SYMBOL, JSON, MULTISET, USER_DEFINED_TYPE, ANY -> throw new NotImplementedException( "Serialization of " + polyValue.getType() + " to proto not implemented" );
         };
     }
 
@@ -101,21 +120,21 @@ public class PolyValueSerializer {
     }
 
 
-    public static ProtoDocument buildProtoDocument( PolyDocument polyDocument ) {
+    ProtoDocument buildProtoDocument( PolyDocument polyDocument ) {
         ProtoDocument.Builder document = ProtoDocument.newBuilder();
-        polyDocument.forEach( ( key, value ) -> document.putEntries( key.getValue(), serialize( value ) ) );
+        polyDocument.forEach( ( key, value ) -> document.putEntries( key.getValue(), serializeValue( value ) ) );
         return document.build();
     }
 
 
-    private static ProtoValue serializeAsProtoDocument( PolyDocument polyDocument ) {
+    private ProtoValue serializeAsProtoDocument( PolyDocument polyDocument ) {
         return ProtoValue.newBuilder()
                 .setDocument( buildProtoDocument( polyDocument ) )
                 .build();
     }
 
 
-    private static ProtoValue serializeAsProtoList( PolyList<PolyValue> polyList ) {
+    private ProtoValue serializeAsProtoList( PolyList<PolyValue> polyList ) {
         return ProtoValue.newBuilder()
                 .setList( serializeToProtoList( polyList ) )
                 .build();
@@ -123,7 +142,7 @@ public class PolyValueSerializer {
     }
 
 
-    private static ProtoList serializeToProtoList( PolyList<PolyValue> polyList ) {
+    private ProtoList serializeToProtoList( PolyList<PolyValue> polyList ) {
         return ProtoList.newBuilder()
                 .addAllValues( serializeList( polyList.getValue() ) )
                 .build();
@@ -297,53 +316,90 @@ public class PolyValueSerializer {
                 .build();
     }
 
-    static void addGraphElements( GraphFrame.Builder frame, PolyValue value ) {
+    private ProtoValue serializeGraphValue( PolyValue value ) {
+        if ( !supportsGraphValues ) {
+            throw new PIServiceException( "Graph values in cells require Prism 2.3 or later." );
+        }
+        return switch ( value.getType() ) {
+            case NODE -> ProtoValue.newBuilder().setNode( buildProtoNode( value.asNode() ) ).build();
+            case EDGE -> ProtoValue.newBuilder().setEdge( buildProtoEdge( value.asEdge() ) ).build();
+            case PATH -> ProtoValue.newBuilder().setPath( buildProtoPath( value.asPath() ) ).build();
+            case GRAPH -> ProtoValue.newBuilder().setGraph( buildProtoGraph( value.asGraph() ) ).build();
+            default -> throw new IllegalArgumentException( "Expected a graph value, got " + value.getType() );
+        };
+    }
+
+
+    private ProtoPath buildProtoPath( PolyPath path ) {
+        return ProtoPath.newBuilder()
+                .addAllNodes( path.getNodes().stream().map( this::buildProtoNode ).toList() )
+                .addAllEdges( path.getEdges().stream().map( this::buildProtoEdge ).toList() )
+                .build();
+    }
+
+
+    private ProtoGraph buildProtoGraph( PolyGraph graph ) {
+        return ProtoGraph.newBuilder()
+                .addAllNodes( graph.getNodes().values().stream().map( this::buildProtoNode ).toList() )
+                .addAllEdges( graph.getEdges().values().stream().map( this::buildProtoEdge ).toList() )
+                .build();
+    }
+
+
+    void addGraphElements( GraphFrame.Builder frame, PolyValue value ) {
         // Prism has no null GraphElement. An optional match can yield no element.
         if ( value == null || value.isNull() ) {
             return;
         }
         switch ( value.getType() ) {
-            case NODE, EDGE -> addGraphElement( frame, (GraphPropertyHolder) value );
-            case PATH -> value.asPath().getPath().forEach( element -> addGraphElement( frame, element ) );
+            case NODE -> frame.addElement( GraphElement.newBuilder().setNode( buildProtoNode( value.asNode() ) ) );
+            case EDGE -> frame.addElement( GraphElement.newBuilder().setEdge( buildProtoEdge( value.asEdge() ) ) );
+            case PATH -> value.asPath().getPath().forEach( element -> addGraphElements( frame, element ) );
             case GRAPH -> {
-                value.asGraph().getNodes().values().forEach( node -> addGraphElement( frame, node ) );
-                value.asGraph().getEdges().values().forEach( edge -> addGraphElement( frame, edge ) );
+                value.asGraph().getNodes().values().forEach( node -> addGraphElements( frame, node ) );
+                value.asGraph().getEdges().values().forEach( edge -> addGraphElements( frame, edge ) );
             }
             default -> throw new NotImplementedException( "Prism cannot encode a " + value.getType() + " value in a graph frame" );
         }
     }
 
 
-    private static void addGraphElement( GraphFrame.Builder frame, GraphPropertyHolder element ) {
-        List<String> labels = element.getLabels().stream().map( PolyString::getValue ).toList();
-        PolyString variableName = element.getVariableName();
-        String name = variableName == null ? null : variableName.getValue();
-        if ( element instanceof PolyNode node ) {
-            ProtoNode.Builder result = ProtoNode.newBuilder()
-                    .setId( node.getId().getValue() )
-                    .addAllLabels( labels );
-            node.properties.forEach( (key, value) -> result.putProperties( key.getValue(), serialize( value ) ) );
-            if ( name != null ) {
-                result.setName( name );
-            }
-            frame.addElement( GraphElement.newBuilder().setNode( result ) );
-        } else if ( element instanceof PolyEdge edge ) {
-            ProtoEdge.Builder result = ProtoEdge.newBuilder()
-                    .setId( edge.getId().getValue() )
-                    .addAllLabels( labels )
-                    .setLeft( edge.getLeft().getValue() )
-                    .setRight( edge.getRight().getValue() )
-                    .setDirection( switch ( edge.getDirection() ) {
-                        case LEFT_TO_RIGHT -> ProtoEdge.Direction.LEFT_TO_RIGHT;
-                        case RIGHT_TO_LEFT -> ProtoEdge.Direction.RIGHT_TO_LEFT;
-                        case NONE -> ProtoEdge.Direction.NONE;
-                    } );
-            edge.properties.forEach( (key, value) -> result.putProperties( key.getValue(), serialize( value ) ) );
-            if ( name != null ) {
-                result.setName( name );
-            }
-            frame.addElement( GraphElement.newBuilder().setEdge( result ) );
+    private ProtoNode buildProtoNode( PolyNode node ) {
+        ProtoNode.Builder result = ProtoNode.newBuilder()
+                .setId( node.getId().getValue() )
+                .addAllLabels( node.getLabels().stream().map( PolyString::getValue ).toList() );
+        node.properties.forEach( ( key, value ) -> result.putProperties( key.getValue(), serializeValue( value ) ) );
+        String name = getVariableName( node );
+        if ( name != null ) {
+            result.setName( name );
         }
+        return result.build();
+    }
+
+
+    private ProtoEdge buildProtoEdge( PolyEdge edge ) {
+        ProtoEdge.Builder result = ProtoEdge.newBuilder()
+                .setId( edge.getId().getValue() )
+                .addAllLabels( edge.getLabels().stream().map( PolyString::getValue ).toList() )
+                .setLeft( edge.getLeft().getValue() )
+                .setRight( edge.getRight().getValue() )
+                .setDirection( switch ( edge.getDirection() ) {
+                    case LEFT_TO_RIGHT -> ProtoEdge.Direction.LEFT_TO_RIGHT;
+                    case RIGHT_TO_LEFT -> ProtoEdge.Direction.RIGHT_TO_LEFT;
+                    case NONE -> ProtoEdge.Direction.NONE;
+                } );
+        edge.properties.forEach( ( key, value ) -> result.putProperties( key.getValue(), serializeValue( value ) ) );
+        String name = getVariableName( edge );
+        if ( name != null ) {
+            result.setName( name );
+        }
+        return result.build();
+    }
+
+
+    private static String getVariableName( GraphPropertyHolder element ) {
+        PolyString variableName = element.getVariableName();
+        return variableName == null ? null : variableName.getValue();
     }
 
 }

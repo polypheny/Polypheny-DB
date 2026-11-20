@@ -170,4 +170,9 @@ public class ImplementationCache {
         return implementationCache.size();
     }
 
+
+    public long getHitCount() {
+        return hitsCounter.get();
+    }
+
 }
