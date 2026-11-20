@@ -55,7 +55,8 @@ import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.exceptions.MappingIncompatibleException;
+import org.polypheny.db.catalog.exceptions.MappingMissingException;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
@@ -288,7 +289,7 @@ class MappingSourceRefreshTest {
         var physicals = before.alloc().getFromLogical( table.id ).stream().map( allocation -> adapterCatalog.fromAllocation( allocation.id ) ).toList();
         export( List.of( column( "id", PolyType.BIGINT, null, 1 ), column( "name", PolyType.VARCHAR, 40, 2 ) ) );
 
-        var error = assertThrows( GenericRuntimeException.class, () -> ddl.refreshSourceSchemaIfNeeded( table.id, statement ) );
+        var error = assertThrows( MappingIncompatibleException.class, () -> ddl.refreshSourceSchemaIfNeeded( table.id, statement ) );
 
         assertTrue( error.getMessage().contains( "incompatible" ) );
         assertSame( before, catalog.getSnapshot() );
@@ -303,12 +304,24 @@ class MappingSourceRefreshTest {
         var before = catalog.getSnapshot();
         when( source.getExportedColumns() ).thenReturn( Map.of() );
 
-        var error = assertThrows( GenericRuntimeException.class, () -> ddl.refreshSourceSchemaIfNeeded( table.id, statement ) );
+        var error = assertThrows( MappingMissingException.class, () -> ddl.refreshSourceSchemaIfNeeded( table.id, statement ) );
 
         assertTrue( error.getMessage().contains( "no longer available" ) );
         assertSame( before, catalog.getSnapshot() );
         assertTrue( catalog.getSnapshot().rel().getTable( table.id ).isPresent() );
         assertEquals( 2, catalog.getSnapshot().mappings().getMappingsForLogicalEntity( table.id ).size() );
+    }
+
+
+    @Test
+    void categorizesRemovedSourceColumnsAsMissing() {
+        addSharedSource();
+        var before = catalog.getSnapshot();
+        export( List.of( column( "id", PolyType.INTEGER, null, 1 ) ) );
+        var error = assertThrows( MappingMissingException.class, () -> ddl.refreshSourceSchemaIfNeeded( table.id, statement ) );
+        assertTrue( error.getMessage().contains( "Source column 'name'" ) );
+        assertEquals( "MISSING", error.getCode() );
+        assertSame( before, catalog.getSnapshot() );
     }
 
 

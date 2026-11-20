@@ -35,7 +35,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.exceptions.MappingError;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -68,20 +68,30 @@ public final class LogicalRelMappingTransform extends LogicalMappingTransform im
 
 
     public static LogicalRelMappingTransform create( PolyAlgArgs args, List<AlgNode> inputs, AlgCluster cluster ) {
-        long mappingId = Long.parseLong( args.getArg( "mappingId", StringArg.class ).getArg() );
+        String id = args.getArg( "mappingId", StringArg.class ).getArg();
+        long mappingId;
+        try {
+            mappingId = Long.parseLong( id );
+        } catch ( NumberFormatException e ) {
+            throw MappingError.Validation.mappingId( id, e );
+        }
         var snapshot = cluster.getSnapshot();
         var mapping = snapshot.mappings().getMapping( mappingId )
-                .orElseThrow( () -> new GenericRuntimeException( "Unknown mapping %d.", mappingId ) );
-        AlgNode input = sole( inputs );
+                .orElseThrow( () -> MappingError.Missing.mapping( mappingId ) );
+        if ( inputs.size() != 1 ) {
+            throw MappingError.Algebra.inputCount( inputs.size() );
+        }
+        AlgNode input = inputs.get( 0 );
         if ( !(input.getEntity() instanceof PhysicalEntity physical) ) {
-            throw new GenericRuntimeException( "Mapping %d requires a physical source scan.", mappingId );
+            throw MappingError.Algebra.physicalScanRequired( mappingId );
         }
         var allocation = snapshot.alloc().getFromLogical( mapping.targetEntityId() ).stream()
                 .filter( candidate -> candidate.id == physical.allocationId ).findFirst()
-                .orElseThrow( () -> new GenericRuntimeException( "Mapping %d does not use allocation %d.", mappingId, physical.allocationId ) );
-        var binding = PhysicalMappingBinding.create( mapping, allocation, Catalog.getInstance().getAdapterCatalog( allocation.adapterId ).orElseThrow() );
+                .orElseThrow( () -> MappingError.Algebra.allocationMismatch( mappingId, physical.allocationId ) );
+        var binding = PhysicalMappingBinding.create( mapping, allocation, Catalog.getInstance().getAdapterCatalog( allocation.adapterId )
+                .orElseThrow( () -> MappingError.Missing.adapterCatalog( allocation.adapterId ) ) );
         if ( binding.physicalEntityId() != physical.id ) {
-            throw new GenericRuntimeException( "Mapping %d does not use physical source %d.", mappingId, physical.id );
+            throw MappingError.Algebra.physicalSourceMismatch( mappingId, physical.id );
         }
         return create( input, mapping, binding, allocation.getTupleType() );
     }

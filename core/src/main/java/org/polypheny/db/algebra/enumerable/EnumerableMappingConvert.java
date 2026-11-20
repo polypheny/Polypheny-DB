@@ -24,6 +24,7 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.polyalg.PolyAlgMetadata;
 import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.catalog.exceptions.MappingError;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
@@ -50,7 +51,10 @@ public final class EnumerableMappingConvert extends EnumerableCalc {
 
 
     public static EnumerableMappingConvert create( PolyAlgArgs args, List<AlgNode> inputs, AlgCluster cluster ) {
-        AlgNode input = sole( inputs );
+        if ( inputs.size() != 1 ) {
+            throw MappingError.Algebra.inputCount( inputs.size() );
+        }
+        AlgNode input = inputs.get( 0 );
         return new EnumerableMappingConvert( input.getTraitSet(), input, getProgramFromArgs( args, input, cluster.getRexBuilder() ) );
     }
 

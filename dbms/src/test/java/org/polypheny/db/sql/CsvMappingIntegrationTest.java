@@ -52,6 +52,8 @@ import org.polypheny.db.catalog.entity.mapping.SchemaMappingManager;
 import org.polypheny.db.catalog.entity.mapping.rules.ConversionColumnMappingRule;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.exceptions.MappingConflictException;
+import org.polypheny.db.catalog.exceptions.MappingRevisionException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.MappingKind;
@@ -114,14 +116,14 @@ class CsvMappingIntegrationTest {
             assertEquals( state.physicalTables().get( 0 ).id, saved.physicalTables().get( 0 ).id );
             assertEquals( sourceName, saved.physicalTables().get( 0 ).name );
             assertEquals( List.of( "1:Ada", "2:Bob" ), query( "SELECT customer_id, full_name FROM " + tableName + " ORDER BY customer_id" ) );
-            assertEquals( "REVISION_CONFLICT", assertThrows( MappingState.EditException.class, () -> update( request ) ).code );
+            assertEquals( "REVISION", assertThrows( MappingRevisionException.class, () -> update( request ) ).getCode() );
 
             execute( "CREATE VIEW " + viewName + " AS SELECT customer_id, full_name FROM " + tableName );
             viewCreated = true;
             var labelOnly = new MappingUpdate( adapterId, mapping.id(), saved.revision(), "Label only", tableName, names );
             saved = update( labelOnly );
             var blocked = new MappingUpdate( adapterId, mapping.id(), saved.revision(), "Label only", "blocked" + suffix, names );
-            assertEquals( "DEPENDENCY_CONFLICT", assertThrows( MappingState.EditException.class, () -> update( blocked ) ).code );
+            assertEquals( "CONFLICT", assertThrows( MappingConflictException.class, () -> update( blocked ) ).getCode() );
             assertEquals( List.of( "1:Ada", "2:Bob" ), query( "SELECT customer_id, full_name FROM " + viewName + " ORDER BY customer_id" ) );
             assertEquals( contents, Files.readString( file ) );
         } finally {
@@ -174,7 +176,7 @@ class CsvMappingIntegrationTest {
             assertEquals( List.of( mapping ), Catalog.snapshot().mappings().getMappingsForLogicalEntity( table.id ) );
 
             var error = assertThrows( GenericRuntimeException.class, () -> Catalog.getInstance().removeSchemaMapping( mapping.id() ) );
-            assertEquals( SchemaMappingManager.LAST_SOURCE_MAPPING_REASON, error.getMessage() );
+            assertEquals( "Cannot remove mapping '" + mapping.name() + "': " + SchemaMappingManager.LAST_SOURCE_MAPPING_REASON, error.getMessage() );
             assertEquals( mapping, Catalog.snapshot().mappings().getMappingsForLogicalEntity( table.id ).get( 0 ) );
             assertEquals( List.of( "Ada:1", "Bob:2" ), query( "SELECT name, id FROM " + tableName + " ORDER BY id" ) );
 

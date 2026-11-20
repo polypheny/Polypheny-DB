@@ -52,6 +52,9 @@ import org.polypheny.db.catalog.entity.mapping.rules.MappingRule;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.exceptions.MappingAlgebraException;
+import org.polypheny.db.catalog.exceptions.MappingDuplicateException;
+import org.polypheny.db.catalog.exceptions.MappingMissingException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.MappingKind;
 import org.polypheny.db.plan.AlgCluster;
@@ -93,6 +96,17 @@ class MappingTransformRuleTest {
 
         assertEquals( List.of( 1, 0 ), resolve( first, logicalType( FIRST_ID, SECOND_ID ), mapping ) );
         assertEquals( List.of( 0, 1 ), resolve( second, logicalType( FIRST_ID, SECOND_ID ), mapping ) );
+    }
+
+
+    @Test
+    void distinguishesMissingPhysicalTablesFromMismatchedBindings() {
+        Fixture fixture = fixture( 120, false );
+        SchemaMapping mapping = mapping( FIRST_ID );
+        fixture.catalog.physicals.clear();
+        assertThrows( MappingMissingException.class, () -> PhysicalMappingBinding.create( mapping, fixture.allocation, fixture.catalog ) );
+        fixture.catalog.physicals.put( fixture.table.id, fixture.table.toBuilder().allocationId( 999 ).build() );
+        assertThrows( MappingAlgebraException.class, () -> PhysicalMappingBinding.create( mapping, fixture.allocation, fixture.catalog ) );
     }
 
 
@@ -318,7 +332,7 @@ class MappingTransformRuleTest {
 
         assertEquals( List.of( 1, 1 ), indexes( assertInstanceOf( LogicalRelProject.class, rule.apply( transform ) ) ) );
         assertThrows( GenericRuntimeException.class, () -> MappingTransformRule.REL_INSTANCE.apply( transform ) );
-        assertThrows( IllegalArgumentException.class, () -> new FieldMappingTransformers( List.of( new DirectColumnTransformer(), new DirectColumnTransformer() ) ) );
+        assertThrows( MappingDuplicateException.class, () -> new FieldMappingTransformers( List.of( new DirectColumnTransformer(), new DirectColumnTransformer() ) ) );
 
         LogicalRelMappingTransform direct = transform( fixture, input, transform.getTupleType(), mapping( FIRST_ID, SECOND_ID ) );
         assertNotEquals( direct.algCompareString(), transform.algCompareString() );

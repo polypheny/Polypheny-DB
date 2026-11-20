@@ -16,28 +16,48 @@
 
 package org.polypheny.db.catalog.exceptions;
 
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
 /**
- * Base exception class for Mapping exceptions
+ * Base class for all Mapping Exceptions
  */
 public abstract class MappingException extends GenericRuntimeException {
 
-    public MappingException( String message, Object... params ) {
-        super( message, params );
-    }
+    // associates a form field with its error
+    public final Map<String, String> fieldErrors;
+
+    // contains the names of objects preventing an operation, such as dependent views or foreign keys.
+    public final List<String> blockingEntities;
 
 
-    public MappingException( String message, Throwable cause ) {
+    protected MappingException( String message, Throwable cause, Map<String, String> fieldErrors, List<String> blockingEntities ) {
+        // cause contains original exception
         super( message, cause );
+        this.fieldErrors = Map.copyOf( fieldErrors );
+        this.blockingEntities = List.copyOf( blockingEntities );
     }
 
-
-    public MappingException( String message, Throwable cause, Object... params ) {
-        super( message, cause, params );
-    }
+    // code exposes the exception’s category to the frontend.
+    public abstract String getCode();
 
 
-    public MappingException( Throwable cause ) {
-        super( cause );
+    /**
+     * Locate a MappingException when another layer has wrapped it.
+     * Handles cases where another layer wraps MappingException and MappingException does not reach the handler directly
+     */
+    public static Optional<MappingException> findCause( Throwable error ) {
+        Set<Throwable> visited = Collections.newSetFromMap( new IdentityHashMap<>() );
+        for ( Throwable cause = error; cause != null && visited.add( cause ); cause = cause.getCause() ) {
+            if ( cause instanceof MappingException mappingError ) {
+                return Optional.of( mappingError );
+            }
+        }
+        return Optional.empty();
     }
 
 }

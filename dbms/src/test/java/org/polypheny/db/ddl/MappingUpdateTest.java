@@ -67,6 +67,13 @@ import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.exceptions.MappingConflictException;
+import org.polypheny.db.catalog.exceptions.MappingDuplicateException;
+import org.polypheny.db.catalog.exceptions.MappingError;
+import org.polypheny.db.catalog.exceptions.MappingException;
+import org.polypheny.db.catalog.exceptions.MappingOperationException;
+import org.polypheny.db.catalog.exceptions.MappingRevisionException;
+import org.polypheny.db.catalog.exceptions.MappingValidationException;
 import org.polypheny.db.catalog.impl.PolyCatalog;
 import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -199,10 +206,10 @@ class MappingUpdateTest {
         var before = catalog.getSnapshot();
         PhysicalTable physical = physicalCatalog.fromAllocation( allocationId );
         assertFalse( original.removable() );
-        var error = assertThrows( MappingState.EditException.class,
+        var error = assertThrows( MappingConflictException.class,
                 () -> new DdlManagerImpl( catalog ).removeMapping( original.mapping().id(), original.revision(), statement ) );
-        assertEquals( "DEPENDENCY_CONFLICT", error.code );
-        assertEquals( SchemaMappingManager.LAST_SOURCE_MAPPING_REASON, error.getMessage() );
+        assertEquals( "CONFLICT", error.getCode() );
+        assertEquals( "Cannot remove mapping '" + original.mapping().name() + "': " + SchemaMappingManager.LAST_SOURCE_MAPPING_REASON, error.getMessage() );
         assertSame( before, catalog.getSnapshot() );
         assertEquals( original.mapping(), catalog.getSchemaMappings().get( original.mapping().id() ) );
         assertSame( physical, physicalCatalog.fromAllocation( allocationId ) );
@@ -229,7 +236,7 @@ class MappingUpdateTest {
     @Test
     void rejectsStaleRemovalAndAllowsDraftForAnAlreadyMappedSource() {
         var ddl = new DdlManagerImpl( catalog );
-        assertThrows( MappingState.EditException.class, () -> ddl.removeMapping( original.mapping().id(), "stale", statement ) );
+        assertThrows( MappingRevisionException.class, () -> ddl.removeMapping( original.mapping().id(), "stale", statement ) );
         var draft = MappingState.draft( catalog, adapterId, table.id );
         assertEquals( -1, draft.mapping().id() );
         assertNotEquals( table.name, draft.table().name );
@@ -287,9 +294,9 @@ class MappingUpdateTest {
             var request = request();
             var duplicate = new MappingUpdate( adapterId, original.mapping().id(), original.revision(), name,
                     request.logicalTableName(), request.columns() );
-            var error = assertThrows( MappingState.EditException.class,
+            var error = assertThrows( MappingValidationException.class,
                     () -> new DdlManagerImpl( catalog ).updateMapping( duplicate, statement ) );
-            assertEquals( "VALIDATION_FAILED", error.code );
+            assertEquals( "VALIDATION", error.getCode() );
             assertEquals( "A mapping with this name already exists.", error.fieldErrors.get( "mappingName" ) );
             assertSame( snapshot, catalog.getSnapshot() );
         }
@@ -306,8 +313,8 @@ class MappingUpdateTest {
         var ddl = new DdlManagerImpl( catalog );
         for ( String name : List.of( "New mapping", " new MAPPING " ) ) {
             var duplicate = new MappingUpdate( adapterId, -1, draft.revision(), name, draft.table().name, columnNames );
-            var error = assertThrows( MappingState.EditException.class, () -> ddl.createMapping( table.id, duplicate, statement ) );
-            assertEquals( "VALIDATION_FAILED", error.code );
+            var error = assertThrows( MappingValidationException.class, () -> ddl.createMapping( table.id, duplicate, statement ) );
+            assertEquals( "VALIDATION", error.getCode() );
             assertEquals( "A mapping with this name already exists.", error.fieldErrors.get( "mappingName" ) );
             assertEquals( original.mapping(), catalog.getSnapshot().mappings().getMappingsForLogicalEntity( table.id ).get( 0 ) );
         }
@@ -490,7 +497,7 @@ class MappingUpdateTest {
         assertEquals( 1, physicalCatalog.physicals.size() );
         var remaining = MappingState.load( catalog, created.mapping().id() );
         assertFalse( remaining.removable() );
-        assertThrows( MappingState.EditException.class, () -> ddl.removeMapping( remaining.mapping().id(), remaining.revision(), statement ) );
+        assertThrows( MappingConflictException.class, () -> ddl.removeMapping( remaining.mapping().id(), remaining.revision(), statement ) );
         assertEquals( created.table().id, catalog.getSnapshot().mappings().getMappings().get( 0 ).targetEntityId() );
     }
 
@@ -500,7 +507,7 @@ class MappingUpdateTest {
         var draft = MappingState.draft( catalog, adapterId, table.id );
         var request = new MappingUpdate( adapterId, -1, draft.revision(), "Another mapping", table.name,
                 columns.stream().map( column -> new MappingUpdate.ColumnName( column.id, column.name, true ) ).toList() );
-        var error = assertThrows( MappingState.EditException.class, () -> new DdlManagerImpl( catalog ).createMapping( table.id, request, statement ) );
+        var error = assertThrows( MappingValidationException.class, () -> new DdlManagerImpl( catalog ).createMapping( table.id, request, statement ) );
         assertTrue( error.fieldErrors.containsKey( "logicalTableName" ) );
         verify( transaction, never() ).commit();
     }
@@ -537,7 +544,7 @@ class MappingUpdateTest {
         catalog.schemaMappings.replaceAll( (id, mapping) -> SchemaMappingManager.renameMapping( mapping, original.mapping().name() ) );
         catalog.change();
         catalog.commit();
-        var error = assertThrows( MappingState.EditException.class,
+        var error = assertThrows( MappingValidationException.class,
                 () -> new DdlManagerImpl( catalog ).updateMapping( selection( original, false, true ), statement ) );
         assertEquals( "A mapping with this name already exists.", error.fieldErrors.get( "mappingName" ) );
         verify( transaction, never() ).commit();
@@ -561,8 +568,8 @@ class MappingUpdateTest {
         catalog.updateSchemaMapping( new SchemaMapping( mapping.id(), "Another editor", MappingKind.PHYSICAL_TO_LOGICAL, null, table.id,
                 DataModel.RELATIONAL, DataModel.RELATIONAL, mapping.rules(), null ) );
         catalog.commit();
-        assertEquals( "REVISION_CONFLICT", assertThrows( MappingState.EditException.class,
-                () -> new DdlManagerImpl( catalog ).updateMapping( request, statement ) ).code );
+        assertEquals( "REVISION", assertThrows( MappingRevisionException.class,
+                () -> new DdlManagerImpl( catalog ).updateMapping( request, statement ) ).getCode() );
         verify( adapter, never() ).renameLogicalColumn( anyLong(), anyString() );
         verify( transaction, never() ).commit();
         assertEquals( table.name, catalog.getSnapshot().rel().getTable( table.id ).orElseThrow().name );
@@ -574,7 +581,8 @@ class MappingUpdateTest {
         PhysicalTable physical = physicalCatalog.fromAllocation( allocationId );
         doThrow( new IllegalStateException( "Injected second-column failure" ) )
                 .when( adapter ).renameLogicalColumn( columns.get( 1 ).id, "full_name" );
-        assertThrows( IllegalStateException.class, () -> new DdlManagerImpl( catalog ).updateMapping( request(), statement ) );
+        var error = assertThrows( MappingOperationException.class, () -> new DdlManagerImpl( catalog ).updateMapping( request(), statement ) );
+        assertEquals( "Injected second-column failure", error.getCause().getMessage() );
         verify( transaction, never() ).commit();
         assertRestored( physical );
     }
@@ -592,8 +600,8 @@ class MappingUpdateTest {
                 List.of( new MappingUpdate.ColumnName( first.id, "name" ), new MappingUpdate.ColumnName( second.id, "id" ) ) );
         for ( var invalid : invalidColumns ) {
             var request = new MappingUpdate( adapterId, original.mapping().id(), original.revision(), "Changed", "customers", invalid );
-            assertEquals( "VALIDATION_FAILED", assertThrows( MappingState.EditException.class,
-                    () -> new DdlManagerImpl( catalog ).updateMapping( request, statement ) ).code );
+            assertEquals( "VALIDATION", assertThrows( MappingValidationException.class,
+                    () -> new DdlManagerImpl( catalog ).updateMapping( request, statement ) ).getCode() );
         }
         verify( adapter, never() ).renameLogicalColumn( anyLong(), anyString() );
         verify( transaction, never() ).commit();
@@ -610,8 +618,8 @@ class MappingUpdateTest {
         when( relational.getTables( original.namespace().id, null ) ).thenReturn( List.of( table ) );
         var view = LogicalView.builder().id( 99 ).name( "customer_view" ).namespaceId( table.namespaceId ).entityType( EntityType.VIEW ).build();
         when( relational.getConnectedViews( table.id ) ).thenReturn( List.of( view ) );
-        var error = assertThrows( MappingState.EditException.class, () -> original.validate( request(), snapshot ) );
-        assertEquals( "DEPENDENCY_CONFLICT", error.code );
+        var error = assertThrows( MappingConflictException.class, () -> original.validate( request(), snapshot ) );
+        assertEquals( "CONFLICT", error.getCode() );
         assertEquals( List.of( "customer_view" ), error.blockingEntities );
         var labelOnly = new MappingUpdate( adapterId, original.mapping().id(), original.revision(), "Label only", table.name,
                 columns.stream().map( c -> new MappingUpdate.ColumnName( c.id, c.name ) ).toList() );
@@ -622,8 +630,14 @@ class MappingUpdateTest {
     @Test
     void commitFailureRollsBackBeforeLeavingTheProtectedBatch() {
         PhysicalTable physical = physicalCatalog.fromAllocation( allocationId );
-        doThrow( new IllegalStateException( "Injected commit failure" ) ).when( transaction ).commit();
-        assertThrows( GenericRuntimeException.class, () -> new DdlManagerImpl( catalog ).updateMapping( request(), statement ) );
+        var commitFailure = new IllegalStateException( "Injected commit failure" );
+        var rollbackFailure = new IllegalStateException( "Injected rollback failure" );
+        doThrow( commitFailure ).when( transaction ).commit();
+        doThrow( rollbackFailure ).when( transaction ).rollback( "Mapping change failed" );
+        var error = assertThrows( MappingOperationException.class, () -> new DdlManagerImpl( catalog ).updateMapping( request(), statement ) );
+        assertSame( commitFailure, error.getCause() );
+        assertEquals( 1, commitFailure.getSuppressed().length );
+        assertSame( rollbackFailure, commitFailure.getSuppressed()[0] );
         verify( transaction ).rollback( "Mapping change failed" );
         assertRestored( physical );
     }
@@ -633,6 +647,17 @@ class MappingUpdateTest {
         return new MappingUpdate( adapterId, original.mapping().id(), original.revision(), " Customer import ", "Customers",
                 List.of( new MappingUpdate.ColumnName( columns.get( 0 ).id, "Customer_ID" ),
                         new MappingUpdate.ColumnName( columns.get( 1 ).id, "Full_Name" ) ) );
+    }
+
+
+    @Test
+    void preservesMappingFailuresDuringCommit() {
+        PhysicalTable physical = physicalCatalog.fromAllocation( allocationId );
+        var failure = MappingError.Validation.fields( Map.of( "mappingName", "A mapping with this name already exists." ) );
+        doThrow( failure ).when( transaction ).commit();
+        assertSame( failure, assertThrows( MappingValidationException.class,
+                () -> new DdlManagerImpl( catalog ).updateMapping( request(), statement ) ) );
+        assertRestored( physical );
     }
 
 
@@ -677,7 +702,7 @@ class MappingUpdateTest {
 
     @Test
     void rejectsEmptySelectionAndBlocksInclusionChangesWithDependentViews() {
-        var error = assertThrows( MappingState.EditException.class,
+        var error = assertThrows( MappingValidationException.class,
                 () -> new DdlManagerImpl( catalog ).updateMapping( selection( original, false, false ), statement ) );
         assertEquals( "Include at least one field in the target entity.", error.fieldErrors.get( "columns" ) );
         assertEquals( original.revision(), MappingState.load( catalog, adapterId, original.mapping().id() ).revision() );
@@ -688,8 +713,8 @@ class MappingUpdateTest {
         when( snapshot.rel() ).thenReturn( relational );
         var view = LogicalView.builder().id( 99 ).name( "customer_view" ).namespaceId( table.namespaceId ).entityType( EntityType.VIEW ).build();
         when( relational.getConnectedViews( table.id ) ).thenReturn( List.of( view ) );
-        assertEquals( "DEPENDENCY_CONFLICT", assertThrows( MappingState.EditException.class,
-                () -> original.validate( selection( original, false, true ), snapshot ) ).code );
+        assertEquals( "CONFLICT", assertThrows( MappingConflictException.class,
+                () -> original.validate( selection( original, false, true ), snapshot ) ).getCode() );
     }
 
 
@@ -815,9 +840,9 @@ class MappingUpdateTest {
         catalog.commit();
         var names = columns.stream().map( column -> new MappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
         for ( long namespaceId : List.of( -1L, documentNamespace, targetNamespace ) ) {
-            var error = assertThrows( MappingState.EditException.class, () -> original.validate( new MappingUpdate( adapterId,
+            var error = assertThrows( MappingException.class, () -> original.validate( new MappingUpdate( adapterId,
                     original.mapping().id(), original.revision(), original.mapping().name(), table.name, names, namespaceId ), catalog.getSnapshot() ) );
-            assertEquals( "VALIDATION_FAILED", error.code );
+            assertEquals( namespaceId == -1 ? "MISSING" : namespaceId == documentNamespace ? "UNSUPPORTED" : "VALIDATION", error.getCode() );
             assertTrue( error.fieldErrors.containsKey( namespaceId == targetNamespace ? "logicalTableName" : "targetNamespaceId" ) );
         }
     }
@@ -842,7 +867,7 @@ class MappingUpdateTest {
         var originalNow = MappingState.load( catalog, original.mapping().id() );
         assertEquals( allocationId, originalNow.mapping().sourceAllocationId() );
         assertFalse( originalNow.removable() );
-        assertThrows( MappingState.EditException.class, () -> MappingState.draft( catalog, adapterId, table.id, table.id, created.mapping().sourceAllocationId() ) );
+        assertThrows( MappingDuplicateException.class, () -> MappingState.draft( catalog, adapterId, table.id, table.id, created.mapping().sourceAllocationId() ) );
         var restored = PolySerializable.deserialize( catalog.serialize(), PolyCatalog.class );
         assertEquals( created.mapping(), restored.getSchemaMappings().get( created.mapping().id() ) );
         new DdlManagerImpl( catalog ).removeMapping( created.mapping().id(), created.revision(), statement );
@@ -900,7 +925,7 @@ class MappingUpdateTest {
         var request = new MappingUpdate( adapterId, -1, draft.revision(), draft.mapping().name(), table.name,
                 List.of( new MappingUpdate.ColumnName( draft.columns().get( 0 ).id, draft.columns().get( 0 ).name, true ),
                         new MappingUpdate.ColumnName( draft.columns().get( 1 ).id, draft.columns().get( 1 ).name, false ) ), table.namespaceId, table.id, incomingAllocationId );
-        var error = assertThrows( MappingState.EditException.class, () -> new DdlManagerImpl( catalog ).createMapping( incoming.table().id, request, statement ) );
+        var error = assertThrows( MappingValidationException.class, () -> new DdlManagerImpl( catalog ).createMapping( incoming.table().id, request, statement ) );
         assertTrue( error.fieldErrors.containsKey( "columns" ) );
         assertEquals( 2, catalog.getSnapshot().mappings().getMappings().size() );
         assertEquals( original.mapping(), catalog.getSnapshot().mappings().getMapping( original.mapping().id() ).orElseThrow() );
@@ -915,13 +940,13 @@ class MappingUpdateTest {
         String before = catalog.serialize();
         for ( var source : List.of( original, alias ) ) {
             long sourceAllocationId = source.physicalTables().get( 0 ).allocationId;
-            var error = assertThrows( MappingState.EditException.class,
+            var error = assertThrows( MappingDuplicateException.class,
                     () -> MappingState.draft( catalog, adapterId, source.table().id, table.id, sourceAllocationId ) );
-            assertEquals( "VALIDATION_FAILED", error.code );
+            assertEquals( "DUPLICATE", error.getCode() );
             assertTrue( error.fieldErrors.containsKey( "sourceAllocationId" ) );
             var request = new MappingUpdate( adapterId, -1, source.revision(), "Duplicate", table.name,
                     names, table.namespaceId, table.id, sourceAllocationId );
-            assertThrows( MappingState.EditException.class,
+            assertThrows( MappingDuplicateException.class,
                     () -> new DdlManagerImpl( catalog ).createMapping( source.table().id, request, statement ) );
         }
         assertEquals( before, catalog.serialize() );

@@ -34,7 +34,7 @@ import org.polypheny.db.algebra.mapping.ConversionColumnTransformer;
 import org.polypheny.db.algebra.mapping.MappingScanBuilder;
 import org.polypheny.db.algebra.rules.MappingTransformRule;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.exceptions.MappingError;
 import org.polypheny.db.catalog.exceptions.MappingExecutionException;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexIndexRef;
@@ -62,7 +62,8 @@ final class MappedTablePreview {
         var transaction = statement.getTransaction();
         statement.getQueryProcessor().lock( transaction );
         var snapshot = transaction.getSnapshot();
-        var allocation = snapshot.alloc().getFromLogical( table.id ).stream().findFirst().orElseThrow();
+        var allocation = snapshot.alloc().getFromLogical( table.id ).stream().findFirst()
+                .orElseThrow( () -> MappingError.Missing.previewAllocation( table.id ) );
         var builder = AlgBuilder.create( statement );
         var scans = new MappingScanBuilder( snapshot, () -> AlgBuilder.create( statement, builder.getCluster() ) );
         List<String> fields = allocation.getTupleType().getFieldNames();
@@ -134,7 +135,7 @@ final class MappedTablePreview {
                     values.add( null );
                 }
             } else {
-                throw new GenericRuntimeException( "Unsupported expression in mapped table preview: %s", project );
+                throw MappingError.Unsupported.previewExpression( project.toString() );
             }
         }
         return new PreviewRow( values, errors, ordinal );
@@ -157,7 +158,7 @@ final class MappedTablePreview {
                 try {
                     array = HttpServer.mapper.readTree( value ).toString();
                 } catch ( JsonProcessingException e ) {
-                    throw new GenericRuntimeException( "Invalid array filter for column '%s'.", e, entry.getKey() );
+                    throw MappingError.Validation.arrayFilter( entry.getKey(), e );
                 }
                 filters.add( row -> !ScalarConversions.isNull( row.get( index ) ) && array.equals( row.get( index ).toJson() ) );
             } else {

@@ -63,6 +63,7 @@ import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
 import org.polypheny.db.catalog.entity.mapping.SchemaMappingManager;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.exceptions.MappingError;
 import org.polypheny.db.catalog.impl.allocation.PolyAllocDocCatalog;
 import org.polypheny.db.catalog.impl.allocation.PolyAllocGraphCatalog;
 import org.polypheny.db.catalog.impl.allocation.PolyAllocRelCatalog;
@@ -245,7 +246,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     public synchronized void addSchemaMapping( SchemaMapping mapping ) {
         Objects.requireNonNull( mapping, "mapping" );
         if ( schemaMappings.containsKey( mapping.id() ) ) {
-            throw new GenericRuntimeException( "Mapping ID %d already exists.", mapping.id() );
+            throw MappingError.Duplicate.mappingId( mapping.id() );
         }
         validateMappingName( mapping );
         Map<Long, SchemaMapping> candidate = new ConcurrentHashMap<>( schemaMappings );
@@ -262,7 +263,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         if ( mapping != null ) {
             String reason = SchemaMappingManager.removalBlockedReason( this, schemaMappings.values(), mapping, snapshot.rel().getTable( mapping.targetEntityId() ).orElse( null ) );
             if ( reason != null ) {
-                throw new GenericRuntimeException( reason );
+                throw MappingError.Conflict.removalBlocked( mapping.name(), reason, List.of( mapping.name() ) );
             }
             schemaMappings.remove( mappingId );
             change();
@@ -289,8 +290,11 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     @Override
     public synchronized void updateSchemaMapping( SchemaMapping mapping ) {
         SchemaMapping previous = schemaMappings.get( mapping.id() );
-        if ( previous == null || previous.targetEntityId() != mapping.targetEntityId() ) {
-            throw new GenericRuntimeException( "An existing mapping with the same logical owner is required." );
+        if ( previous == null ) {
+            throw MappingError.Missing.mapping( mapping.id() );
+        }
+        if ( previous.targetEntityId() != mapping.targetEntityId() ) {
+            throw MappingError.Conflict.logicalOwnerChanged();
         }
         validateMappingName( mapping );
         Map<Long, SchemaMapping> candidate = new ConcurrentHashMap<>( schemaMappings );
@@ -303,7 +307,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
     private void validateMappingName( SchemaMapping mapping ) {
         if ( SchemaMappingManager.isMappingNameTaken( schemaMappings.values(), mapping.name(), mapping.id() ) ) {
-            throw new GenericRuntimeException( "A mapping with this name already exists: %s", mapping.name() );
+            throw MappingError.Duplicate.mappingName( mapping.name() );
         }
     }
 

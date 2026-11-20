@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.polypheny.db.catalog.entity.mapping.rules.MappingRule;
+import org.polypheny.db.catalog.exceptions.MappingError;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.MappingKind;
 
@@ -62,7 +63,7 @@ public record SchemaMapping(
         Objects.requireNonNull( targetModel, "targetModel" );
         if ( kind == MappingKind.PHYSICAL_TO_LOGICAL ) {
             if ( sourceEntityId != null ) {
-                throw new IllegalArgumentException( "Physical-to-logical mappings resolve their source through an allocation; sourceEntityId must be null." );
+                throw MappingError.Validation.logicalSourceNotAllowed();
             }
         } else {
             Objects.requireNonNull( sourceEntityId, "sourceEntityId is required for " + kind );

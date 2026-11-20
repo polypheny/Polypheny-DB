@@ -49,7 +49,7 @@ import org.polypheny.db.catalog.entity.mapping.rules.RuleDefinition;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.exceptions.MappingError;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.MappingKind;
@@ -101,7 +101,8 @@ public final class SchemaMappingManager {
 
     public static Set<PhysicalSource> physicalSources( Catalog catalog, SchemaMapping mapping ) {
         return sourceAllocations( catalog, mapping ).stream()
-                .flatMap( allocation -> catalog.getAdapterCatalog( allocation.adapterId ).orElseThrow()
+                .flatMap( allocation -> catalog.getAdapterCatalog( allocation.adapterId )
+                        .orElseThrow( () -> MappingError.Missing.adapterCatalog( allocation.adapterId ) )
                         .getPhysicalsFromAllocs( allocation.id ).stream() )
                 .map( physical -> new PhysicalSource( physical.adapterId, physical.namespaceName, physical.name ) ).collect( Collectors.toSet() );
     }
@@ -234,7 +235,7 @@ public final class SchemaMappingManager {
             return new ConversionColumnMappingRule( target.id );
         }
         if ( ruleType != null ) {
-            throw new GenericRuntimeException( "Unsupported column mapping rule '%s'.", ruleType );
+            throw MappingError.Unsupported.columnRule( ruleType );
         }
         boolean requiresConversion = physicalColumns.anyMatch( column -> !hasMatchingValueType( target, column ) );
         return requiresConversion
@@ -287,16 +288,19 @@ public final class SchemaMappingManager {
             BiPredicate<LogicalColumn, ExportedColumn> matchesSourceType ) {
         for ( MappingRule rule : mapping.rules() ) {
             if ( !(rule instanceof ColumnMappingRule columnRule) ) {
-                throw new GenericRuntimeException( "Cannot refresh unsupported rule in mapping '%s'.", mapping.name() );
+                throw MappingError.Unsupported.refreshRule( mapping.name() );
             }
             long targetId = columnRule.targetLogicalColumnId();
-            LogicalColumn target = rels.getColumn( targetId ).orElseThrow();
+            LogicalColumn target = rels.getColumn( targetId )
+                    .orElseThrow( () -> MappingError.Missing.logicalColumn( mapping.id(), targetId ) );
             PhysicalColumn previous = previousColumns.get( targetId );
             ExportedColumn exported = previous == null ? null : exportedByName.get( previous.name.toLowerCase( Locale.ROOT ) );
-            if ( exported == null || !isCompatibleRefreshedSourceColumn( columnRule, target, exported, matchesSourceType ) ) {
-                String sourceName = previous == null ? target.name : previous.name;
-                throw new GenericRuntimeException( "Source column '%s' in mapping '%s' is missing or incompatible with target column '%s.%s'. Target schema was not changed.",
-                        sourceName, mapping.name(), targetName, target.name );
+            String sourceName = previous == null ? target.name : previous.name;
+            if ( exported == null ) {
+                throw MappingError.Missing.sourceColumn( sourceName, mapping.name(), targetName, target.name );
+            }
+            if ( !isCompatibleRefreshedSourceColumn( columnRule, target, exported, matchesSourceType ) ) {
+                throw MappingError.Incompatible.sourceColumn( sourceName, mapping.name(), targetName, target.name );
             }
         }
     }
@@ -357,7 +361,8 @@ public final class SchemaMappingManager {
     public static Set<Long> getExcludedColumnIds( MappingSnapshot mappings, LogicalRelSnapshot rels ) {
         Set<Long> excluded = new HashSet<>();
         for ( SchemaMapping mapping : mappings.getMappings() ) {
-            LogicalTable table = rels.getTable( mapping.targetEntityId() ).orElseThrow();
+            LogicalTable table = rels.getTable( mapping.targetEntityId() )
+                    .orElseThrow( () -> MappingError.Missing.target( mapping.id(), mapping.targetEntityId() ) );
             if ( table.entityType == EntityType.SOURCE && !table.modifiable ) {
                 Set<Long> included = mappedColumnIds( mapping );
                 rels.getColumns( table.id ).stream().map( c -> c.id ).filter( c -> !included.contains( c ) ).forEach( excluded::add );
@@ -366,13 +371,13 @@ public final class SchemaMappingManager {
         if ( !excluded.isEmpty() ) {
             for ( var key : rels.getForeignKeys() ) {
                 if ( key.fieldIds.stream().anyMatch( excluded::contains ) || key.referencedKeyFieldIds.stream().anyMatch( excluded::contains ) ) {
-                    throw new GenericRuntimeException( "Mapping excludes a column required by foreign key %s.", key.name );
+                    throw MappingError.Conflict.foreignKeyColumnRequired( key.name );
                 }
             }
             for ( long tableId : mappings.getMappings().stream().map( SchemaMapping::targetEntityId ).toList() ) {
                 for ( var view : rels.getConnectedViews( tableId ) ) {
                     if ( view.underlyingTables.getOrDefault( tableId, List.of() ).stream().anyMatch( excluded::contains ) ) {
-                        throw new GenericRuntimeException( "Mapping excludes a column required by view %s.", view.name );
+                        throw MappingError.Conflict.viewColumnRequired( view.name );
                     }
                 }
             }
@@ -393,15 +398,18 @@ public final class SchemaMappingManager {
     public static void validateMappings( MappingSnapshot mappings, LogicalRelSnapshot rels, AllocSnapshot alloc, Catalog catalog ) {
         for ( SchemaMapping mapping : mappings.getMappings() ) {
             var siblings = mappings.getMappingsForLogicalEntity( mapping.targetEntityId() );
-            if ( siblings.size() > 1 && (mapping.sourceAllocationId() == null || siblings.stream().anyMatch( other -> other.id() != mapping.id()
-                    && Objects.equals( other.sourceAllocationId(), mapping.sourceAllocationId() ) )) ) {
-                throw new GenericRuntimeException( "Mappings sharing a target require distinct physical source allocations." );
+            if ( siblings.size() > 1 && mapping.sourceAllocationId() == null ) {
+                throw MappingError.Missing.explicitSourceAllocation( mapping.id() );
+            }
+            if ( siblings.size() > 1 && siblings.stream().anyMatch( other -> other.id() != mapping.id()
+                    && Objects.equals( other.sourceAllocationId(), mapping.sourceAllocationId() ) ) ) {
+                throw MappingError.Duplicate.sourceAllocation( mapping.id(), mapping.sourceAllocationId() );
             }
             if ( siblings.size() > 1 && siblings.stream().anyMatch( other -> !mappedColumnIds( other ).equals( mappedColumnIds( mapping ) ) ) ) {
-                throw new GenericRuntimeException( "Mappings sharing a target must cover the same logical columns." );
+                throw MappingError.Incompatible.sharedColumnCoverage();
             }
             if ( siblings.size() > 1 && alloc.getFromLogical( mapping.targetEntityId() ).stream().map( allocation -> allocation.partitionId ).distinct().count() != 1 ) {
-                throw new GenericRuntimeException( "Mappings sharing a target require a single target partition." );
+                throw MappingError.Unsupported.singleTargetPartitionRequired();
             }
             validateMappingKind( mapping );
             LogicalTable logicalTable = validateTargetTable( mapping, rels );
@@ -417,7 +425,7 @@ public final class SchemaMappingManager {
 
     private static void validateMappingKind( SchemaMapping mapping ) {
         if ( mapping.kind() != MappingKind.PHYSICAL_TO_LOGICAL ) {
-            throw new GenericRuntimeException( "Mapping %d has unsupported kind %s; only physical-to-logical mappings can currently be published.", mapping.id(), mapping.kind() );
+            throw MappingError.Unsupported.kind( mapping.id(), mapping.kind() );
         }
     }
 
@@ -431,11 +439,10 @@ public final class SchemaMappingManager {
     private static LogicalTable validateTargetTable( SchemaMapping mapping, LogicalRelSnapshot rels ) {
         LogicalTable logicalTable = rels.getTable( mapping.targetEntityId() ).orElse( null );
         if ( logicalTable == null ) {
-            throw new GenericRuntimeException( "Mapping %d references missing relational entity %d.", mapping.id(), mapping.targetEntityId() );
+            throw MappingError.Missing.target( mapping.id(), mapping.targetEntityId() );
         }
         if ( mapping.targetModel() != logicalTable.dataModel ) {
-            throw new GenericRuntimeException( "Mapping %d target model %s does not match entity %d's model %s.",
-                    mapping.id(), mapping.targetModel(), logicalTable.id, logicalTable.dataModel );
+            throw MappingError.Incompatible.targetModel( mapping.id(), mapping.targetModel(), logicalTable.id, logicalTable.dataModel );
         }
         return logicalTable;
     }
@@ -445,7 +452,7 @@ public final class SchemaMappingManager {
         List<AllocationEntity> allocations = alloc.getFromLogical( mapping.targetEntityId() ).stream()
                 .filter( allocation -> mapping.sourceAllocationId() == null || mapping.sourceAllocationId() == allocation.id ).toList();
         if ( allocations.isEmpty() ) {
-            throw new GenericRuntimeException( "Mapping %d requires an allocation for logical entity %d.", mapping.id(), mapping.targetEntityId() );
+            throw MappingError.Missing.allocation( mapping.id(), mapping.targetEntityId() );
         }
         return allocations;
     }
@@ -459,16 +466,16 @@ public final class SchemaMappingManager {
                 long columnId = columnRule.targetLogicalColumnId();
                 LogicalColumn logicalColumn = logicalColumns.get( columnId );
                 if ( logicalColumn == null ) {
-                    throw new GenericRuntimeException( "Mapping %d references missing logical column %d.", mapping.id(), columnId );
+                    throw MappingError.Missing.logicalColumn( mapping.id(), columnId );
                 }
                 mappedColumns.put( columnId, columnRule );
                 if ( !mappedPositions.add( logicalColumn.position ) ) {
-                    throw new GenericRuntimeException( "Mapping %d has duplicate logical column position %d.", mapping.id(), logicalColumn.position );
+                    throw MappingError.Duplicate.logicalPosition( mapping.id(), logicalColumn.position );
                 }
             }
         }
         if ( mappedColumns.isEmpty() ) {
-            throw new GenericRuntimeException( "Mapping %d must include at least one logical column.", mapping.id() );
+            throw MappingError.Validation.includedColumnRequired( mapping.id() );
         }
         return mappedColumns;
     }
@@ -477,7 +484,7 @@ public final class SchemaMappingManager {
     private static void validateLogicalColumnCoverage( SchemaMapping mapping, LogicalTable logicalTable, Map<Long, LogicalColumn> logicalColumns, Set<Long> mappedColumns ) {
         for ( LogicalColumn logicalColumn : logicalColumns.values() ) {
             if ( !mappedColumns.contains( logicalColumn.id ) && (logicalTable.entityType != EntityType.SOURCE || logicalTable.modifiable) ) {
-                throw new GenericRuntimeException( "Mapping %d has no rule for logical column %d.", mapping.id(), logicalColumn.id );
+                throw MappingError.Missing.columnRule( mapping.id(), logicalColumn.id );
             }
         }
     }
@@ -501,15 +508,18 @@ public final class SchemaMappingManager {
 
     private static AdapterCatalog validateAdapterAllocation( SchemaMapping mapping, AllocationEntity allocation, Catalog catalog ) {
         AdapterCatalog adapter = catalog.getAdapterCatalog( allocation.adapterId ).orElseThrow( () ->
-                new GenericRuntimeException( "Mapping %d has no adapter catalog for allocation %d.", mapping.id(), allocation.id ) );
+                MappingError.Missing.adapterCatalog( mapping.id(), allocation.id ) );
         if ( !(adapter instanceof RelAdapterCatalog) ) {
-            throw new GenericRuntimeException( "Mapping %d requires a relational adapter catalog for allocation %d.", mapping.id(), allocation.id );
+            throw MappingError.Unsupported.relationalAdapterRequired( mapping.id(), allocation.id );
         }
         AllocationEntity registeredAllocation = adapter.getAlloc( allocation.id );
-        if ( registeredAllocation == null || registeredAllocation.logicalId != mapping.targetEntityId()
+        if ( registeredAllocation == null ) {
+            throw MappingError.Missing.adapterAllocation( mapping.id(), allocation.id );
+        }
+        if ( registeredAllocation.logicalId != mapping.targetEntityId()
                 || registeredAllocation.adapterId != allocation.adapterId || registeredAllocation.partitionId != allocation.partitionId
                 || registeredAllocation.placementId != allocation.placementId ) {
-            throw new GenericRuntimeException( "Mapping %d has no adapter-owned allocation %d.", mapping.id(), allocation.id );
+            throw MappingError.Algebra.allocationMismatch( mapping.id(), allocation.id );
         }
         return adapter;
     }
@@ -517,14 +527,18 @@ public final class SchemaMappingManager {
 
     private static PhysicalTable validatePhysicalTable( SchemaMapping mapping, LogicalTable logicalTable, AllocationEntity allocation, AdapterCatalog adapter ) {
         List<PhysicalEntity> physicals = adapter.getPhysicalsFromAllocs( allocation.id );
-        if ( physicals == null || physicals.isEmpty() || !(physicals.get( 0 ) instanceof PhysicalTable table)
-                || table.allocationId != allocation.id || table.logicalId != mapping.targetEntityId() || table.adapterId != allocation.adapterId
+        if ( physicals == null || physicals.isEmpty() || physicals.get( 0 ) == null ) {
+            throw MappingError.Missing.physicalTable( mapping.id(), allocation.id );
+        }
+        if ( !(physicals.get( 0 ) instanceof PhysicalTable table) ) {
+            throw MappingError.Unsupported.relationalSourceRequired( mapping.id(), allocation.id );
+        }
+        if ( table.allocationId != allocation.id || table.logicalId != mapping.targetEntityId() || table.adapterId != allocation.adapterId
                 || table.namespaceId != logicalTable.namespaceId ) {
-            throw new GenericRuntimeException( "Mapping %d has no matching physical table for allocation %d.", mapping.id(), allocation.id );
+            throw MappingError.Algebra.physicalBindingMismatch( mapping.id(), allocation.id );
         }
         if ( mapping.sourceModel() != table.dataModel ) {
-            throw new GenericRuntimeException( "Mapping %d source model %s does not match allocation %d's physical model %s.",
-                    mapping.id(), mapping.sourceModel(), allocation.id, table.dataModel );
+            throw MappingError.Incompatible.sourceModel( mapping.id(), mapping.sourceModel(), allocation.id, table.dataModel );
         }
         return table;
     }
@@ -535,10 +549,10 @@ public final class SchemaMappingManager {
         Set<Integer> physicalPositions = new HashSet<>();
         for ( PhysicalColumn column : table.columns ) {
             if ( tableColumns.putIfAbsent( column.id, column ) != null ) {
-                throw new GenericRuntimeException( "Mapping %d has duplicate physical column %d in allocation %d.", mapping.id(), column.id, allocation.id );
+                throw MappingError.Duplicate.physicalColumn( mapping.id(), column.id, allocation.id );
             }
             if ( !physicalPositions.add( column.position ) ) {
-                throw new GenericRuntimeException( "Mapping %d has duplicate physical column position %d in allocation %d.", mapping.id(), column.position, allocation.id );
+                throw MappingError.Duplicate.physicalPosition( mapping.id(), column.position, allocation.id );
             }
         }
         return tableColumns;
@@ -551,11 +565,11 @@ public final class SchemaMappingManager {
         for ( AllocationColumn allocatedColumn : alloc.getColumns( allocation.placementId ) ) {
             long columnId = allocatedColumn.columnId;
             if ( allocatedColumn.logicalTableId != mapping.targetEntityId() || allocatedColumn.adapterId != allocation.adapterId ) {
-                throw new GenericRuntimeException( "Mapping %d has mismatched column placement %d for allocation %d.", mapping.id(), columnId, allocation.id );
+                throw MappingError.Algebra.columnPlacementMismatch( mapping.id(), columnId, allocation.id );
             }
             LogicalColumn logicalColumn = logicalColumns.get( columnId );
             if ( logicalColumn == null ) {
-                throw new GenericRuntimeException( "Mapping %d has an allocation for missing logical column %d.", mapping.id(), columnId );
+                throw MappingError.Missing.logicalColumn( mapping.id(), columnId );
             }
             validatePhysicalColumn( mapping, logicalColumn, columnRules.get( columnId ), allocation, adapter, tableColumns.get( columnId ) );
             allocatedColumns.add( columnId );
@@ -567,11 +581,14 @@ public final class SchemaMappingManager {
     private static void validatePhysicalColumn( SchemaMapping mapping, LogicalColumn logicalColumn, ColumnMappingRule rule,
             AllocationEntity allocation, AdapterCatalog adapter, PhysicalColumn tableColumn ) {
         long columnId = logicalColumn.id;
-        if ( !(adapter.fields.get( Pair.of( allocation.id, columnId ) ) instanceof PhysicalColumn physicalColumn)
-                || !physicalColumn.equals( tableColumn )
+        var registered = adapter.fields.get( Pair.of( allocation.id, columnId ) );
+        if ( registered == null || tableColumn == null ) {
+            throw MappingError.Missing.physicalColumn( mapping.id(), columnId, allocation.id );
+        }
+        if ( !(registered instanceof PhysicalColumn physicalColumn) || !physicalColumn.equals( tableColumn )
                 || physicalColumn.allocId != allocation.id || physicalColumn.logicalEntityId != mapping.targetEntityId()
                 || physicalColumn.adapterId != allocation.adapterId ) {
-            throw new GenericRuntimeException( "Mapping %d has no matching physical column %d for allocation %d.", mapping.id(), columnId, allocation.id );
+            throw MappingError.Algebra.physicalColumnMismatch( mapping.id(), columnId, allocation.id );
         }
         if ( rule == null && mapping.sourceAllocationId() != null ) {
             // An excluded field on a bound allocation still has a physical column, but produces no logical value.
@@ -581,7 +598,7 @@ public final class SchemaMappingManager {
                 ? ConversionColumnMappingRule.supports( physicalColumn.getAlgDataType( AlgDataTypeFactory.DEFAULT ), logicalColumn.getAlgDataType( AlgDataTypeFactory.DEFAULT ) )
                 : hasMatchingValueType( logicalColumn, physicalColumn );
         if ( !compatible ) {
-            throw new GenericRuntimeException( "Mapping %d has incompatible physical column %d in allocation %d.", mapping.id(), columnId, allocation.id );
+            throw MappingError.Incompatible.physicalColumn( mapping.id(), columnId, allocation.id );
         }
     }
 
@@ -591,8 +608,7 @@ public final class SchemaMappingManager {
             Set<Long> availableColumns = physicalColumnsByPartition.getOrDefault( allocation.partitionId, Set.of() );
             for ( var rule : mapping.rules() ) {
                 if ( rule instanceof ColumnMappingRule columnRule && !availableColumns.contains( columnRule.targetLogicalColumnId() ) ) {
-                    throw new GenericRuntimeException( "Mapping %d references logical column %d unavailable on partition %d.",
-                            mapping.id(), columnRule.targetLogicalColumnId(), allocation.partitionId );
+                    throw MappingError.Missing.partitionColumn( mapping.id(), columnRule.targetLogicalColumnId(), allocation.partitionId );
                 }
             }
         }

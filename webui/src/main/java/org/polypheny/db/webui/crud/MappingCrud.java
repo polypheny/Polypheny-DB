@@ -22,7 +22,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.http.Context;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -30,10 +29,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.mapping.SchemaMappingManager;
+import org.polypheny.db.catalog.exceptions.MappingConflictException;
+import org.polypheny.db.catalog.exceptions.MappingDuplicateException;
+import org.polypheny.db.catalog.exceptions.MappingError;
+import org.polypheny.db.catalog.exceptions.MappingException;
+import org.polypheny.db.catalog.exceptions.MappingIncompatibleException;
+import org.polypheny.db.catalog.exceptions.MappingMissingException;
+import org.polypheny.db.catalog.exceptions.MappingRevisionException;
+import org.polypheny.db.catalog.exceptions.MappingUnsupportedException;
+import org.polypheny.db.catalog.exceptions.MappingValidationException;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.MappingKind;
 import org.polypheny.db.catalog.logistic.Pattern;
-import org.polypheny.db.catalog.mapping.MappingState.EditException;
 import org.polypheny.db.catalog.mapping.MappingState;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.transaction.Transaction;
@@ -136,7 +143,7 @@ public class MappingCrud {
             synchronized ( catalog ) {
                 var state = MappingState.draft( catalog, request.adapterId(), request.targetEntityId(), request.existingTargetEntityId(), request.sourceAllocationId() );
                 if ( !state.editable() ) {
-                    throw new EditException( "UNSUPPORTED_MAPPING", state.readOnlyReason() );
+                    throw MappingError.Unsupported.editor( state.readOnlyReason() );
                 }
                 return MappingModel.Detail.from( state, catalog );
             }
@@ -189,7 +196,7 @@ public class MappingCrud {
         respond( context, () -> {
             ListRequest request = read( context, ListRequest.class );
             if ( request.adapterIds() == null || request.adapterIds().stream().anyMatch( id -> id == null || id < 0 ) ) {
-                throw new EditException( "VALIDATION_FAILED", "Supply valid source adapter IDs." );
+                throw MappingError.Validation.adapterIds();
             }
             Catalog catalog = Catalog.getInstance();
             synchronized ( catalog ) {
@@ -262,29 +269,35 @@ public class MappingCrud {
         try {
             T request = REQUEST_MAPPER.readValue( body, type );
             if ( request == null ) {
-                throw new EditException( "VALIDATION_FAILED", "A JSON request object is required." );
+                throw MappingError.Validation.request();
             }
             return request;
         } catch ( JsonProcessingException e ) {
-            throw new EditException( "VALIDATION_FAILED", "The mapping request is malformed, incomplete, or contains unsupported fields." );
+            throw MappingError.Validation.malformedRequest( e );
         }
     }
 
 
-    private static void respond( Context context, Supplier<Object> action ) {
+    static void respond( Context context, Supplier<Object> action ) {
         try {
             context.json( action.get() );
-        } catch ( EditException e ) {
-            int status = switch ( e.code ) {
-                case "NOT_FOUND" -> 404;
-                case "REVISION_CONFLICT", "DEPENDENCY_CONFLICT", "SOURCE_UNAVAILABLE" -> 409;
-                default -> 400;
-            };
-            context.status( status ).json( new MappingModel.Error( e.code, e.getMessage(), e.fieldErrors, e.blockingEntities ) );
         } catch ( RuntimeException e ) {
-            log.error( "Mapping request failed", e );
-            context.status( 500 ).json( new MappingModel.Error( "UPDATE_FAILED",
-                    "The mapping request could not be completed. Reload the saved version to check its state.", Map.of(), List.of() ) );
+            MappingException mappingError = MappingException.findCause( e ).orElseGet( () -> MappingError.Operation.requestFailed( e ) );
+            int status;
+            if ( mappingError instanceof MappingMissingException ) {
+                status = 404;
+            } else if ( mappingError instanceof MappingDuplicateException || mappingError instanceof MappingRevisionException
+                    || mappingError instanceof MappingConflictException || mappingError instanceof MappingIncompatibleException ) {
+                status = 409;
+            } else if ( mappingError instanceof MappingValidationException || mappingError instanceof MappingUnsupportedException ) {
+                status = 400;
+            } else {
+                status = 500;
+            }
+            if ( status == 500 ) {
+                log.error( "Mapping request failed", e );
+            }
+            context.status( status ).json( new MappingModel.Error( mappingError.getCode(), mappingError.getMessage(), mappingError.fieldErrors, mappingError.blockingEntities ) );
         }
     }
 

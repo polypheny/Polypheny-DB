@@ -29,7 +29,7 @@ import org.polypheny.db.algebra.mapping.FieldMappingContext;
 import org.polypheny.db.algebra.mapping.FieldMappingTransformers;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.mapping.rules.ColumnMappingRule;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.exceptions.MappingError;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexIndexRef;
@@ -68,7 +68,7 @@ public final class MappingTransformRule extends AlgOptRule {
         if ( transform instanceof LogicalRelMappingTransform relational ) {
             return applyRelational( relational );
         }
-        throw new GenericRuntimeException( "Unsupported mapping transform type %s.", transform.getClass().getName() );
+        throw MappingError.Unsupported.transform( transform.getClass().getName() );
     }
 
 
@@ -100,11 +100,11 @@ public final class MappingTransformRule extends AlgOptRule {
         Map<Long, ColumnMappingRule> rules = new HashMap<>();
         for ( var rule : mapping.rules() ) {
             if ( !(rule instanceof ColumnMappingRule columnRule) ) {
-                throw new GenericRuntimeException( "Mapping %d has unsupported rule type %s.", mapping.id(), rule.getClass().getName() );
+                throw MappingError.Unsupported.rule( mapping.id(), rule.getClass().getName() );
             }
             transformers.requireSupported( columnRule );
             if ( rules.putIfAbsent( columnRule.targetLogicalColumnId(), columnRule ) != null ) {
-                throw new GenericRuntimeException( "Mapping %d repeats logical column %d.", mapping.id(), columnRule.targetLogicalColumnId() );
+                throw MappingError.Duplicate.logicalColumn( mapping.id(), columnRule.targetLogicalColumnId() );
             }
         }
 
@@ -114,7 +114,7 @@ public final class MappingTransformRule extends AlgOptRule {
         for ( AlgDataTypeField targetField : transform.getTupleType().getFields() ) {
             ColumnMappingRule rule = targetField.getId() == null ? null : rules.get( targetField.getId() );
             if ( rule == null ) {
-                throw new GenericRuntimeException( "Mapping %d has no rule for a requested column of allocation %d.", mapping.id(), transform.getBinding().allocationId() );
+                throw MappingError.Missing.requestedColumnRule( mapping.id(), transform.getBinding().allocationId() );
             }
             projects.add( transformers.transform( rule, targetField, context ) );
         }

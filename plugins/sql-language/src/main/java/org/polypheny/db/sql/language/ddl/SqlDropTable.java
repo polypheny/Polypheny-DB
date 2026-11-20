@@ -23,6 +23,7 @@ import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.exceptions.MappingError;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.languages.ParserPos;
@@ -75,7 +76,7 @@ public class SqlDropTable extends SqlDropObject {
         // Explicitly reject SOURCE tables before touching the catalog
         // Otherwise DROP TABLE can start removing mapping metadata before it fails
         if ( table.entityType == EntityType.SOURCE ) {
-            throw new GenericRuntimeException( "Cannot drop source-backed table '%s' with DROP TABLE. Use Drop Mapping for mapping-backed targets or remove the source adapter.", name );
+            throw MappingError.Conflict.dropTableBlocked( name.toString() );
         }
         if ( table.entityType != EntityType.ENTITY ) {
             throw new GenericRuntimeException( "The entity with the name %s is of %s use the appropriate query.", name, table.entityType );

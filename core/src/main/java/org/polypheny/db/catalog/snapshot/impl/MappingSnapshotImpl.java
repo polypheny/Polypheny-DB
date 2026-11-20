@@ -30,7 +30,8 @@ import org.polypheny.db.algebra.mapping.RuleRepository;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
 import org.polypheny.db.catalog.entity.mapping.rules.ColumnMappingRule;
 import org.polypheny.db.catalog.entity.mapping.rules.MappingRule;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.exceptions.MappingError;
+import org.polypheny.db.catalog.exceptions.MappingValidationException;
 import org.polypheny.db.catalog.snapshot.MappingSnapshot;
 
 
@@ -50,7 +51,7 @@ public final class MappingSnapshotImpl implements MappingSnapshot {
      *
      * @param mappings definitions to snapshot
      * @throws NullPointerException if the input collection or an element is null
-     * @throws GenericRuntimeException if identities conflict or a rule implementation is unsupported
+     * @throws MappingValidationException if identities conflict or a rule implementation is unsupported
      */
     public MappingSnapshotImpl( Collection<SchemaMapping> mappings ) {
         Objects.requireNonNull( mappings, "mappings" );
@@ -62,7 +63,7 @@ public final class MappingSnapshotImpl implements MappingSnapshot {
             validateRules( mapping );
 
             if ( byId.putIfAbsent( mapping.id(), mapping ) != null ) {
-                throw new GenericRuntimeException( "Duplicate mapping ID %d.", mapping.id() );
+                throw MappingError.Duplicate.mappingId( mapping.id() );
             }
             byLogicalEntity.computeIfAbsent( mapping.targetEntityId(), ignored -> new ArrayList<>() ).add( mapping );
         }
@@ -78,15 +79,15 @@ public final class MappingSnapshotImpl implements MappingSnapshot {
         Set<Long> ruleColumnIds = new HashSet<>();
         for ( MappingRule rule : mapping.rules() ) {
             if ( RuleRepository.definitionFor( rule.getClass() ).isEmpty() ) {
-                throw new GenericRuntimeException( "Mapping %d has unsupported rule type %s.", mapping.id(), rule.getClass().getName() );
+                throw MappingError.Unsupported.rule( mapping.id(), rule.getClass().getName() );
             }
             if ( rule instanceof ColumnMappingRule columnRule ) {
                 long columnId = columnRule.targetLogicalColumnId();
                 if ( !ruleColumnIds.add( columnId ) ) {
-                    throw new GenericRuntimeException( "Mapping %d has duplicate logical column ID %d.", mapping.id(), columnId );
+                    throw MappingError.Duplicate.logicalColumn( mapping.id(), columnId );
                 }
             } else {
-                throw new GenericRuntimeException( "Mapping %d has no snapshot validation for rule type %s.", mapping.id(), rule.getClass().getName() );
+                throw MappingError.Unsupported.ruleValidation( mapping.id(), rule.getClass().getName() );
             }
         }
     }

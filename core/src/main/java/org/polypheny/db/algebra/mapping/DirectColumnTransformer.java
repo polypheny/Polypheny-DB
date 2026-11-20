@@ -19,7 +19,7 @@ package org.polypheny.db.algebra.mapping;
 import java.util.Objects;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.exceptions.MappingError;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyTypeUtil;
 
@@ -45,11 +45,12 @@ public final class DirectColumnTransformer implements FieldMappingTransformer<Di
         AlgDataTypeField sourceField = context.resolveSourceField( rule.targetLogicalColumnId() );
 
         // validate
-        if ( !Objects.equals( targetField.getId(), rule.targetLogicalColumnId() )
-                || !Objects.equals( sourceField.getName(), targetField.getName() )
+        if ( !Objects.equals( targetField.getId(), rule.targetLogicalColumnId() ) ) {
+            throw MappingError.Algebra.targetFieldMismatch( context.getMapping().id(), rule.targetLogicalColumnId(), context.getBinding().allocationId() );
+        }
+        if ( !Objects.equals( sourceField.getName(), targetField.getName() )
                 || !PolyTypeUtil.equalSansNullability( context.getRexBuilder().getTypeFactory(), sourceField.getType(), targetField.getType() ) ) {
-            throw new GenericRuntimeException( "Mapping %d cannot resolve logical column %d on allocation %d.",
-                    context.getMapping().id(), rule.targetLogicalColumnId(), context.getBinding().allocationId() );
+            throw MappingError.Incompatible.directColumn( context.getMapping().id(), rule.targetLogicalColumnId(), context.getBinding().allocationId() );
         }
         // read this column from the input row
         // this builds part of the query plan

@@ -54,7 +54,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.exceptions.MappingExecutionException;
+import org.polypheny.db.catalog.exceptions.MappingException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.information.InformationObserver;
@@ -98,6 +98,11 @@ import org.polypheny.db.webui.models.results.QueryType;
 import org.polypheny.db.webui.models.results.RelationalResult;
 import org.polypheny.db.webui.models.results.Result;
 import org.polypheny.db.webui.models.results.Result.ResultBuilder;
+
+/**
+ * Handles WebUI query requests across supported query languages,
+ * coordinating query preparation, execution, and formatting of results or errors for the frontend.
+ */
 
 @Getter
 @Slf4j
@@ -408,14 +413,18 @@ public class LanguageCrud {
     }
 
 
+    /**
+     * selects the user-facing error message,
+     * preferring a mapping exception’s message from the cause chain and otherwise using the caught exception’s message or class name.
+     */
+    public static String errorMessage( Throwable error ) {
+        return MappingException.findCause( error ).map( MappingException::getMessage )
+                .orElseGet( () -> error == null ? "" : Objects.requireNonNullElse( error.getMessage(), error.getClass().getName() ) );
+    }
+
+
     public static ResultBuilder<?, ?, ?, ?> buildErrorResult( Transaction transaction, ExecutedContext context, Throwable t ) {
-        String message = t == null ? "" : Objects.requireNonNullElse( t.getMessage(), t.getClass().getName() );
-        for ( Throwable cause = t; cause != null; cause = cause.getCause() ) {
-            if ( cause instanceof MappingExecutionException ) {
-                message = cause.getMessage();
-                break;
-            }
-        }
+        String message = errorMessage( t );
         ResultBuilder<?, ?, ?, ?> result = switch ( context.getQuery().getLanguage().dataModel() ) {
             case RELATIONAL -> RelationalResult.builder().error( message ).exception( t ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );
             case DOCUMENT -> DocResult.builder().error( message ).exception( t ).query( context.getQuery().getQuery() ).xid( transaction.getXid().toString() );

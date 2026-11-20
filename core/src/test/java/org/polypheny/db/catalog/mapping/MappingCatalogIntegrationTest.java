@@ -41,6 +41,9 @@ import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.exceptions.MappingMissingException;
+import org.polypheny.db.catalog.exceptions.MappingRevisionException;
+import org.polypheny.db.catalog.exceptions.MappingValidationException;
 import org.polypheny.db.catalog.impl.AdapterRestore;
 import org.polypheny.db.catalog.impl.PolyCatalog;
 import org.polypheny.db.catalog.impl.logical.RelationalCatalog;
@@ -258,15 +261,15 @@ class MappingCatalogIntegrationTest {
         assertEquals( "customer_id", validated.columns().get( 0 ).logicalName() );
         fixture.catalog.updateSnapshot();
         assertEquals( state.revision(), MappingState.load( fixture.catalog, adapterId, mapping.id() ).revision() );
-        assertThrows( MappingState.EditException.class, () -> state.validate(
+        assertThrows( MappingValidationException.class, () -> state.validate(
                 new MappingUpdate( adapterId, mapping.id(), state.revision(), "Renamed", "customers", List.of() ), snapshot ) );
-        assertThrows( MappingState.EditException.class, () -> MappingState.load( fixture.catalog, -1, mapping.id() ) );
+        assertThrows( MappingMissingException.class, () -> MappingState.load( fixture.catalog, -1, mapping.id() ) );
         fixture.catalog.updateSchemaMapping( new SchemaMapping( mapping.id(), "Another user's label", MappingKind.PHYSICAL_TO_LOGICAL, null, fixture.table.id,
                 DataModel.RELATIONAL, DataModel.RELATIONAL, mapping.rules(), null ) );
         MappingState changed = MappingState.load( fixture.catalog, adapterId, mapping.id() );
         assertNotEquals( state.revision(), changed.revision() );
-        assertEquals( "REVISION_CONFLICT", assertThrows( MappingState.EditException.class,
-                () -> changed.validate( request, fixture.catalog.getSnapshot() ) ).code );
+        assertEquals( "REVISION", assertThrows( MappingRevisionException.class,
+                () -> changed.validate( request, fixture.catalog.getSnapshot() ) ).getCode() );
     }
 
 
@@ -336,7 +339,7 @@ class MappingCatalogIntegrationTest {
         var before = fixture.catalog.getSnapshot();
         var mapping = before.mappings().getMappingsForLogicalEntity( fixture.table.id ).get( 0 );
         var error = assertThrows( GenericRuntimeException.class, () -> fixture.catalog.removeSchemaMapping( mapping.id() ) );
-        assertEquals( SchemaMappingManager.LAST_SOURCE_MAPPING_REASON, error.getMessage() );
+        assertEquals( "Cannot remove mapping '" + mapping.name() + "': " + SchemaMappingManager.LAST_SOURCE_MAPPING_REASON, error.getMessage() );
         assertSame( before, fixture.catalog.getSnapshot() );
         assertEquals( mapping, fixture.catalog.getSchemaMappings().get( mapping.id() ) );
 
@@ -528,13 +531,13 @@ class MappingCatalogIntegrationTest {
     void rejectsMissingPhysicalTableAndColumn() {
         Fixture missingTable = fixture( false );
         missingTable.allocate( List.of( missingTable.column ), false );
-        assertThrows( GenericRuntimeException.class, () -> missingTable.catalog.addSchemaMapping( missingTable.mapping() ) );
+        assertThrows( MappingMissingException.class, () -> missingTable.catalog.addSchemaMapping( missingTable.mapping() ) );
 
         Fixture missingColumn = fixture( true );
         AllocationTable allocation = (AllocationTable) missingColumn.catalog.getSnapshot().alloc().getFromLogical( missingColumn.table.id ).get( 0 );
         RelAdapterCatalog adapter = (RelAdapterCatalog) missingColumn.catalog.getAdapterCatalog( allocation.adapterId ).orElseThrow();
         adapter.fields.remove( Pair.of( allocation.id, missingColumn.column.id ) );
-        assertThrows( GenericRuntimeException.class, () -> missingColumn.catalog.addSchemaMapping( missingColumn.mapping() ) );
+        assertThrows( MappingMissingException.class, () -> missingColumn.catalog.addSchemaMapping( missingColumn.mapping() ) );
     }
 
 

@@ -43,6 +43,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
 import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.exceptions.MappingDuplicateException;
 import org.polypheny.db.catalog.impl.PolyCatalog;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
@@ -207,7 +208,7 @@ class CsvSourceRegistrationTest {
                 assertTrue( !rows.moveNext() );
             }
             assertEquals( contents, Files.readString( csvFile ) );
-            assertThrows( MappingState.EditException.class, () -> MappingState.draft( catalog, adapterId, created.table().id, created.table().id, targetAllocation.id ) );
+            assertThrows( MappingDuplicateException.class, () -> MappingState.draft( catalog, adapterId, created.table().id, created.table().id, targetAllocation.id ) );
             var incoming = MappingState.draft( catalog, adapterId, extraMapping.targetEntityId(), created.table().id, extraAllocationId );
             var incomingNames = incoming.columns().stream().map( column -> new MappingUpdate.ColumnName( column.id,
                     column.name.equals( "name" ) ? "target_name" : column.name, column.name.equals( "name" ) ) ).toList();

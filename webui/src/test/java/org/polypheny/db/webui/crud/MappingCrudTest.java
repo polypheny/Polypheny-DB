@@ -19,8 +19,10 @@ package org.polypheny.db.webui.crud;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -30,6 +32,10 @@ import java.lang.reflect.Proxy;
 import java.util.concurrent.atomic.AtomicReference;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.exceptions.MappingError;
+import org.polypheny.db.catalog.exceptions.MappingException;
+import org.polypheny.db.catalog.exceptions.MappingValidationException;
 import org.polypheny.db.catalog.impl.PolyCatalog;
 import org.polypheny.db.catalog.logistic.PlacementType;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
@@ -50,7 +56,6 @@ import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.MappingKind;
 import org.polypheny.db.catalog.mapping.MappingState;
-import org.polypheny.db.catalog.mapping.MappingState.EditException;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.models.mapping.MappingModel;
@@ -62,6 +67,84 @@ import org.polypheny.db.webui.models.requests.MappingRequest.RemoveRequest;
 
 
 class MappingCrudTest {
+
+    @Test
+    void preservesMappingCategoriesAndDetailsThroughWrappedErrors() {
+        record ErrorCase( MappingException error, int status, String code ) {
+        }
+        var fieldErrors = Map.of( "mappingName", "A mapping with this name already exists." );
+        var blockingEntities = List.of( "customer_view" );
+        var cases = List.of(
+                new ErrorCase( MappingError.Validation.fields( fieldErrors ), 400, "VALIDATION" ),
+                new ErrorCase( MappingError.Duplicate.mappingName( "Import" ), 409, "DUPLICATE" ),
+                new ErrorCase( MappingError.Duplicate.sourceTargetPair(), 409, "DUPLICATE" ),
+                new ErrorCase( MappingError.Unsupported.existingSourceTargetRequired(), 400, "UNSUPPORTED" ),
+                new ErrorCase( MappingError.Missing.mapping( 31 ), 404, "MISSING" ),
+                new ErrorCase( MappingError.Missing.targetNamespace(), 404, "MISSING" ),
+                new ErrorCase( MappingError.Revision.stale(), 409, "REVISION" ),
+                new ErrorCase( MappingError.Conflict.schemaChangeBlocked( false, blockingEntities ), 409, "CONFLICT" ),
+                new ErrorCase( MappingError.Missing.adapter( 7 ), 404, "MISSING" ),
+                new ErrorCase( MappingError.Missing.sourceTable( "customers%data.csv", "Import 50%", "public.customers" ), 404, "MISSING" ),
+                new ErrorCase( MappingError.Missing.sourceAllocation( 31, 60L ), 404, "MISSING" ),
+                new ErrorCase( MappingError.Algebra.allocationMismatch( 31, 60 ), 500, "ALGEBRA" ),
+                new ErrorCase( MappingError.Incompatible.sourceColumn( "amount", "Import", "public.customers", "amount" ), 409, "INCOMPATIBLE" ),
+                new ErrorCase( MappingError.Operation.commitFailed( new IllegalStateException( "commit failed" ) ), 500, "OPERATION" ),
+                new ErrorCase( MappingError.Execution.nullNotAllowed( "Import", "public.customers", "id", "INTEGER", "INTEGER" ), 500, "EXECUTION" ) );
+        for ( var expected : cases ) {
+            for ( boolean wrapped : List.of( false, true ) ) {
+                RuntimeException failure = wrapped ? new RuntimeException( "outer wrapper", new GenericRuntimeException( expected.error() ) ) : expected.error();
+                AtomicReference<Integer> status = new AtomicReference<>();
+                AtomicReference<MappingModel.Error> response = new AtomicReference<>();
+                Context context = errorContext( status, response );
+                MappingCrud.respond( context, () -> {
+                    throw failure;
+                } );
+                assertEquals( expected.status(), status.get() );
+                assertEquals( expected.code(), response.get().code() );
+                assertEquals( expected.error().getMessage(), response.get().message() );
+                assertEquals( expected.error().getMessage(), LanguageCrud.errorMessage( failure ) );
+                assertEquals( expected.error().fieldErrors, response.get().fieldErrors() );
+                assertEquals( expected.error().blockingEntities, response.get().blockingEntities() );
+            }
+        }
+    }
+
+
+    @Test
+    void keepsUnexpectedServerDetailsOutOfEditorResponses() {
+        AtomicReference<Integer> status = new AtomicReference<>();
+        AtomicReference<MappingModel.Error> response = new AtomicReference<>();
+        MappingCrud.respond( errorContext( status, response ), () -> {
+            throw new IllegalStateException( "internal implementation detail" );
+        } );
+        assertEquals( 500, status.get() );
+        assertEquals( "OPERATION", response.get().code() );
+        assertFalse( response.get().message().contains( "internal implementation detail" ) );
+    }
+
+
+    @Test
+    void handlesMissingMessagesAndCyclicCauses() {
+        assertEquals( "", LanguageCrud.errorMessage( null ) );
+        assertEquals( IllegalStateException.class.getName(), LanguageCrud.errorMessage( new IllegalStateException() ) );
+        var outer = new RuntimeException( "outer" );
+        var inner = new RuntimeException( "inner", outer );
+        outer.initCause( inner );
+        assertTimeoutPreemptively( Duration.ofSeconds( 1 ), () -> assertEquals( "outer", LanguageCrud.errorMessage( outer ) ) );
+    }
+
+
+    private static Context errorContext( AtomicReference<Integer> status, AtomicReference<MappingModel.Error> response ) {
+        return (Context) Proxy.newProxyInstance( Context.class.getClassLoader(), new Class[]{ Context.class },
+                ( proxy, method, args ) -> {
+                    if ( method.getName().equals( "status" ) ) {
+                        status.set( (Integer) args[0] );
+                    } else if ( method.getName().equals( "json" ) ) {
+                        response.set( (MappingModel.Error) args[0] );
+                    }
+                    return proxy;
+                } );
+    }
 
     @Test
     void listsMappedPhysicalSourcesOnceEvenWhenSeveralTargetsUseThem() {
@@ -119,7 +202,7 @@ class MappingCrudTest {
     @Test
     void acceptsGenericIdsAndRequiresARevisionForRemovalAndCreation() {
         assertEquals( 31, MappingCrud.parseRequest( "{\"mappingId\":31}", MappingIdRequest.class ).mappingId() );
-        assertThrows( EditException.class, () -> MappingCrud.parseRequest( "{\"mappingId\":31}", RemoveRequest.class ) );
+        assertThrows( MappingValidationException.class, () -> MappingCrud.parseRequest( "{\"mappingId\":31}", RemoveRequest.class ) );
         var create = MappingCrud.parseRequest( """
                 {"adapterId":7,"targetEntityId":50,"expectedRevision":"draft","mappingName":"Created",
                  "logicalTableName":"customers","columns":[{"logicalColumnId":101,"logicalName":"id","included":true,"targetType":"INTEGER","targetNullable":false,"ruleType":"CONVERT_COLUMN"}]}
@@ -129,7 +212,7 @@ class MappingCrudTest {
         assertEquals( PolyType.INTEGER, create.toCommand().columns().get( 0 ).targetType() );
         assertEquals( Boolean.FALSE, create.toCommand().columns().get( 0 ).targetNullable() );
         assertEquals( ConversionColumnMappingRule.DEFINITION.id(), create.toCommand().columns().get( 0 ).ruleType() );
-        assertThrows( EditException.class, () -> MappingCrud.parseRequest( """
+        assertThrows( MappingValidationException.class, () -> MappingCrud.parseRequest( """
                 {"adapterId":7,"targetEntityId":50,"mappingId":31,"expectedRevision":"draft","mappingName":"Created",
                  "logicalTableName":"customers","columns":[]}
                 """, CreateRequest.class ) );
@@ -156,7 +239,7 @@ class MappingCrudTest {
                 """;
         assertEquals( 9L, MappingCrud.parseRequest( body + "\"mappingId\":31}", UpdateRequest.class ).toCommand().targetNamespaceId() );
         assertEquals( 9L, MappingCrud.parseRequest( body + "\"targetEntityId\":50}", CreateRequest.class ).toCommand().targetNamespaceId() );
-        assertThrows( EditException.class, () -> MappingCrud.parseRequest( (body + "\"mappingId\":31}").replace( "\"targetNamespaceId\":9", "\"targetNamespaceId\":9.5" ), UpdateRequest.class ) );
+        assertThrows( MappingValidationException.class, () -> MappingCrud.parseRequest( (body + "\"mappingId\":31}").replace( "\"targetNamespaceId\":9", "\"targetNamespaceId\":9.5" ), UpdateRequest.class ) );
     }
 
 
@@ -169,7 +252,7 @@ class MappingCrudTest {
         assertFalse( MappingCrud.parseRequest( body, UpdateRequest.class ).columns().get( 0 ).included() );
         for ( String removed : List.of( "\"adapterId\":7,", "\"mappingId\":31,", "\"expectedRevision\":\"original\",",
                 "\"mappingName\":\"Customers\",", "\"logicalTableName\":\"customers\",", "\"logicalColumnId\":101,", "\"logicalName\":\"id\"," ) ) {
-            assertThrows( EditException.class, () -> MappingCrud.parseRequest( body.replace( removed, "" ), UpdateRequest.class ), removed );
+            assertThrows( MappingValidationException.class, () -> MappingCrud.parseRequest( body.replace( removed, "" ), UpdateRequest.class ), removed );
         }
     }
 
@@ -180,10 +263,10 @@ class MappingCrudTest {
                 "{\"mappingId\":31}", "{\"adapterId\":null,\"mappingId\":31}",
                 "{\"adapterId\":7.5,\"mappingId\":31}", "{\"adapterId\":7,\"mappingId\":31,\"rules\":[]}",
                 "{\"adapterId\":7,\"mappingId\":31} {}", "null" ) ) {
-            assertEquals( "VALIDATION_FAILED", assertThrows( EditException.class,
-                    () -> MappingCrud.parseRequest( body, DetailRequest.class ) ).code );
+            assertEquals( "VALIDATION", assertThrows( MappingValidationException.class,
+                    () -> MappingCrud.parseRequest( body, DetailRequest.class ) ).getCode() );
         }
-        assertThrows( EditException.class, () -> MappingCrud.parseRequest( """
+        assertThrows( MappingValidationException.class, () -> MappingCrud.parseRequest( """
                 {"adapterId":7,"mappingId":31,"expectedRevision":"original","mappingName":"Customers",
                  "logicalTableName":"customers","columns":[{"logicalColumnId":101,"logicalName":"id","physicalName":"other"}]}
                 """, UpdateRequest.class ) );

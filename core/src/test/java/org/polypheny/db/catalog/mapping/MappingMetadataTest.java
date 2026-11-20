@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
 import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
 import org.polypheny.db.catalog.entity.mapping.rules.MappingRule;
+import org.polypheny.db.catalog.exceptions.MappingValidationException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.MappingKind;
 
@@ -147,7 +148,7 @@ class MappingMetadataTest {
             assertThrows( NullPointerException.class, () -> new SchemaMapping( 101, "mapping", kind, null, 201,
                     DataModel.RELATIONAL, DataModel.RELATIONAL, List.of(), null ) );
         }
-        assertThrows( IllegalArgumentException.class, () -> new SchemaMapping( 101, "mapping", MappingKind.PHYSICAL_TO_LOGICAL, 200L, 201,
+        assertThrows( MappingValidationException.class, () -> new SchemaMapping( 101, "mapping", MappingKind.PHYSICAL_TO_LOGICAL, 200L, 201,
                 DataModel.RELATIONAL, DataModel.RELATIONAL, List.of(), null ) );
     }
 

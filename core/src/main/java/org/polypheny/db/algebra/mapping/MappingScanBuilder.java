@@ -28,6 +28,8 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
+import org.polypheny.db.catalog.exceptions.MappingError;
+import org.polypheny.db.catalog.exceptions.MappingException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
@@ -84,14 +86,24 @@ public final class MappingScanBuilder {
             return original;
         }
         return snapshot.alloc().getFromLogical( original.logicalId ).stream()
-                .filter( allocation -> Objects.equals( mapping.sourceAllocationId(), allocation.id ) ).findFirst().orElseThrow();
+                .filter( allocation -> Objects.equals( mapping.sourceAllocationId(), allocation.id ) ).findFirst()
+                .orElseThrow( () -> MappingError.Missing.sourceAllocation( mapping.id(), mapping.sourceAllocationId() ) );
     }
 
 
     private LogicalRelMappingTransform buildMappedScan( SchemaMapping mapping, AllocationEntity source, AllocationEntity target ) {
         // Obtain source adapter physical scan
-        var adapter = AdapterManager.getInstance().getAdapter( source.adapterId ).orElseThrow();
-        AlgNode input = createPhysicalScan( adapter, source );
+        var adapter = AdapterManager.getInstance().getAdapter( source.adapterId )
+                .orElseThrow( () -> MappingError.Missing.adapter( source.adapterId ) );
+        AlgNode input;
+        try {
+            input = createPhysicalScan( adapter, source );
+        } catch ( RuntimeException e ) {
+            if ( MappingException.findCause( e ).isPresent() ) {
+                throw e;
+            }
+            throw MappingError.Operation.scanFailed( mapping.name(), source.adapterId, e );
+        }
         // transform() attaches the mapping to the plan
         return LogicalRelMappingTransform.create( input, mapping,
                 PhysicalMappingBinding.create( mapping, source, adapter.getCatalog() ), target.getTupleType() );

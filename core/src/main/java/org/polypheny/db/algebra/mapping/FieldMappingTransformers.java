@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.mapping.rules.MappingRule;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.exceptions.MappingError;
 import org.polypheny.db.rex.RexNode;
 
 
@@ -40,7 +40,7 @@ public final class FieldMappingTransformers {
         Map<Class<? extends MappingRule>, FieldMappingTransformer<?>> registered = new HashMap<>();
         for ( FieldMappingTransformer<?> transformer : implementations ) {
             if ( registered.putIfAbsent( transformer.ruleType(), transformer ) != null ) {
-                throw new IllegalArgumentException( "Duplicate mapping transformer for " + transformer.ruleType().getName() );
+                throw MappingError.Duplicate.transformer( transformer.ruleType().getName() );
             }
         }
         transformers = Map.copyOf( registered );
@@ -52,7 +52,7 @@ public final class FieldMappingTransformers {
      */
     public void requireSupported( MappingRule rule ) {
         if ( !transformers.containsKey( rule.getClass() ) ) {
-            throw new GenericRuntimeException( "Unsupported rule type %s.", rule.getClass().getName() );
+            throw MappingError.Missing.transformer( rule.getClass().getName() );
         }
     }
 
@@ -64,7 +64,7 @@ public final class FieldMappingTransformers {
         requireSupported( rule );
         RexNode expression = apply( transformers.get( rule.getClass() ), rule, targetField, context );
         if ( expression == null || !targetField.getType().equals( expression.getType() ) ) {
-            throw new GenericRuntimeException( "Mapping %d produces an incompatible type for target field %s.", context.getMapping().id(), targetField.getName() );
+            throw MappingError.Algebra.resultTypeMismatch( context.getMapping().id(), targetField.getName() );
         }
         return expression;
     }

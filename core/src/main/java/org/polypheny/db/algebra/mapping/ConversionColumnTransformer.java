@@ -21,8 +21,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.mapping.rules.ConversionColumnMappingRule;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.catalog.exceptions.MappingExecutionException;
+import org.polypheny.db.catalog.exceptions.MappingError;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
@@ -47,7 +46,7 @@ public final class ConversionColumnTransformer implements FieldMappingTransforme
         AlgDataTypeField source = context.resolveSourceField( rule.targetLogicalColumnId() );
         AlgDataType targetType = targetField.getType();
         if ( !ConversionColumnMappingRule.supports( source.getType(), targetType ) ) {
-            throw new GenericRuntimeException( "Mapping %d cannot convert column '%s' from %s to %s.", context.getMapping().id(), targetField.getName(), source.getType(), targetType );
+            throw MappingError.Unsupported.conversion( context.getMapping().id(), targetField.getName(), source.getType(), targetType );
         }
         return project( source, targetField, context );
     }
@@ -66,7 +65,7 @@ public final class ConversionColumnTransformer implements FieldMappingTransforme
             PolyType source, PolyType target, int precision, int scale, boolean sameType, boolean nullable, DataContext context ) {
         if ( ScalarConversions.isNull( value ) ) {
             if ( !nullable ) {
-                throw MappingExecutionException.nullNotAllowed( mappingName, targetTableName, column.value, sourceType, targetType );
+                throw MappingError.Execution.nullNotAllowed( mappingName, targetTableName, column.value, sourceType, targetType );
             }
             return null;
         }
@@ -76,7 +75,7 @@ public final class ConversionColumnTransformer implements FieldMappingTransforme
         try {
             return ScalarConversions.convert( value, source, target, precision, scale, context );
         } catch ( RuntimeException e ) {
-            throw MappingExecutionException.conversionFailed( mappingName, targetTableName, column.value, value, sourceType, targetType, e );
+            throw MappingError.Execution.conversionFailed( mappingName, targetTableName, column.value, value, sourceType, targetType, e );
         }
     }
 

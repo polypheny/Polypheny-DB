@@ -16,38 +16,20 @@
 
 package org.polypheny.db.catalog.exceptions;
 
-import org.polypheny.db.type.ScalarConversions;
-import org.polypheny.db.type.entity.PolyValue;
+import java.util.List;
+import java.util.Map;
 
 
-/**
- * Describes a failed mapped value consistently
- */
 public final class MappingExecutionException extends MappingException {
 
-    private MappingExecutionException( String mappingName, String targetTableName, String column, String problem, Throwable cause ) {
-        super( "Mapping '%s', target '%s', column '%s': %s".formatted( mappingName, targetTableName, column, problem ), cause );
+    MappingExecutionException( String message, Throwable cause, Map<String, String> fieldErrors, List<String> blockingEntities ) {
+        super( message, cause, fieldErrors, blockingEntities );
     }
 
 
-    public static MappingExecutionException conversionFailed( String mappingName, String targetTableName, String column, PolyValue value,
-            String sourceType, String targetType, Throwable cause ) {
-        return new MappingExecutionException( mappingName, targetTableName, column,
-                "cannot convert value %s from %s to %s.".formatted( displayValue( value ), sourceType, targetType ), cause );
+    @Override
+    public String getCode() {
+        return "EXECUTION";
     }
 
-
-    public static MappingExecutionException nullNotAllowed( String mappingName, String targetTableName, String column, String sourceType, String targetType ) {
-        return new MappingExecutionException( mappingName, targetTableName, column,
-                "cannot map value NULL from %s to %s because the target column does not allow NULL.".formatted( sourceType, targetType ), null );
-    }
-
-
-    private static String displayValue( PolyValue value ) {
-        if ( ScalarConversions.isNull( value ) ) {
-            return "NULL";
-        }
-        String text = value.isString() ? value.asString().toQuotedJson() : value.toJson();
-        return text != null && text.length() > 160 ? text.substring( 0, 160 ) + "…" : text;
-    }
 }

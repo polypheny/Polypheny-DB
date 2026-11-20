@@ -42,6 +42,7 @@ import org.polypheny.db.catalog.entity.LogicalQueryInterface;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.exceptions.MappingError;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.transaction.Transaction;
@@ -128,12 +129,12 @@ public abstract class Catalog implements ExtensionPoint {
 
 
     public void addSchemaMapping( SchemaMapping mapping ) {
-        throw new UnsupportedOperationException( "Schema mappings are not supported by this catalog." );
+        throw MappingError.Unsupported.catalog();
     }
 
 
     public void removeSchemaMapping( long mappingId ) {
-        throw new UnsupportedOperationException( "Schema mappings are not supported by this catalog." );
+        throw MappingError.Unsupported.catalog();
     }
 
 
@@ -141,16 +142,16 @@ public abstract class Catalog implements ExtensionPoint {
      * Removes an entity's mappings before its allocation or logical metadata is deleted.
      */
     public void removeSchemaMappingsForEntity( long logicalEntityId ) {
-        throw new UnsupportedOperationException( "Schema mappings are not supported by this catalog." );
+        throw MappingError.Unsupported.catalog();
     }
 
 
     public void removeSchemaMappingsForAllocation( long allocationId ) {
-        throw new UnsupportedOperationException( "Schema mappings are not supported by this catalog." );
+        throw MappingError.Unsupported.catalog();
     }
 
     public void updateSchemaMapping( SchemaMapping mapping ) {
-        throw new UnsupportedOperationException( "Schema mapping updates are not supported by this catalog." );
+        throw MappingError.Unsupported.catalog();
     }
 
 

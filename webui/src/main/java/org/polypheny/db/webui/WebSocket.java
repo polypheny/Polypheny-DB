@@ -167,7 +167,7 @@ public class WebSocket implements Consumer<WsConfig> {
                     root = PolyPlanBuilder.buildFromPolyAlg( polyAlgRequest.polyAlg, polyAlgRequest.planType, statement );
                 } catch ( Exception e ) {
                     log.error( "Caught exception while building the plan builder tree", e );
-                    ctx.send( RelationalResult.builder().error( e.getMessage() ).build() );
+                    ctx.send( RelationalResult.builder().error( LanguageCrud.errorMessage( e ) ).build() );
                     break;
                 }
 
@@ -195,7 +195,7 @@ public class WebSocket implements Consumer<WsConfig> {
                         dynamicParams = PolyPlanBuilder.translateDynamicParams( polyAlgRequest.dynamicValues, polyAlgRequest.dynamicTypes );
                     } catch ( Exception e ) {
                         log.error( "Caught exception while translating dynamic parameters:", e );
-                        ctx.send( RelationalResult.builder().error( e.getMessage() ).build() );
+                        ctx.send( RelationalResult.builder().error( LanguageCrud.errorMessage( e ) ).build() );
                         break;
                     }
                     translated = PhysicalQueryContext.fromQuery( polyAlgRequest.polyAlg, root, dynamicParams.left, dynamicParams.right, qc );
@@ -277,7 +277,7 @@ public class WebSocket implements Consumer<WsConfig> {
                     }
 
                 } catch ( Throwable t ) {
-                    ctx.send( RelationalResult.builder().error( t.getMessage() ).build() );
+                    ctx.send( RelationalResult.builder().error( LanguageCrud.errorMessage( t ) ).build() );
                     return;
                 }
                 if ( refreshResult.xid != null ) {
@@ -322,7 +322,7 @@ public class WebSocket implements Consumer<WsConfig> {
                     }
 
                 } catch ( Throwable t ) {
-                    ctx.send( RelationalResult.builder().error( t.getMessage() ).build() );
+                    ctx.send( RelationalResult.builder().error( LanguageCrud.errorMessage( t ) ).build() );
                     return;
                 }
                 if ( result.xid != null ) {

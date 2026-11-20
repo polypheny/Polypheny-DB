@@ -28,6 +28,7 @@ import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.exceptions.MappingException;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
@@ -175,7 +176,9 @@ class PIService {
             if ( Catalog.mode == RunMode.BENCHMARK && !(t instanceof DeadlockException) ) {
                 log.error( "Request failed: ", t );
             }
-            r = createErrorResponse( req.getId(), Objects.requireNonNullElse( t.getMessage(), t.getClass().getSimpleName() ) );
+            r = createErrorResponse( req.getId(), MappingException.findCause( t )
+                    .map( MappingException::getMessage )
+                    .orElseGet( () -> Objects.requireNonNullElse( t.getMessage(), t.getClass().getSimpleName() ) ) );
         }
         sendOneMessage( r );
         return r;

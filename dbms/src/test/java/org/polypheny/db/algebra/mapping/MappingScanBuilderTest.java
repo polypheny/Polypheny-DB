@@ -30,7 +30,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -53,6 +52,7 @@ import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
 import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.MappingMissingException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.MappingKind;
 import org.polypheny.db.catalog.snapshot.AllocSnapshot;
@@ -187,7 +187,7 @@ class MappingScanBuilderTest {
         when( mappings.getMappingsForLogicalEntity( TARGET_ID ) ).thenReturn( List.of( mapping( 1, 999L ) ) );
         when( allocations.getFromLogical( TARGET_ID ) ).thenReturn( List.of( first.allocation() ) );
 
-        assertThrows( NoSuchElementException.class, () -> builder.build( first.allocation() ) );
+        assertThrows( MappingMissingException.class, () -> builder.build( first.allocation() ) );
     }
 
 
@@ -198,7 +198,7 @@ class MappingScanBuilderTest {
                 mapping( 1, first.allocation().id ), mapping( 2, null ) ) );
         when( allocations.getFromLogical( TARGET_ID ) ).thenReturn( List.of( first.allocation() ) );
 
-        assertThrows( NoSuchElementException.class, () -> builder.build( first.allocation() ) );
+        assertThrows( MappingMissingException.class, () -> builder.build( first.allocation() ) );
     }
 
 

@@ -24,7 +24,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.exceptions.MappingError;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.rex.RexBuilder;
 
@@ -55,8 +55,11 @@ public final class FieldMappingContext {
         this.snapshot = snapshot;
         Map<Long, AlgDataTypeField> fields = new HashMap<>();
         for ( AlgDataTypeField field : inputType.getFields() ) {
-            if ( field.getId() == null || fields.putIfAbsent( field.getId(), field ) != null ) {
-                throw new GenericRuntimeException( "Mapping %d cannot identify the physical fields of allocation %d by column ID.", mapping.id(), binding.allocationId() );
+            if ( field.getId() == null ) {
+                throw MappingError.Missing.fieldId( mapping.id(), field.getName(), binding.allocationId() );
+            }
+            if ( fields.putIfAbsent( field.getId(), field ) != null ) {
+                throw MappingError.Duplicate.inputFieldId( mapping.id(), field.getId(), binding.allocationId() );
             }
         }
         inputFields = Map.copyOf( fields );
@@ -65,8 +68,10 @@ public final class FieldMappingContext {
 
     public String getTargetTableName() {
         Objects.requireNonNull( snapshot, "Mapping conversions require a catalog snapshot." );
-        var table = snapshot.rel().getTable( mapping.targetEntityId() ).orElseThrow();
-        return snapshot.getNamespace( table.namespaceId ).orElseThrow().name + "." + table.name;
+        var table = snapshot.rel().getTable( mapping.targetEntityId() )
+                .orElseThrow( () -> MappingError.Missing.target( mapping.id(), mapping.targetEntityId() ) );
+        return snapshot.getNamespace( table.namespaceId )
+                .orElseThrow( () -> MappingError.Missing.namespace( mapping.id(), table.namespaceId ) ).name + "." + table.name;
     }
 
     /**
@@ -75,10 +80,12 @@ public final class FieldMappingContext {
     public AlgDataTypeField resolveSourceField( long columnId ) {
         PhysicalColumn registered = binding.columns().get( columnId );
         AlgDataTypeField field = inputFields.get( columnId );
-        if ( registered == null || field == null
-                || !Objects.equals( registered.logicalName, field.getName() )
+        if ( registered == null || field == null ) {
+            throw MappingError.Missing.sourceField( mapping.id(), columnId, binding.allocationId() );
+        }
+        if ( !Objects.equals( registered.logicalName, field.getName() )
                 || !registered.getAlgDataType( rexBuilder.getTypeFactory() ).equals( field.getType() ) ) {
-            throw new GenericRuntimeException( "Mapping %d cannot resolve source column %d on allocation %d.", mapping.id(), columnId, binding.allocationId() );
+            throw MappingError.Algebra.sourceFieldMismatch( mapping.id(), columnId, binding.allocationId() );
         }
         return field;
     }
@@ -91,8 +98,7 @@ public final class FieldMappingContext {
         for ( AlgDataTypeField field : inputFields.values() ) {
             PhysicalColumn registered = binding.columns().get( field.getId() );
             if ( registered != null && !Objects.equals( registered.name, field.getPhysicalName() ) ) {
-                throw new GenericRuntimeException( "Mapping %d has physical name %s instead of %s for source column %d on allocation %d.",
-                        mapping.id(), field.getPhysicalName(), registered.name, field.getId(), binding.allocationId() );
+                throw MappingError.Algebra.physicalNameMismatch( mapping.id(), field.getPhysicalName(), registered.name, field.getId(), binding.allocationId() );
             }
         }
     }

@@ -85,6 +85,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalGraph.SubstitutionGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.exceptions.MappingError;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.information.InformationPolyAlg.PlanType;
@@ -326,7 +327,7 @@ public class PolyAlgToAlgConverter {
         if ( operator.getOperatorName() == OperatorName.MAPPING_CONVERT ) {
             AlgDataType targetType = exp.getAlgDataType();
             if ( targetType == null ) {
-                throw new GenericRuntimeException( "Mapping conversion requires an explicit result type." );
+                throw MappingError.Missing.conversionResultType();
             }
             return builder.makeCall( targetType, operator, operands );
         }

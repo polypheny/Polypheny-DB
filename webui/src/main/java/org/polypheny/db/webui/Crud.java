@@ -111,6 +111,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalView;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.exceptions.MappingException;
 import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
@@ -679,8 +680,12 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 try {
                     transaction.rollback( "Error while refreshing source catalog: " + e.getMessage() );
                 } catch ( Exception rollbackException ) {
+                    e.addSuppressed( rollbackException );
                     log.error( "Rollback also failed", rollbackException );
                 }
+            }
+            if ( e instanceof MappingException mappingError ) {
+                throw mappingError;
             }
             throw new GenericRuntimeException(
                     "Could not refresh source catalog for entity " + request.entityId, e );
@@ -922,7 +927,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
         if ( ec.getException().isPresent() ) {
             // TODO: Create a dedicated error result class
-            return RelationalResult.builder().exception( ec.getException().get() ).error( ec.getException().get().toString() ).build();
+            return RelationalResult.builder().exception( ec.getException().get() ).error( LanguageCrud.errorMessage( ec.getException().get() ) ).build();
         }
 
         resultBuilder = (RelationalResultBuilder<?, ?>) builder.apply( ec, request, implementationContext.getStatement() );
@@ -967,7 +972,11 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             return result;
         } catch ( Exception e ) {
             if ( transaction.isActive() ) {
-                transaction.rollback( "Could not read mapped table preview: " + e.getMessage() );
+                try {
+                    transaction.rollback( "Could not read mapped table preview: " + LanguageCrud.errorMessage( e ) );
+                } catch ( Exception rollbackError ) {
+                    e.addSuppressed( rollbackError );
+                }
             }
             throw e;
         }

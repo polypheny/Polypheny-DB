@@ -52,6 +52,8 @@ import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
 import org.polypheny.db.catalog.entity.mapping.rules.MappingRule;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.MappingError;
+import org.polypheny.db.catalog.exceptions.MappingMissingException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.MappingKind;
@@ -127,7 +129,7 @@ public record MappingState(
     public void validateRemoval( String expectedRevision ) {
         validateRevision( expectedRevision );
         if ( !removable() ) {
-            throw new EditException( "DEPENDENCY_CONFLICT", removalBlockedReason, Map.of(), List.of( table.name ) );
+            throw MappingError.Conflict.removalBlocked( mapping.name(), removalBlockedReason, List.of( table.name ) );
         }
     }
 
@@ -153,7 +155,8 @@ public record MappingState(
     public static MappingState load( Catalog catalog, long mappingId ) {
         var snapshot = catalog.getSnapshot();
         var mapping = snapshot.mappings().getMapping( mappingId ).orElseThrow( MappingState::notFound );
-        long adapterId = SchemaMappingManager.sourceAllocations( catalog, mapping ).stream().min( Comparator.comparingLong( a -> a.id ) ).orElseThrow( MappingState::notFound ).adapterId;
+        long adapterId = SchemaMappingManager.sourceAllocations( catalog, mapping ).stream().min( Comparator.comparingLong( a -> a.id ) )
+                .orElseThrow( () -> MappingError.Missing.sourceAllocation( mapping.id() ) ).adapterId;
         return resolve( catalog, adapterId, mapping );
     }
 
@@ -180,7 +183,7 @@ public record MappingState(
         mapping = mapping.withSourceAllocation( allocationId );
         MappingState source = resolve( catalog, adapterId, mapping );
         if ( source.physicalTables().size() != 1 ) {
-            throw new EditException( "UNSUPPORTED_MAPPING", "Creating mappings currently requires a single physical source table." );
+            throw MappingError.Unsupported.singlePhysicalSourceRequired();
         }
         String sourceName = source.physicalTables().get( 0 ).name;
         String name = SchemaMappingManager.availableDefaultMappingName( snapshot.mappings().getMappings(), source.adapter().uniqueName, sourceName );
@@ -202,10 +205,9 @@ public record MappingState(
             var target = snapshot.rel().getTable( existingTargetEntityId ).orElseThrow( MappingState::notFound );
             validateExistingTarget( catalog, target );
             if ( SchemaMappingManager.isPhysicalSourceMappedToTarget( catalog, source.mapping(), target.id ) ) {
-                throw new EditException( "VALIDATION_FAILED", "This source already has a mapping to the selected target.",
-                        Map.of( "sourceAllocationId", "Choose a source that is not already mapped to this target." ), List.of() );
+                throw MappingError.Duplicate.sourceTargetPair();
             }
-            var targetNamespace = snapshot.getNamespace( target.namespaceId ).orElseThrow();
+            var targetNamespace = snapshot.getNamespace( target.namespaceId ).orElseThrow( MappingState::notFound );
             var targetColumns = snapshot.rel().getColumns( target.id );
             var proposed = draftColumns.stream().map( column -> {
                 var match = targetColumns.stream().filter( targetColumn -> targetNamespace.caseSensitive
@@ -229,7 +231,7 @@ public record MappingState(
         Snapshot snapshot = catalog.getSnapshot();
         LogicalAdapter adapter = snapshot.getAdapter( adapterId ).orElseThrow( MappingState::notFound );
         if ( mapping.kind() != MappingKind.PHYSICAL_TO_LOGICAL ) {
-            throw notFound();
+            throw MappingError.Unsupported.kind( mapping.id(), mapping.kind() );
         }
         LogicalTable table = snapshot.rel().getTable( mapping.targetEntityId() ).orElseThrow( MappingState::notFound );
         List<AllocationEntity> allocations = SchemaMappingManager.sourceAllocations( catalog, mapping ).stream()
@@ -243,10 +245,14 @@ public record MappingState(
                 .sorted( Comparator.comparingInt( c -> c.position ) ).toList();
         List<PhysicalTable> physicalTables = new ArrayList<>();
         for ( AllocationEntity allocation : allocations ) {
-            var physical = catalog.getAdapterCatalog( allocation.adapterId ).orElseThrow( MappingState::notFound )
+            var physical = catalog.getAdapterCatalog( allocation.adapterId )
+                    .orElseThrow( () -> MappingError.Missing.adapterCatalog( allocation.adapterId ) )
                     .getPhysicalsFromAllocs( allocation.id );
-            if ( physical == null || physical.isEmpty() || physical.stream().anyMatch( p -> !(p instanceof PhysicalTable) ) ) {
-                throw new EditException( "SOURCE_UNAVAILABLE", "Accepted physical source metadata is unavailable." );
+            if ( physical == null || physical.isEmpty() || physical.stream().anyMatch( Objects::isNull ) ) {
+                throw MappingError.Missing.physicalMetadata( allocation.id );
+            }
+            if ( physical.stream().anyMatch( p -> !(p instanceof PhysicalTable) ) ) {
+                throw MappingError.Unsupported.relationalSourceRequired( mapping.id(), allocation.id );
             }
             physical.stream().map( PhysicalTable.class::cast ).sorted( Comparator.comparingLong( p -> p.id ) ).forEach( physicalTables::add );
         }
@@ -294,11 +300,12 @@ public record MappingState(
         // prevents a stale editor from overwriting newer changes
         validateRevision( update.expectedRevision() );
         LogicalNamespace targetNamespace = update.targetNamespaceId() == null ? namespace
-                : snapshot.getNamespace( update.targetNamespaceId() ).orElseThrow( () -> new EditException( "VALIDATION_FAILED",
-                        "Choose an existing target namespace.", Map.of( "targetNamespaceId", "This namespace is no longer available." ), List.of() ) );
-        if ( targetNamespace.dataModel != DataModel.RELATIONAL || targetNamespace.hidden ) {
-            throw new EditException( "VALIDATION_FAILED", "Choose a relational target namespace.",
-                    Map.of( "targetNamespaceId", "Choose a relational target namespace." ), List.of() );
+                : snapshot.getNamespace( update.targetNamespaceId() ).orElseThrow( () -> MappingError.Missing.targetNamespace() );
+        if ( targetNamespace.dataModel != DataModel.RELATIONAL ) {
+            throw MappingError.Unsupported.relationalNamespaceRequired();
+        }
+        if ( targetNamespace.hidden ) {
+            throw MappingError.Validation.visibleNamespaceRequired();
         }
         Map<String, String> errors = new LinkedHashMap<>();
         String label = update.mappingName() == null ? "" : update.mappingName().trim();
@@ -363,13 +370,14 @@ public record MappingState(
                 var included = names.stream().filter( ColumnName::included ).toList();
                 if ( included.size() != targetColumns.size() || targetColumns.stream().anyMatch( targetColumn -> included.stream().noneMatch( requestedColumn ->
                         key( requestedColumn.logicalName(), namespace ).equals( key( targetColumn.name, namespace ) )
-                                && compatible( columns.stream().filter( sourceColumn -> sourceColumn.id == requestedColumn.logicalColumnId() ).findFirst().orElseThrow(), targetColumn ) ) ) ) {
+                                && compatible( columns.stream().filter( sourceColumn -> sourceColumn.id == requestedColumn.logicalColumnId() ).findFirst()
+                                        .orElseThrow( () -> MappingError.Missing.logicalColumn( mapping.id(), requestedColumn.logicalColumnId() ) ), targetColumn ) ) ) ) {
                     errors.put( "columns", "The included source fields must match all existing target columns in name, type and nullability." );
                 }
             }
         }
         if ( !errors.isEmpty() ) {
-            throw new EditException( "VALIDATION_FAILED", "Correct the highlighted mapping fields.", errors, List.of() );
+            throw MappingError.Validation.fields( errors );
         }
         if ( logicalChanged && mapping.id() >= 0 ) {
             List<String> dependencies = new ArrayList<>( snapshot.rel().getConnectedViews( table.id ).stream().map( v -> v.name ).toList() );
@@ -386,9 +394,7 @@ public record MappingState(
                 snapshot.rel().getForeignKeys( table.id ).stream().map( key -> key.name ).forEach( dependencies::add );
             }
             if ( !dependencies.isEmpty() ) {
-                String message = changedTypes.isEmpty() ? "Dependent views or foreign keys prevent changing this logical schema."
-                        : "Dependencies prevent changing this logical schema.";
-                throw new EditException( "DEPENDENCY_CONFLICT", message, Map.of(), dependencies.stream().distinct().toList() );
+                throw MappingError.Conflict.schemaChangeBlocked( !changedTypes.isEmpty(), dependencies.stream().distinct().toList() );
             }
         }
         return new MappingUpdate( adapter.id, mapping.id(), revision, label, tableName, List.copyOf( names ), targetNamespace.id, update.existingTargetEntityId(), update.sourceAllocationId() );
@@ -551,10 +557,10 @@ public record MappingState(
      */
     public void validateRevision( String expectedRevision ) {
         if ( !editable() ) {
-            throw new EditException( "UNSUPPORTED_MAPPING", readOnlyReason );
+            throw MappingError.Unsupported.editor( readOnlyReason );
         }
         if ( !Objects.equals( revision, expectedRevision ) ) {
-            throw new EditException( "REVISION_CONFLICT", "This mapping changed after it was opened. Reload the saved version before editing it again." );
+            throw MappingError.Revision.stale();
         }
     }
 
@@ -625,10 +631,10 @@ public record MappingState(
      */
     private static void validateExistingTarget( Catalog catalog, LogicalTable target ) {
         if ( target.entityType != EntityType.SOURCE || target.modifiable ) {
-            throw new EditException( "UNSUPPORTED_MAPPING", "Existing-target mappings currently require an imported or mapping-backed table." );
+            throw MappingError.Unsupported.existingSourceTargetRequired();
         }
         if ( catalog.getSnapshot().alloc().getFromLogical( target.id ).stream().map( allocation -> allocation.partitionId ).distinct().count() != 1 ) {
-            throw new EditException( "UNSUPPORTED_MAPPING", "Existing-target mappings require a single target partition." );
+            throw MappingError.Unsupported.existingTargetPartitionRequired();
         }
     }
 
@@ -664,36 +670,8 @@ public record MappingState(
     /**
      * Creates the standard exception indicating that the source adapter or mapping is unavailable.
      */
-    public static EditException notFound() {
-        return new EditException( "NOT_FOUND", "The source adapter or its mapping is no longer available." );
-    }
-
-    /**
-     * EditException class
-     */
-    public static class EditException extends RuntimeException {
-
-        public final String code;
-        public final Map<String, String> fieldErrors;
-        public final List<String> blockingEntities;
-
-        /**
-         * Creates a mapping-operation error without field errors or blocking-entity details.
-         */
-        public EditException( String code, String message ) {
-            this( code, message, Map.of(), List.of() );
-        }
-
-        /**
-         * Creates a mapping-operation error containing its code, message, field errors, and blocking entities.
-         */
-        public EditException( String code, String message, Map<String, String> fieldErrors, List<String> blockingEntities ) {
-            super( message );
-            this.code = code;
-            this.fieldErrors = Map.copyOf( fieldErrors );
-            this.blockingEntities = List.copyOf( blockingEntities );
-        }
-
+    public static MappingMissingException notFound() {
+        return MappingError.Missing.resource();
     }
 
 }

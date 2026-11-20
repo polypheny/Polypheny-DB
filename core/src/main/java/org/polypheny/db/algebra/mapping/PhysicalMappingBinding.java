@@ -26,7 +26,7 @@ import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.exceptions.MappingError;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.MappingKind;
 import org.polypheny.db.util.Pair;
@@ -53,27 +53,37 @@ public record PhysicalMappingBinding(
      * Binds the mapping’s logical target to the physical source in the selected allocation
      */
     public static PhysicalMappingBinding create( SchemaMapping mapping, AllocationEntity allocation, AdapterCatalog adapterCatalog ) {
+        if ( adapterCatalog == null ) {
+            throw MappingError.Missing.adapterCatalog( allocation.adapterId );
+        }
         if ( !(adapterCatalog instanceof RelAdapterCatalog) ) {
-            throw new GenericRuntimeException( "Mapping %d requires a relational adapter catalog for allocation %d.", mapping.id(), allocation.id );
+            throw MappingError.Unsupported.relationalAdapterRequired( mapping.id(), allocation.id );
         }
 
         // Find the physical table registered for the selected allocation.
         List<PhysicalEntity> physicals = adapterCatalog.getPhysicalsFromAllocs( allocation.id );
-        if ( physicals == null || physicals.isEmpty() || !(physicals.get( 0 ) instanceof PhysicalTable table) ) {
-            throw new GenericRuntimeException( "Mapping %d has no physical table for allocation %d.", mapping.id(), allocation.id );
+        if ( physicals == null || physicals.isEmpty() || physicals.get( 0 ) == null ) {
+            throw MappingError.Missing.physicalTable( mapping.id(), allocation.id );
+        }
+        if ( !(physicals.get( 0 ) instanceof PhysicalTable table) ) {
+            throw MappingError.Unsupported.relationalSourceRequired( mapping.id(), allocation.id );
         }
         if ( table.allocationId != allocation.id || table.logicalId != allocation.logicalId
                 || table.adapterId != allocation.adapterId || adapterCatalog.adapterId != allocation.adapterId ) {
-            throw new GenericRuntimeException( "Mapping %d does not match allocation %d and its physical table.", mapping.id(), allocation.id );
+            throw MappingError.Algebra.physicalBindingMismatch( mapping.id(), allocation.id );
         }
 
         Map<Long, PhysicalColumn> columns = new HashMap<>();
         for ( PhysicalColumn column : table.columns ) {
-            if ( adapterCatalog.fields.get( Pair.of( allocation.id, column.id ) ) instanceof PhysicalColumn registered
-                    && registered.equals( column ) && registered.allocId == allocation.id
-                    && registered.logicalEntityId == allocation.logicalId && registered.adapterId == allocation.adapterId ) {
-                columns.put( column.id, registered );
+            var field = adapterCatalog.fields.get( Pair.of( allocation.id, column.id ) );
+            if ( field == null ) {
+                throw MappingError.Missing.physicalColumn( mapping.id(), column.id, allocation.id );
             }
+            if ( !(field instanceof PhysicalColumn registered) || !registered.equals( column ) || registered.allocId != allocation.id
+                    || registered.logicalEntityId != allocation.logicalId || registered.adapterId != allocation.adapterId ) {
+                throw MappingError.Algebra.physicalColumnMismatch( mapping.id(), column.id, allocation.id );
+            }
+            columns.put( column.id, registered );
         }
         PhysicalMappingBinding binding = new PhysicalMappingBinding( allocation.id, allocation.logicalId, allocation.adapterId, table.id, columns );
         binding.validate( mapping );
@@ -84,12 +94,12 @@ public record PhysicalMappingBinding(
     public void validate( SchemaMapping mapping ) {
         if ( mapping.kind() != MappingKind.PHYSICAL_TO_LOGICAL
                 || mapping.sourceModel() != DataModel.RELATIONAL || mapping.targetModel() != DataModel.RELATIONAL ) {
-            throw new GenericRuntimeException( "Mapping %d is not a relational physical-to-logical mapping.", mapping.id() );
+            throw MappingError.Unsupported.relationalMappingRequired( mapping.id() );
         }
         // check that the binding uses the mapping’s specified source allocation
         // allocation should be checked for multiple source to single target mapping
         if ( mapping.targetEntityId() != logicalEntityId || (mapping.sourceAllocationId() != null && mapping.sourceAllocationId() != allocationId) ) {
-            throw new GenericRuntimeException( "Mapping %d does not match allocation %d.", mapping.id(), allocationId );
+            throw MappingError.Algebra.allocationMismatch( mapping.id(), allocationId );
         }
     }
 

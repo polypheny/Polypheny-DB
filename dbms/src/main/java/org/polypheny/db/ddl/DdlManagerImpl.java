@@ -102,6 +102,8 @@ import org.polypheny.db.catalog.entity.mapping.SchemaMappingManager;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
+import org.polypheny.db.catalog.exceptions.MappingError;
+import org.polypheny.db.catalog.exceptions.MappingException;
 import org.polypheny.db.catalog.mapping.MappingState;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Collation;
@@ -1151,7 +1153,7 @@ public class DdlManagerImpl extends DdlManager {
         for ( AllocationEntity allocation : allocations ) {
             SchemaMapping mapping = mappingsByAllocation.get( allocation.id );
             if ( mapping == null ) {
-                throw new GenericRuntimeException( "No mapping identifies source allocation %s for target '%s'.", allocation.id, targetName );
+                throw MappingError.Missing.allocationMapping( allocation.id, targetName );
             }
             relationalMappedSourceRefresh( targetName, allocation, mapping, snapshot ).ifPresent( refreshes::add );
         }
@@ -1161,7 +1163,14 @@ public class DdlManagerImpl extends DdlManager {
 
         List<String> changes = new ArrayList<>();
         for ( MappedSourceRefresh refresh : refreshes ) {
-            refresh.apply().accept( statement );
+            try {
+                refresh.apply().accept( statement );
+            } catch ( RuntimeException e ) {
+                if ( MappingException.findCause( e ).isPresent() ) {
+                    throw e;
+                }
+                throw MappingError.Operation.refreshFailed( targetName, e );
+            }
             changes.add( refresh.description() );
         }
         catalog.updateSnapshot();
@@ -1186,15 +1195,24 @@ public class DdlManagerImpl extends DdlManager {
 
 
     private Optional<MappedSourceRefresh> relationalMappedSourceRefresh( String targetName, AllocationEntity allocation, SchemaMapping mapping, Snapshot snapshot ) {
-        DataSource<?> source = AdapterManager.getInstance().getSource( allocation.adapterId ).orElseThrow();
+        DataSource<?> source = AdapterManager.getInstance().getSource( allocation.adapterId )
+                .orElseThrow( () -> MappingError.Missing.adapter( allocation.adapterId ) );
         if ( !source.supportsRelational() || !supportsDynamicSourceTableDiscovery( source ) ) {
             return Optional.empty();
         }
 
-        PhysicalTable physical = getMappedPhysicalTable( allocation );
-        List<ExportedColumn> sourceColumns = loadMappedSourceColumns( source, physical );
+        PhysicalTable physical = getMappedPhysicalTable( allocation, mapping.id() );
+        List<ExportedColumn> sourceColumns;
+        try {
+            sourceColumns = loadMappedSourceColumns( source, physical );
+        } catch ( RuntimeException e ) {
+            if ( MappingException.findCause( e ).isPresent() ) {
+                throw e;
+            }
+            throw MappingError.Operation.discoveryFailed( mapping.name(), e );
+        }
         if ( sourceColumns == null || sourceColumns.isEmpty() ) {
-            throw new GenericRuntimeException( "Source table '%s' for mapping '%s' is no longer available. Target '%s' was not changed.", physical.name, mapping.name(), targetName );
+            throw MappingError.Missing.sourceTable( physical.name, mapping.name(), targetName );
         }
 
         List<ExportedColumn> orderedColumns = new ArrayList<>( sourceColumns );
@@ -1205,19 +1223,25 @@ public class DdlManagerImpl extends DdlManager {
             return Optional.empty();
         }
 
-        AllocationTable tableAllocation = allocation.unwrapOrThrow( AllocationTable.class );
+        if ( !(allocation instanceof AllocationTable tableAllocation) ) {
+            throw MappingError.Algebra.allocationMismatch( mapping.id(), allocation.id );
+        }
         String description = "Refreshed physical source '" + physical.name + "' for mapping '" + mapping.name() + "'.";
         return Optional.of( new MappedSourceRefresh( description, statement -> source.restoreTable( tableAllocation, List.of( refreshed ), statement.getPrepareContext() ) ) );
     }
 
 
-    private PhysicalTable getMappedPhysicalTable( AllocationEntity allocation ) {
-        AdapterCatalog adapterCatalog = catalog.getAdapterCatalog( allocation.adapterId ).orElseThrow();
+    private PhysicalTable getMappedPhysicalTable( AllocationEntity allocation, long mappingId ) {
+        AdapterCatalog adapterCatalog = catalog.getAdapterCatalog( allocation.adapterId )
+                .orElseThrow( () -> MappingError.Missing.adapterCatalog( allocation.adapterId ) );
         List<PhysicalEntity> physicals = adapterCatalog.getPhysicalsFromAllocs( allocation.id );
-        if ( physicals == null || physicals.isEmpty() ) {
-            throw new GenericRuntimeException( "No physical entity found for allocation %s", allocation.id );
+        if ( physicals == null || physicals.isEmpty() || physicals.get( 0 ) == null ) {
+            throw MappingError.Missing.physicalMetadata( allocation.id );
         }
-        return physicals.get( 0 ).unwrapOrThrow( PhysicalTable.class );
+        if ( !(physicals.get( 0 ) instanceof PhysicalTable table) ) {
+            throw MappingError.Unsupported.relationalSourceRequired( mappingId, allocation.id );
+        }
+        return table;
     }
 
 
@@ -4137,7 +4161,8 @@ public class DdlManagerImpl extends DdlManager {
                 physicalSource.name, physicalColumns, target.namespaceId, physicalSource.namespaceName, List.of(), source.adapter().id );
 
         // Register a separate scan of the existing file; no physical source is created or changed.
-        AdapterManager.getInstance().getAdapter( source.adapter().id ).orElseThrow()
+        AdapterManager.getInstance().getAdapter( source.adapter().id )
+                .orElseThrow( () -> MappingError.Missing.adapter( source.adapter().id ) )
                 .restoreTable( allocation, List.of( physicalTarget ), statement.getPrepareContext() );
 
         Map<Long, PhysicalColumn> physicalColumnsById = indexPhysicalColumnsById( physicalColumns );
@@ -4167,7 +4192,7 @@ public class DdlManagerImpl extends DdlManager {
             if ( mapping.sourceAllocationId() == null ) {
                 var existing = snapshot.alloc().getFromLogical( target.id );
                 if ( existing.size() != 1 ) {
-                    throw new MappingState.EditException( "UNSUPPORTED_MAPPING", "The existing target has ambiguous physical source bindings." );
+                    throw MappingError.Algebra.sourceBindingsAmbiguous();
                 }
                 catalog.updateSchemaMapping( mapping.withSourceAllocation( existing.get( 0 ).id ) );
             }
@@ -4179,7 +4204,8 @@ public class DdlManagerImpl extends DdlManager {
         for ( var requested : update.columns() ) {
             if ( requested.included() ) {
                 var targetColumn = targetColumns.stream().filter( column -> source.namespace().caseSensitive
-                        ? column.name.equals( requested.logicalName() ) : column.name.equalsIgnoreCase( requested.logicalName() ) ).findFirst().orElseThrow();
+                        ? column.name.equals( requested.logicalName() ) : column.name.equalsIgnoreCase( requested.logicalName() ) ).findFirst()
+                        .orElseThrow( () -> MappingError.Missing.targetColumn( requested.logicalName() ) );
                 selected.put( requested.logicalColumnId(), targetColumn );
                 allocations.addColumn( placement.id, target.id, targetColumn.id, source.adapter().id, PlacementType.STATIC, targetColumn.position );
             }
@@ -4193,7 +4219,8 @@ public class DdlManagerImpl extends DdlManager {
                         column.dimension, column.cardinality, column.nullable, column.elementsNullable, column.collation, column.defaultValue ) ).toList();
         var physical = new PhysicalTable( IdBuilder.getInstance().getNewPhysicalId(), allocation.id, target.id, physicalSource.name,
                 physicalColumns, target.namespaceId, physicalSource.namespaceName, List.of(), source.adapter().id );
-        AdapterManager.getInstance().getAdapter( source.adapter().id ).orElseThrow()
+        AdapterManager.getInstance().getAdapter( source.adapter().id )
+                .orElseThrow( () -> MappingError.Missing.adapter( source.adapter().id ) )
                 .restoreTable( allocation, List.of( physical ), statement.getPrepareContext() );
         var rules = targetColumns.stream().map( column -> SchemaMappingManager.defaultColumnRule( column.id ) ).toList();
         catalog.addSchemaMapping( new SchemaMapping( mappingId, update.mappingName(), source.mapping().kind(), null, target.id,
@@ -4209,7 +4236,8 @@ public class DdlManagerImpl extends DdlManager {
         boolean shared = snapshot.mappings().getMappingsForLogicalEntity( state.table().id ).size() > 1;
         for ( var allocation : snapshot.alloc().getFromLogical( state.table().id ).stream()
                 .filter( allocation -> !shared || java.util.Objects.equals( state.mapping().sourceAllocationId(), allocation.id ) ).toList() ) {
-            catalog.getAdapterCatalog( allocation.adapterId ).orElseThrow().removeAllocAndPhysical( allocation.id );
+            catalog.getAdapterCatalog( allocation.adapterId )
+                    .orElseThrow( () -> MappingError.Missing.adapterCatalog( allocation.adapterId ) ).removeAllocAndPhysical( allocation.id );
             allocations.deleteAllocation( allocation.id );
             if ( shared ) {
                 snapshot.alloc().getColumns( allocation.placementId ).forEach( column -> allocations.deleteColumn( allocation.placementId, column.columnId ) );
@@ -4240,12 +4268,14 @@ public class DdlManagerImpl extends DdlManager {
      */
     private void applyMappingNames( MappingState state, MappingUpdate update ) {
         var relational = catalog.getLogicalRel( state.namespace().id );
-        Adapter<?> adapter = AdapterManager.getInstance().getAdapter( update.adapterId() ).orElseThrow( MappingState::notFound );
+        Adapter<?> adapter = AdapterManager.getInstance().getAdapter( update.adapterId() )
+                .orElseThrow( () -> MappingError.Missing.adapter( update.adapterId() ) );
         if ( !state.table().name.equals( update.logicalTableName() ) ) {
             relational.renameTable( state.table().id, update.logicalTableName() );
         }
         for ( var column : update.columns() ) {
-            String oldName = state.columns().stream().filter( c -> c.id == column.logicalColumnId() ).findFirst().orElseThrow().name;
+            String oldName = state.columns().stream().filter( c -> c.id == column.logicalColumnId() ).findFirst()
+                    .orElseThrow( () -> MappingError.Missing.logicalColumn( state.mapping().id(), column.logicalColumnId() ) ).name;
             if ( !oldName.equals( column.logicalName() ) ) {
                 relational.renameColumn( column.logicalColumnId(), column.logicalName() );
                 adapter.renameLogicalColumn( column.logicalColumnId(), column.logicalName() );
@@ -4278,8 +4308,7 @@ public class DdlManagerImpl extends DdlManager {
                 .filter( LogicalForeignKey.class::isInstance ).map( LogicalForeignKey.class::cast )
                 .filter( key -> key.entityId == state.table().id || key.referencedKeyEntityId == state.table().id ).toList();
         if ( !foreignKeys.isEmpty() ) {
-            throw new MappingState.EditException( "DEPENDENCY_CONFLICT", "Foreign keys prevent changing the target namespace.",
-                    Map.of(), foreignKeys.stream().map( key -> key.name ).toList() );
+            throw MappingError.Conflict.namespaceMoveBlocked( foreignKeys.stream().map( key -> key.name ).toList() );
         }
         var source = catalog.getLogicalRel( state.namespace().id );
         var target = catalog.getLogicalRel( namespaceId );
@@ -4312,12 +4341,22 @@ public class DdlManagerImpl extends DdlManager {
             var moved = allocation.toBuilder().namespaceId( namespaceId ).build();
             sourceAlloc.getTables().remove( allocation.id );
             targetAlloc.getTables().put( allocation.id, moved );
-            var adapterCatalog = catalog.getAdapterCatalog( allocation.adapterId ).orElseThrow();
+            var adapterCatalog = catalog.getAdapterCatalog( allocation.adapterId )
+                    .orElseThrow( () -> MappingError.Missing.adapterCatalog( allocation.adapterId ) );
             var physicals = state.physicalTables().stream().filter( physical -> physical.allocationId == allocation.id )
-                    .<PhysicalEntity>map( physical -> adapterCatalog.getPhysical( physical.id ).unwrapOrThrow( PhysicalTable.class )
-                            .toBuilder().namespaceId( namespaceId ).build() ).toList();
+                    .<PhysicalEntity>map( physical -> {
+                        var entity = adapterCatalog.getPhysical( physical.id );
+                        if ( entity == null ) {
+                            throw MappingError.Missing.physicalMetadata( allocation.id );
+                        }
+                        if ( !(entity instanceof PhysicalTable registered) ) {
+                            throw MappingError.Unsupported.relationalSourceRequired( state.mapping().id(), allocation.id );
+                        }
+                        return registered.toBuilder().namespaceId( namespaceId ).build();
+                    } ).toList();
             // register table through the adapter
-            AdapterManager.getInstance().getAdapter( allocation.adapterId ).orElseThrow()
+            AdapterManager.getInstance().getAdapter( allocation.adapterId )
+                    .orElseThrow( () -> MappingError.Missing.adapter( allocation.adapterId ) )
                     .restoreTable( moved, physicals, statement.getPrepareContext() );
         }
         for ( var placement : sourceAlloc.getPlacements().values().stream().filter( placement -> placement.logicalEntityId == table.id ).toList() ) {
@@ -4357,12 +4396,18 @@ public class DdlManagerImpl extends DdlManager {
                     } catch ( Exception rollbackError ) {
                         e.addSuppressed( rollbackError );
                     }
-                    throw new GenericRuntimeException( "Could not commit the mapping change.", e );
+                    if ( e instanceof RuntimeException runtime && MappingException.findCause( e ).isPresent() ) {
+                        throw runtime;
+                    }
+                    throw MappingError.Operation.commitFailed( e );
                 }
             } );
         } catch ( RuntimeException e ) {
             statement.getQueryProcessor().resetCaches();
-            throw e;
+            if ( MappingException.findCause( e ).isPresent() ) {
+                throw e;
+            }
+            throw MappingError.Operation.changeFailed( e );
         }
     }
 
@@ -5608,8 +5653,7 @@ public class DdlManagerImpl extends DdlManager {
         List<LogicalTable> tables = catalog.getSnapshot().rel().getTables( Pattern.of( namespaceName ), null );
         for ( LogicalTable table : tables ) {
             if ( table.entityType == EntityType.SOURCE ) {
-                throw new GenericRuntimeException( "Cannot drop namespace '%s' because it would drop source-backed table '%s'. Remove or move the mapping target, or remove the source adapter first.",
-                        logicalNamespace.name, table.name );
+                throw MappingError.Conflict.dropNamespaceBlocked( logicalNamespace.name, table.name );
             }
         }
 
