@@ -274,7 +274,7 @@ public class ViewManager {
         public AlgRoot startSubstitution( AlgRoot logicalRoot ) {
             if ( logicalRoot.alg instanceof LogicalRelViewScan ) {
                 AlgNode node = checkNode( logicalRoot.alg );
-                return AlgRoot.of( node, logicalRoot.kind );
+                return AlgRoot.of( node, logicalRoot.kind ).withResultKind( logicalRoot.resultKind );
             } else {
                 logicalRoot.alg.accept( this );
                 return logicalRoot;
