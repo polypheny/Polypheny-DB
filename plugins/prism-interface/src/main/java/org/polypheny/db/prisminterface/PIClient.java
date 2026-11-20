@@ -16,6 +16,11 @@
 
 package org.polypheny.db.prisminterface;
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Consumer;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +41,9 @@ public class PIClient {
     @Getter
     @Setter
     private Transaction currentTransaction;
+    @Getter
     private final TransactionManager transactionManager;
+    private final Set<Transaction> isolatedReadTransactions = new LinkedHashSet<>();
     private final int prismMinorVersion;
     @Getter
     private final StatementManager statementManager;
@@ -97,6 +104,18 @@ public class PIClient {
     }
 
 
+    public Transaction startIsolatedReadTransaction() {
+        Transaction transaction = transactionManager.startTransaction( catalogUser.id, namespace.id, null, "PrismInterface" );
+        isolatedReadTransactions.add( transaction );
+        return transaction;
+    }
+
+
+    public boolean hasActiveIsolatedReadTransactions() {
+        return isolatedReadTransactions.stream().anyMatch( Transaction::isActive );
+    }
+
+
     /**
      * Creates a read transaction owned by a metadata request, without changing the
      * connection's transaction. The caller must complete this transaction.
@@ -107,49 +126,98 @@ public class PIClient {
 
 
     public void commitCurrentTransactionIfAuto() {
-        if ( !isAutoCommit ) {
-            return;
+        commitAutocommitTransaction( currentTransaction );
+    }
+
+
+    public void commitAutocommitTransaction( @Nullable Transaction transaction ) {
+        if ( isAutoCommit ) {
+            finishTransaction( transaction, PIClient::commitTransaction );
         }
-        commitCurrentTransactionUnsynchronized();
+    }
+
+
+    public void rollbackAutocommitTransaction( Transaction transaction, @Nullable String reason ) {
+        if ( isAutoCommit ) {
+            finishTransaction( transaction, owned -> rollbackTransaction( owned, reason ) );
+        }
     }
 
 
     public void commitCurrentTransaction() throws PIServiceException {
-        commitCurrentTransactionUnsynchronized();
-    }
-
-
-    private void commitCurrentTransactionUnsynchronized() throws PIServiceException {
-        if ( hasNoTransaction() ) {
-            return;
-        }
-        try {
-            currentTransaction.commit();
-        } catch ( Throwable e ) {
-            throw new PIServiceException( "Committing current transaction failed: " + e.getMessage() );
-        } finally {
-            clearCurrentTransaction();
-        }
+        finishAllTransactions( PIClient::commitTransaction );
     }
 
 
     public void rollbackCurrentTransaction( @Nullable String reason ) throws PIServiceException {
-        if ( hasNoTransaction() ) {
-            return;
+        finishAllTransactions( transaction -> rollbackTransaction( transaction, reason ) );
+    }
+
+
+    private void finishAllTransactions( Consumer<Transaction> finish ) {
+        List<Transaction> transactions = new ArrayList<>( isolatedReadTransactions );
+        if ( currentTransaction != null ) {
+            transactions.add( 0, currentTransaction );
         }
-        try {
-            currentTransaction.getCancelFlag().set( true );
-            currentTransaction.rollback( reason );
-        } catch ( TransactionException e ) {
-            throw new PIServiceException( "Rollback of current transaction failed: " + e.getLocalizedMessage() );
-        } finally {
-            clearCurrentTransaction();
+
+        RuntimeException failure = null;
+        for ( Transaction transaction : transactions ) {
+            try {
+                finishTransaction( transaction, finish );
+            } catch ( RuntimeException e ) {
+                if ( failure == null ) {
+                    failure = e;
+                } else {
+                    failure.addSuppressed( e );
+                }
+            }
+        }
+        if ( failure != null ) {
+            throw failure;
         }
     }
 
 
-    private void clearCurrentTransaction() {
-        currentTransaction = null;
+    private void finishTransaction( @Nullable Transaction transaction, Consumer<Transaction> finish ) {
+        if ( transaction == null || (transaction != currentTransaction && !isolatedReadTransactions.contains( transaction )) ) {
+            return;
+        }
+        try {
+            if ( transaction.isActive() ) {
+                finish.accept( transaction );
+            }
+        } finally {
+            if ( transaction == currentTransaction ) {
+                currentTransaction = null;
+            }
+            isolatedReadTransactions.remove( transaction );
+        }
+    }
+
+
+    private static void commitTransaction( Transaction transaction ) {
+        try {
+            transaction.commit();
+        } catch ( Throwable failure ) {
+            if ( transaction.isActive() ) {
+                try {
+                    rollbackTransaction( transaction, "Prism commit failed" );
+                } catch ( RuntimeException rollbackFailure ) {
+                    failure.addSuppressed( rollbackFailure );
+                }
+            }
+            throw new PIServiceException( "Committing current transaction failed: " + failure.getMessage(), failure );
+        }
+    }
+
+
+    private static void rollbackTransaction( Transaction transaction, @Nullable String reason ) {
+        try {
+            transaction.getCancelFlag().set( true );
+            transaction.rollback( reason );
+        } catch ( TransactionException e ) {
+            throw new PIServiceException( "Rollback of current transaction failed: " + e.getLocalizedMessage(), e );
+        }
     }
 
 
@@ -159,9 +227,15 @@ public class PIClient {
 
 
     void prepareForDisposal( @Nullable String reason ) {
-        statementManager.closeAll();
-        rollbackCurrentTransaction( reason );
-        monitoringPage.removeStatementManager( statementManager );
+        try {
+            statementManager.closeAll();
+        } finally {
+            try {
+                rollbackCurrentTransaction( reason );
+            } finally {
+                monitoringPage.removeStatementManager( statementManager );
+            }
+        }
     }
 
 }

@@ -62,10 +62,10 @@ public class PIUnparameterizedStatement extends PIStatement {
 
     StatementResult execute( int fetchSize, @Nullable List<ParsedQueryContext> preParsedQueries ) {
         Node parsedStatement = language.dataModel() == DataModel.GRAPH ? StatementProcessor.parseGraphStatement( this ) : null;
-        statement = client.getOrCreateNewTransaction().createStatement();
-
-        StatementProcessor.implement( this, parsedStatement, preParsedQueries );
-        return StatementProcessor.executeAndGetResult( this, fetchSize );
+        return executeInTransaction( preParsedQueries != null, () -> {
+            StatementProcessor.implement( this, parsedStatement, preParsedQueries );
+            return StatementProcessor.executeAndGetResult( this, fetchSize );
+        } );
     }
 
 

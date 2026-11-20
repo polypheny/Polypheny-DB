@@ -208,12 +208,10 @@ final class ResultExecutor {
             failure.addSuppressed( cleanupFailure );
         }
         PIClient client = statement.getClient();
-        if ( client.isAutoCommit() && client.getCurrentTransaction() == transaction ) {
-            try {
-                client.rollbackCurrentTransaction( "Prism result could not be produced" );
-            } catch ( RuntimeException cleanupFailure ) {
-                failure.addSuppressed( cleanupFailure );
-            }
+        try {
+            client.rollbackAutocommitTransaction( transaction, "Prism result could not be produced" );
+        } catch ( RuntimeException cleanupFailure ) {
+            failure.addSuppressed( cleanupFailure );
         }
     }
 
