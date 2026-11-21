@@ -385,8 +385,12 @@ public abstract class Aggregate extends SingleAlg {
         Function aggFunction = aggCall.getAggregation();
         AggCallBinding callBinding = aggCall.createBinding( this );
         Kind kind = aggFunction.getKind();
-        AlgDataType type = traitSet.contains( ModelTrait.GRAPH ) && (kind == Kind.SUM || kind == Kind.AVG) && callBinding.getOperandCount() == 1
-                ? LaxAggregateCall.inferGraphNumericType( getCluster().getTypeFactory(), kind, callBinding.getOperandType( 0 ) )
+        AlgDataType type = traitSet.contains( ModelTrait.GRAPH ) && callBinding.getOperandCount() == 1
+                ? switch ( kind ) {
+                    case SUM, AVG -> LaxAggregateCall.inferGraphNumericType( getCluster().getTypeFactory(), kind, callBinding.getOperandType( 0 ) );
+                    case COLLECT -> getCluster().getTypeFactory().createArrayType( callBinding.getOperandType( 0 ), -1 );
+                    default -> aggFunction.inferReturnType( callBinding );
+                }
                 : aggFunction.inferReturnType( callBinding );
         AlgDataType expectedType = aggCall.type;
         if ( type.isNullable() != expectedType.isNullable() ) {

@@ -116,12 +116,12 @@ public interface Modifiable extends Scannable {
 
     private static AlgNode prepareGraphDelete( Modifiable modifiable, AlgBuilder builder, Entity nodesTable, Entity nodePropertiesTable,
             Entity edgesTable, Entity edgePropertiesTable, List<PolyType> parameters, boolean detachDelete ) {
-        if ( parameters.stream().anyMatch( type -> type != PolyType.NODE && type != PolyType.EDGE ) ) {
-            throw new GenericRuntimeException( "Graph deletes require a node or relationship binding" );
+        if ( parameters.stream().anyMatch( type -> !GraphDeleteTargets.supportsType( type ) ) ) {
+            throw new GenericRuntimeException( "Graph deletes require a node, relationship, or path binding" );
         }
         AlgCluster cluster = builder.getCluster();
         List<AlgNode> inputs = new ArrayList<>( attachPreparedGraphEdgeModifyDelete( modifiable, cluster, edgesTable, edgePropertiesTable, builder ) );
-        if ( parameters.contains( PolyType.NODE ) ) {
+        if ( parameters.stream().anyMatch( GraphDeleteTargets::mayDeleteNodes ) ) {
             inputs.addAll( attachPreparedGraphNodeModifyDelete( modifiable, cluster, nodesTable, nodePropertiesTable, builder ) );
             builder.relScan( edgesTable );
             // Scan the relationship IDs and endpoints once to validate the complete DELETE clause.

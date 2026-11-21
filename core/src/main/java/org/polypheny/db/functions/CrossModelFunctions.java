@@ -34,6 +34,7 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.function.Function1;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.GraphDeleteTargets;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
@@ -395,27 +396,9 @@ public class CrossModelFunctions {
             List<PolyType> order, boolean detachDelete ) {
         List<Map<Long, PolyValue>> rows = context.getParameterValues();
         Map<Long, AlgDataType> types = context.getParameterTypes();
-        Set<PolyString> nodes = new LinkedHashSet<>();
-        Set<PolyString> edges = new LinkedHashSet<>();
-        long count = 0;
-        for ( Map<Long, PolyValue> row : rows ) {
-            boolean hasTarget = false;
-            for ( int i = 0; i < order.size(); i++ ) {
-                PolyValue value = row.get( (long) i );
-                if ( value == null || value.isNull() ) {
-                    continue;
-                }
-                hasTarget = true;
-                if ( order.get( i ) == PolyType.NODE ) {
-                    nodes.add( value.asNode().id );
-                } else {
-                    edges.add( value.asEdge().id );
-                }
-            }
-            if ( hasTarget ) {
-                count++;
-            }
-        }
+        GraphDeleteTargets targets = GraphDeleteTargets.collect( rows, order.size() );
+        Set<PolyString> nodes = targets.nodes();
+        Set<PolyString> edges = targets.edges();
         JavaTypeFactory typeFactory = context.getStatement().getTransaction().getTypeFactory();
         AlgDataType idType = typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE );
         try {
@@ -447,7 +430,7 @@ public class CrossModelFunctions {
             context.setParameterValues( rows );
             context.setParameterTypes( types );
         }
-        return Linq4j.singletonEnumerable( new PolyValue[]{ PolyLong.of( count ) } );
+        return Linq4j.singletonEnumerable( new PolyValue[]{ PolyLong.of( targets.rowCount() ) } );
     }
 
 

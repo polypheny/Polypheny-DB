@@ -23,7 +23,7 @@ import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.expression.CypherAggregate;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherExpression.ExpressionType;
-import org.polypheny.db.cypher.expression.CypherFunctionInvocation;
+import org.polypheny.db.cypher.expression.CypherProperty;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexNode;
@@ -38,6 +38,7 @@ public class CypherReturnItem extends CypherReturn {
     private CypherVariable variable;
     private int beginOffset;
     private int endOffset;
+    private String sourceExpression;
 
 
     public CypherReturnItem( ParserPos pos, CypherExpression expression, CypherVariable variable ) {
@@ -55,6 +56,28 @@ public class CypherReturnItem extends CypherReturn {
     }
 
 
+    public CypherReturnItem( ParserPos pos, CypherExpression expression, String sourceExpression ) {
+        super( pos );
+        this.expression = expression;
+        this.sourceExpression = sourceExpression;
+    }
+
+
+    @Nullable
+    public String columnName() {
+        if ( variable != null ) {
+            return variable.getName();
+        }
+        if ( expression instanceof CypherVariable v ) {
+            return v.getName();
+        }
+        if ( sourceExpression == null && expression instanceof CypherProperty property && property.getSubject() instanceof CypherVariable ) {
+            return property.getName();
+        }
+        return sourceExpression;
+    }
+
+
     @Override
     public CypherKind getCypherKind() {
         return CypherKind.RETURN;
@@ -64,25 +87,12 @@ public class CypherReturnItem extends CypherReturn {
     @Override
     @Nullable
     public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
-        if ( variable != null ) {
-            String name = variable.getName();
-            if ( this.expression instanceof CypherFunctionInvocation func ) {
-                return Pair.of( PolyString.of( name ), func.getRexCall( context, type ) );
-            }
-
-            // name -> aggregate
-            // renaming of the field
-            if ( expression.getType() == ExpressionType.AGGREGATE ) {
-                return ((CypherAggregate) expression).getAggregate( context, name );
-            }
-
-            return Pair.of( PolyString.of( name ), expression.getRex( context, type ).right );
-        } else {
-            if ( expression.getType() == ExpressionType.AGGREGATE ) {
-                return ((CypherAggregate) expression).getAggregate( context, null );
-            }
-            return expression.getRex( context, type );
+        String name = columnName();
+        if ( expression.getType() == ExpressionType.AGGREGATE ) {
+            return ((CypherAggregate) expression).getAggregate( context, name );
         }
+        Pair<PolyString, RexNode> rex = expression.getRex( context, type );
+        return name == null ? rex : Pair.of( PolyString.of( name ), rex.right );
     }
 
 }

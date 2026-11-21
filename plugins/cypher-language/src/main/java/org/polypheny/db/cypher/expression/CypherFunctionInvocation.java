@@ -119,13 +119,14 @@ public class CypherFunctionInvocation extends CypherExpression {
 
     @Override
     public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
-        // At this point, we do not know what is on the left side of the Pair.
-        // The caller has to discard the left side, and use a variable name or something else.
-        return Pair.of( PolyString.of( "???" ), getRexCall( context, type ) );
+        return Pair.of( null, getRexCall( context, type ) );
     }
 
 
     public RexNode getRexCall( CypherContext context, RexType type ) {
+        if ( distinct ) {
+            throw new CypherSyntaxException( "DISTINCT requires an aggregating function." );
+        }
         switch ( getOperatorName() ) {
             case CYPHER_POINT: {
                 // VERY UGLY, but it works for now. This could be improved by using the function MAP_OF_ENTRIES,
@@ -208,9 +209,30 @@ public class CypherFunctionInvocation extends CypherExpression {
                 return context.rexBuilder.makeCall( context.typeFactory.createTypeWithNullability( result, true ),
                         OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_LAST ), List.of( list ) );
             }
+            case CYPHER_NODES, CYPHER_RELATIONSHIPS, CYPHER_LENGTH:
+                return getPathFunctionRex( context, type );
             default:
                 throw new NotImplementedException( "Cypher Function to alg conversion missing: " + getOperatorName() );
         }
+    }
+
+
+    private RexNode getPathFunctionRex( CypherContext context, RexType type ) {
+        String function = op.name().substring( "CYPHER_".length() ).toLowerCase( Locale.ROOT );
+        if ( arguments.size() != 1 ) {
+            throw new CypherSyntaxException( function + "() requires exactly one argument." );
+        }
+        RexNode path = arguments.get( 0 ).getRex( context, type ).right;
+        PolyType pathType = path.getType().getPolyType();
+        if ( pathType != PolyType.PATH && pathType != PolyType.NULL && pathType != PolyType.ANY ) {
+            throw new CypherSyntaxException( function + "() requires a path." );
+        }
+        AlgDataType result = op == OperatorName.CYPHER_LENGTH
+                ? context.typeFactory.createPolyType( PolyType.BIGINT )
+                : context.typeFactory.createArrayType( context.typeFactory.createPolyType(
+                        op == OperatorName.CYPHER_NODES ? PolyType.NODE : PolyType.EDGE ), -1, 1 );
+        return context.rexBuilder.makeCall( context.typeFactory.createTypeWithNullability( result, true ),
+                OperatorRegistry.get( QueryLanguage.from( "cypher" ), op ), List.of( path ) );
     }
 
 }

@@ -16,6 +16,7 @@
 
 package org.polypheny.db.adapter.neo4j.rules;
 
+import static org.polypheny.db.adapter.neo4j.util.NeoUtil.hasEscapedGraphKeys;
 import static org.polypheny.db.adapter.neo4j.util.NeoUtil.isStructuralGraphType;
 import static org.polypheny.db.adapter.neo4j.util.NeoUtil.needsGraphValueDecoding;
 
@@ -103,7 +104,8 @@ public interface NeoGraphRules {
 
     private static boolean supportsPatternProperties( GraphPropertyHolder holder ) {
         // An exact decimal may be stored as a tagged string while still comparing equal to a native number.
-        return holder.properties.values().stream().allMatch( value -> value != null && !value.isNull() && (value.isString() || value.isBoolean()) );
+        return !hasEscapedGraphKeys( holder.properties )
+                && holder.properties.values().stream().allMatch( value -> value != null && !value.isNull() && (value.isString() || value.isBoolean()) );
     }
 
 
@@ -260,7 +262,7 @@ public interface NeoGraphRules {
     class NeoGraphUnwindRule extends NeoConverterRule {
 
         public static NeoGraphUnwindRule INSTANCE = new NeoGraphUnwindRule( LpgUnwind.class, unwind -> !containsSort( unwind.getInput() )
-                && unwind.getInput().getTupleType().getFields().get( unwind.index ).getType().getPolyType() != PolyType.ANY, "NeoGraphUnwindRule" );
+                && unwind.getInput().getTupleType().getFields().get( unwind.index ).getType().getPolyType() == PolyType.ARRAY, "NeoGraphUnwindRule" );
 
 
         private <R extends AlgNode> NeoGraphUnwindRule( Class<R> clazz, Predicate<? super R> supports, String description ) {

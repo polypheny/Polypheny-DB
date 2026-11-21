@@ -83,9 +83,9 @@ public interface NeoStatements {
     }
 
     static NodeStatement node_( PolyNode node, PolyString mappingLabel, boolean addId ) {
-        List<PropertyStatement> statements = new ArrayList<>( properties_( node.properties ) );
+        List<PropertyStatement> statements = new ArrayList<>( properties_( node.properties, addId ) );
         if ( addId ) {
-            statements.add( property_( PolyString.of( "_id" ), string_( (node.id) ) ) );
+            statements.add( property_( "_id", graphId_( node.id, NeoUtil.hasEscapedGraphKeys( node.properties ) ) ) );
         }
         List<PolyString> labels = PolyList.copyOf( node.labels );
         if ( mappingLabel != null ) {
@@ -109,9 +109,9 @@ public interface NeoStatements {
     }
 
     static EdgeStatement edge_( PolyEdge edge, boolean addId ) {
-        List<PropertyStatement> props = new ArrayList<>( properties_( edge.properties ) );
+        List<PropertyStatement> props = new ArrayList<>( properties_( edge.properties, addId ) );
         if ( addId ) {
-            props.add( property_( PolyString.of( "_id" ), string_( edge.id ) ) );
+            props.add( property_( "_id", graphId_( edge.id, NeoUtil.hasEscapedGraphKeys( edge.properties ) ) ) );
             props.add( property_( PolyString.of( "__sourceId__" ), string_( edge.left ) ) );
             props.add( property_( PolyString.of( "__targetId__" ), string_( edge.right ) ) );
         }
@@ -157,12 +157,19 @@ public interface NeoStatements {
         return props;
     }
 
-    static List<PropertyStatement> properties_( PolyDictionary properties ) {
+    static List<PropertyStatement> properties_( PolyDictionary properties, boolean storing ) {
         List<PropertyStatement> props = new ArrayList<>();
         for ( Entry<PolyString, PolyValue> entry : properties.entrySet() ) {
-            props.add( property_( entry.getKey(), graphProperty_( entry.getValue() ) ) );
+            String name = entry.getKey().value;
+            props.add( property_( storing ? NeoUtil.graphStorageKey( name ) : name, graphProperty_( entry.getValue() ) ) );
         }
         return props;
+    }
+
+
+    private static NeoStatement graphId_( PolyString id, boolean escaped ) {
+        NeoStatement literal = string_( id );
+        return escaped ? list_( List.of( literal ), "[", "]" ) : literal;
     }
 
     static NeoStatement graphProperty_( PolyValue value ) {

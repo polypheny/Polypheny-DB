@@ -19,6 +19,8 @@ package org.polypheny.db.cypher.expression;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Streams;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -31,6 +33,7 @@ import org.locationtech.jts.geom.PrecisionModel;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.functions.CypherFunctions;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.parser.StringPos;
@@ -49,6 +52,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.util.Pair;
 
@@ -89,16 +93,19 @@ public class CypherLiteral extends CypherExpression {
         this.literalType = literalType;
         assert keys.size() == values.size();
         //noinspection UnstableApiUsage
-        this.mapValue = Streams.zip( keys.stream(), values.stream(), Maps::immutableEntry ).collect( Collectors.toMap( k -> k.getKey().getImage(), Entry::getValue ) );
+        this.mapValue = Streams.zip( keys.stream(), values.stream(), Maps::immutableEntry )
+                .collect( Collectors.toMap( k -> k.getKey().getImage(), Entry::getValue, ( previous, replacement ) -> replacement, LinkedHashMap::new ) );
     }
 
 
     public CypherLiteral( ParserPos pos, Literal literalType, String image, boolean negated ) {
         super( pos );
         this.literalType = literalType;
-        if ( literalType == Literal.DECIMAL ) {
-            this.value = Integer.parseInt( image ) * (negated ? -1 : 1);
-        } else if ( (literalType == Literal.DOUBLE) ) {
+        if ( literalType == Literal.DECIMAL || literalType == Literal.HEX || literalType == Literal.OCTAL ) {
+            int radix = literalType == Literal.HEX ? 16 : literalType == Literal.OCTAL ? 8 : 10;
+            int start = literalType == Literal.HEX || image.startsWith( "0o" ) ? 2 : 0;
+            this.value = Long.parseLong( (negated ? "-" : "") + image.substring( start ).replace( "_", "" ), radix );
+        } else if ( literalType == Literal.DOUBLE ) {
             this.value = Double.parseDouble( image ) * (negated ? -1 : 1);
         } else {
             throw new GenericRuntimeException( "Could not use provided format to creat cypher literal." );
@@ -127,9 +134,13 @@ public class CypherLiteral extends CypherExpression {
                 } ) );
                 yield new PolyDictionary( map );
             }
-            case STRING, HEX, OCTAL -> PolyString.of( (String) value );
+            case STRING -> PolyString.of( (String) value );
             case DOUBLE -> PolyDouble.of( (Double) value );
-            case DECIMAL -> PolyInteger.of( (Integer) value );
+            case DECIMAL, HEX, OCTAL -> {
+                long integral = (Long) value;
+                yield integral >= Integer.MIN_VALUE && integral <= Integer.MAX_VALUE
+                        ? PolyInteger.of( (int) integral ) : PolyLong.of( integral );
+            }
             case POINT -> {
                 // TODO: What do we have to do here?
                 throw new UnsupportedOperationException();
@@ -216,18 +227,33 @@ public class CypherLiteral extends CypherExpression {
                 AlgDataType arrayType = context.typeFactory.createArrayType( dataType, -1, 1 );
                 yield context.rexBuilder.makeCall( arrayType, OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_LIST_CONSTRUCTOR ), list );
             }
-            case MAP -> new RexLiteral( getComparable(), context.typeFactory.createMapType(
-                    context.typeFactory.createPolyType( PolyType.VARCHAR ), context.typeFactory.createPolyType( PolyType.ANY ) ), PolyType.MAP );
-            case STAR, OCTAL, HEX -> throw new UnsupportedOperationException();
+            case MAP -> mapRex( context, type );
+            case STAR -> throw new UnsupportedOperationException();
             case STRING -> context.rexBuilder.makeLiteral( (String) value );
             case DOUBLE -> context.rexBuilder.makeApproxLiteral( BigDecimal.valueOf( (Double) value ) );
-            case DECIMAL -> context.rexBuilder.makeExactLiteral( BigDecimal.valueOf( (Integer) value ) );
+            case DECIMAL, HEX, OCTAL -> context.rexBuilder.makeLiteral( getComparable() );
             case POINT -> {
                 AlgDataType dataType = context.typeFactory.createPolyType( PolyType.GEOMETRY );
                 yield context.rexBuilder.makeLiteral( PolyGeometry.of( "SRID=0;POINT(56.7 12.78)" ), dataType, false );
             }
         };
         return Pair.of( null, node );
+    }
+
+
+    private RexNode mapRex( CypherContext context, RexType type ) {
+        AlgDataType mapType = context.typeFactory.createMapType(
+                context.typeFactory.createPolyType( PolyType.VARCHAR ), context.typeFactory.createPolyType( PolyType.ANY ) );
+        List<RexNode> entries = new ArrayList<>( 2 * mapValue.size() );
+        mapValue.forEach( ( key, expression ) -> {
+            entries.add( context.rexBuilder.makeLiteral( key ) );
+            entries.add( expression.getRex( context, type ).right );
+        } );
+        if ( entries.stream().allMatch( RexLiteral.class::isInstance ) ) {
+            PolyValue[] values = entries.stream().map( entry -> ((RexLiteral) entry).value ).toArray( PolyValue[]::new );
+            return new RexLiteral( CypherFunctions.constructMap( values ), mapType, PolyType.MAP );
+        }
+        return context.rexBuilder.makeCall( mapType, OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_MAP_CONSTRUCTOR ), entries );
     }
 
 

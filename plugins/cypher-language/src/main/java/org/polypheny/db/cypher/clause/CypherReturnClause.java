@@ -38,8 +38,6 @@ import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.expression.CypherAggregate;
 import org.polypheny.db.cypher.expression.CypherExpression;
-import org.polypheny.db.cypher.expression.CypherProperty;
-import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNameRef;
@@ -219,28 +217,17 @@ public class CypherReturnClause extends CypherClause {
     }
 
 
-    public AlgNode getGraphSort( CypherContext context ) {
-        AlgNode node = context.peek();
-        List<String> fields = node.getTupleType().getFieldNames();
+    public AlgNode getGraphSort( AlgNode node, List<Integer> sortFields ) {
         List<AlgFieldCollation> collations = new ArrayList<>();
-
-        for ( CypherOrderItem item : order ) {
-            String name = sortField( item.getExpression(), fields );
-            int index = fields.indexOf( name );
-            if ( index < 0 ) {
-                throw new GenericRuntimeException( "Unknown sort expression: %s", name );
-            }
-            collations.add( new AlgFieldCollation( index, item.isAsc() ? Direction.ASCENDING : Direction.DESCENDING ) );
+        for ( int i = 0; i < sortFields.size(); i++ ) {
+            Direction direction = order.get( i ).isAsc() ? Direction.ASCENDING : Direction.DESCENDING;
+            collations.add( new AlgFieldCollation( sortFields.get( i ), direction ) );
         }
-
         AlgCollation collation = AlgCollations.of( collations );
-
         Integer skip = this.skip == null ? null : getRowBound( this.skip, "SKIP" );
         Integer limit = this.limit == null ? null : getRowBound( this.limit, "LIMIT" );
-
         AlgTraitSet traitSet = node.getTraitSet().replace( collation );
-
-        return new LogicalLpgSort( node.getCluster(), traitSet, collation, context.pop(), skip, limit );
+        return new LogicalLpgSort( node.getCluster(), traitSet, collation, node, skip, limit );
     }
 
 
@@ -254,29 +241,6 @@ public class CypherReturnClause extends CypherClause {
             throw new GenericRuntimeException( "%s requires an integer between 0 and %d", clause, Integer.MAX_VALUE );
         }
         return (int) bound;
-    }
-
-
-    public List<String> getSortFields( List<String> projectedFields ) {
-        return order.stream().map( item -> sortField( item.getExpression(), projectedFields ) ).toList();
-    }
-
-
-    private String sortField( CypherExpression expression, List<String> projectedFields ) {
-        String name = expression.getName();
-        if ( projectedFields.contains( name ) ) {
-            return name;
-        }
-        // A grouping expression remains sortable through its projected alias.
-        for ( CypherReturn item : returnItems ) {
-            if ( item instanceof CypherReturnItem projection && projection.getVariable() != null ) {
-                CypherExpression source = projection.getExpression();
-                if ( (source instanceof CypherProperty || source instanceof CypherVariable) && name.equals( source.getName() ) ) {
-                    return projection.getVariable().getName();
-                }
-            }
-        }
-        return name;
     }
 
 }

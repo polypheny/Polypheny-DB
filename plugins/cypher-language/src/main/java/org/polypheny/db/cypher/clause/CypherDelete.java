@@ -18,6 +18,8 @@ package org.polypheny.db.cypher.clause;
 
 import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.adapter.GraphDeleteTargets;
+import org.polypheny.db.cypher.cypher2alg.CypherSyntaxException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.expression.CypherExpression;
@@ -49,9 +51,17 @@ public class CypherDelete extends CypherClause {
 
 
     public void getDelete( CypherContext context ) {
-        for ( CypherExpression expression : expressions ) {
-            Pair<PolyString, RexNode> pair = expression.getRex( context, RexType.PROJECT );
-            context.add( pair );
+        if ( !context.hasInput() ) {
+            context.add( context.asValues( List.of() ) );
+        }
+        List<Pair<PolyString, RexNode>> targets = expressions.stream()
+                .map( expression -> expression.getRex( context, RexType.PROJECT ) )
+                .toList();
+        for ( Pair<PolyString, RexNode> target : targets ) {
+            if ( !GraphDeleteTargets.supportsType( target.right.getType().getPolyType() ) ) {
+                throw new CypherSyntaxException( "Graph deletes require a node, relationship, or path binding" );
+            }
+            context.add( target );
         }
 
         context.combineDelete( detach );

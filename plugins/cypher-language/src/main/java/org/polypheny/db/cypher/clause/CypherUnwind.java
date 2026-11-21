@@ -16,30 +16,21 @@
 
 package org.polypheny.db.cypher.clause;
 
-import com.google.common.collect.ImmutableList;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnwind;
-import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
-import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.cypher.cypher2alg.CypherSyntaxException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.expression.CypherExpression;
-import org.polypheny.db.cypher.expression.CypherExpression.ExpressionType;
-import org.polypheny.db.cypher.expression.CypherLiteral;
-import org.polypheny.db.cypher.expression.CypherLiteral.Literal;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.runtime.ComparableList;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.util.Pair;
 
 
 @Getter
@@ -63,59 +54,38 @@ public class CypherUnwind extends CypherClause {
 
 
     public void getUnwind( CypherContext context ) {
-        Pair<PolyString, RexNode> namedNode;
-        if ( expression.getType() == ExpressionType.LITERAL && ((CypherLiteral) expression).getLiteralType() == Literal.NULL ) {
-            // special case, this is equal to empty list
-            AlgDataType type = context.typeFactory.createArrayType( context.typeFactory.createPolyType( PolyType.ANY ), -1 );
-            AlgDataType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( -1L, variable.getName(), 0, type ) ) );
-
-            RexLiteral emptyList = (RexLiteral) context.rexBuilder.makeLiteral( ComparableList.of(), type, false );
-
-            ImmutableList<ImmutableList<RexLiteral>> values = ImmutableList.of( ImmutableList.of( emptyList ) );
-            context.add( LogicalLpgValues.create( context.cluster, context.cluster.traitSet(), rowType, values ) );
-
-            namedNode = Pair.of( PolyString.of( variable.getName() ), context.rexBuilder.makeInputRef( context.typeFactory.createPolyType( PolyType.ANY ), 0 ) );
-
-        } else if ( expression.getType() == ExpressionType.LITERAL ) {
-            // is values
-            namedNode = expression.getValues( context, variable.getName() );
-        } else {
-            namedNode = expression.getRex( context, RexType.PROJECT );
+        if ( !context.hasInput() ) {
+            // A leading UNWIND evaluates its expression against one empty input row.
+            context.add( context.asValues( List.of() ) );
+        }
+        AlgNode input = context.peek();
+        String alias = variable.getName();
+        List<String> fields = input.getTupleType().getFieldNames();
+        if ( fields.contains( alias ) ) {
+            throw new CypherSyntaxException( "Variable is already bound in UNWIND: " + alias );
         }
 
-        AlgNode node = context.peek();
-
-        if ( node.getTupleType().getFields().size() != 1 ) {
-            if ( !node.getTupleType().getFieldNames().contains( namedNode.left ) ) {
-                throw new UnsupportedOperationException();
+        RexNode values = expression.getRex( context, RexType.PROJECT ).right;
+        List<RexNode> projections = new ArrayList<>();
+        List<PolyString> names = new ArrayList<>();
+        for ( AlgDataTypeField field : input.getTupleType().getFields() ) {
+            // An anonymous match contributes rows but has no variable to carry into scope.
+            if ( field.getName() != null ) {
+                projections.add( context.rexBuilder.makeInputRef( input, field.getIndex() ) );
+                names.add( PolyString.of( field.getName() ) );
             }
-            node = new LogicalLpgProject(
-                    node.getCluster(),
-                    node.getTraitSet(),
-                    context.pop(),
-                    List.of( namedNode.right ),
-                    List.of( namedNode.left ) );
-
-            context.add( node );
         }
 
-        if ( namedNode.left != null ) {
-            // first project the expression out
-            LogicalLpgProject llp = new LogicalLpgProject(
-                    node.getCluster(),
-                    node.getTraitSet(),
-                    context.pop(),
-                    List.of( namedNode.right ),
-                    List.of( namedNode.left ) );
-            context.add( llp );
+        String temporaryName = "$unwind$list";
+        while ( fields.contains( temporaryName ) || alias.equals( temporaryName ) ) {
+            temporaryName += "_";
         }
+        int unwindIndex = projections.size();
+        projections.add( values );
+        names.add( PolyString.of( temporaryName ) );
 
-        context.add( new LogicalLpgUnwind(
-                node.getCluster(),
-                node.getTraitSet(),
-                context.pop(),
-                0,
-                variable.getName() ) );
+        AlgNode project = LogicalLpgProject.create( context.pop(), projections, names );
+        context.add( LogicalLpgUnwind.create( project, unwindIndex, alias ) );
     }
 
 }

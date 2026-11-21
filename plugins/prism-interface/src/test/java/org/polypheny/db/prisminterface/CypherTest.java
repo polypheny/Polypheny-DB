@@ -1476,6 +1476,105 @@ class CypherTest {
 
 
     @Test
+    void preservesUserLabelsInMatchedPathsAndPropertyWrites() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            expect( setCypherResultFormat( connection, "relational" ), Response.TypeCase.SET_CLIENT_INFO_PROPERTIES_RESPONSE );
+            connection.execute( WRITE_RETURN_NAMESPACE, "cypher",
+                    "CREATE (:LabelAuditSource)-[:LABEL_AUDIT]->(:LabelAuditTarget:PublicLabel__:__namespacePortrait)", -1 );
+            Frame matched = connection.execute( WRITE_RETURN_NAMESPACE, "cypher", """
+                    MATCH p=(a:LabelAuditSource)-[:LABEL_AUDIT*1..2]->(b:PublicLabel__) RETURN p
+                    """, -1 ).getResult().getFrame();
+            ProtoPath path = singleRow( relationalFrame( matched, true, List.of( "p" ) ) ).getValues( 0 ).getPath();
+            Set<String> labels = Set.of( "LabelAuditTarget", "PublicLabel__", "__namespacePortrait" );
+            assertEquals( labels, Set.copyOf( path.getNodes( 1 ).getLabelsList() ) );
+
+            Frame written = connection.execute( WRITE_RETURN_NAMESPACE, "cypher", """
+                    MATCH (:LabelAuditSource)-[:LABEL_AUDIT*]->(b:LabelAuditTarget)
+                    SET b.flag = true RETURN b
+                    """, -1 ).getResult().getFrame();
+            ProtoNode affected = singleRow( relationalFrame( written, true, List.of( "b" ) ) ).getValues( 0 ).getNode();
+            assertEquals( labels, Set.copyOf( affected.getLabelsList() ) );
+
+            Frame stored = connection.execute( WRITE_RETURN_NAMESPACE, "cypher", """
+                    MATCH (n:LabelAuditTarget:PublicLabel__:__namespacePortrait) RETURN n.flag AS flag
+                    """, -1 ).getResult().getFrame();
+            assertTrue( singleRow( relationalFrame( stored, true, List.of( "flag" ) ) ).getValues( 0 ).getBoolean().getBoolean() );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void refreshesGraphValuesInsideListsAndMapsAfterWrites() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            expect( setCypherResultFormat( connection, "relational" ), Response.TypeCase.SET_CLIENT_INFO_PROPERTIES_RESPONSE );
+            connection.execute( WRITE_RETURN_NAMESPACE, "cypher",
+                    "CREATE (:NestedWriteStart)-[:NESTED_WRITE {state:'old'}]->(:NestedWriteEnd)", -1 );
+            Frame updated = connection.execute( WRITE_RETURN_NAMESPACE, "cypher", """
+                    MATCH p=(:NestedWriteStart)-[rs:NESTED_WRITE*1..1]->(:NestedWriteEnd)
+                    WITH rs, [[p]] AS nested, {edge:last(rs)} AS projected
+                    MATCH (:NestedWriteStart)-[r:NESTED_WRITE]->(:NestedWriteEnd)
+                    SET r.state='new'
+                    RETURN rs, nested, r, (projected.edge).state AS mapState
+                    """, -1 ).getResult().getFrame();
+            Row row = singleRow( relationalFrame( updated, true, List.of( "rs", "nested", "r", "mapState" ) ) );
+            assertEquals( "new", row.getValues( 3 ).getString().getString() );
+            ProtoEdge direct = row.getValues( 2 ).getEdge();
+            ProtoEdge inRelationshipList = row.getValues( 0 ).getList().getValues( 0 ).getEdge();
+            ProtoEdge inPathList = row.getValues( 1 ).getList().getValues( 0 ).getList().getValues( 0 ).getPath().getEdges( 0 );
+            for ( ProtoEdge edge : List.of( direct, inRelationshipList, inPathList ) ) {
+                assertEquals( direct.getId(), edge.getId() );
+                assertEquals( "new", edge.getPropertiesOrThrow( "state" ).getString().getString() );
+            }
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void preservesUserPropertiesWithTheNamesOfGraphStorageMetadata() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            expect( setCypherResultFormat( connection, "relational" ), Response.TypeCase.SET_CLIENT_INFO_PROPERTIES_RESPONSE );
+            connection.execute( WRITE_RETURN_NAMESPACE, "cypher", """
+                    CREATE (:StoragePropsStart {_id:'user-id', __polypheny_user_property___id:'literal'})
+                           -[:STORAGE_PROPS {__sourceId__:'user-source', __targetId__:'user-target'}]->(:StoragePropsEnd)
+                    """, -1 );
+            Frame matched = connection.execute( WRITE_RETURN_NAMESPACE, "cypher", """
+                    MATCH p=(:StoragePropsStart {_id:'user-id'})-[r:STORAGE_PROPS]->(:StoragePropsEnd)
+                    WHERE r.__targetId__ = 'user-target'
+                    RETURN p
+                    """, -1 ).getResult().getFrame();
+            ProtoPath path = singleRow( relationalFrame( matched, true, List.of( "p" ) ) ).getValues( 0 ).getPath();
+            assertEquals( "user-id", path.getNodes( 0 ).getPropertiesOrThrow( "_id" ).getString().getString() );
+            assertEquals( "literal", path.getNodes( 0 ).getPropertiesOrThrow( "__polypheny_user_property___id" ).getString().getString() );
+            assertEquals( "user-source", path.getEdges( 0 ).getPropertiesOrThrow( "__sourceId__" ).getString().getString() );
+            assertEquals( "user-target", path.getEdges( 0 ).getPropertiesOrThrow( "__targetId__" ).getString().getString() );
+            assertFalse( path.getNodes( 1 ).getPropertiesMap().containsKey( "_id" ) );
+            assertEquals( path.getNodes( 0 ).getId(), path.getEdges( 0 ).getLeft() );
+            assertEquals( path.getNodes( 1 ).getId(), path.getEdges( 0 ).getRight() );
+
+            connection.execute( WRITE_RETURN_NAMESPACE, "cypher", """
+                    MATCH (a:StoragePropsStart)-[r:STORAGE_PROPS]->(b:StoragePropsEnd)
+                    SET r.__sourceId__ = 'updated-source'
+                    CREATE (a)-[:STORAGE_PROP_COPY]->(b)
+                    """, -1 );
+            Frame updated = connection.execute( WRITE_RETURN_NAMESPACE, "cypher", """
+                    MATCH (:StoragePropsStart)-[r:STORAGE_PROPS]->(:StoragePropsEnd) RETURN r.__sourceId__ AS source
+                    """, -1 ).getResult().getFrame();
+            assertEquals( "updated-source", singleRow( relationalFrame( updated, true, List.of( "source" ) ) )
+                    .getValues( 0 ).getString().getString() );
+
+            connection.execute( WRITE_RETURN_NAMESPACE, "cypher", "MATCH ()-[r:STORAGE_PROPS]->() DELETE r", -1 );
+            Frame remaining = connection.execute( WRITE_RETURN_NAMESPACE, "cypher",
+                    "MATCH (:StoragePropsStart)-[r]->(:StoragePropsEnd) RETURN r", -1 ).getResult().getFrame();
+            assertEquals( List.of( "STORAGE_PROP_COPY" ), singleRow( relationalFrame( remaining, true, List.of( "r" ) ) )
+                    .getValues( 0 ).getEdge().getLabelsList() );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
     void returnsAProjectedPathAfterItsPatternBindingsLeaveScope() throws IOException {
         try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
             Frame frame = connection.cypher( """
@@ -2260,6 +2359,77 @@ class CypherTest {
             for ( PrismConnection connection : List.of( current, older ) ) {
                 assertEquals( 3, graphElements( connection.cypher( "MATCH (n:Person) RETURN n", -1 ).getResult().getFrame(), true ).size() );
             }
+        }
+    }
+
+
+    @Test
+    void emptyMatchPreventsWritesAfterLiteralUnwind() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            for ( String pattern : List.of( "(:UnwindMissing)", "(:UnwindMissing)-[:UNWIND_PATH_EDGE*]->(:UnwindMissing)" ) ) {
+                Frame frame = connection.execute( WRITE_RETURN_NAMESPACE, "cypher", """
+                        MATCH %s
+                        UNWIND [1,2] AS i
+                        CREATE (:UnwindUnexpected {i:i})
+                        RETURN i
+                        """.formatted( pattern ), -1 ).getResult().getFrame();
+
+                assertEquals( 0, relationalFrame( frame, true, List.of( "i" ) ).getRowsCount(), pattern );
+                connection.checkTransactions( 0 );
+            }
+        }
+        try ( PrismConnection reader = new PrismConnection( true, 3 ) ) {
+            Frame stored = reader.execute( WRITE_RETURN_NAMESPACE, "cypher",
+                    "MATCH (n:UnwindUnexpected) RETURN count(n) AS total", -1 ).getResult().getFrame();
+            assertEquals( 0, integerValue( singleRow( relationalFrame( stored, true, List.of( "total" ) ) ).getValues( 0 ) ) );
+            reader.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void detachDeletesNamedPathsAndTheirIncidentRelationships() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            connection.execute( WRITE_RETURN_NAMESPACE, "cypher", """
+                    CREATE (:NamedDeleteNode:NamedDeleteStart)-[:NAMED_DELETE_EDGE]->
+                           (middle:NamedDeleteNode)-[:NAMED_DELETE_EDGE]->(:NamedDeleteNode:NamedDeleteEnd),
+                           (middle)-[:NAMED_DELETE_INCIDENT]->(:NamedDeleteRetained)
+                    """, -1 );
+            Frame deleted = connection.execute( WRITE_RETURN_NAMESPACE, "cypher", """
+                    MATCH p=(:NamedDeleteStart)-[:NAMED_DELETE_EDGE*]->(:NamedDeleteEnd)
+                    DETACH DELETE p RETURN count(*) AS total
+                    """, -1 ).getResult().getFrame();
+            assertEquals( 1, integerValue( singleRow( relationalFrame( deleted, true, List.of( "total" ) ) ).getValues( 0 ) ) );
+
+            for ( String pattern : List.of( "(n:NamedDeleteNode)", "()-[n:NAMED_DELETE_EDGE]->()", "()-[n:NAMED_DELETE_INCIDENT]->()" ) ) {
+                Frame remaining = connection.execute( WRITE_RETURN_NAMESPACE, "cypher",
+                        "MATCH " + pattern + " RETURN count(n) AS total", -1 ).getResult().getFrame();
+                assertEquals( 0, integerValue( singleRow( relationalFrame( remaining, true, List.of( "total" ) ) ).getValues( 0 ) ), pattern );
+            }
+            Frame retained = connection.execute( WRITE_RETURN_NAMESPACE, "cypher",
+                    "MATCH (n:NamedDeleteRetained) RETURN count(n) AS total", -1 ).getResult().getFrame();
+            assertEquals( 1, integerValue( singleRow( relationalFrame( retained, true, List.of( "total" ) ) ).getValues( 0 ) ) );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void detachDeleteOfOptionalNullPathPreservesTheInputRow() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            connection.execute( WRITE_RETURN_NAMESPACE, "cypher", "CREATE (:NullableDeleteKept)", -1 );
+            Frame result = connection.execute( WRITE_RETURN_NAMESPACE, "cypher", """
+                    MATCH (a:NullableDeleteKept)
+                    OPTIONAL MATCH p=(a)-[:NULLABLE_DELETE_EDGE*]->()
+                    DETACH DELETE p
+                    RETURN count(*) AS total
+                    """, -1 ).getResult().getFrame();
+            assertEquals( 1, integerValue( singleRow( relationalFrame( result, true, List.of( "total" ) ) ).getValues( 0 ) ) );
+
+            Frame retained = connection.execute( WRITE_RETURN_NAMESPACE, "cypher",
+                    "MATCH (n:NullableDeleteKept) RETURN count(n) AS total", -1 ).getResult().getFrame();
+            assertEquals( 1, integerValue( singleRow( relationalFrame( retained, true, List.of( "total" ) ) ).getValues( 0 ) ) );
+            connection.checkTransactions( 0 );
         }
     }
 

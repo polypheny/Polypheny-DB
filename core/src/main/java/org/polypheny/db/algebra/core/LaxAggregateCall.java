@@ -68,7 +68,7 @@ public class LaxAggregateCall {
 
     public static LaxAggregateCall from( AggregateCall call, AlgNode parent ) {
         AlgDataType resultType = switch ( call.getAggregation().getKind() ) {
-            case MIN, MAX, SUM, AVG -> call.getType();
+            case MIN, MAX, SUM, AVG, COLLECT -> call.getType();
             default -> null;
         };
         if ( parent == null ) {

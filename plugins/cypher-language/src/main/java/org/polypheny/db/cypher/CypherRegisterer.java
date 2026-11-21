@@ -44,6 +44,13 @@ public class CypherRegisterer {
         register( OperatorName.CYPHER_NOT_EQUALS, new LangFunctionOperator( OperatorName.CYPHER_NOT_EQUALS.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
         register( OperatorName.CYPHER_IN, new LangFunctionOperator( OperatorName.CYPHER_IN.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
         register( OperatorName.CYPHER_LAST, new LangFunctionOperator( OperatorName.CYPHER_LAST.name(), Kind.CYPHER_FUNCTION, PolyType.ANY ) );
+        register( OperatorName.CYPHER_INDEX, new LangFunctionOperator( OperatorName.CYPHER_INDEX.name(), Kind.CYPHER_FUNCTION, PolyType.ANY ) );
+        register( OperatorName.CYPHER_SLICE, new LangFunctionOperator( OperatorName.CYPHER_SLICE.name(), Kind.CYPHER_FUNCTION, PolyType.ARRAY ) );
+        register( OperatorName.CYPHER_MAP_CONSTRUCTOR, new LangFunctionOperator( OperatorName.CYPHER_MAP_CONSTRUCTOR.name(), Kind.CYPHER_FUNCTION, PolyType.MAP ) );
+        register( OperatorName.CYPHER_NODES, new LangFunctionOperator( OperatorName.CYPHER_NODES.name(), Kind.CYPHER_FUNCTION, PolyType.ARRAY ) );
+        register( OperatorName.CYPHER_RELATIONSHIPS, new LangFunctionOperator( OperatorName.CYPHER_RELATIONSHIPS.name(), Kind.CYPHER_FUNCTION, PolyType.ARRAY ) );
+        register( OperatorName.CYPHER_LENGTH, new LangFunctionOperator( OperatorName.CYPHER_LENGTH.name(), Kind.CYPHER_FUNCTION, PolyType.BIGINT ) );
+        register( OperatorName.CYPHER_ARITHMETIC, new LangFunctionOperator( OperatorName.CYPHER_ARITHMETIC.name(), Kind.CYPHER_FUNCTION, PolyType.ANY ) );
         register( OperatorName.CYPHER_LESS_THAN, new LangFunctionOperator( OperatorName.CYPHER_LESS_THAN.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
         register( OperatorName.CYPHER_LESS_THAN_OR_EQUAL, new LangFunctionOperator( OperatorName.CYPHER_LESS_THAN_OR_EQUAL.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
         register( OperatorName.CYPHER_GREATER_THAN, new LangFunctionOperator( OperatorName.CYPHER_GREATER_THAN.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
@@ -71,6 +78,7 @@ public class CypherRegisterer {
         register( OperatorName.CYPHER_EXTRACT_PROPERTIES, new LangFunctionOperator( OperatorName.CYPHER_EXTRACT_PROPERTIES.name(), Kind.CYPHER_FUNCTION, PolyType.ANY ) );
 
         register( OperatorName.CYPHER_EXTRACT_ID, new LangFunctionOperator( OperatorName.CYPHER_EXTRACT_ID.name(), Kind.CYPHER_FUNCTION, PolyType.VARCHAR ) );
+        register( OperatorName.CYPHER_MATCH_ELEMENT_ID, new LangFunctionOperator( OperatorName.CYPHER_MATCH_ELEMENT_ID.name(), Kind.CYPHER_FUNCTION, PolyType.VARCHAR ) );
 
         register( OperatorName.CYPHER_EXTRACT_LABELS, new LangFunctionOperator( OperatorName.CYPHER_EXTRACT_LABELS.name(), Kind.CYPHER_FUNCTION, PolyType.ARRAY, PolyType.VARCHAR ) );
 

@@ -16,8 +16,21 @@
 
 package org.polypheny.db.cypher.expression;
 
+import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.ArrayType;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.numerical.PolyLong;
+import org.polypheny.db.util.Pair;
 
 @Getter
 public class CypherListSlice extends CypherExpression {
@@ -33,6 +46,23 @@ public class CypherListSlice extends CypherExpression {
         this.subject = subject;
         this.from = from;
         this.to = to;
+    }
+
+
+    @Override
+    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
+        RexNode value = subject.getRex( context, type ).right;
+        requireListOperand( value, "Slicing requires a list." );
+        RexNode lower = from == null ? context.rexBuilder.makeLiteral( PolyLong.of( 0 ) ) : from.getRex( context, type ).right;
+        RexNode upper = to == null ? context.rexBuilder.makeLiteral( PolyLong.of( Long.MAX_VALUE ) ) : to.getRex( context, type ).right;
+        CypherListLookup.requireIntegerIndex( lower );
+        CypherListLookup.requireIntegerIndex( upper );
+
+        AlgDataType listType = value.getType() instanceof ArrayType array
+                ? context.typeFactory.createArrayType( array.getComponentType(), -1, array.getDimension() )
+                : context.typeFactory.createArrayType( context.typeFactory.createPolyType( PolyType.ANY ), -1, 1 );
+        return Pair.of( null, context.rexBuilder.makeCall( context.typeFactory.createTypeWithNullability( listType, true ),
+                OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_SLICE ), List.of( value, lower, upper ) ) );
     }
 
 }

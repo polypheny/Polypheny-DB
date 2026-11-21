@@ -21,10 +21,12 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.UnaryOperator;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -122,6 +124,17 @@ public class PolyPath extends GraphObject {
     /** Associates Cypher variables with the matched nodes and relationship lists. */
     public PolyPath withBindings( Map<PolyString, PolyValue> bindings ) {
         return bindings.isEmpty() ? this : new PolyPath( this, bindings );
+    }
+
+
+    /** Rebinds the physical path elements and the Cypher values associated with them. */
+    public PolyPath rebindGraphValues( UnaryOperator<PolyValue> rebind ) {
+        List<PolyNode> reboundNodes = nodes.stream().map( node -> rebind.apply( node ).asNode() ).toList();
+        List<PolyEdge> reboundEdges = edges.stream().map( edge -> rebind.apply( edge ).asEdge() ).toList();
+        List<GraphPropertyHolder> reboundPath = path.stream().map( element -> (GraphPropertyHolder) rebind.apply( element ) ).toList();
+        Map<PolyString, PolyValue> reboundBindings = new HashMap<>();
+        bindings.forEach( ( name, value ) -> reboundBindings.put( name, rebind.apply( value ) ) );
+        return new PolyPath( id, reboundNodes, reboundEdges, names, reboundPath, variableName ).withBindings( reboundBindings );
     }
 
 

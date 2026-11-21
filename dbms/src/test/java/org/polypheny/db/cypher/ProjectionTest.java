@@ -18,6 +18,7 @@ package org.polypheny.db.cypher;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.Arrays;
 import java.util.List;
@@ -34,6 +35,8 @@ class ProjectionTest extends CypherTestTemplate {
     @BeforeAll
     static void populateGraph() {
         execute( "CREATE (s:Start)-[:T]->(:Middle)-[:T]->(d:End {name: 'D'}), (s)-[:T]->(d), (s)-[:T]->(:End {name: 'E'})" );
+        execute( "CREATE (:SortProbe {key:'A', other:'Z'}), (:SortProbe {key:'Z', other:'A'}),"
+                + " (:SortNumber {num:1}), (:SortNumber {num:3}), (:SortNumber {num:-5})" );
     }
 
 
@@ -106,6 +109,82 @@ class ProjectionTest extends CypherTestTemplate {
         assertNotNull( CypherConnection.executeGetResponse( match + "RETURN DISTINCT p ORDER BY b.name" ).getError() );
         assertNotNull( CypherConnection.executeGetResponse( match + "RETURN count(*) AS total ORDER BY b.name" ).getError() );
         assertNotNull( CypherConnection.executeGetResponse( "MATCH p=(:Start)-[*]->(b:End), (b) WITH p RETURN p ORDER BY b.name" ).getError() );
+    }
+
+
+    @Test
+    void distinguishesQuotedAliasesFromPropertyExpressions() {
+        String projection = "MATCH (n:SortProbe) RETURN n.other AS `n.key` ORDER BY ";
+        assertEquals( List.of( "Z", "A" ), strings( execute( projection + "n.key" ) ) );
+        assertEquals( List.of( "A", "Z" ), strings( execute( projection + "`n.key`" ) ) );
+    }
+
+
+    @Test
+    void sortsAnExpressionOfAProjectedAlias() {
+        GraphResult result = execute( "MATCH (n:SortNumber) RETURN n.num AS n ORDER BY n + 2" );
+        assertEquals( List.of( -5, 1, 3 ), Arrays.stream( result.getData() )
+                .map( row -> value( row[0] ).asNumber().intValue() ).toList() );
+    }
+
+
+    @Test
+    void sortsRenamedGroupKeysAndProjectedAggregates() {
+        String match = "MATCH (:Start)-[:T*]->(b:End) ";
+        GraphResult grouped = execute( match + "RETURN b.name AS name, count(*) ORDER BY count(*) DESC" );
+        assertEquals( List.of( "D", "E" ), strings( grouped ) );
+
+        GraphResult sorted = execute( match + "RETURN DISTINCT b AS endpoint ORDER BY b.name DESC" );
+        assertEquals( List.of( "E", "D" ), Arrays.stream( sorted.getData() )
+                .map( row -> nodeName( value( row[0] ).asNode() ) ).toList() );
+    }
+
+
+    @Test
+    void withWhereResolvesBothScopesAndThenDropsTheInputVariables() {
+        String match = "MATCH p=(:Start)-[:T*]->(b:End) ";
+        GraphResult filtered = execute( match + "WITH p WHERE b.name = 'E' RETURN p" );
+        assertEquals( 1, filtered.getData().length );
+        assertEquals( List.of( "p" ), Arrays.stream( filtered.getHeader() ).map( field -> field.name ).toList() );
+        assertNotNull( CypherConnection.executeGetResponse( match + "WITH p WHERE b.name = 'E' RETURN b" ).getError() );
+
+        assertEquals( List.of( "E" ), strings( execute( match + "WITH DISTINCT b.name AS name WHERE b.name = 'E' RETURN name" ) ) );
+        assertNotNull( CypherConnection.executeGetResponse( match + "WITH DISTINCT p WHERE b.name = 'E' RETURN p" ).getError() );
+        assertEquals( 0, execute( match + "WITH b.name AS name ORDER BY name LIMIT 1 WHERE b.name = 'E' RETURN name" ).getData().length );
+    }
+
+
+    @Test
+    void withWhereCanFilterAnUnprojectedOptionalRelationship() {
+        GraphResult result = execute( """
+                MATCH (s:Start), (n:End)
+                OPTIONAL MATCH (s)-[r:T*2]->(n)
+                WITH n WHERE r IS NULL
+                RETURN n.name AS name
+                """ );
+        assertEquals( List.of( "E" ), strings( result ) );
+    }
+
+
+    @Test
+    void bindsNullableAndDynamicallyTypedPatternVariables() {
+        assertEquals( 4, countResult( execute( "MATCH ()-[e:T]->() WITH last([null,[e]]) AS rs MATCH ()-[rs:T*]->() RETURN count(*) AS total" ) ) );
+        assertEquals( 3, countResult( execute( "MATCH (a:Start) WITH last([null,a]) AS x MATCH (x)-[:T*]->(:End) RETURN count(*) AS total" ) ) );
+        assertEquals( 0, countResult( execute( "WITH [null] AS rs MATCH ()-[rs:T*]->() RETURN count(*) AS total" ) ) );
+        GraphResult unmatched = execute( "WITH null AS x OPTIONAL MATCH (x)-[:T*]->(y) RETURN x,y" );
+        assertEquals( 1, unmatched.getData().length );
+        assertNull( unmatched.getData()[0][0] );
+        assertNull( unmatched.getData()[0][1] );
+        assertNotNull( CypherConnection.executeGetResponse( "WITH [1] AS rs MATCH ()-[rs:T*]->() RETURN rs" ).getError() );
+        assertNotNull( CypherConnection.executeGetResponse( "WITH last([null,1]) AS x MATCH (x) RETURN x" ).getError() );
+    }
+
+
+    @Test
+    void rejectsTheInternalNameOfAnAnonymousPath() {
+        assertNotNull( CypherConnection.executeGetResponse( "MATCH (a:Start)-[:T*]->(:End) RETURN `$a$` AS p" ).getError() );
+        assertNotNull( CypherConnection.executeGetResponse( "MATCH (:Start)-[:T*]->(:End) RETURN `$$` AS p" ).getError() );
+        assertEquals( 3, countResult( execute( "MATCH `$a$`=(a:Start)-[:T*]->(:End) RETURN count(`$a$`) AS total" ) ) );
     }
 
 

@@ -17,11 +17,13 @@
 package org.polypheny.db.cypher.expression;
 
 import lombok.Getter;
+import org.polypheny.db.cypher.cypher2alg.CypherSyntaxException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
 
@@ -60,13 +62,21 @@ public class CypherProperty extends CypherExpression {
 
     @Override
     public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
-        String key = propKeyName.getImage();
-        String subject = this.subject.getName();
+        RexNode projected = context.projectedProperty( this );
+        if ( projected != null ) {
+            return Pair.of( PolyString.of( getName() ), projected );
+        }
 
-        Pair<PolyString, RexNode> namedSubject = this.subject.getRex( context, type );
-        assert namedSubject.left.equals( PolyString.of( subject ) );
-
-        return context.getPropertyExtract( key, subject, namedSubject.right );
+        RexNode operand = subject.getRex( context, type ).right;
+        PolyType operandType = operand.getType().getPolyType();
+        if ( operandType != PolyType.MAP && operandType != PolyType.NODE && operandType != PolyType.EDGE
+                && operandType != PolyType.ANY && operandType != PolyType.NULL ) {
+            throw new CypherSyntaxException( "Property access requires a map, node, or relationship." );
+        }
+        if ( subject.getType() == ExpressionType.VARIABLE ) {
+            return context.getPropertyExtract( getPropertyKey(), getSubjectName(), operand );
+        }
+        return Pair.of( null, context.getPropertyExtract( getPropertyKey(), null, operand ).right );
     }
 
 }

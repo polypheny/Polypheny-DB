@@ -71,6 +71,7 @@ import org.polypheny.db.prepare.JavaTypeFactoryImpl.SyntheticRecordType;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.numerical.PolyLong;
@@ -133,6 +134,30 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
             Expression size = Expressions.call( result.accumulator().get( 0 ), BuiltInMethod.COLLECTION_SIZE.method );
             Expression count = Expressions.call( PolyLong.class, "of", Expressions.convert_( size, long.class ) );
             return Expressions.convert_( count, info.returnType() );
+        }
+
+    }
+
+
+    private static class GraphCollectImplementor extends StrictAggImplementor {
+
+        @Override
+        protected boolean nonDefaultOnEmptySet( AggContext info ) {
+            return false;
+        }
+
+
+        @Override
+        protected void implementNotNullReset( AggContext info, AggResetContext reset ) {
+            Expression empty = Expressions.new_( PolyList.class, Expressions.new_( ArrayList.class ) );
+            reset.currentBlock().add( Expressions.statement( Expressions.assign( reset.accumulator().get( 0 ), empty ) ) );
+        }
+
+
+        @Override
+        protected void implementNotNullAdd( AggContext info, AggAddContext add ) {
+            Expression value = add.rowTranslator().translate( add.rexArguments().get( 0 ), PolyValue.class );
+            add.currentBlock().add( Expressions.statement( Expressions.call( CypherFunctions.class, "addCollectedValue", add.accumulator().get( 0 ), value ) ) );
         }
 
     }
@@ -333,6 +358,8 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
                 aggs.add( new AggImpState( call.i, call.e, new GraphDistinctCountImplementor() ) );
             } else if ( supportsGraphNumericAggregation( call.e ) ) {
                 aggs.add( new AggImpState( call.i, call.e, new GraphNumericImplementor() ) );
+            } else if ( graphKeys && kind == Kind.COLLECT ) {
+                aggs.add( new AggImpState( call.i, call.e, new GraphCollectImplementor() ) );
             } else if ( graphKeys && (kind == Kind.MIN || kind == Kind.MAX) ) {
                 aggs.add( new AggImpState( call.i, call.e, new GraphMinMaxImplementor() ) );
             } else {

@@ -53,6 +53,25 @@ public class CypherAggregate extends CypherExpression {
     }
 
 
+    public boolean isSameAggregation( CypherAggregate other ) {
+        if ( op != other.op || distinct != other.distinct ) {
+            return false;
+        }
+        if ( target == other.target ) {
+            return true;
+        }
+        if ( target instanceof CypherVariable a && other.target instanceof CypherVariable b ) {
+            return a.getName().equals( b.getName() );
+        }
+        if ( target instanceof CypherProperty a && other.target instanceof CypherProperty b
+                && a.getSubject() instanceof CypherVariable first && b.getSubject() instanceof CypherVariable second ) {
+            return first.getName().equals( second.getName() ) && a.getPropertyKey().equals( b.getPropertyKey() );
+        }
+        return target instanceof CypherLiteral a && other.target instanceof CypherLiteral b
+                && Objects.equals( a.getComparable(), b.getComparable() );
+    }
+
+
     public Pair<PolyString, RexNode> getAggregate( CypherContext context, String alias ) {
         PolyString name = null;
         Pair<PolyString, RexNode> namedNode = null;
@@ -91,10 +110,7 @@ public class CypherAggregate extends CypherExpression {
 
     private Pair<RexNode, AlgDataType> getReturnType( CypherContext context, RexNode node ) {
         return switch ( op ) {
-            case COLLECT -> {
-                Pair<PolyString, RexNode> rex = Objects.requireNonNull( this.target ).getRex( context, RexType.PROJECT );
-                yield Pair.of( node, context.typeFactory.createArrayType( rex.getValue().getType(), -1 ) );
-            }
+            case COLLECT -> Pair.of( node, context.typeFactory.createArrayType( Objects.requireNonNull( node ).getType(), -1 ) );
             case SUM, AVG -> Pair.of( node, LaxAggregateCall.inferGraphNumericType( context.typeFactory,
                     op == OperatorName.SUM ? Kind.SUM : Kind.AVG, Objects.requireNonNull( node ).getType() ) );
             case MIN, MAX -> Pair.of( node, context.typeFactory.createTypeWithNullability( Objects.requireNonNull( node ).getType(), true ) );

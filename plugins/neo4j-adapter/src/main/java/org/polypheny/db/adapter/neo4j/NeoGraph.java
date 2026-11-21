@@ -20,10 +20,8 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.AbstractQueryable;
@@ -41,6 +39,7 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Transaction;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.GraphDeleteTargets;
 import org.polypheny.db.adapter.neo4j.Neo4jPlugin.Neo4jStore;
 import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgScan;
 import org.polypheny.db.adapter.neo4j.types.NestedPolyType;
@@ -254,7 +253,7 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
             List<Result> results = new ArrayList<>();
             results.add( trx.run( query ) );
 
-            Function1<Record, PolyValue[]> getter = NeoQueryable.getter( types );
+            Function1<Record, PolyValue[]> getter = NeoQueryable.getter( types, graph.mappingLabel );
 
             return new AbstractEnumerable<>() {
                 @Override
@@ -288,57 +287,42 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
 
 
         private Enumerable<PolyValue[]> deleteRows( Transaction trx, int parameterCount, boolean detachDelete ) {
-            Set<String> nodes = new LinkedHashSet<>();
-            Set<String> edges = new LinkedHashSet<>();
-            long count = 0;
-            for ( Map<Long, PolyValue> row : dataContext.getParameterValues() ) {
-                boolean hasTarget = false;
-                for ( int i = 0; i < parameterCount; i++ ) {
-                    PolyValue value = row.get( (long) i );
-                    if ( value == null || value.isNull() ) {
-                        continue;
-                    }
-                    hasTarget = true;
-                    if ( value instanceof PolyNode node ) {
-                        nodes.add( node.id.value );
-                    } else if ( value instanceof PolyEdge edge ) {
-                        edges.add( edge.id.value );
-                    } else {
-                        throw new GenericRuntimeException( "Graph deletes require a node or relationship binding" );
-                    }
-                }
-                if ( hasTarget ) {
-                    count++;
-                }
-            }
+            GraphDeleteTargets targets = GraphDeleteTargets.collect( dataContext.getParameterValues(), parameterCount );
             String graphLabel = identifier( graph.mappingLabel );
+            String matchNodes = "UNWIND $ids AS id MATCH (n:" + graphLabel + ") WHERE n._id IN [id, [id]]";
+            List<String> nodes = targets.nodes().stream().map( PolyString::getValue ).toList();
+            List<String> edges = targets.edges().stream().map( PolyString::getValue ).toList();
+            if ( !detachDelete && !nodes.isEmpty() && trx.run( matchNodes
+                            + " MATCH (n)-[r]-() WHERE none(edgeId IN $edges WHERE coalesce(r._id IN [edgeId, [edgeId]], false)) RETURN 1 LIMIT 1",
+                    Map.of( "ids", nodes, "edges", edges ) ).hasNext() ) {
+                throw new GenericRuntimeException( "Cannot delete a node with relationships. Delete its relationships or use DETACH DELETE." );
+            }
             if ( !edges.isEmpty() ) {
-                trx.run( "UNWIND $ids AS id MATCH (:" + graphLabel + ")-[r {_id: id}]->(:" + graphLabel + ") DELETE r",
-                        Map.of( "ids", List.copyOf( edges ) ) ).consume();
+                trx.run( "UNWIND $ids AS id MATCH (:" + graphLabel + ")-[r]->(:" + graphLabel + ") WHERE r._id IN [id, [id]] DELETE r",
+                        Map.of( "ids", edges ) ).consume();
             }
             if ( !nodes.isEmpty() ) {
-                trx.run( "UNWIND $ids AS id MATCH (n:" + graphLabel + " {_id: id})" + (detachDelete ? " DETACH DELETE n" : " DELETE n"),
-                        Map.of( "ids", List.copyOf( nodes ) ) ).consume();
+                trx.run( matchNodes + (detachDelete ? " DETACH DELETE n" : " DELETE n"), Map.of( "ids", nodes ) ).consume();
             }
-            return Functions.singletonEnumerable( new PolyValue[]{ PolyLong.of( count ) } );
+            return Functions.singletonEnumerable( new PolyValue[]{ PolyLong.of( targets.rowCount() ) } );
         }
 
 
         private void modifyElement( Transaction trx, Operation operation, GraphPropertyHolder element ) {
             String graphLabel = identifier( graph.mappingLabel );
             boolean isNode = element.isNode();
-            String match = isNode ? "MATCH (n:" + graphLabel + " {_id: $id})"
-                    : "MATCH (:" + graphLabel + ")-[n {_id: $id}]->(:" + graphLabel + ")";
+            String match = (isNode ? "MATCH (n:" + graphLabel + ")"
+                    : "MATCH (:" + graphLabel + ")-[n]->(:" + graphLabel + ")") + " WHERE n._id IN [$id, [$id]]";
             Map<String, Object> params = new LinkedHashMap<>();
             params.put( "id", element.id.value );
             Map<String, Object> properties = new LinkedHashMap<>();
             element.properties.forEach( (key, value) -> {
                 if ( value != null && !value.isNull() ) {
                     PolyValue encoded = NeoUtil.encodeGraphProperty( value );
-                    properties.put( key.value, NeoUtil.fixParameterValue( encoded, new NestedSingleType( encoded.getType() ), false ) );
+                    properties.put( NeoUtil.graphStorageKey( key.value ), NeoUtil.fixParameterValue( encoded, new NestedSingleType( encoded.getType() ), false ) );
                 }
             } );
-            properties.put( "_id", element.id.value );
+            properties.put( "_id", NeoUtil.hasEscapedGraphKeys( element.properties ) ? List.of( element.id.value ) : element.id.value );
             params.put( "properties", properties );
             if ( isNode ) {
                 applyNodeWrite( trx, operation, element.asNode(), graphLabel, match, params );
@@ -383,7 +367,8 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
             }
             params.put( "left", edge.left.value );
             params.put( "right", edge.right.value );
-            String endpoints = "MATCH (a:" + graphLabel + " {_id: $left}), (b:" + graphLabel + " {_id: $right})";
+            String endpoints = "MATCH (a:" + graphLabel + "), (b:" + graphLabel + ")"
+                    + " WHERE a._id IN [$left, [$left]] AND b._id IN [$right, [$right]]";
             int written = trx.run( endpoints + " CREATE (a)-[n:" + identifier( relationship ) + "]->(b) SET n = $properties", params )
                     .consume().counters().relationshipsCreated();
             if ( written != 1 ) {
@@ -410,7 +395,7 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
 
             dataContext.getStatement().getTransaction().registerInvolvedAdapter( graph.store );
 
-            Map<PolyString, PolyNode> polyNodes = trx.run( nodes ).list().stream().map( n -> NeoUtil.asPolyNode( n.get( 0 ).asNode() ) ).collect( Collectors.toMap( n -> n.id, n -> n ) );
+            Map<PolyString, PolyNode> polyNodes = trx.run( nodes ).list().stream().map( n -> NeoUtil.asPolyNode( n.get( 0 ).asNode(), graph.mappingLabel ) ).collect( Collectors.toMap( n -> n.id, n -> n ) );
             Map<PolyString, PolyEdge> polyEdges = trx.run( edges ).list().stream().map( e -> NeoUtil.asPolyEdge( e.get( 0 ).asRelationship() ) ).collect( Collectors.toMap( e -> e.id, e -> e ) );
 
             return Functions.singletonEnumerable( new PolyValue[]{ new PolyGraph( PolyMap.of( polyNodes ), PolyMap.of( polyEdges ) ) } );
@@ -423,9 +408,9 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
          * @param types the types for which function is created
          * @return the function, which transforms the {@link Record}
          */
-        static <T> Function1<Record, T> getter( NestedPolyType types ) {
+        static <T> Function1<Record, T> getter( NestedPolyType types, String mappingLabel ) {
             //noinspection unchecked
-            return (Function1<Record, T>) NeoUtil.getTypesFunction( types, true );
+            return (Function1<Record, T>) NeoUtil.getTypesFunction( types, mappingLabel );
         }
 
 
