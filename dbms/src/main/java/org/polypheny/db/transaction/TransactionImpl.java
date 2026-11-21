@@ -66,6 +66,7 @@ import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.transaction.QueryAnalyzer.TransactionAnalyzer;
 import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.LockablesRegistry;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
@@ -135,6 +136,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     private final Set<Lockable> lockedEntities = new HashSet<>();
 
     private boolean releasePhase = false;
+
+    private Runnable rollbackCatalog;
 
 
     TransactionImpl(
@@ -214,6 +217,24 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             return;
         }
 
+        try {
+            commitChanges();
+        } catch ( RuntimeException | Error failure ) {
+            if ( rollbackCatalog != null && isActive() ) {
+                try {
+                    rollback( "Catalog writer failed to commit" );
+                } catch ( RuntimeException | Error rollbackFailure ) {
+                    if ( rollbackFailure != failure ) {
+                        failure.addSuppressed( rollbackFailure );
+                    }
+                }
+            }
+            throw failure;
+        }
+    }
+
+
+    private void commitChanges() {
         Pair<Boolean, String> isValid = checkIntegrity();
         if ( !isValid.left ) {
             rollback( "Constraint violation" );
@@ -271,16 +292,15 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             throw new TransactionException( "Unable to prepare all involved entities for commit. Changes have been rolled back." );
         }
 
-        catalog.commit();
+        if ( rollbackCatalog != null ) {
+            catalog.commit();
+        }
 
-        // Free resources hold by statements
-        statements.forEach( Statement::close );
-
-        // Release locks
-        releaseAllLocks();
-
-        // Remove transaction
-        transactionManager.removeTransaction( xid );
+        try {
+            statements.forEach( Statement::close );
+        } finally {
+            finishTransaction();
+        }
 
         // Handover information about commit to Materialized Manager
         MaterializedViewManager.getInstance().updateCommittedXid( xid );
@@ -298,13 +318,16 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
                 log.warn( "Rolling back because: \"{}\" transaction {} ", reason, xid );
             }
 
-            //  Rollback changes to the adapters
-            for ( Adapter<?> adapter : involvedAdapters ) {
-                adapter.rollback( xid );
+            try {
+                for ( Adapter<?> adapter : involvedAdapters ) {
+                    adapter.rollback( xid );
+                }
+                IndexManager.getInstance().rollback( this.xid );
+            } finally {
+                if ( rollbackCatalog != null ) {
+                    rollbackCatalog.run();
+                }
             }
-            IndexManager.getInstance().rollback( this.xid );
-            catalog.rollback();
-            // Free resources hold by statements
             statements.forEach( statement -> {
                 if ( statement.getMonitoringEvent() != null ) {
                     StatementEvent eventData = statement.getMonitoringEvent();
@@ -314,11 +337,24 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
                 statement.close();
             } );
         } finally {
-            // Release locks
-            releaseAllLocks();
-            // Remove transaction
-            transactionManager.removeTransaction( xid );
             isRolledBack = true;
+            finishTransaction();
+        }
+    }
+
+
+    private void finishTransaction() {
+        try {
+            releaseAllLocks();
+        } finally {
+            try {
+                if ( rollbackCatalog != null ) {
+                    rollbackCatalog = null;
+                    LockablesRegistry.CATALOG_WRITE_LOCKABLE.release( this );
+                }
+            } finally {
+                transactionManager.removeTransaction( xid );
+            }
         }
     }
 
@@ -435,6 +471,28 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
                 throw new DeadlockException( MessageFormat.format( "Failed to release lock for transaction {0}", this ) );
             }
         } );
+    }
+
+
+    @Override
+    public void acquireCatalogWriteLock() {
+        if ( !isActive() || releasePhase ) {
+            throw new IllegalStateException( "Cannot acquire catalog lock for a transaction that is finishing or inactive." );
+        }
+        if ( rollbackCatalog != null ) {
+            return;
+        }
+
+        // A deadlock can release ordinary locks before rollback. Keep catalog ownership
+        // until this transaction has committed or restored its private rollback state.
+        Lockable lock = LockablesRegistry.CATALOG_WRITE_LOCKABLE;
+        lock.acquire( this, Lockable.LockType.EXCLUSIVE );
+        try {
+            rollbackCatalog = catalog.captureRollback();
+        } catch ( RuntimeException | Error failure ) {
+            lock.release( this );
+            throw failure;
+        }
     }
 
 

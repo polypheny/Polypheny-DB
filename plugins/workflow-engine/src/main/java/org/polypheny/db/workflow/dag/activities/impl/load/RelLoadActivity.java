@@ -158,23 +158,33 @@ public class RelLoadActivity implements Activity, Pipeable {
                 throw new InvalidSettingException( "Specified table does not exist", TABLE_KEY );
             }
             LogicalNamespace namespace = setting.getLogicalNamespace();
-            if ( namespace == null ) {
-                logInfo.accept( "Creating namespace '" + setting.getNamespace() + "'" );
-                try {
-                    long namespaceId = ddlManager.createNamespace( setting.getNamespace(), DataModel.RELATIONAL, false, false, false, null );
-                    namespace = Catalog.snapshot().getNamespace( namespaceId ).orElse( null );
-                } catch ( Exception e ) {
-                    throw new InvalidSettingException( "Specified namespace cannot be created: " + e.getMessage(), TABLE_KEY );
-                }
-            }
-            logInfo.accept( "Creating table '" + setting.getName() + "'" );
-            assert namespace != null;
-            // Unfortunately, we have to create the table outside our activity transaction context.
-            Transaction transaction = QueryUtils.startTransaction( txSupplier.get().getTransactionManager(), namespace.id, "RelLoadCreate" );
+            // Create the destination separately from the activity's data transaction.
+            Transaction transaction = QueryUtils.startTransaction( txSupplier.get().getTransactionManager(),
+                    namespace == null ? Catalog.defaultNamespaceId : namespace.id, "RelLoadCreate" );
             try {
-                transaction.acquireLockable( LockablesRegistry.INSTANCE.getOrCreateLockable( namespace ), LockType.SHARED ); // SHARED lock is workaround to be able to create entity while other txs are reading
+                if ( namespace != null ) {
+                    transaction.acquireLockable( LockablesRegistry.INSTANCE.getOrCreateLockable( namespace ), LockType.SHARED );
+                }
+                transaction.acquireCatalogWriteLock();
+                Statement statement = transaction.createStatement();
+                LogicalNamespace targetNamespace = setting.getLogicalNamespace();
+                long namespaceId;
+                if ( targetNamespace == null ) {
+                    logInfo.accept( "Creating namespace '" + setting.getNamespace() + "'" );
+                    try {
+                        namespaceId = ddlManager.createNamespace( setting.getNamespace(), DataModel.RELATIONAL, true, false, false, statement );
+                    } catch ( Exception e ) {
+                        throw new InvalidSettingException( "Specified namespace cannot be created: " + e.getMessage(), TABLE_KEY );
+                    }
+                } else {
+                    namespaceId = targetNamespace.id;
+                }
+                if ( transaction.getSnapshot().getNamespace( namespaceId ).filter( ns -> ns.dataModel == DataModel.RELATIONAL ).isEmpty() ) {
+                    throw new InvalidSettingException( "Specified namespace is not relational", TABLE_KEY );
+                }
+                logInfo.accept( "Creating table '" + setting.getName() + "'" );
                 ddlManager.createTable(
-                        namespace.id,
+                        namespaceId,
                         setting.getName(),
                         StorageManagerImpl.getFieldInfo( outType ),
                         getPkConstraint( keepPk, pkCols ),
@@ -182,9 +192,9 @@ public class RelLoadActivity implements Activity, Pipeable {
                         List.of( adapterManager.getStore( adapter ).orElseThrow( () ->
                                 new InvalidSettingException( "Adapter does not exist: " + adapter, "adapter" ) ) ),
                         PlacementType.AUTOMATIC,
-                        transaction.createStatement() );
+                        statement );
                 transaction.commit();
-                return Catalog.snapshot().rel().getTable( namespace.id, setting.getName() ).orElseThrow();
+                return Catalog.snapshot().rel().getTable( namespaceId, setting.getName() ).orElseThrow();
             } finally {
                 if ( transaction.isActive() ) {
                     logInfo.accept( "Unable to create table. Rolling back transaction." );

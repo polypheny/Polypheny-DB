@@ -17,6 +17,9 @@
 package org.polypheny.db.catalog;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -38,6 +41,7 @@ import org.polypheny.db.catalog.impl.PolyCatalog;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
 public class CatalogTransactionTest {
@@ -99,6 +103,30 @@ public class CatalogTransactionTest {
         catalog.rollback();
 
         assert (catalog.getSnapshot().rel().getColumn( id.id ).isEmpty());
+    }
+
+
+    @Test
+    void failedCommitRestoresCatalogAndClosesWriter() {
+        Catalog catalog = Catalog.getInstance();
+        String namespace = "failedcatalogcommit";
+        Transaction writer = helper.getTransaction();
+        IllegalStateException failure = new IllegalStateException( "Deliberate commit failure" );
+        try {
+            writer.acquireCatalogWriteLock();
+            catalog.createNamespace( namespace, DataModel.RELATIONAL, false, false );
+            writer.attachCommitAction( () -> {
+                throw failure;
+            } );
+
+            assertSame( failure, assertThrows( IllegalStateException.class, writer::commit ) );
+            assertFalse( writer.isActive() );
+            assertTrue( Catalog.snapshot().getNamespace( namespace ).isEmpty() );
+        } finally {
+            if ( writer.isActive() ) {
+                writer.rollback( null );
+            }
+        }
     }
 
 

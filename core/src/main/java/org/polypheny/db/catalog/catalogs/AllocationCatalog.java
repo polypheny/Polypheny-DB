@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
 import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.impl.CatalogRollback;
 import org.polypheny.db.catalog.impl.allocation.PolyAllocDocCatalog;
 import org.polypheny.db.catalog.impl.allocation.PolyAllocGraphCatalog;
 import org.polypheny.db.catalog.impl.allocation.PolyAllocRelCatalog;
@@ -31,6 +32,8 @@ import org.polypheny.db.util.Wrapper;
 @SerializeClass(subclasses = { PolyAllocDocCatalog.class, PolyAllocGraphCatalog.class, PolyAllocRelCatalog.class })
 @JsonTypeInfo(use = Id.CLASS)
 public interface AllocationCatalog extends Wrapper {
+
+    void captureRollback( CatalogRollback state );
 
     LogicalNamespace getNamespace();
 

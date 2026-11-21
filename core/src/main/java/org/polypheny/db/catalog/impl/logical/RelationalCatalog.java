@@ -55,6 +55,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalPrimaryKey;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.impl.CatalogRollback;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.catalog.logistic.EntityType;
@@ -688,7 +689,7 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
         LogicalMaterializedView old = (LogicalMaterializedView) tables.get( materializedViewId );
 
-        MaterializedCriteria materializedCriteria = old.getMaterializedCriteria();
+        MaterializedCriteria materializedCriteria = old.getMaterializedCriteria().copy();
         materializedCriteria.setLastUpdate( new Timestamp( System.currentTimeMillis() ) );
 
         synchronized ( this ) {
@@ -717,6 +718,19 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
     public void setNodeAndCollation( long id, AlgNode node, AlgCollation collation ) {
         this.nodes.put( id, node );
         this.collations.put( id, collation );
+    }
+
+
+    @Override
+    public void captureRollback( CatalogRollback state ) {
+        state.capture( tables );
+        state.capture( columns );
+        state.capture( nodes );
+        state.capture( collations );
+        state.capture( indexes );
+        state.capture( keys );
+        state.capture( constraints );
+        state.capture( tablesFlaggedForDeletion );
     }
 
 }

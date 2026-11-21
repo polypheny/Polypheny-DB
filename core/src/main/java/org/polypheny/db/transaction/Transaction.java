@@ -114,6 +114,12 @@ public interface Transaction {
     void acquireLockable( Lockable lockable, Lockable.LockType lockType );
 
     /**
+     * Acquires exclusive catalog-write ownership until commit or rollback.
+     * Take any required schema locks before starting catalog changes.
+     */
+    void acquireCatalogWriteLock();
+
+    /**
      * Flavor, how multimedia results should be returned from a store.
      */
     enum MultimediaFlavor {

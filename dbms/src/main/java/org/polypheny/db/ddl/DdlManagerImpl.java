@@ -127,6 +127,8 @@ import org.polypheny.db.routing.RoutingManager;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockablesRegistry;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.VectorType;
@@ -232,6 +234,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public long createNamespace( String initialName, DataModel type, boolean ifNotExists, boolean replace, boolean hidden, Statement statement ) {
+        statement.getTransaction().acquireCatalogWriteLock();
         String name = initialName.toLowerCase();
         // Check that name is not blocked
         if ( blockedNamespaceNames.contains( name ) ) {
@@ -270,6 +273,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void createSource( Transaction transaction, String uniqueName, String adapterName, long namespace, AdapterType adapterType, Map<String, String> config, DeployMode mode ) {
+        transaction.acquireCatalogWriteLock();
         uniqueName = uniqueName.toLowerCase();
         DataSource<?> adapter = (DataSource<?>) AdapterManager.getInstance().addAdapter( catalog, adapterName, uniqueName, adapterType, mode, config );
         namespace = adapter.getCurrentNamespace() == null ? namespace : adapter.getCurrentNamespace().getId(); // TODO: clean implementation. Sources should either create their own namespace or there should be default namespaces for different models.
@@ -462,6 +466,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropAdapter( String name, Statement statement ) {
+        statement.getTransaction().acquireCatalogWriteLock();
         name = name.replace( "'", "" );
 
         LogicalAdapter adapter = catalog.getSnapshot().getAdapter( name ).orElseThrow();
@@ -641,8 +646,15 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
+    private static void acquireSourceRefreshLocks( Transaction transaction ) {
+        transaction.acquireLockable( LockablesRegistry.GLOBAL_SCHEMA_LOCKABLE, LockType.SHARED );
+        transaction.acquireCatalogWriteLock();
+    }
+
+
     @Override
     public SourceRefreshDetails refreshSelectedSourcesWithDetails( List<Long> sourceIds, Statement statement ) {
+        acquireSourceRefreshLocks( statement.getTransaction() );
         Snapshot snapshot = catalog.getSnapshot();
         List<SourceRefreshSummary> summaries = new ArrayList<>();
 
@@ -1027,6 +1039,7 @@ public class DdlManagerImpl extends DdlManager {
      */
     @Override
     public List<String> refreshSourceSchemaIfNeeded( long entityId, Statement statement ) {
+        acquireSourceRefreshLocks( statement.getTransaction() );
         Snapshot snapshot = catalog.getSnapshot();
         LogicalTable logicalTable = snapshot.rel().getTable( entityId ).orElseThrow();
 
@@ -1101,6 +1114,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public List<String> refreshSourceCollectionIfNeeded( long entityId, Statement statement ) {
+        acquireSourceRefreshLocks( statement.getTransaction() );
         return refreshSourceCollectionIfNeeded( entityId, statement, true );
     }
 
@@ -1297,6 +1311,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public List<String> refreshSynchronizedSourceMaterializationColumns( long entityId, Statement statement ) {
+        acquireSourceRefreshLocks( statement.getTransaction() );
         SynchronizedSourceMaterializationRefreshPlan plan = buildSynchronizedSourceMaterializationRefreshPlan( entityId );
         if ( plan.sourceEntityDeleted() ) {
             return plan.changeDescriptions();
@@ -4036,12 +4051,13 @@ public class DdlManagerImpl extends DdlManager {
     public void refreshView( Statement statement, Long materializedId ) {
         MaterializedViewManager materializedManager = MaterializedViewManager.getInstance();
         materializedManager.updateData( statement.getTransaction(), materializedId );
-        materializedManager.updateMaterializedTime( materializedId );
+        materializedManager.updateMaterializedTime( statement.getTransaction(), materializedId );
     }
 
 
     @Override
     public long createGraph( String name, boolean modifiable, @Nullable List<DataStore<?>> stores, boolean ifNotExists, boolean replace, boolean caseSensitive, boolean hidden, Statement statement ) {
+        statement.getTransaction().acquireCatalogWriteLock();
         assert !replace : "Graphs cannot be replaced yet.";
         String adjustedName = caseSensitive ? name : name.toLowerCase();
 
@@ -4166,6 +4182,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropGraph( long graphId, boolean ifExists, Statement statement ) {
+        statement.getTransaction().acquireCatalogWriteLock();
         Optional<LogicalGraph> optionalGraph = catalog.getSnapshot().graph().getGraph( graphId );
 
         if ( optionalGraph.isEmpty() ) {
@@ -4288,6 +4305,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void createTable( long namespaceId, String name, List<FieldInformation> fields, List<ConstraintInformation> constraints, boolean ifNotExists, @Nullable List<DataStore<?>> stores, PlacementType placementType, Statement statement ) {
+        statement.getTransaction().acquireCatalogWriteLock();
         String adjustedName = adjustNameIfNeeded( name, namespaceId );
 
         // Check if there is already a table with this name
@@ -4434,6 +4452,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void createCollection( long namespaceId, String name, boolean ifNotExists, List<DataStore<?>> stores, PlacementType placementType, Statement statement ) {
+        statement.getTransaction().acquireCatalogWriteLock();
         String adjustedName = adjustNameIfNeeded( name, namespaceId );
 
         checkModelLangCompatibility( DataModel.DOCUMENT, namespaceId );
@@ -4487,6 +4506,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropCollection( LogicalCollection collection, Statement statement ) {
+        statement.getTransaction().acquireCatalogWriteLock();
         Snapshot snapshot = catalog.getSnapshot();
 
         AdapterManager manager = AdapterManager.getInstance();
@@ -5060,6 +5080,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropNamespace( String namespaceName, boolean ifExists, Statement statement ) {
+        statement.getTransaction().acquireCatalogWriteLock();
         // Check if there is a schema with this name
         Optional<LogicalNamespace> optionalNamespace = catalog.getSnapshot().getNamespace( namespaceName );
         if ( optionalNamespace.isEmpty() ) {
@@ -5146,6 +5167,7 @@ public class DdlManagerImpl extends DdlManager {
 
     @Override
     public void dropTable( LogicalTable table, Statement statement ) {
+        statement.getTransaction().acquireCatalogWriteLock();
         // todo Make sure that all adapters are of type storeId (and not source)
         Snapshot snapshot = catalog.getSnapshot();
 

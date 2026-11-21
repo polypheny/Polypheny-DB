@@ -53,14 +53,11 @@ public class DefaultInserter {
         // init adapters
 
         restoreAdapters( transaction, ddlManager, catalog, mode );
-
-        transaction.commit();
     }
 
 
     private static void restoreAdapters( Transaction transaction, DdlManager ddlManager, Catalog catalog, RunMode mode ) {
         if ( !catalog.getAdapters().isEmpty() ) {
-            catalog.commit();
             return;
         }
 
@@ -82,7 +79,6 @@ public class DefaultInserter {
 
     private static void restoreUsers( Catalog catalog ) {
         if ( catalog.getUsers().values().stream().anyMatch( u -> u.getName().equals( "system" ) ) ) {
-            catalog.commit();
             return;
         }
 
@@ -111,7 +107,6 @@ public class DefaultInserter {
                     Map.of( "path", PolyphenyHomeDirManager.getInstance().registerNewGlobalFile( "polypheny-prism.sock" ).getAbsolutePath() )
             );
         }
-        catalog.commit();
     }
 
 }

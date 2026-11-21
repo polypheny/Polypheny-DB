@@ -31,6 +31,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
 import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.impl.CatalogRollback;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.PlacementType;
@@ -137,5 +138,13 @@ public class PolyAllocDocCatalog implements PolySerializable, AllocationDocument
         change();
     }
 
+
+
+    @Override
+    public void captureRollback( CatalogRollback state ) {
+        state.capture( collections );
+        state.capture( placements );
+        state.capture( partitions );
+    }
 
 }

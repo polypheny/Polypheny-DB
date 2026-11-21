@@ -82,6 +82,21 @@ public class MaterializedCriteria implements Serializable {
     }
 
 
+    private MaterializedCriteria( MaterializedCriteria criteria ) {
+        this.criteriaType = criteria.criteriaType;
+        this.interval = criteria.interval;
+        this.timeUnit = criteria.timeUnit;
+        this.lastUpdate = (Timestamp) criteria.lastUpdate.clone();
+        this.timeInMillis = criteria.timeInMillis;
+        this.timesUpdated = criteria.timesUpdated;
+    }
+
+
+    public MaterializedCriteria copy() {
+        return new MaterializedCriteria( this );
+    }
+
+
     public enum CriteriaType {
         UPDATE, INTERVAL, MANUAL
     }

@@ -127,7 +127,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     // indicates if the state has advanced and the snapshot has to be recreated or can be reused // trx without ddl
     private long lastCommitSnapshotId = 0;
     @Getter
-    private Snapshot snapshot;
+    private volatile Snapshot snapshot;
     private String backup;
 
 
@@ -213,13 +213,37 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         this.adapterRestore.clear();
         adapterCatalogs.forEach( ( id, catalog ) -> this.adapterRestore.put( id, catalog.createRestoreSnapshot() ) );
 
-        this.backup = serialize();
+        String committedState = serialize();
 
         updateSnapshot();
-        persister.write( backup );
+        persister.write( committedState );
+        this.backup = committedState;
         this.dirty.set( false );
 
         this.lastCommitSnapshotId = snapshot.id();
+    }
+
+
+    @Override
+    public Runnable captureRollback() {
+        CatalogRollback state = new CatalogRollback();
+        state.capture( users );
+        state.capture( logicalCatalogs );
+        state.capture( allocationCatalogs );
+        state.capture( adapters );
+        state.capture( interfaces );
+        state.capture( adapterCatalogs );
+        state.capture( adapterRestore );
+        logicalCatalogs.values().forEach( catalog -> catalog.captureRollback( state ) );
+        allocationCatalogs.values().forEach( catalog -> catalog.captureRollback( state ) );
+        adapterCatalogs.values().forEach( catalog -> catalog.captureRollback( state ) );
+
+        boolean wasDirty = dirty.get();
+        return () -> {
+            state.restore();
+            dirty.set( wasDirty );
+            updateSnapshot();
+        };
     }
 
 
@@ -459,7 +483,6 @@ public class PolyCatalog extends Catalog implements PolySerializable {
                 getLogicalRel( view.namespaceId ).setNodeAndCollation( view.id, algRoot.alg, algRoot.collation );
             }
         } );
-        transaction.commit();
     }
 
 

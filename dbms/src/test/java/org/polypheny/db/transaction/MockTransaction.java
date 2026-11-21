@@ -253,4 +253,10 @@ public class MockTransaction implements Transaction {
         locks.add( lockable );
     }
 
+
+    @Override
+    public void acquireCatalogWriteLock() {
+        throw new UnsupportedOperationException( "Mock transactions cannot change the catalog" );
+    }
+
 }

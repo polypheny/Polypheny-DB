@@ -275,11 +275,15 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
-    private static void setSynchronizedCollectionMetadata( long namespaceId, String collectionName, long sourceCollectionId ) {
-        LogicalCollection collection = Catalog.snapshot().doc().getCollection( namespaceId, collectionName ).orElseThrow();
-        Catalog.getInstance().getLogicalDoc( namespaceId ).setCollectionModifiable( collection.id, false );
-        Catalog.getInstance().getLogicalDoc( namespaceId ).setSynchronizedSourceEntity( collection.id, sourceCollectionId );
-        Catalog.getInstance().updateSnapshot();
+    private void setSynchronizedCollectionMetadata( long namespaceId, String collectionName, long sourceCollectionId ) {
+        transactionManager.runCatalogWrite( ORIGIN, transaction -> {
+            LogicalCollection collection = Catalog.snapshot().doc().getCollection( namespaceId, collectionName ).orElseThrow();
+            var documentCatalog = Catalog.getInstance().getLogicalDoc( namespaceId );
+            documentCatalog.setCollectionModifiable( collection.id, false );
+            documentCatalog.setSynchronizedSourceEntity( collection.id, sourceCollectionId );
+            Catalog.getInstance().updateSnapshot();
+            return null;
+        } );
     }
 
 
@@ -1238,10 +1242,14 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             return;
         }
 
-        LogicalTable materializedTable = Catalog.snapshot().rel().getTable( targetNamespace.id, materializedTableName ).orElseThrow();
-        Catalog.getInstance().getLogicalRel( targetNamespace.id ).setTableModifiable( materializedTable.id, false );
-        Catalog.getInstance().getLogicalRel( targetNamespace.id ).setSynchronizedSourceEntity( materializedTable.id, sourceTable.id );
-        Catalog.getInstance().updateSnapshot();
+        transactionManager.runCatalogWrite( ORIGIN, transaction -> {
+            LogicalTable materializedTable = Catalog.snapshot().rel().getTable( targetNamespace.id, materializedTableName ).orElseThrow();
+            var relationalCatalog = Catalog.getInstance().getLogicalRel( targetNamespace.id );
+            relationalCatalog.setTableModifiable( materializedTable.id, false );
+            relationalCatalog.setSynchronizedSourceEntity( materializedTable.id, sourceTable.id );
+            Catalog.getInstance().updateSnapshot();
+            return null;
+        } );
         List<String> foreignKeyWarnings = buildSynchronizedSourceMaterializationForeignKeyWarnings( sourceTable, materializedTableName );
 
         ctx.json( RelationalResult.builder()
@@ -1285,8 +1293,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         String materializedTableName = quoteQualified( materializedNamespace.name, materializedTable.name );
         String sourceTableName = quoteQualified( sourceNamespace.name, sourceTable.name );
 
-        Catalog.getInstance().getLogicalRel( materializedNamespace.id ).setTableModifiable( materializedTable.id, true );
-        Catalog.getInstance().updateSnapshot();
+        setMaterializationModifiable( DataModel.RELATIONAL, materializedNamespace.id, materializedTable.id, true );
         try {
             Result<?, ?> deleteResult = executeSql( "DELETE FROM " + materializedTableName );
             if ( deleteResult.error != null ) {
@@ -1298,8 +1305,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 throw new GenericRuntimeException( insertResult.error );
             }
         } finally {
-            Catalog.getInstance().getLogicalRel( materializedNamespace.id ).setTableModifiable( materializedTable.id, false );
-            Catalog.getInstance().updateSnapshot();
+            setMaterializationModifiable( DataModel.RELATIONAL, materializedNamespace.id, materializedTable.id, false );
         }
     }
 
@@ -1574,8 +1580,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         LogicalCollection sourceCollection = snapshot.doc().getCollection( materializedCollection.synchronizedSourceEntityId ).orElseThrow();
         LogicalNamespace materializedNamespace = snapshot.getNamespace( materializedCollection.namespaceId ).orElseThrow();
         LogicalNamespace sourceNamespace = snapshot.getNamespace( sourceCollection.namespaceId ).orElseThrow();
-        Catalog.getInstance().getLogicalDoc( materializedNamespace.id ).setCollectionModifiable( materializedCollection.id, true );
-        Catalog.getInstance().updateSnapshot();
+        setMaterializationModifiable( DataModel.DOCUMENT, materializedNamespace.id, materializedCollection.id, true );
         try {
             Result<?, ?> deleteResult = executeMql( "db." + materializedCollection.name + ".deleteMany({})", materializedNamespace.name, false );
             if ( deleteResult.error != null ) {
@@ -1583,9 +1588,22 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             }
             copyCollectionDocuments( sourceCollection, sourceNamespace.name, materializedCollection.name, materializedNamespace.name );
         } finally {
-            Catalog.getInstance().getLogicalDoc( materializedNamespace.id ).setCollectionModifiable( materializedCollection.id, false );
-            Catalog.getInstance().updateSnapshot();
+            setMaterializationModifiable( DataModel.DOCUMENT, materializedNamespace.id, materializedCollection.id, false );
         }
+    }
+
+
+    private void setMaterializationModifiable( DataModel model, long namespaceId, long entityId, boolean modifiable ) {
+        transactionManager.runCatalogWrite( ORIGIN, transaction -> {
+            Catalog catalog = Catalog.getInstance();
+            switch ( model ) {
+                case RELATIONAL -> catalog.getLogicalRel( namespaceId ).setTableModifiable( entityId, modifiable );
+                case DOCUMENT -> catalog.getLogicalDoc( namespaceId ).setCollectionModifiable( entityId, modifiable );
+                default -> throw new IllegalArgumentException( "Unsupported model for synchronized materialization: " + model );
+            }
+            catalog.updateSnapshot();
+            return null;
+        } );
     }
 
     /**
@@ -3178,8 +3196,10 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     void updateAdapterSettings( final Context ctx ) {
         UpdateAdapterRequest request = ctx.bodyAsClass( UpdateAdapterRequest.class );
         try {
-            AdapterManager.getInstance().getAdapter( request.getUniqueName() ).orElseThrow().updateSettings( request.getSettings() );
-            Catalog.getInstance().commit();
+            transactionManager.runCatalogWrite( ORIGIN, transaction -> {
+                AdapterManager.getInstance().getAdapter( request.getUniqueName() ).orElseThrow().updateSettings( request.getSettings() );
+                return null;
+            } );
         } catch ( Throwable t ) {
             ctx.json( RelationalResult.builder().error( "Could not update AdapterSettings: " + t.getMessage() ).build() );
             return;
@@ -3379,7 +3399,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     void createQueryInterface( final Context ctx ) {
         QueryInterfaceCreateRequest request = ctx.bodyAsClass( QueryInterfaceCreateRequest.class );
         try {
-            QueryInterfaceManager.getInstance().createQueryInterface( request.interfaceType(), request.uniqueName(), request.settings() );
+            transactionManager.runCatalogWrite( ORIGIN, transaction ->
+                    QueryInterfaceManager.getInstance().createQueryInterface( request.interfaceType(), request.uniqueName(), request.settings() ) );
             ctx.status( 200 );
         } catch ( RuntimeException e ) {
             log.error( "Exception while deploying query interface", e );
@@ -3402,7 +3423,10 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     void removeQueryInterface( final Context ctx ) {
         String uniqueName = ctx.body();
         try {
-            QueryInterfaceManager.getInstance().removeQueryInterface( Catalog.getInstance(), uniqueName );
+            transactionManager.runCatalogWrite( ORIGIN, transaction -> {
+                QueryInterfaceManager.getInstance().removeQueryInterface( Catalog.getInstance(), uniqueName );
+                return null;
+            } );
             ctx.status( 200 );
         } catch ( RuntimeException e ) {
             log.error( "Could not remove query interface {}", ctx.body(), e );
