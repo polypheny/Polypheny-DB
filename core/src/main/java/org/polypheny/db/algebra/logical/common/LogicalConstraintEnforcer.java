@@ -32,7 +32,8 @@ import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.common.ConstraintEnforcer;
 import org.polypheny.db.algebra.core.relational.RelModify;
-import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
+import org.polypheny.db.algebra.exceptions.ForeignKeyConstraintViolationException;
+import org.polypheny.db.algebra.exceptions.UniqueConstraintViolationException;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
@@ -153,7 +154,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
                 filters.add( builder.build() );
                 String type = modify.isInsert() ? "Insert" : modify.isUpdate() ? "Update" : modify.isMerge() ? "Merge" : null;
                 errorMessages.add( String.format( "%s violates unique constraint `%s`.`%s`", type, table.name, constraint.name ) );
-                errorClasses.add( ConstraintViolationException.class );
+                errorClasses.add( UniqueConstraintViolationException.class );
                 pos++;
             }
         }
@@ -198,7 +199,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
                 filters.add( builder.build() );
                 String type = modify.isInsert() ? "Insert" : modify.isUpdate() ? "Update" : modify.isMerge() ? "Merge" : modify.isDelete() ? "Delete" : null;
                 errorMessages.add( String.format( "%s violates foreign key constraint `%s`.`%s`", type, table.name, foreignKey.name ) );
-                errorClasses.add( ConstraintViolationException.class );
+                errorClasses.add( ForeignKeyConstraintViolationException.class );
                 pos++;
             }
         }
@@ -281,7 +282,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
                 builder.projectPlus( builder.literal( pos ) );
                 filters.add( builder.build() );
                 errorMessages.add( String.format( "Transaction violates unique constraint `%s`.`%s`", table.name, constraint.name ) );
-                errorClasses.add( ConstraintViolationException.class );
+                errorClasses.add( UniqueConstraintViolationException.class );
                 pos++;
             }
         }
@@ -324,7 +325,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
 
                 filters.add( builder.build() );
                 errorMessages.add( String.format( "Transaction violates foreign key constraint `%s`.`%s`", table.name, foreignKey.name ) );
-                errorClasses.add( ConstraintViolationException.class );
+                errorClasses.add( ForeignKeyConstraintViolationException.class );
                 pos++;
             }
         }

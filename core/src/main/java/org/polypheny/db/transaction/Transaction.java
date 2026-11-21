@@ -50,6 +50,10 @@ public interface Transaction {
 
     void attachCommitConstraint( Supplier<Boolean> constraintChecker, String description );
 
+    default void attachCommitConstraint( Supplier<Boolean> constraintChecker, String description, String sqlState ) {
+        attachCommitConstraint( constraintChecker, description );
+    }
+
     void commit() throws TransactionException;
 
     /**

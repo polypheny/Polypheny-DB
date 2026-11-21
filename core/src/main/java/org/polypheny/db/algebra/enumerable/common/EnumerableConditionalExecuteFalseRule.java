@@ -24,6 +24,9 @@ import org.polypheny.db.algebra.core.common.ConditionalExecute;
 import org.polypheny.db.algebra.core.common.ConditionalExecute.Condition;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
+import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
+import org.polypheny.db.algebra.exceptions.ForeignKeyConstraintViolationException;
+import org.polypheny.db.algebra.exceptions.UniqueConstraintViolationException;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.Convention;
 
@@ -43,6 +46,9 @@ public class EnumerableConditionalExecuteFalseRule extends ConverterRule {
         ConditionalExecute ce = (ConditionalExecute) alg;
         try {
             throw ce.getExceptionClass().getConstructor( String.class ).newInstance( ce.getExceptionMessage() );
+        } catch ( UniqueConstraintViolationException | ForeignKeyConstraintViolationException e ) {
+            // This wrapper used to include the base exception's class name in the error text.
+            throw new GenericRuntimeException( ConstraintViolationException.class.getName() + ": " + e.getMessage(), e );
         } catch ( Exception e ) {
             throw new GenericRuntimeException( e );
         }

@@ -18,7 +18,10 @@ package org.polypheny.db.catalog.util;
 
 import java.util.function.Supplier;
 
-public record ConstraintCondition( Supplier<Boolean> condition, String errorMessage ) {
+public record ConstraintCondition( Supplier<Boolean> condition, String errorMessage, String sqlState ) {
 
+    public ConstraintCondition( Supplier<Boolean> condition, String errorMessage ) {
+        this( condition, errorMessage, "42000" );
+    }
 
 }

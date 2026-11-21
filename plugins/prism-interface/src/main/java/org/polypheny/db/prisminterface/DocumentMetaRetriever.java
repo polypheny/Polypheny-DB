@@ -73,13 +73,13 @@ final class DocumentMetaRetriever {
             }
             return metadata;
         } catch ( TransactionException e ) {
-            throw new PIServiceException( "Completing document metadata transaction failed: " + e.getMessage() );
+            throw new PIServiceException( "Completing document metadata transaction failed: " + e.getMessage(), e );
         } finally {
             if ( ownsTransaction && transaction.isActive() ) {
                 try {
                     transaction.rollback( "Document metadata request failed" );
                 } catch ( TransactionException e ) {
-                    throw new PIServiceException( "Rollback of document metadata transaction failed: " + e.getMessage() );
+                    throw new PIServiceException( "Rollback of document metadata transaction failed: " + e.getMessage(), e );
                 }
             }
         }

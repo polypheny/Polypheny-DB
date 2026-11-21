@@ -26,6 +26,7 @@ import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.ParserFactory;
 import org.polypheny.db.languages.ParserImpl;
 import org.polypheny.db.nodes.Node;
+import org.polypheny.db.runtime.SqlStateProvider;
 import org.polypheny.db.type.entity.PolyValue;
 
 public class CypherParser implements Parser {
@@ -72,8 +73,29 @@ public class CypherParser implements Parser {
         try {
             return parser.parseExpressionsEof();
         } catch ( Exception e ) {
-            throw new NodeParseException( e.getMessage(), null, null, null, e );
+            throw new NodeParseException( e.getMessage(), null, null, null, e, e instanceof ParseException );
+        } catch ( TokenMgrError e ) {
+            if ( e.errorCode == TokenMgrError.LEXICAL_ERROR ) {
+                throw new CypherLexicalError( e );
+            }
+            throw e;
         }
+    }
+
+
+    private static final class CypherLexicalError extends TokenMgrError implements SqlStateProvider {
+
+        private CypherLexicalError( TokenMgrError cause ) {
+            super( cause.getMessage(), cause.errorCode );
+            initCause( cause );
+        }
+
+
+        @Override
+        public String getSqlState() {
+            return "42601";
+        }
+
     }
 
 

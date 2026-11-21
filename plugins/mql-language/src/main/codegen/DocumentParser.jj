@@ -11,6 +11,7 @@ package org.polypheny.db.mql.parser;
 
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
+import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.languages.mql.MqlAggregate;
 import org.polypheny.db.languages.mql.MqlCount;
 import org.polypheny.db.languages.mql.MqlCreateCollection;
@@ -278,8 +279,11 @@ JAVACODE MqlParseException convertException(Throwable ex)
         ex = ece.getCause();
     }
 
+    boolean syntaxError = ex instanceof ParseException
+        || (ex instanceof TokenMgrError && ((TokenMgrError) ex).errorCode == TokenMgrError.LEXICAL_ERROR)
+        || (ex instanceof PolyphenyDbException && ex.getCause() == null);
     return new MqlParseException(
-        ex.getMessage(), pos, expectedTokenSequences, tokenImage, ex);
+        ex.getMessage(), pos, expectedTokenSequences, tokenImage, ex, syntaxError);
 }
 
 /**

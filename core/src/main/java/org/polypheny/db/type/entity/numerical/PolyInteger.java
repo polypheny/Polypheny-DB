@@ -36,6 +36,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.runtime.SqlStateException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
@@ -77,7 +78,11 @@ public class PolyInteger extends PolyNumber {
         } else if ( object.isTemporal() ) {
             return PolyInteger.of( object.asTemporal().getMillisSinceEpoch() );
         } else if ( object.isString() ) {
-            return PolyInteger.of( Integer.parseInt( object.asString().value ) );
+            try {
+                return PolyInteger.of( Integer.parseInt( object.asString().value ) );
+            } catch ( NumberFormatException e ) {
+                throw new SqlStateException( e.getMessage(), "22018", e );
+            }
         }
 
         throw new GenericRuntimeException( getConvertError( object, PolyInteger.class ) );

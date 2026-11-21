@@ -58,7 +58,7 @@ final class ResultExecutor {
             return updateCount( statement, implementation );
         }
         if ( model == DataModel.GRAPH ) {
-            throw new PIServiceException( "Cypher batch statements must update the graph without returning rows" );
+            throw new PIServiceException( "Cypher batch statements must update the graph without returning rows", "0A000" );
         }
         throw new PIServiceException( "Can't execute a non DDL or non DML statement using this method.", "I9003", 9002 );
     }
@@ -95,7 +95,7 @@ final class ResultExecutor {
         ResultCursor cursor = statement.getResultCursor();
         if ( cursor == null || !cursor.transaction().isActive() ) {
             if ( isGraphStatement( statement ) ) {
-                throw new PIServiceException( "No open Cypher result exists for this statement" );
+                throw new PIServiceException( "No open Cypher result exists for this statement", "24000" );
             }
             throw new PIServiceException( "No open result exists for this statement", "I9002", 9002 );
         }
@@ -118,7 +118,7 @@ final class ResultExecutor {
                 // Prism 2.2 can decode a graph stream. Mixed Cypher projections use graph values in row cells.
                 if ( isGraphStatement( statement ) && !statement.getClient().supportsGraphValues()
                         && implementation.tupleType.getFields().stream().anyMatch( field -> ResultKind.isGraphType( field.getType().getPolyType() ) ) ) {
-                    throw new PIServiceException( "Cypher results mixing graph and scalar columns require Prism 2.3 or later." );
+                    throw new PIServiceException( "Cypher results mixing graph and scalar columns require Prism 2.3 or later.", "0A000" );
                 }
                 yield ResultCase.RELATIONAL_FRAME;
             }

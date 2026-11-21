@@ -52,7 +52,7 @@ public class PIUnparameterizedStatementBatch {
         List<Node> parsed = statements.stream().map( StatementProcessor::parseUpdateBatchMember ).toList();
         if ( parsed.size() > 1 && parsed.stream().anyMatch( Node::isDdl ) ) {
             // Preparing DDL commits the transaction immediately.
-            throw new PIServiceException( "DDL must execute separately from other statements in a Cypher batch" );
+            throw new PIServiceException( "DDL must execute separately from other statements in a Cypher batch", "0A000" );
         }
         return parsed;
     }

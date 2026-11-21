@@ -19,6 +19,7 @@ package org.polypheny.db.prisminterface;
 import java.sql.DatabaseMetaData;
 import java.util.Arrays;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.algebra.constant.FunctionCategory;
@@ -104,7 +105,13 @@ class DbMetaRetriever {
     // Entity search by namespace
     static EntitiesResponse searchEntities( String namespaceName, String entityPattern, PIClient client ) {
         EntitiesResponse.Builder responseBuilder = EntitiesResponse.newBuilder();
-        LogicalNamespace namespace = Catalog.snapshot().getNamespace( namespaceName ).orElseThrow();
+        Optional<LogicalNamespace> matchingNamespace = Catalog.snapshot().getNamespace( namespaceName );
+        LogicalNamespace namespace;
+        try {
+            namespace = matchingNamespace.orElseThrow();
+        } catch ( NoSuchElementException e ) {
+            throw new PIServiceException( e.getMessage(), "3F000", e );
+        }
         return switch ( namespace.getDataModel() ) {
             case RELATIONAL -> responseBuilder.addAllEntities( getRelationalEntities( namespace.getId(), entityPattern ) ).build();
             case GRAPH -> responseBuilder.addAllEntities( getGraphEntities( namespace.getId(), entityPattern ) ).build();

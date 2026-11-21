@@ -317,7 +317,7 @@ public class PolyValueSerializer {
 
     private ProtoValue serializeGraphValue( PolyValue value ) {
         if ( !supportsGraphValues ) {
-            throw new PIServiceException( "Graph values in cells require Prism 2.3 or later." );
+            throw new PIServiceException( "Graph values in cells require Prism 2.3 or later.", "0A000" );
         }
         return switch ( value.getType() ) {
             case NODE -> ProtoValue.newBuilder().setNode( buildProtoNode( value.asNode() ) ).build();

@@ -28,6 +28,7 @@ import org.polypheny.db.config.ConfigManager;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.processing.ConstraintEnforceAttacher.ConstraintTracker;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.sql.language.SqlAlter;
 import org.polypheny.db.sql.language.SqlNode;
@@ -104,7 +105,7 @@ public class SqlAlterConfig extends SqlAlter {
         if ( config == null ) {
             throw new GenericRuntimeException( "Unknown config key: " + keyStr );
         }
-        config.parseStringAndSetValue( valueStr );
+        ConstraintTracker.setConfigValue( config, valueStr, statement.getTransaction() );
     }
 
 

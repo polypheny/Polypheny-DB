@@ -17,11 +17,18 @@
 package org.polypheny.db.cypher.cypher2alg;
 
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.runtime.SqlStateProvider;
 
-public class CypherSyntaxException extends GenericRuntimeException {
+public class CypherSyntaxException extends GenericRuntimeException implements SqlStateProvider {
 
     public CypherSyntaxException( String message ) {
         super( message );
+    }
+
+
+    @Override
+    public String getSqlState() {
+        return "42601";
     }
 
 }

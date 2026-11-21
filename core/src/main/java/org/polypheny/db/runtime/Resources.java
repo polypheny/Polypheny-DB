@@ -494,8 +494,12 @@ public class Resources {
             try {
                 //noinspection unchecked
                 final Class<T> exceptionClass = (Class<T>) getExceptionClass( method.getGenericReturnType() );
-                Constructor<T> constructor;
                 final String str = str();
+                String sqlState = getProperties().get( "SQLSTATE" );
+                if ( sqlState != null ) {
+                    return exceptionClass.getConstructor( String.class, Throwable.class, String.class ).newInstance( str, cause, sqlState );
+                }
+                Constructor<T> constructor;
                 boolean causeInConstructor = false;
                 try {
                     constructor = exceptionClass.getConstructor( String.class, Throwable.class );
