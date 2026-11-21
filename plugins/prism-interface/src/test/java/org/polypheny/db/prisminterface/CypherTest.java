@@ -1902,21 +1902,27 @@ class CypherTest {
 
 
     @Test
-    void evaluatesWhereOnlyForOptionalMatchCandidatesAcrossStores() throws IOException {
+    void evaluatesWhereOnlyForMatchCandidatesAcrossStores() throws IOException {
         try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
             String query = """
                     MATCH (a:Person {id:1})
                     WITH last([null,a]) AS n
-                    OPTIONAL MATCH (n:%s) WHERE 1/(n.id-1) = 1
+                    %s (n:%s) WHERE 1/(n.id-1) = 1
                     RETURN count(n) AS total
                     """;
-            Frame frame = connection.cypher( query.formatted( "MissingPerson" ), -1 ).getResult().getFrame();
-            assertEquals( 1, integerValue( singleRow( relationalFrame( frame, true, List.of( "total" ) ) ).getValues( 0 ) ) );
+            for ( String match : List.of( "MATCH", "OPTIONAL MATCH" ) ) {
+                int expected = match.equals( "OPTIONAL MATCH" ) ? 1 : 0;
+                for ( String pattern : List.of( "MissingPerson", "Person {id:2}" ) ) {
+                    Frame frame = connection.cypher( query.formatted( match, pattern ), -1 ).getResult().getFrame();
+                    assertEquals( expected, integerValue( singleRow( relationalFrame( frame, true, List.of( "total" ) ) ).getValues( 0 ) ) );
+                }
 
-            Response response = expect( connection.send( statementRequest( NAMESPACE, "cypher", query.formatted( "Person" ), -1 ) ), Response.TypeCase.ERROR_RESPONSE );
-            String message = response.getErrorResponse().getMessage();
-            assertTrue( message.contains( "/ by zero" ), message );
-            connection.checkTransactions( 0 );
+                String withCandidate = query.formatted( match, "Person {id:1}" );
+                Response response = expect( connection.send( statementRequest( NAMESPACE, "cypher", withCandidate, -1 ) ), Response.TypeCase.ERROR_RESPONSE );
+                String message = response.getErrorResponse().getMessage();
+                assertTrue( message.contains( "/ by zero" ), message );
+                connection.checkTransactions( 0 );
+            }
         }
     }
 
