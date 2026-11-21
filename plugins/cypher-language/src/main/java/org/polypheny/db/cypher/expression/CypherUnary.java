@@ -18,7 +18,15 @@ package org.polypheny.db.cypher.expression;
 
 import lombok.Getter;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
+import org.polypheny.db.functions.CypherFunctions;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyLong;
+import org.polypheny.db.util.Pair;
 
 @Getter
 public class CypherUnary extends CypherExpression {
@@ -31,6 +39,19 @@ public class CypherUnary extends CypherExpression {
         super( pos );
         this.unaryPlus = unaryPlus;
         this.expression = expression;
+    }
+
+
+    @Override
+    protected Pair<PolyString, RexNode> toRex( CypherContext context, RexType type ) {
+        return Pair.of( null, CypherFormula.createCall( context, unaryPlus,
+                context.rexBuilder.makeLiteral( PolyLong.of( 0 ) ), expression.getRex( context, type ).right ) );
+    }
+
+
+    @Override
+    public PolyValue getComparable() {
+        return CypherFunctions.arithmetic( PolyString.of( unaryPlus.name() ), PolyLong.of( 0 ), expression.getComparable() );
     }
 
 }

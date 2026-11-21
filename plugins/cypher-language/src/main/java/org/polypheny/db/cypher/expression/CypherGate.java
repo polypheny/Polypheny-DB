@@ -54,16 +54,17 @@ public class CypherGate extends CypherExpression {
 
 
     @Override
-    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
+    protected Pair<PolyString, RexNode> toRex( CypherContext context, RexType type ) {
         OperatorName operatorName = switch ( gate ) {
             case OR -> OperatorName.OR;
             case AND -> OperatorName.AND;
             case NOT -> OperatorName.NOT;
             case XOR -> throw new UnsupportedOperationException();
         };
+        RexNode lhs = context.booleanPredicate( left.getRex( context, type ).right );
         List<RexNode> operands = gate == Gate.NOT
-                ? List.of( left.getRex( context, type ).right )
-                : List.of( left.getRex( context, type ).right, right.getRex( context, type ).right );
+                ? List.of( lhs )
+                : List.of( lhs, context.booleanPredicate( right.getRex( context, type ).right ) );
         boolean nullable = operands.stream().anyMatch( operand -> operand.getType().isNullable() );
         AlgDataType resultType = context.typeFactory.createTypeWithNullability( context.booleanType, nullable );
         return Pair.of( null, new RexCall( resultType, OperatorRegistry.get( operatorName ), operands ) );

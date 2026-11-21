@@ -842,6 +842,14 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_LIKE ), BuiltInMethod.CYPHER_LIKE.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EQUALS ), BuiltInMethod.CYPHER_EQUALS.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_NOT_EQUALS ), BuiltInMethod.CYPHER_NOT_EQUALS.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_IN ), BuiltInMethod.CYPHER_IN.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_LAST ), BuiltInMethod.CYPHER_LAST.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_INDEX ), BuiltInMethod.CYPHER_INDEX.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_SLICE ), BuiltInMethod.CYPHER_SLICE.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_NODES ), BuiltInMethod.CYPHER_NODES.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_RELATIONSHIPS ), BuiltInMethod.CYPHER_RELATIONSHIPS.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_LENGTH ), BuiltInMethod.CYPHER_LENGTH.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_ARITHMETIC ), BuiltInMethod.CYPHER_ARITHMETIC.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_LESS_THAN ), BuiltInMethod.CYPHER_LESS_THAN.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_LESS_THAN_OR_EQUAL ), BuiltInMethod.CYPHER_LESS_THAN_OR_EQUAL.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_GREATER_THAN ), BuiltInMethod.CYPHER_GREATER_THAN.method, NullPolicy.NONE );
@@ -859,9 +867,19 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_PROPERTY ), BuiltInMethod.CYPHER_EXTRACT_PROPERTY.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_PROPERTIES ), BuiltInMethod.CYPHER_EXTRACT_PROPERTIES.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_ID ), BuiltInMethod.CYPHER_EXTRACT_ID.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_MATCH_ELEMENT_ID ), BuiltInMethod.CYPHER_MATCH_ELEMENT_ID.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_VALIDATE_MATCH_NODE ), BuiltInMethod.CYPHER_VALIDATE_MATCH_NODE.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_VALIDATE_MATCH_RELATIONSHIP_LIST ), BuiltInMethod.CYPHER_VALIDATE_MATCH_RELATIONSHIP_LIST.method, NullPolicy.NONE );
+        map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_MATCH_BINDING_GUARD ), RexImpTable::implementCypherMatchBindingGuard );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_BOOLEAN_PREDICATE ), BuiltInMethod.CYPHER_BOOLEAN_PREDICATE.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_MATCH_WITH_WHERE ), BuiltInMethod.CYPHER_MATCH_WITH_WHERE.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_LABELS ), BuiltInMethod.CYPHER_EXTRACT_LABELS.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_LABEL ), BuiltInMethod.CYPHER_EXTRACT_LABEL.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_TO_LIST ), BuiltInMethod.CYPHER_TO_LIST.method, NullPolicy.NONE );
+        defineImplementor( OperatorRegistry.get( cypher, OperatorName.CYPHER_LIST_CONSTRUCTOR ), NullPolicy.NONE,
+                ( translator, call, operands ) -> Expressions.call( BuiltInMethod.LIST_N.method, Expressions.newArrayInit( PolyValue.class, operands ) ), false );
+        defineImplementor( OperatorRegistry.get( cypher, OperatorName.CYPHER_MAP_CONSTRUCTOR ), NullPolicy.NONE,
+                ( translator, call, operands ) -> Expressions.call( BuiltInMethod.CYPHER_MAP_CONSTRUCTOR.method, Expressions.newArrayInit( PolyValue.class, operands ) ), false );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_ADJUST_EDGE ), BuiltInMethod.CYPHER_ADJUST_EDGE.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_CREATE_NODE ), BuiltInMethod.CYPHER_CREATE_NODE.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_CREATE_EDGE ), BuiltInMethod.CYPHER_CREATE_EDGE.method, NullPolicy.NONE );
@@ -876,6 +894,24 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( cypher, OperatorName.DISTANCE_NEO4J ), BuiltInMethod.CYPHER_DISTANCE_NEO4J.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_WITHIN_BBOX ), BuiltInMethod.CYPHER_WITHIN_BBOX.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_WITHIN_GEOMETRY ), BuiltInMethod.CYPHER_WITHIN_GEOMETRY.method, NullPolicy.NONE );
+    }
+
+
+    private static Expression implementCypherMatchBindingGuard( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
+        List<RexNode> operands = call.getOperands();
+        Expression compatible = translator.translate( operands.get( 0 ), NullAs.FALSE );
+
+        // Keep candidate-dependent expressions out of the enclosing filter block.
+        BlockBuilder onIncompatible = new BlockBuilder( true, translator.getList() );
+        RexToLixTranslator guardTranslator = translator.setBlock( onIncompatible );
+        Expression excluded = guardTranslator.translate( operands.get( 1 ), NullAs.FALSE );
+
+        BlockBuilder onRequired = new BlockBuilder( true, onIncompatible );
+        Expression validation = translator.setBlock( onRequired ).translateWithoutAttach( operands.get( 2 ), NullAs.FALSE, null );
+        onRequired.add( Expressions.statement( validation ) );
+        onIncompatible.add( EnumUtils.ifThen( EnumUtils.not( excluded ), onRequired.toBlock() ) );
+        translator.getList().add( EnumUtils.ifThen( EnumUtils.not( compatible ), onIncompatible.toBlock() ) );
+        return nullAs.handle( TRUE_EXPR );
     }
 
 

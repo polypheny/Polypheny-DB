@@ -16,11 +16,12 @@
 
 package org.polypheny.db.cypher.clause;
 
-import javax.annotation.Nullable;
-import org.polypheny.db.algebra.AlgNode;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Set;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.cypher.cypher2alg.CypherSyntaxException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
-import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.entity.PolyString;
@@ -40,16 +41,22 @@ public class CypherStarReturn extends CypherReturn {
     }
 
 
-    @Override
-    @Nullable
-    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
-        AlgNode node = context.peek();
-
-        for ( AlgDataTypeField field : node.getTupleType().getFields() ) {
-            context.add( Pair.of( PolyString.of( field.getName() ), context.rexBuilder.makeInputRef( field.getType(), field.getIndex() ) ) );
+    public List<Pair<PolyString, RexNode>> expand( CypherContext context, Set<String> explicitNames, boolean withClause ) {
+        List<AlgDataTypeField> fields = context.hasInput()
+                ? context.peek().getTupleType().getFields().stream()
+                        .filter( field -> field.getName() != null && context.isVisibleVariable( field.getName() ) )
+                        .toList()
+                : List.of();
+        if ( fields.isEmpty() && !withClause ) {
+            throw new CypherSyntaxException( "RETURN * requires a variable in scope." );
         }
-
-        return null;
+        // Explicit columns replace names from the wildcard and keep their requested position.
+        return fields.stream()
+                .filter( field -> !explicitNames.contains( field.getName() ) )
+                .sorted( Comparator.comparing( AlgDataTypeField::getName ) )
+                .map( field -> Pair.<PolyString, RexNode>of( PolyString.of( field.getName() ),
+                        context.rexBuilder.makeInputRef( field.getType(), field.getIndex() ) ) )
+                .toList();
     }
 
 }

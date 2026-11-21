@@ -218,7 +218,7 @@ class PlanKeyTest {
             PolyNode right = node( "b", "Person", 2 );
             PolyPath first = path( left, right, "KNOWS", EdgeDirection.LEFT_TO_RIGHT, 2 );
             PolyPath equivalent = path( node( "a", "Person", 1 ), node( "b", "Person", 2 ), "KNOWS", EdgeDirection.LEFT_TO_RIGHT, 2 );
-            AlgDataType type = types.createPathType( first.getPathType( types.createPolyType( PolyType.NODE ), types.createPolyType( PolyType.EDGE ) ) );
+            AlgDataType type = types.createPathType( first.getPathType( types ) );
 
             assertNotEquals( first.id, equivalent.id );
             assertEquals( matchKey( match, type, first ), matchKey( match, type, equivalent ) );
@@ -228,6 +228,13 @@ class PlanKeyTest {
             assertNotEquals( matchKey( match, type, path( left, left, "KNOWS", EdgeDirection.LEFT_TO_RIGHT, 2 ) ),
                     matchKey( match, type, path( left, node( "a", "Person", 1 ), "KNOWS", EdgeDirection.LEFT_TO_RIGHT, 2 ) ) );
             assertNotEquals( key( new RexLiteral( first, type, PolyType.PATH ) ), key( new RexLiteral( equivalent, type, PolyType.PATH ) ) );
+
+            PolyPath unbounded = path( left, right, "KNOWS", EdgeDirection.LEFT_TO_RIGHT, null );
+            PlanKey unboundedKey = matchKey( match, type, unbounded );
+            assertNotEquals( matchKey( match, type, first ), unboundedKey );
+            assertEquals( unboundedKey, matchKey( match, type, path( node( "a", "Person", 1 ), node( "b", "Person", 2 ), "KNOWS", EdgeDirection.LEFT_TO_RIGHT, null ) ) );
+            unbounded.getEdges().get( 0 ).fromTo( Pair.of( 2, null ) );
+            assertNotEquals( unboundedKey, matchKey( match, type, unbounded ) );
         } finally {
             OperatorRegistry.remove( cypher );
         }
@@ -324,7 +331,7 @@ class PlanKeyTest {
     }
 
 
-    private static PolyPath path( PolyNode left, PolyNode right, String label, EdgeDirection direction, int maxLength ) {
+    private static PolyPath path( PolyNode left, PolyNode right, String label, EdgeDirection direction, Integer maxLength ) {
         PolyEdge edge = new PolyEdge( new PolyDictionary(), List.of( PolyString.of( label ) ), left.id, right.id, direction, PolyString.of( "r" ) );
         edge.fromTo( Pair.of( 1, maxLength ) );
         return PolyPath.create( List.of( Pair.of( left.variableName, left ), Pair.of( right.variableName, right ) ), List.of( Pair.of( edge.variableName, edge ) ) );

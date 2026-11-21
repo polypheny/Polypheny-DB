@@ -17,6 +17,7 @@
 package org.polypheny.db.cypher;
 
 import lombok.Getter;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
@@ -65,11 +66,18 @@ public class CypherParameter extends CypherExpression {
 
 
     @Override
-    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
+    protected Pair<PolyString, RexNode> toRex( CypherContext context, RexType type ) {
         PolyValue boundValue = getComparable();
-        RexNode literal = boundValue.isNull()
-                ? context.rexBuilder.makeNullLiteral( context.typeFactory.createPolyType( PolyType.NULL ) )
-                : context.rexBuilder.makeLiteral( boundValue );
+        RexNode literal;
+        if ( boundValue.isNull() ) {
+            literal = context.rexBuilder.makeNullLiteral( context.typeFactory.createPolyType( PolyType.NULL ) );
+        } else if ( boundValue.isMap() ) {
+            AlgDataType mapType = context.typeFactory.createMapType(
+                    context.typeFactory.createPolyType( PolyType.VARCHAR ), context.typeFactory.createPolyType( PolyType.ANY ) );
+            literal = context.rexBuilder.makeLiteral( boundValue, mapType );
+        } else {
+            literal = context.rexBuilder.makeLiteral( boundValue );
+        }
         return Pair.of( PolyString.of( "$" + name ), literal );
     }
 

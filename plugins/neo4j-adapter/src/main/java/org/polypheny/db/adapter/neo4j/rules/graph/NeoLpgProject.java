@@ -19,6 +19,7 @@ package org.polypheny.db.adapter.neo4j.rules.graph;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.as_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.list_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.literal_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.quoteIdentifier;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.return_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.with_;
 
@@ -59,16 +60,15 @@ public class NeoLpgProject extends LpgProject implements NeoGraphAlg {
 
             int i = 0;
             List<NeoStatement> statements = new ArrayList<>();
+            Translator translator = new Translator( getTupleType(), implementor.getLast().getTupleType(), new HashMap<>(), null, implementor.getGraph().mappingLabel, false );
             for ( RexNode project : getProjects() ) {
-                Translator translator = new Translator( getTupleType(), implementor.getLast().getTupleType(), new HashMap<>(), null, implementor.getGraph().mappingLabel, false );
-                String name = project.accept( translator );
-                if ( names.get( i ) != null && !name.equals( names.get( i ).value ) && !names.get( i ).value.contains( "." ) && !name.equals( "*" ) ) {
-                    statements.add( as_( literal_( PolyString.of( project.accept( translator ) ) ), literal_( names.get( i ) ) ) );
-                } else {
-                    statements.add( literal_( PolyString.of( project.accept( translator ) ) ) );
+                String expression = project.accept( translator );
+                NeoStatement value = literal_( PolyString.of( expression ) );
+                PolyString name = names.get( i++ );
+                if ( name != null && !name.isNull() && !quoteIdentifier( name.value ).equals( expression ) ) {
+                    value = as_( value, name.value );
                 }
-
-                i++;
+                statements.add( value );
             }
 
             if ( implementor.isSorted() ) {

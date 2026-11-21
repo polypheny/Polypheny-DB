@@ -201,7 +201,7 @@ public class CypherEveryPathPattern extends CypherPattern {
         List<Pair<PolyString, EdgeVariableHolder>> polyEdges = getPolyEdges( polyNodes, null );
         PolyPath path = PolyPath.create( polyNodes, Pair.right( polyEdges ).stream().map( EdgeVariableHolder::asNamedEdge ).toList() );
 
-        AlgDataType pathType = context.typeFactory.createPathType( path.getPathType( context.nodeType, context.edgeType ) );
+        AlgDataType pathType = context.typeFactory.createPathType( path.getPathType( context.typeFactory ) );
 
         return new RexCall(
                 pathType,

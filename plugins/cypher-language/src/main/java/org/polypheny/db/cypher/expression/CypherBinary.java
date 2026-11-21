@@ -48,7 +48,7 @@ public class CypherBinary extends CypherExpression {
 
 
     @Override
-    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
+    protected Pair<PolyString, RexNode> toRex( CypherContext context, RexType type ) {
 
         Pair<PolyString, RexNode> left = this.left.getRex( context, type );
         Pair<PolyString, RexNode> right = this.right.getRex( context, type );

@@ -105,18 +105,57 @@ import org.polypheny.db.cypher.clause.CypherOrderItem;
 
 public class CypherParserImpl extends CypherAbstractParserImpl {
 
+    private String sourceQuery;
+    private List<Integer> lineOffsets;
+
+
     /**
      * {@link ParserFactory} implementation for creating parser.
      */
     public static final ParserFactory FACTORY = new ParserFactory() {
         public CypherParserImpl getParser( Reader reader ) {
-            return new CypherParserImpl( reader );
+            CypherParserImpl parser = new CypherParserImpl( reader );
+            if ( reader instanceof SourceStringReader ) {
+                parser.setSourceQuery( ((SourceStringReader) reader).getSourceString() );
+            }
+            return parser;
         }
 
         public CypherParserImpl getParser( String cypher ) {
             return getParser( new SourceStringReader( cypher ) );
         }
     };
+
+    private void setSourceQuery( String query ) {
+        sourceQuery = query;
+        lineOffsets = new ArrayList<>();
+        lineOffsets.add( 0 );
+        for ( int i = 0; i < query.length(); i++ ) {
+            char ch = query.charAt( i );
+            if ( ch == '\r' || ch == '\n' ) {
+                if ( ch == '\r' && i + 1 < query.length() && query.charAt( i + 1 ) == '\n' ) {
+                    i++;
+                }
+                lineOffsets.add( i + 1 );
+            }
+        }
+    }
+
+    private String sourceExpression( Token first, Token last ) {
+        if ( sourceQuery == null ) {
+            return null;
+        }
+        int start = lineOffsets.get( first.beginLine - 1 ) + first.beginColumn - 1;
+        int end = lineOffsets.get( last.endLine - 1 ) + last.endColumn;
+        // JavaCC reports the backslash position when the last character is a Unicode escape.
+        if ( sourceQuery.charAt( end - 1 ) == '\\' && end < sourceQuery.length() && sourceQuery.charAt( end ) == 'u' ) {
+            while ( end < sourceQuery.length() && sourceQuery.charAt( end ) == 'u' ) {
+                end++;
+            }
+            end += 4;
+        }
+        return sourceQuery.substring( start, end );
+    }
 
     private ParserPos pos( Token t )
     {
@@ -1579,7 +1618,7 @@ CypherReturn ReturnItem() :
         }
         else
         {
-            return CypherFactory.createReturnItem( pos( eStart.next ), e, eStart.next.beginOffset, eEnd.endOffset );
+            return CypherFactory.createReturnItem( pos( eStart.next ), e, sourceExpression( eStart.next, eEnd ) );
         }
     }
 }
@@ -2236,15 +2275,23 @@ CypherPathLength PathLengthLiteral( Token t ) :
     Token v2 = null;
 }
 {
-    LOOKAHEAD( 2 ) ( v1=<UNSIGNED_DECIMAL_INTEGER> )? t=<DOTDOT> ( v2=<UNSIGNED_DECIMAL_INTEGER> )?
+    LOOKAHEAD( 2 ) ( v1=PathLengthBound() )? t=<DOTDOT> ( v2=PathLengthBound() )?
         {
-            return CypherFactory.createPathLength( pos( t ), v1 == null ? null : pos ( v1 ), v2 == null ? null : pos ( v2 ),  v1 == null ? "" : v1.image, v2 == null ? "" : v2.image );
+            return CypherFactory.createPathLength( pos( t ), v1 == null ? null : pos( v1 ), v2 == null ? null : pos( v2 ), v1 == null ? null : v1.image, v2 == null ? null : v2.image );
         }
-    | v1=<UNSIGNED_DECIMAL_INTEGER>
+    | v1=PathLengthBound()
         {
-            String v = v1 == null ? "" : v1.image;
-            return CypherFactory.createPathLength( pos( t ), v1 == null ? null : pos ( v1 ), v1 == null ? null : pos ( v1 ), v, v);
+            return CypherFactory.createPathLength( pos( t ), pos( v1 ), pos( v1 ), v1.image, v1.image );
         }
+}
+
+Token PathLengthBound() :
+{
+    Token bound;
+}
+{
+    ( bound=<UNSIGNED_DECIMAL_INTEGER> | bound=<UNSIGNED_HEX_INTEGER> | bound=<UNSIGNED_OCTAL_INTEGER> )
+    { return bound; }
 }
 
 // CypherExpressionS

@@ -246,19 +246,19 @@ class OptionalMatchTest {
     void wildcardReturnsAndWithClausesGroupByEveryVisibleBinding() {
         String optional = "MATCH (n:Person) OPTIONAL MATCH (n)-[:KNOWS]->(m) ";
         GraphResult returned = execute( optional + "RETURN *, count(m) AS neighbors" );
-        GraphResult forwarded = execute( optional + "WITH *, count(m) AS neighbors RETURN n, m, neighbors" );
+        GraphResult forwarded = execute( optional + "WITH *, count(m) AS neighbors RETURN m, n, neighbors" );
 
         for ( GraphResult result : List.of( returned, forwarded ) ) {
-            assertEquals( List.of( "n", "m", "neighbors" ), Arrays.stream( result.getHeader() ).map( field -> field.name ).toList() );
+            assertEquals( List.of( "m", "n", "neighbors" ), Arrays.stream( result.getHeader() ).map( field -> field.name ).toList() );
             assertEquals( 3, result.getData().length );
             Map<String, Integer> neighbors = new HashMap<>();
             for ( String[] row : result.getData() ) {
-                String person = nodeName( row[0] );
+                String person = nodeName( row[1] );
                 neighbors.put( person, number( row[2] ) );
                 switch ( person ) {
-                    case "Alice" -> assertEquals( "Bob", nodeName( row[1] ) );
-                    case "Bob" -> assertEquals( "Charlie", nodeName( row[1] ) );
-                    case "Charlie" -> assertNull( row[1] );
+                    case "Alice" -> assertEquals( "Bob", nodeName( row[0] ) );
+                    case "Bob" -> assertEquals( "Charlie", nodeName( row[0] ) );
+                    case "Charlie" -> assertNull( row[0] );
                     default -> throw new AssertionError( person );
                 }
             }

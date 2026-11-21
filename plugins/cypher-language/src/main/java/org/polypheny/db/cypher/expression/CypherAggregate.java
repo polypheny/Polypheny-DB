@@ -19,6 +19,7 @@ package org.polypheny.db.cypher.expression;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nullable;
+import lombok.Getter;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
@@ -38,7 +39,9 @@ import org.polypheny.db.util.Pair;
 public class CypherAggregate extends CypherExpression {
 
     public final OperatorName op;
+    @Getter
     private final CypherExpression target;
+    @Getter
     private final boolean distinct;
 
 
@@ -47,8 +50,8 @@ public class CypherAggregate extends CypherExpression {
         this.op = op;
         this.target = target;
         this.distinct = distinct;
-        if ( this.op != OperatorName.COUNT && distinct ) {
-            throw new GenericRuntimeException( "Only count([name]) aggregations can be DISTINCT." );
+        if ( distinct && op != OperatorName.COUNT && op != OperatorName.COLLECT ) {
+            throw new GenericRuntimeException( "DISTINCT is supported for COUNT and COLLECT aggregations." );
         }
     }
 
@@ -91,10 +94,7 @@ public class CypherAggregate extends CypherExpression {
 
     private Pair<RexNode, AlgDataType> getReturnType( CypherContext context, RexNode node ) {
         return switch ( op ) {
-            case COLLECT -> {
-                Pair<PolyString, RexNode> rex = Objects.requireNonNull( this.target ).getRex( context, RexType.PROJECT );
-                yield Pair.of( node, context.typeFactory.createArrayType( rex.getValue().getType(), -1 ) );
-            }
+            case COLLECT -> Pair.of( node, context.typeFactory.createArrayType( Objects.requireNonNull( node ).getType(), -1 ) );
             case SUM, AVG -> Pair.of( node, LaxAggregateCall.inferGraphNumericType( context.typeFactory,
                     op == OperatorName.SUM ? Kind.SUM : Kind.AVG, Objects.requireNonNull( node ).getType() ) );
             case MIN, MAX -> Pair.of( node, context.typeFactory.createTypeWithNullability( Objects.requireNonNull( node ).getType(), true ) );

@@ -172,8 +172,8 @@ public interface CypherFactory {
         return new CypherReturnItem( pos, e, v );
     }
 
-    static CypherReturn createReturnItem( ParserPos pos, CypherExpression e, int beginOffset, int endOffset ) {
-        return new CypherReturnItem( pos, e, beginOffset, endOffset );
+    static CypherReturn createReturnItem( ParserPos pos, CypherExpression e, String sourceExpression ) {
+        return new CypherReturnItem( pos, e, sourceExpression );
     }
 
     static CypherReturns createReturnItems( ParserPos pos, boolean returnAll, List<CypherReturn> returnItems ) {

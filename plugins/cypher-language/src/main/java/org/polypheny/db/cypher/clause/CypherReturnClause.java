@@ -17,7 +17,9 @@
 package org.polypheny.db.cypher.clause;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.IntStream;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgCollation;
@@ -25,6 +27,7 @@ import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgFieldCollation.Direction;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
@@ -33,12 +36,11 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.cypher.cypher2alg.CypherSyntaxException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.expression.CypherAggregate;
 import org.polypheny.db.cypher.expression.CypherExpression;
-import org.polypheny.db.cypher.expression.CypherProperty;
-import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNameRef;
@@ -91,18 +93,31 @@ public class CypherReturnClause extends CypherClause {
     }
 
 
-    public AlgNode getGraphProject( CypherContext context ) {
+    public AlgNode getGraphProject( CypherContext context, boolean withClause ) {
+        Set<String> explicitNames = new HashSet<>();
+        for ( CypherReturn item : returnItems ) {
+            if ( item instanceof CypherReturnItem projected ) {
+                String name = projected.columnName();
+                if ( name != null && !explicitNames.add( name ) ) {
+                    throw new CypherSyntaxException( "Multiple result columns named '%s'.".formatted( name ) );
+                }
+            }
+        }
+
         List<Pair<PolyString, RexNode>> projections = new ArrayList<>();
         List<Pair<PolyString, RexNode>> operands = new ArrayList<>();
         List<Integer> requestedOrder = new ArrayList<>();
         for ( CypherReturn item : returnItems ) {
-            Pair<PolyString, RexNode> expression = item.getRex( context, RexType.PROJECT );
-            if ( item.isStar() ) {
-                for ( Pair<PolyString, RexNode> field : context.popNodes() ) {
+            if ( item instanceof CypherStarReturn star ) {
+                for ( Pair<PolyString, RexNode> field : star.expand( context, explicitNames, withClause ) ) {
                     requestedOrder.add( projections.size() );
                     projections.add( field );
                 }
-            } else if ( item instanceof CypherReturnItem value && value.getExpression() instanceof CypherAggregate ) {
+                continue;
+            }
+
+            Pair<PolyString, RexNode> expression = item.getRex( context, RexType.PROJECT );
+            if ( item instanceof CypherReturnItem value && value.getExpression() instanceof CypherAggregate ) {
                 requestedOrder.add( -1 - operands.size() );
                 operands.add( expression );
             } else {
@@ -113,10 +128,19 @@ public class CypherReturnClause extends CypherClause {
             }
         }
 
-        if ( context.containsAggs() ) {
-            return getAggregate( context, projections, operands, requestedOrder );
+        AlgNode result = context.containsAggs()
+                ? getAggregate( context, projections, operands, requestedOrder )
+                : getProject( context, projections );
+        if ( !distinct ) {
+            return result;
         }
-        return getProject( context, projections );
+        List<RexNameRef> keys = result.getTupleType().getFields().stream()
+                .map( field -> RexNameRef.create( field.getName(), field.getIndex(), field.getType() ) )
+                .toList();
+        if ( keys.isEmpty() ) {
+            return LogicalLpgSort.create( AlgCollations.EMPTY, result, null, 1 );
+        }
+        return LogicalLpgAggregate.create( result, keys, List.of() );
     }
 
 
@@ -184,7 +208,10 @@ public class CypherReturnClause extends CypherClause {
         AlgNode node = context.pop();
 
         if ( node == null ) {
-            node = context.asValues( nameAndProject );
+            // A projection without input evaluates once, including when it contains expressions.
+            List<Pair<PolyString, RexNode>> literals = nameAndProject.stream().allMatch( pair -> pair.right.isA( Kind.LITERAL ) )
+                    ? nameAndProject : List.of();
+            node = context.asValues( literals );
         }
         if ( nameAndProject.isEmpty() ) {
             // use all e.g. count(*)
@@ -206,28 +233,17 @@ public class CypherReturnClause extends CypherClause {
     }
 
 
-    public AlgNode getGraphSort( CypherContext context ) {
-        AlgNode node = context.peek();
-        List<String> fields = node.getTupleType().getFieldNames();
+    public AlgNode getGraphSort( AlgNode node, List<Integer> sortFields ) {
         List<AlgFieldCollation> collations = new ArrayList<>();
-
-        for ( CypherOrderItem item : order ) {
-            String name = sortField( item.getExpression(), fields );
-            int index = fields.indexOf( name );
-            if ( index < 0 ) {
-                throw new GenericRuntimeException( "Unknown sort expression: %s", name );
-            }
-            collations.add( new AlgFieldCollation( index, item.isAsc() ? Direction.ASCENDING : Direction.DESCENDING ) );
+        for ( int i = 0; i < sortFields.size(); i++ ) {
+            Direction direction = order.get( i ).isAsc() ? Direction.ASCENDING : Direction.DESCENDING;
+            collations.add( new AlgFieldCollation( sortFields.get( i ), direction ) );
         }
-
         AlgCollation collation = AlgCollations.of( collations );
-
         Integer skip = this.skip == null ? null : getRowBound( this.skip, "SKIP" );
         Integer limit = this.limit == null ? null : getRowBound( this.limit, "LIMIT" );
-
         AlgTraitSet traitSet = node.getTraitSet().replace( collation );
-
-        return new LogicalLpgSort( node.getCluster(), traitSet, collation, context.pop(), skip, limit );
+        return new LogicalLpgSort( node.getCluster(), traitSet, collation, node, skip, limit );
     }
 
 
@@ -241,29 +257,6 @@ public class CypherReturnClause extends CypherClause {
             throw new GenericRuntimeException( "%s requires an integer between 0 and %d", clause, Integer.MAX_VALUE );
         }
         return (int) bound;
-    }
-
-
-    public List<String> getSortFields( List<String> projectedFields ) {
-        return order.stream().map( item -> sortField( item.getExpression(), projectedFields ) ).toList();
-    }
-
-
-    private String sortField( CypherExpression expression, List<String> projectedFields ) {
-        String name = expression.getName();
-        if ( projectedFields.contains( name ) ) {
-            return name;
-        }
-        // A grouping expression remains sortable through its projected alias.
-        for ( CypherReturn item : returnItems ) {
-            if ( item instanceof CypherReturnItem projection && projection.getVariable() != null ) {
-                CypherExpression source = projection.getExpression();
-                if ( (source instanceof CypherProperty || source instanceof CypherVariable) && name.equals( source.getName() ) ) {
-                    return projection.getVariable().getName();
-                }
-            }
-        }
-        return name;
     }
 
 }

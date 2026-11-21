@@ -83,9 +83,9 @@ public interface NeoStatements {
     }
 
     static NodeStatement node_( PolyNode node, PolyString mappingLabel, boolean addId ) {
-        List<PropertyStatement> statements = new ArrayList<>( properties_( node.properties ) );
+        List<PropertyStatement> statements = new ArrayList<>( properties_( node.properties, addId ) );
         if ( addId ) {
-            statements.add( property_( PolyString.of( "_id" ), string_( (node.id) ) ) );
+            statements.add( property_( "_id", graphId_( node.id, NeoUtil.hasEscapedGraphKeys( node.properties ) ) ) );
         }
         List<PolyString> labels = PolyList.copyOf( node.labels );
         if ( mappingLabel != null ) {
@@ -109,9 +109,9 @@ public interface NeoStatements {
     }
 
     static EdgeStatement edge_( PolyEdge edge, boolean addId ) {
-        List<PropertyStatement> props = new ArrayList<>( properties_( edge.properties ) );
+        List<PropertyStatement> props = new ArrayList<>( properties_( edge.properties, addId ) );
         if ( addId ) {
-            props.add( property_( PolyString.of( "_id" ), string_( edge.id ) ) );
+            props.add( property_( "_id", graphId_( edge.id, NeoUtil.hasEscapedGraphKeys( edge.properties ) ) ) );
             props.add( property_( PolyString.of( "__sourceId__" ), string_( edge.left ) ) );
             props.add( property_( PolyString.of( "__targetId__" ), string_( edge.right ) ) );
         }
@@ -138,9 +138,7 @@ public interface NeoStatements {
             i++;
         }
 
-        PolyString name = path.getVariableName() == null ? identifier : path.getVariableName();
-
-        return new PathStatement( name, elements );
+        return new PathStatement( identifier, elements );
     }
 
     static PropertyStatement property_( PolyString key, NeoStatement value ) {
@@ -159,12 +157,19 @@ public interface NeoStatements {
         return props;
     }
 
-    static List<PropertyStatement> properties_( PolyDictionary properties ) {
+    static List<PropertyStatement> properties_( PolyDictionary properties, boolean storing ) {
         List<PropertyStatement> props = new ArrayList<>();
         for ( Entry<PolyString, PolyValue> entry : properties.entrySet() ) {
-            props.add( property_( entry.getKey(), graphProperty_( entry.getValue() ) ) );
+            String name = entry.getKey().value;
+            props.add( property_( storing ? NeoUtil.graphStorageKey( name ) : name, graphProperty_( entry.getValue() ) ) );
         }
         return props;
+    }
+
+
+    private static NeoStatement graphId_( PolyString id, boolean escaped ) {
+        NeoStatement literal = string_( id );
+        return escaped ? list_( List.of( literal ), "[", "]" ) : literal;
     }
 
     static NeoStatement graphProperty_( PolyValue value ) {
@@ -205,6 +210,14 @@ public interface NeoStatements {
         return new LiteralStatement( identifier );
     }
 
+    static NeoStatement quotedIdentifier_( String identifier ) {
+        return identifier_( quoteIdentifier( identifier ) );
+    }
+
+    static String quoteIdentifier( String identifier ) {
+        return "`" + identifier.replace( "`", "``" ) + "`";
+    }
+
     static LabelsStatement labels_( PolyString... labels ) {
         return new LabelsStatement( Arrays.asList( labels ) );
     }
@@ -234,7 +247,11 @@ public interface NeoStatements {
     }
 
     static AsStatement as_( NeoStatement key, NeoStatement value ) {
-        return new AsStatement( key, value );
+        return new AsStatement( key, NeoUtil.fixParameter( value.build() ) );
+    }
+
+    static AsStatement as_( NeoStatement expression, String identifier ) {
+        return new AsStatement( expression, quoteIdentifier( identifier ) );
     }
 
     static PreparedStatement prepared_( long index ) {
@@ -475,7 +492,8 @@ public interface NeoStatements {
 
         @Override
         public String build() {
-            return String.format( "( %s%s %s )", identifier, labels.build(), properties.build() );
+            String name = identifier.value.isEmpty() ? "" : quoteIdentifier( identifier.value );
+            return String.format( "( %s%s %s )", name, labels.build(), properties.build() );
         }
 
 
@@ -506,7 +524,8 @@ public interface NeoStatements {
 
         @Override
         public String build() {
-            String statement = String.format( "-[%s%s%s %s]-", identifier, label.build(), range, properties.build() );
+            String name = identifier.value.isEmpty() ? "" : quoteIdentifier( identifier.value );
+            String statement = String.format( "-[%s%s%s %s]-", name, label.build(), range, properties.build() );
             if ( direction == EdgeDirection.LEFT_TO_RIGHT ) {
                 statement = statement + ">";
             } else if ( direction == EdgeDirection.RIGHT_TO_LEFT ) {
@@ -557,7 +576,7 @@ public interface NeoStatements {
 
         @Override
         public String build() {
-            String namedPath = identifier == null || identifier.value.contains( "$" ) ? "" : String.format( "%s = ", identifier );
+            String namedPath = identifier == null || identifier.isNull() ? "" : quotedIdentifier_( identifier.value ).build() + " = ";
             return namedPath + pathElements.stream().map( NeoStatement::build ).collect( Collectors.joining() );
         }
 
@@ -579,7 +598,7 @@ public interface NeoStatements {
 
         @Override
         public String build() {
-            return key + ":" + value.build();
+            return quoteIdentifier( key.value ) + ":" + value.build();
         }
 
 
@@ -599,7 +618,7 @@ public interface NeoStatements {
 
         @Override
         public String build() {
-            return labels.stream().map( l -> ":" + l ).collect( Collectors.joining() );
+            return labels.stream().map( label -> ":" + quoteIdentifier( label.value ) ).collect( Collectors.joining() );
         }
 
 
@@ -671,10 +690,10 @@ public interface NeoStatements {
     class AsStatement extends NeoStatement {
 
         private final NeoStatement key;
-        private final NeoStatement alias;
+        private final String alias;
 
 
-        protected AsStatement( NeoStatement key, NeoStatement alias ) {
+        protected AsStatement( NeoStatement key, String alias ) {
             super( null );
             this.key = key;
             this.alias = alias;
@@ -683,7 +702,7 @@ public interface NeoStatements {
 
         @Override
         public String build() {
-            return key.build() + " AS " + NeoUtil.fixParameter( alias.build() );
+            return key.build() + " AS " + alias;
         }
 
 

@@ -17,8 +17,10 @@
 package org.polypheny.db.adapter.neo4j.rules.graph;
 
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.as_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.distinct_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.list_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.literal_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.quoteIdentifier;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.with_;
 
 import java.util.ArrayList;
@@ -82,7 +84,8 @@ public class NeoLpgAggregate extends LpgAggregate implements NeoGraphAlg {
             inputExpression = index -> project.getProjects().get( index ).accept( translator );
         } else {
             implementor.visitChild( 0, getInput() );
-            inputExpression = getInput().getTupleType().getFieldNames()::get;
+            List<String> inputNames = getInput().getTupleType().getFieldNames();
+            inputExpression = index -> quoteIdentifier( inputNames.get( index ) );
         }
 
         List<String> resultNames = getTupleType().getFieldNames();
@@ -96,13 +99,13 @@ public class NeoLpgAggregate extends LpgAggregate implements NeoGraphAlg {
                     .apply( List.of( argument ) );
             result.set( resultNames.indexOf( aggregate.name ), alias( expression, aggregate.name ) );
         }
-        implementor.add( with_( list_( result ) ) );
+        implementor.add( with_( aggCalls.isEmpty() ? distinct_( list_( result ) ) : list_( result ) ) );
     }
 
 
     private static NeoStatement alias( String expression, String name ) {
         NeoStatement value = literal_( PolyString.of( expression ) );
-        return expression.equals( name ) ? value : as_( value, literal_( PolyString.of( name ) ) );
+        return expression.equals( quoteIdentifier( name ) ) ? value : as_( value, name );
     }
 
 }
