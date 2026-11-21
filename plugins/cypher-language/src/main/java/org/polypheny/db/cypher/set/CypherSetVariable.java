@@ -16,24 +16,20 @@
 
 package org.polypheny.db.cypher.set;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.expression.CypherExpression;
-import org.polypheny.db.cypher.expression.CypherExpression.ExpressionType;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
-import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -73,21 +69,12 @@ public class CypherSetVariable extends CypherSetItem {
             ref = context.rexBuilder.makeInputRef( field.getType(), index );
         }
 
-        assert expression.getType() == ExpressionType.LITERAL;
-        Comparable<?> value = expression.getComparable();
-        assert value instanceof Map;
-
         RexNode op = context.rexBuilder.makeCall(
                 field.getType(),
                 OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_SET_PROPERTIES ),
                 List.of(
                         ref,
-                        context.rexBuilder.makeArray(
-                                context.typeFactory.createArrayType( context.typeFactory.createPolyType( PolyType.VARCHAR, 255 ), -1 ),
-                                new ArrayList<>( ((PolyDictionary) value).keySet() ) ),
-                        context.rexBuilder.makeArray(
-                                context.typeFactory.createArrayType( context.typeFactory.createPolyType( PolyType.ANY ), -1 ),
-                                new ArrayList<>( ((PolyDictionary) value).values() ) ),
+                        expression.getRex( context, RexType.PROJECT ).right,
                         context.rexBuilder.makeLiteral( !increment ) ) );
 
         context.add( Pair.of( PolyString.of( nodeName ), op ) );

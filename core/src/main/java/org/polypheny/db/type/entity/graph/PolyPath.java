@@ -21,9 +21,13 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.UnaryOperator;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -31,6 +35,7 @@ import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -67,6 +72,10 @@ public class PolyPath extends GraphObject {
     @Getter
     private final PolyList<PolySegment> segments;
 
+    @JsonIgnore
+    @Getter(AccessLevel.NONE)
+    private final Map<PolyString, PolyValue> bindings;
+
 
     public PolyPath( List<PolyNode> nodes, List<PolyEdge> edges, List<PolyString> names, List<GraphPropertyHolder> path, PolyString variableName ) {
         this( PolyString.of( UUID.randomUUID().toString() ), nodes, edges, names, path, variableName );
@@ -97,6 +106,35 @@ public class PolyPath extends GraphObject {
             i++;
         }
         this.segments = new PolyList<>( segments );
+        this.bindings = Map.of();
+    }
+
+
+    private PolyPath( PolyPath path, Map<PolyString, PolyValue> bindings ) {
+        super( path.id, PolyType.PATH, path.variableName );
+        this.nodes = path.nodes;
+        this.edges = path.edges;
+        this.names = path.names;
+        this.path = path.path;
+        this.segments = path.segments;
+        this.bindings = Map.copyOf( bindings );
+    }
+
+
+    /** Associates Cypher variables with the matched nodes and relationship lists. */
+    public PolyPath withBindings( Map<PolyString, PolyValue> bindings ) {
+        return bindings.isEmpty() ? this : new PolyPath( this, bindings );
+    }
+
+
+    /** Rebinds the physical path elements and the Cypher values associated with them. */
+    public PolyPath rebindGraphValues( UnaryOperator<PolyValue> rebind ) {
+        List<PolyNode> reboundNodes = nodes.stream().map( node -> rebind.apply( node ).asNode() ).toList();
+        List<PolyEdge> reboundEdges = edges.stream().map( edge -> rebind.apply( edge ).asEdge() ).toList();
+        List<GraphPropertyHolder> reboundPath = path.stream().map( element -> (GraphPropertyHolder) rebind.apply( element ) ).toList();
+        Map<PolyString, PolyValue> reboundBindings = new HashMap<>();
+        bindings.forEach( ( name, value ) -> reboundBindings.put( name, rebind.apply( value ) ) );
+        return new PolyPath( id, reboundNodes, reboundEdges, names, reboundPath, variableName ).withBindings( reboundBindings );
     }
 
 
@@ -129,53 +167,46 @@ public class PolyPath extends GraphObject {
     }
 
 
-    public int getVariants() {
-        return edges.stream().map( PolyEdge::getVariants ).reduce( 1, Math::multiplyExact );
-    }
-
-
     @Override
     public int compareTo( PolyValue o ) {
         if ( !isSameType( o ) ) {
             return -1;
         }
-        PolyPath other = o.asPath();
-
-        if ( nodes.size() > other.nodes.size() ) {
-            return 1;
+        List<GraphPropertyHolder> otherPath = o.asPath().path;
+        for ( int i = 0; i < Math.min( path.size(), otherPath.size() ); i++ ) {
+            int order = path.get( i ).id.compareTo( otherPath.get( i ).id );
+            if ( order != 0 ) {
+                return order;
+            }
         }
-        if ( nodes.size() < other.nodes.size() ) {
-            return -1;
-        }
-        if ( nodes.equals( other.nodes ) && edges.equals( other.edges ) ) {
-            return 0;
-        }
-        return -1;
+        return Integer.compare( path.size(), otherPath.size() );
     }
 
 
-    public List<AlgDataTypeField> getPathType( AlgDataType nodeType, AlgDataType edgeType ) {
+    public List<AlgDataTypeField> getPathType( AlgDataTypeFactory typeFactory ) {
+        AlgDataType nodeType = typeFactory.createPolyType( PolyType.NODE );
+        AlgDataType edgeType = typeFactory.createPolyType( PolyType.EDGE );
+        AlgDataType edgeArrayType = typeFactory.createArrayType( edgeType, -1, 1 );
         List<AlgDataTypeField> pathType = new ArrayList<>();
 
-        int i = 0;
-        for ( PolyString name : names ) {
-            AlgDataType type;
-            if ( i % 2 == 0 ) {
-                // node
-                type = nodeType;
-            } else {
-                // edge
-                type = edgeType;
-            }
-
+        for ( int i = 0; i < names.size(); i++ ) {
+            PolyString name = names.get( i );
             if ( name != null && name.value != null ) {
+                AlgDataType type = nodeType;
+                if ( i % 2 != 0 ) {
+                    type = edges.get( i / 2 ).fromTo() == null ? edgeType : edgeArrayType;
+                }
                 pathType.add( new AlgDataTypeFieldImpl( -1L, name.value, i, type ) );
             }
-
-            i++;
         }
 
         return pathType;
+    }
+
+
+    public PolyValue getBinding( PolyString name ) {
+        PolyValue value = name == null ? null : bindings.get( name );
+        return value == null ? get( name ) : value;
     }
 
 
@@ -198,86 +229,6 @@ public class PolyPath extends GraphObject {
         }
 
         return null;
-    }
-
-
-    public List<List<PolySegment>> getDerefSegments() {
-        List<List<List<PolySegment>>> segments = new ArrayList<>();
-        int i = 0;
-
-        PolyNode empty = new PolyNode( new PolyDictionary(), PolyList.of(), null );
-
-        for ( PolyEdge edge : edges ) {
-            PolyNode node = nodes.get( i );
-            PolyNode next = empty;
-
-            List<List<PolySegment>> currentSegments = new ArrayList<>();
-
-            //int limit = edge.fromTo() != null ? edge.fromTo().right : 1;
-            for ( int v = 0; v < edge.getVariants(); v++ ) {
-                List<PolySegment> currentSegment = new ArrayList<>();
-                int max = edge.getMinLength() + v;
-                for ( int j = 0; j < max; j++ ) {
-                    // set left if moved from initial
-                    if ( j != 0 ) {
-                        node = empty;
-                    } else {
-                        node = nodes.get( i );
-                    }
-
-                    // set right to fit end
-                    if ( j == max - 1 ) {
-                        next = nodes.get( i + 1 );
-                    } else {
-                        // this is a filler node, which has no properties ()-[*1..2]-() => ()-[]-([this])-[]-()
-                        next = empty;
-                    }
-
-                    currentSegment.add( new PolySegment( node, edge, next, edge.direction ) );
-                }
-                currentSegments.add( currentSegment );
-            }
-
-            segments.add( currentSegments );
-            i++;
-        }
-
-        return distributeEvenly( segments, getVariants() );
-    }
-
-
-    /**
-     * Transforms from bucket style lists to even lists
-     *
-     * seg1      ,  seg2 ,      seg3,
-     * seg11,seg12               seg31, seg32
-     *
-     * becomes
-     *
-     * seg1, seg2, seg3
-     * seg11, seg12, seg2, seg3
-     * seg1, seg2, seg31, seg32
-     * seg11, seg12, seg2, seg31, seg31
-     */
-    private List<List<PolySegment>> distributeEvenly( List<List<List<PolySegment>>> unevenlySegments, int variants ) {
-        List<List<PolySegment>> evenSegments = new ArrayList<>();
-        for ( int i = 0; i < variants; i++ ) {
-            evenSegments.add( new ArrayList<>() );
-        }
-        for ( List<List<PolySegment>> unevenlySegment : unevenlySegments ) {
-            // how often a segment needs to be distributed
-            int ratio = variants / unevenlySegment.size();
-
-            int pos = 0;
-            for ( List<PolySegment> polySegment : unevenlySegment ) {
-                for ( int j = 0; j < ratio; j++ ) {
-                    evenSegments.get( pos ).addAll( polySegment );
-                    pos++;
-                }
-            }
-        }
-
-        return evenSegments;
     }
 
 

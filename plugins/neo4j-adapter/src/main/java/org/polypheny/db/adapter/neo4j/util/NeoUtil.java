@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.neo4j.util;
 
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.edge_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.node_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.quoteIdentifier;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,7 +26,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
@@ -36,17 +37,18 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
-import org.neo4j.driver.internal.InternalPath;
 import org.neo4j.driver.internal.InternalPoint2D;
 import org.neo4j.driver.internal.value.FloatValue;
 import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.internal.value.PointValue;
 import org.neo4j.driver.internal.value.StringValue;
+import org.neo4j.driver.types.Entity;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Path;
 import org.neo4j.driver.types.Point;
 import org.neo4j.driver.types.Relationship;
+import org.polypheny.db.adapter.neo4j.types.NestedListType;
 import org.polypheny.db.adapter.neo4j.types.NestedPolyType;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Filter;
@@ -83,6 +85,7 @@ import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.numerical.PolyLong;
+import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.spatial.PolyPoint;
@@ -94,8 +97,11 @@ import org.polypheny.db.util.UnsupportedRexCallVisitor;
 
 public interface NeoUtil {
 
-    static Function1<Value, PolyValue> getTypeFunction( NestedPolyType type, boolean isNested ) {
-        Function1<Value, PolyValue> getter = getUnnullableTypeFunction( type, isNested );
+    String GRAPH_PROPERTY_ESCAPE = "__polypheny_user_property__";
+    Set<String> GRAPH_METADATA_PROPERTIES = Set.of( "_id", "__sourceId__", "__targetId__" );
+
+    static Function1<Value, PolyValue> getTypeFunction( NestedPolyType type, boolean isNested, String mappingLabel ) {
+        Function1<Value, PolyValue> getter = getUnnullableTypeFunction( type, isNested, mappingLabel );
         return o -> {
             if ( o.isNull() ) {
                 return PolyNull.NULL;
@@ -104,7 +110,7 @@ public interface NeoUtil {
         };
     }
 
-    static Function1<Value, PolyValue> getUnnullableTypeFunction( NestedPolyType type, boolean isNested ) {
+    static Function1<Value, PolyValue> getUnnullableTypeFunction( NestedPolyType type, boolean isNested, String mappingLabel ) {
 
         return switch ( type.getType() ) {
             case NULL -> o -> PolyNull.NULL;
@@ -126,20 +132,28 @@ public interface NeoUtil {
                 if ( isNested ) {
                     yield v -> PolyValue.fromTypedJson( v.asString(), PolyList.class );
                 }
-                Function1<Value, PolyValue> componentFunc = getTypeFunction( type.asList().types.get( 0 ), true );
+                Function1<Value, PolyValue> componentFunc = getTypeFunction( type.asList().types.get( 0 ), true, mappingLabel );
                 yield el -> PolyList.of( el.asList( componentFunc::apply ) );
             }
             case MAP -> value -> PolyString.of( value.asString() );
             case DOCUMENT, JSON -> value -> PolyDocument.deserialize( value.asString() );
             case GRAPH -> o -> (PolyValue) o;
-            case NODE -> o -> asPolyNode( o.asNode() );
+            case NODE -> o -> asPolyNode( o.asNode(), mappingLabel );
             case EDGE -> o -> asPolyEdge( o.asRelationship() );
             case PATH -> o -> {
-
-                if ( o instanceof ListValue ) {
-                    return asPolyPath( ((InternalPath) o.asList().get( 0 )), type.asList().names );
+                if ( !(o instanceof ListValue) ) {
+                    return asPolyPath( o.asPath(), mappingLabel );
                 }
-                return asPolyPath( o.asPath(), type.asList().names );
+                NestedListType pathType = type.asList();
+                if ( o.size() != pathType.names.size() + 1 ) {
+                    throw new GenericRuntimeException( "Unexpected Neo4j path binding result." );
+                }
+                Map<PolyString, PolyValue> bindings = new HashMap<>();
+                for ( int i = 0; i < pathType.names.size(); i++ ) {
+                    PolyValue value = getTypeFunction( pathType.types.get( i ), false, mappingLabel ).apply( o.get( i + 1 ) );
+                    bindings.put( PolyString.of( pathType.names.get( i ) ), value );
+                }
+                return asPolyPath( o.get( 0 ).asPath(), mappingLabel ).withBindings( bindings );
             };
             case GEOMETRY -> NeoUtil::asPolyGeometry;
             default -> throw new GenericRuntimeException( String.format( "Object of type %s was not transformable.", type ) );
@@ -176,14 +190,13 @@ public interface NeoUtil {
         throw new GenericRuntimeException( String.format( "Could not transform object of type %s to PolyGeometry", value.type() ) );
     }
 
-    static PolyPath asPolyPath( Path path, List<String> names ) {
+    static PolyPath asPolyPath( Path path, String mappingLabel ) {
         Iterator<Node> nodeIter = path.nodes().iterator();
         Iterator<Relationship> edgeIter = path.relationships().iterator();
-        Iterator<String> nameIter = names.iterator();
         List<Pair<PolyString, PolyNode>> nodes = new ArrayList<>();
         List<Pair<PolyString, PolyEdge>> edges = new ArrayList<>();
         while ( nodeIter.hasNext() ) {
-            nodes.add( Pair.of( nameIter.hasNext() ? PolyString.of( nameIter.next() ) : null, asPolyNode( nodeIter.next() ) ) );
+            nodes.add( Pair.of( null, asPolyNode( nodeIter.next(), mappingLabel ) ) );
             if ( nodeIter.hasNext() ) {
                 edges.add( Pair.of( null, asPolyEdge( edgeIter.next() ) ) );
             }
@@ -194,26 +207,63 @@ public interface NeoUtil {
                 edges );
     }
 
-    static PolyNode asPolyNode( Node node ) {
-        Map<PolyString, PolyValue> map = new HashMap<>( node.asMap( NeoUtil::readGraphProperty ).entrySet().stream().collect( Collectors.toMap( e -> PolyString.of( e.getKey() ), Entry::getValue ) ) );
-        PolyString id = map.remove( PolyString.of( "_id" ) ).asString();
+    static PolyNode asPolyNode( Node node, String mappingLabel ) {
+        PolyString id = PolyString.of( readGraphId( node ) );
         List<PolyString> labels = new ArrayList<>();
-        node.labels().forEach( e -> {
-            if ( !e.startsWith( "__namespace" ) && !e.endsWith( "__" ) ) {
-                labels.add( PolyString.of( e ) );
+        node.labels().forEach( label -> {
+            if ( !label.equals( mappingLabel ) ) {
+                labels.add( PolyString.of( label ) );
             }
         } );
-        return new PolyNode( id, new PolyDictionary( map ), labels, null );
+        return new PolyNode( id, readGraphProperties( node, false ), labels, null );
     }
 
 
     static PolyEdge asPolyEdge( Relationship relationship ) {
-        Map<PolyString, PolyValue> map = new HashMap<>( relationship.asMap( NeoUtil::readGraphProperty ).entrySet().stream().collect( Collectors.toMap( e -> PolyString.of( e.getKey() ), Entry::getValue ) ) );
-        String id = map.remove( PolyString.of( "_id" ) ).toString();
-        String sourceId = map.remove( PolyString.of( "__sourceId__" ) ).toString();
-        String targetId = map.remove( PolyString.of( "__targetId__" ) ).toString();
-        return new PolyEdge( PolyString.of( id ), new PolyDictionary( map ), List.of( PolyString.of( relationship.type() ) ), PolyString.of( sourceId ), PolyString.of( targetId ), EdgeDirection.LEFT_TO_RIGHT, null );
+        PolyString id = PolyString.of( readGraphId( relationship ) );
+        PolyString sourceId = PolyString.of( relationship.get( "__sourceId__" ).asString() );
+        PolyString targetId = PolyString.of( relationship.get( "__targetId__" ).asString() );
+        return new PolyEdge( id, readGraphProperties( relationship, true ), List.of( PolyString.of( relationship.type() ) ), sourceId, targetId, EdgeDirection.LEFT_TO_RIGHT, null );
     }
+
+
+    static boolean requiresEscapedGraphKey( String key ) {
+        return GRAPH_METADATA_PROPERTIES.contains( key ) || key.startsWith( GRAPH_PROPERTY_ESCAPE );
+    }
+
+
+    static String graphStorageKey( String key ) {
+        return requiresEscapedGraphKey( key ) ? GRAPH_PROPERTY_ESCAPE + key : key;
+    }
+
+
+    static boolean hasEscapedGraphKeys( PolyDictionary properties ) {
+        return properties.keySet().stream().anyMatch( key -> requiresEscapedGraphKey( key.value ) );
+    }
+
+
+    private static String readGraphId( Entity entity ) {
+        // Legacy records store their logical ID as a string. The singleton array marks escaped property keys.
+        Value id = entity.get( "_id" );
+        return id instanceof ListValue ? id.get( 0 ).asString() : id.asString();
+    }
+
+
+    private static PolyDictionary readGraphProperties( Entity entity, boolean relationship ) {
+        boolean escaped = entity.get( "_id" ) instanceof ListValue;
+        Map<PolyString, PolyValue> properties = new HashMap<>();
+        entity.keys().forEach( key -> {
+            if ( key.equals( "_id" ) || (relationship && GRAPH_METADATA_PROPERTIES.contains( key )) ) {
+                return;
+            }
+            String userKey = escaped && key.startsWith( GRAPH_PROPERTY_ESCAPE )
+                    ? key.substring( GRAPH_PROPERTY_ESCAPE.length() )
+                    : key;
+            properties.put( PolyString.of( userKey ), readGraphProperty( entity.get( key ) ) );
+        } );
+        return new PolyDictionary( properties );
+    }
+
 
     static PolyValue encodeGraphProperty( PolyValue value ) {
         if ( value != null && !value.isNull()
@@ -267,17 +317,17 @@ public interface NeoUtil {
     }
 
     static Function1<Record, PolyValue[]> getTypesFunction( NestedPolyType types ) {
-        return getTypesFunction( types, false );
+        return getTypesFunction( types, null );
     }
 
 
-    static Function1<Record, PolyValue[]> getTypesFunction( NestedPolyType types, boolean graph ) {
+    static Function1<Record, PolyValue[]> getTypesFunction( NestedPolyType types, String mappingLabel ) {
 
         List<Function1<Value, PolyValue>> functions = new ArrayList<>();
         for ( NestedPolyType type : types.asList().types ) {
-            functions.add( graph && type.getType() == PolyType.ANY
+            functions.add( mappingLabel != null && type.getType() == PolyType.ANY
                     ? value -> value.isNull() ? PolyNull.NULL : readGraphProperty( value )
-                    : getTypeFunction( type, false ) );
+                    : getTypeFunction( type, false, mappingLabel ) );
         }
         if ( functions.size() == 1 ) {
             // SCALAR
@@ -293,6 +343,10 @@ public interface NeoUtil {
 
     static boolean needsGraphValueDecoding( PolyType type ) {
         return type == PolyType.ANY || type == PolyType.DECIMAL || type == PolyType.ARRAY || type == PolyType.MAP;
+    }
+
+    static boolean isStructuralGraphType( PolyType type ) {
+        return type == PolyType.NODE || type == PolyType.EDGE || type == PolyType.PATH || type == PolyType.GRAPH;
     }
 
     static String asParameter( long key, boolean withDollar ) {
@@ -345,6 +399,11 @@ public interface NeoUtil {
         };
 
     }
+
+    private static String propertyIdentifier( RexNode operand ) {
+        return quoteIdentifier( operand.unwrapOrThrow( RexLiteral.class ).value.asString().value );
+    }
+
 
     static String quoteStringLiteral( String value ) {
         return "'" + value.replace( "\\", "\\\\" )
@@ -412,7 +471,7 @@ public interface NeoUtil {
             case TAN -> o -> String.format( "tan(toFloat(%s))", o.get( 0 ) );
             case CAST -> handleCast( operands );
             case ITEM -> o -> String.format( "%s[toInteger(%s - 1)]", o.get( 0 ), o.get( 1 ) );
-            case ARRAY_VALUE_CONSTRUCTOR -> o -> "[" + String.join( ", ", o ) + "]";
+            case ARRAY_VALUE_CONSTRUCTOR, CYPHER_LIST_CONSTRUCTOR -> o -> "[" + String.join( ", ", o ) + "]";
             case CYPHER_EXTRACT_FROM_PATH -> o -> o.get( 0 );
             case CYPHER_ADJUST_EDGE -> o -> String.format( "%s%s%s", o.get( 1 ), o.get( 0 ), o.get( 2 ) );
             case CYPHER_REMOVE_LABELS -> Object::toString;
@@ -425,15 +484,9 @@ public interface NeoUtil {
             };
             case CYPHER_SET_PROPERTIES -> throw new GenericRuntimeException( "No values should land here" );
             case CYPHER_SET_PROPERTY -> o -> String.format( "%s.%s = %s", o.get( 0 ), maybeUnquote( o.get( 1 ) ), o.get( 2 ) );
-            case CYPHER_EXTRACT_PROPERTY -> o -> {
-                String name = o.get( 0 );
-                if ( name.contains( "." ) ) {
-                    name = name.split( "\\." )[0];
-                }
-                return String.format( "%s.%s", name, NeoUtil.maybeUnquote( o.get( 1 ) ) );
-            };
+            case CYPHER_EXTRACT_PROPERTY -> o -> String.format( "%s.%s", o.get( 0 ), propertyIdentifier( operands.get( 1 ) ) );
             case CYPHER_EXTRACT_ID -> o -> String.format( " %s.id ", o.get( 0 ) );
-            case CYPHER_HAS_PROPERTY -> o -> String.format( " EXISTS(%s.%s) ", o.get( 0 ), NeoUtil.maybeUnquote( o.get( 1 ) ) );
+            case CYPHER_HAS_PROPERTY -> o -> String.format( " EXISTS(%s.%s) ", o.get( 0 ), propertyIdentifier( operands.get( 1 ) ) );
             case COUNT -> o -> String.format( "count(%s)", String.join( ",", o ) );
             case AVG -> o -> String.format( "avg(%s)", o.get( 0 ) );
             case MIN -> o -> String.format( "min(%s)", o.get( 0 ) );
@@ -643,12 +696,25 @@ public interface NeoUtil {
 
         @Override
         public Void visitCall( RexCall call ) {
+            if ( graph && readsEscapedGraphKey( call ) ) {
+                // Decode user keys from both legacy and escaped Neo4j records in the Enumerable engine.
+                supports = false;
+            }
+            if ( graph && ordersGraphValues( call ) ) {
+                // Polypheny orders graph elements by their stored IDs, which need not follow Neo4j's internal IDs.
+                supports = false;
+            }
             // Graph mutations in a projection construct values for the row writer.
             // Their native spelling is a SET/REMOVE clause, never a return expression.
             switch ( call.op.getOperatorName() ) {
                 case CYPHER_SET_PROPERTY, CYPHER_SET_PROPERTIES, CYPHER_SET_LABELS, CYPHER_REMOVE_LABELS, CYPHER_REMOVE_PROPERTY -> supports = false;
                 default -> {
                     if ( NeoUtil.getOpAsNeo( call.op.getOperatorName(), call.operands, call.type, List.of() ) == null ) {
+                        supports = false;
+                    }
+                    if ( call.op.getOperatorName() == OperatorName.CYPHER_LIST_CONSTRUCTOR
+                            && needsGraphValueDecoding( call.type.getComponentType().getPolyType() ) ) {
+                        // The native decoder cannot recover the original types inside a heterogeneous list.
                         supports = false;
                     }
                     if ( graph && call.operands.stream().anyMatch( operand -> needsGraphValueDecoding( operand.getType().getPolyType() ) )
@@ -661,6 +727,25 @@ public interface NeoUtil {
         }
 
 
+        private static boolean readsEscapedGraphKey( RexCall call ) {
+            return switch ( call.op.getOperatorName() ) {
+                case CYPHER_EXTRACT_PROPERTY, CYPHER_HAS_PROPERTY -> call.operands.get( 1 ) instanceof RexLiteral literal
+                        && literal.value != null && literal.value.isString() && requiresEscapedGraphKey( literal.value.asString().value );
+                default -> false;
+            };
+        }
+
+
+        private static boolean ordersGraphValues( RexCall call ) {
+            return switch ( call.op.getOperatorName() ) {
+                case LESS_THAN, LESS_THAN_OR_EQUAL, GREATER_THAN, GREATER_THAN_OR_EQUAL,
+                        CYPHER_LESS_THAN, CYPHER_LESS_THAN_OR_EQUAL, CYPHER_GREATER_THAN, CYPHER_GREATER_THAN_OR_EQUAL ->
+                        call.operands.stream().anyMatch( operand -> isStructuralGraphType( operand.getType().getPolyType() ) );
+                default -> false;
+            };
+        }
+
+
         @Override
         public Void visitLiteral( RexLiteral literal ) {
             if ( literal.getPolyType() == PolyType.BINARY || literal.getPolyType() == PolyType.VARBINARY
@@ -668,11 +753,21 @@ public interface NeoUtil {
                 // Native Cypher literals do not preserve byte arrays or exact decimals.
                 supports = false;
             }
+            if ( graph && containsMap( literal.value ) ) {
+                // The native graph translator and decoder do not preserve Polypheny map values.
+                supports = false;
+            }
             if ( literal.getType() instanceof ArrayType arrayType && arrayType.getDimension() < 1 ) {
                 // The native result decoder needs a declared dimension to decode arrays.
                 supports = false;
             }
             return super.visitLiteral( literal );
+        }
+
+
+        private static boolean containsMap( PolyValue value ) {
+            return value instanceof PolyMap<?, ?>
+                    || value instanceof PolyList<?> list && list.stream().anyMatch( NeoSupportVisitor::containsMap );
         }
 
     }

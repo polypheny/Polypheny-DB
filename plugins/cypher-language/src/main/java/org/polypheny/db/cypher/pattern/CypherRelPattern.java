@@ -90,7 +90,7 @@ public class CypherRelPattern extends CypherPattern {
 
         PolyEdge edge = new PolyEdge( properties, PolyList.copyOf( labels ), leftId, rightId, direction, PolyString.of( name ) );
         if ( pathLength != null ) {
-            edge.fromTo( Pair.of( Integer.parseInt( pathLength.getFrom() ), Integer.parseInt( pathLength.getTo() ) ) );
+            edge.fromTo( pathLength.getLengthRange() );
         }
 
         if ( project ) {

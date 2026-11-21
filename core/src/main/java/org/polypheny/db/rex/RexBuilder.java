@@ -803,10 +803,7 @@ public class RexBuilder {
      */
     public RexLiteral makeLiteral( PolyValue o ) {
         AlgDataType type = switch ( o.getType() ) {
-            case PATH -> typeFactory.createPathType( o.asPath().getPathType(
-                    typeFactory.createPolyType( PolyType.NODE ),
-                    typeFactory.createPolyType( PolyType.EDGE )
-            ) );
+            case PATH -> typeFactory.createPathType( o.asPath().getPathType( typeFactory ) );
             default -> typeFactory.createPolyType( o.getType() );
         };
         return makeLiteral( o, type );

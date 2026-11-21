@@ -17,6 +17,7 @@
 package org.polypheny.db.cypher;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -47,7 +48,12 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
 import org.polypheny.db.transaction.locking.LockablesRegistry;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyNull;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
+import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 
@@ -103,7 +109,7 @@ public class CypherProcessor extends Processor {
         List<CypherParameter> parameters = parser.getParameters();
         for ( CypherParameter parameter : parameters ) {
             if ( parameter.getParameterType() != ParameterType.ANY ) {
-                throw new GenericRuntimeException( "Cypher parameter $" + parameter.getName() + " must be used as a scalar expression" );
+                throw new GenericRuntimeException( "Cypher parameter $" + parameter.getName() + " must be used as a value expression" );
             }
         }
         List<String> names = parameters.stream().map( CypherParameter::getName ).distinct().toList();
@@ -112,14 +118,13 @@ public class CypherProcessor extends Processor {
 
 
     private Node bindNamedQuery( String query, List<String> names, Map<String, PolyValue> values ) {
+        Map<String, PolyValue> bindings = new HashMap<>();
         for ( String name : names ) {
             PolyValue value = values.get( name );
             if ( value == null ) {
                 throw new GenericRuntimeException( "Missing Cypher parameter: $" + name );
             }
-            if ( !isScalarParameter( value ) ) {
-                throw new GenericRuntimeException( "Unsupported Cypher parameter type for $" + name + ": " + value.getType() );
-            }
+            bindings.put( name, normalizeParameter( name, value, false ) );
         }
         Set<String> expectedNames = Set.copyOf( names );
         values.keySet().stream().filter( name -> !expectedNames.contains( name ) ).sorted().findFirst().ifPresent( name -> {
@@ -128,8 +133,33 @@ public class CypherProcessor extends Processor {
 
         // Parse the original text again so each execution receives its own AST with typed values.
         CypherParser parser = CypherParser.create( query, parserConfig );
-        parser.setBindings( Map.copyOf( values ) );
+        parser.setBindings( Map.copyOf( bindings ) );
         return parsePreparedStatement( parser );
+    }
+
+
+    private static PolyValue normalizeParameter( String name, PolyValue value, boolean nested ) {
+        if ( value == null ) {
+            return PolyNull.NULL;
+        }
+        // Prism encodes Cypher maps as documents. Normalize them only when binding a Cypher query.
+        if ( value instanceof PolyMap<?, ?> map ) {
+            Map<PolyString, PolyValue> entries = new HashMap<>();
+            map.forEach( ( key, entry ) -> {
+                if ( !(key instanceof PolyString field) || field.isNull() ) {
+                    throw new GenericRuntimeException( "Cypher map parameter $" + name + " must have string keys" );
+                }
+                entries.put( field, normalizeParameter( name, entry, true ) );
+            } );
+            return new PolyDictionary( entries );
+        }
+        if ( nested && value instanceof PolyList<?> list ) {
+            return PolyList.copyOf( list.stream().map( element -> normalizeParameter( name, element, true ) ).toList() );
+        }
+        if ( !isScalarParameter( value ) ) {
+            throw new GenericRuntimeException( "Unsupported Cypher parameter type for $" + name + ": " + value.getType() );
+        }
+        return value;
     }
 
 

@@ -17,7 +17,7 @@
 package org.polypheny.db.adapter.neo4j.rules.graph;
 
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.as_;
-import static org.polypheny.db.adapter.neo4j.util.NeoStatements.literal_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.quotedIdentifier_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.unwind_;
 
 import java.util.List;
@@ -31,7 +31,6 @@ import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
-import org.polypheny.db.type.entity.PolyString;
 
 public class NeoLpgUnwind extends LpgUnwind implements NeoGraphAlg {
 
@@ -56,7 +55,8 @@ public class NeoLpgUnwind extends LpgUnwind implements NeoGraphAlg {
     @Override
     public void implement( NeoGraphImplementor implementor ) {
         implementor.visitChild( 0, getInput() ); // todo fix subfield
-        implementor.add( unwind_( as_( literal_( PolyString.of( implementor.getLast().getTupleType().getFieldNames().get( index ) ) ), literal_( PolyString.of( alias ) ) ) ) );
+        String field = implementor.getLast().getTupleType().getFieldNames().get( index );
+        implementor.add( unwind_( as_( quotedIdentifier_( field ), alias ) ) );
     }
 
 

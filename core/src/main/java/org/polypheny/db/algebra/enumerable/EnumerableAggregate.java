@@ -71,6 +71,7 @@ import org.polypheny.db.prepare.JavaTypeFactoryImpl.SyntheticRecordType;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.numerical.PolyLong;
@@ -93,7 +94,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
         assert getConvention() instanceof EnumerableConvention;
 
         for ( AggregateCall aggCall : aggCalls ) {
-            if ( aggCall.isDistinct() && !supportsGraphDistinctCount( aggCall ) ) {
+            if ( aggCall.isDistinct() && !supportsGraphDistinctAggregation( aggCall ) ) {
                 throw new InvalidAlgException( "distinct aggregation not supported" );
             }
             if ( !supportsGraphNumericAggregation( aggCall ) && RexImpTable.INSTANCE.get( aggCall.getAggregation(), false ) == null ) {
@@ -138,6 +139,51 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
     }
 
 
+    private static class GraphCollectImplementor extends StrictAggImplementor {
+
+        private final boolean distinct;
+
+
+        GraphCollectImplementor( boolean distinct ) {
+            this.distinct = distinct;
+        }
+
+
+        @Override
+        public List<Type> getNotNullState( AggContext info ) {
+            return distinct ? List.of( PolyList.class, HashSet.class ) : List.of( PolyList.class );
+        }
+
+
+        @Override
+        protected boolean nonDefaultOnEmptySet( AggContext info ) {
+            return false;
+        }
+
+
+        @Override
+        protected void implementNotNullReset( AggContext info, AggResetContext reset ) {
+            Expression empty = Expressions.new_( PolyList.class, Expressions.new_( ArrayList.class ) );
+            reset.currentBlock().add( Expressions.statement( Expressions.assign( reset.accumulator().get( 0 ), empty ) ) );
+            if ( distinct ) {
+                reset.currentBlock().add( Expressions.statement( Expressions.assign( reset.accumulator().get( 1 ), Expressions.new_( HashSet.class ) ) ) );
+            }
+        }
+
+
+        @Override
+        protected void implementNotNullAdd( AggContext info, AggAddContext add ) {
+            Expression value = add.rowTranslator().translate( add.rexArguments().get( 0 ), PolyValue.class );
+            Expression values = add.accumulator().get( 0 );
+            Expression collect = distinct
+                    ? Expressions.call( CypherFunctions.class, "addDistinctCollectedValue", values, add.accumulator().get( 1 ), value )
+                    : Expressions.call( CypherFunctions.class, "addCollectedValue", values, value );
+            add.currentBlock().add( Expressions.statement( collect ) );
+        }
+
+    }
+
+
     private static class GraphMinMaxImplementor extends StrictAggImplementor {
 
         @Override
@@ -177,8 +223,9 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
     }
 
 
-    private boolean supportsGraphDistinctCount( AggregateCall call ) {
-        return traitSet.contains( ModelTrait.GRAPH ) && call.getAggregation().getKind() == Kind.COUNT && call.getArgList().size() == 1;
+    private boolean supportsGraphDistinctAggregation( AggregateCall call ) {
+        Kind kind = call.getAggregation().getKind();
+        return traitSet.contains( ModelTrait.GRAPH ) && (kind == Kind.COUNT || kind == Kind.COLLECT) && call.getArgList().size() == 1;
     }
 
 
@@ -329,7 +376,9 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
         final List<AggImpState> aggs = new ArrayList<>( aggCalls.size() );
         for ( Ord<AggregateCall> call : Ord.zip( aggCalls ) ) {
             Kind kind = call.e.getAggregation().getKind();
-            if ( call.e.isDistinct() ) {
+            if ( graphKeys && kind == Kind.COLLECT ) {
+                aggs.add( new AggImpState( call.i, call.e, new GraphCollectImplementor( call.e.isDistinct() ) ) );
+            } else if ( call.e.isDistinct() ) {
                 aggs.add( new AggImpState( call.i, call.e, new GraphDistinctCountImplementor() ) );
             } else if ( supportsGraphNumericAggregation( call.e ) ) {
                 aggs.add( new AggImpState( call.i, call.e, new GraphNumericImplementor() ) );

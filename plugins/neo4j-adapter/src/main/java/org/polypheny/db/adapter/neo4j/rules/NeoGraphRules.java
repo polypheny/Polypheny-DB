@@ -16,6 +16,8 @@
 
 package org.polypheny.db.adapter.neo4j.rules;
 
+import static org.polypheny.db.adapter.neo4j.util.NeoUtil.hasEscapedGraphKeys;
+import static org.polypheny.db.adapter.neo4j.util.NeoUtil.isStructuralGraphType;
 import static org.polypheny.db.adapter.neo4j.util.NeoUtil.needsGraphValueDecoding;
 
 import java.util.function.Predicate;
@@ -50,6 +52,7 @@ import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyPath;
 
@@ -101,7 +104,8 @@ public interface NeoGraphRules {
 
     private static boolean supportsPatternProperties( GraphPropertyHolder holder ) {
         // An exact decimal may be stored as a tagged string while still comparing equal to a native number.
-        return holder.properties.values().stream().allMatch( value -> value != null && !value.isNull() && (value.isString() || value.isBoolean()) );
+        return !hasEscapedGraphKeys( holder.properties )
+                && holder.properties.values().stream().allMatch( value -> value != null && !value.isNull() && (value.isString() || value.isBoolean()) );
     }
 
 
@@ -228,8 +232,10 @@ public interface NeoGraphRules {
 
 
         private static boolean supports( LpgSort sort ) {
-            return !containsSort( sort.getInput() ) && sort.collation.getFieldCollations().stream().noneMatch( field ->
-                    needsGraphValueDecoding( sort.getInput().getTupleType().getFields().get( field.getFieldIndex() ).getType().getPolyType() ) );
+            return !containsSort( sort.getInput() ) && sort.collation.getFieldCollations().stream().allMatch( field -> {
+                PolyType type = sort.getInput().getTupleType().getFields().get( field.getFieldIndex() ).getType().getPolyType();
+                return !isStructuralGraphType( type ) && !needsGraphValueDecoding( type );
+            } );
         }
 
 
@@ -256,7 +262,7 @@ public interface NeoGraphRules {
     class NeoGraphUnwindRule extends NeoConverterRule {
 
         public static NeoGraphUnwindRule INSTANCE = new NeoGraphUnwindRule( LpgUnwind.class, unwind -> !containsSort( unwind.getInput() )
-                && unwind.getInput().getTupleType().getFields().get( unwind.index ).getType().getPolyType() != PolyType.ANY, "NeoGraphUnwindRule" );
+                && unwind.getInput().getTupleType().getFields().get( unwind.index ).getType().getPolyType() == PolyType.ARRAY, "NeoGraphUnwindRule" );
 
 
         private <R extends AlgNode> NeoGraphUnwindRule( Class<R> clazz, Predicate<? super R> supports, String description ) {
@@ -324,15 +330,33 @@ public interface NeoGraphRules {
 
         private static boolean supports( LogicalLpgMatch match ) {
             return !match.isEnumerableOnly() && !containsSort( match.getInput() )
+                    && match.getNames().stream().allMatch( NeoGraphMatchRule::isNamed )
                     && match.getMatches().stream().flatMap( call -> call.operands.stream() ).allMatch( operand -> {
                         if ( operand instanceof RexLiteral literal && literal.value instanceof GraphPropertyHolder holder ) {
                             return supportsPatternProperties( holder );
                         }
                         if ( operand instanceof RexLiteral literal && literal.value instanceof PolyPath path ) {
-                            return path.getPath().stream().allMatch( NeoGraphRules::supportsPatternProperties );
+                            return supportsPath( path );
                         }
                         return true;
                     } );
+        }
+
+
+        private static boolean supportsPath( PolyPath path ) {
+            if ( !path.getPath().stream().allMatch( NeoGraphRules::supportsPatternProperties ) ) {
+                return false;
+            }
+            // The native path does not preserve the positions of quantified segment bindings
+            // across a Neo4j-to-Enumerable boundary. Keep those matches in the Enumerable engine.
+            boolean hasBindings = path.getPath().stream().anyMatch( element -> isNamed( element.getVariableName() ) );
+            return path.getEdges().stream().noneMatch( edge -> edge.labels.size() > 1 || edge.hasEmptyRange()
+                    || (hasBindings && edge.fromTo() != null) );
+        }
+
+
+        private static boolean isNamed( PolyString name ) {
+            return name != null && !name.isNull() && !name.value.isEmpty();
         }
 
 

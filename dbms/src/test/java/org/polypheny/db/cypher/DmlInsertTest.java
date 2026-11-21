@@ -16,10 +16,15 @@
 
 package org.polypheny.db.cypher;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.TestHelper.CypherConnection;
 import org.polypheny.db.cypher.helper.TestEdge;
 import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.type.entity.PolyValue;
@@ -103,6 +108,47 @@ public class DmlInsertTest extends CypherTestTemplate {
                         Pair.of( "height", 185.3 ),
                         Pair.of( "nicknames", List.of( "Maxi", "Musti" ) )
                 ) );
+    }
+
+
+    @Test
+    void rejectsInvalidPropertiesInLiteralAndRowDependentCreate() {
+        for ( String query : List.of(
+                "CREATE (:RejectedCreate {value:[{num:1}]}) RETURN 1",
+                "CREATE (:RejectedCreate)-[:REJECTED_CREATE {value:[true,1]}]->(:RejectedCreate)",
+                """
+                        UNWIND [{rank:0, value:[1]}, {rank:1, value:[{num:1}]}] AS row
+                        WITH row.value AS value ORDER BY row.rank
+                        CREATE (:RejectedCreate {value:value})
+                        """,
+                """
+                        CREATE (n:RejectedCreate)
+                        WITH n, {num:1} AS value
+                        CREATE (n)-[:REJECTED_CREATE {value:value}]->(:RejectedCreate)
+                        """ ) ) {
+            String error = CypherConnection.executeGetResponse( query ).getError();
+            assertNotNull( error, query );
+            assertTrue( error.contains( "InvalidPropertyType" ), error );
+            assertEquals( 0, execute( "MATCH (n) RETURN n" ).getData().length, query );
+            assertEquals( 0, execute( "MATCH ()-[r]->() RETURN r" ).getData().length, query );
+        }
+    }
+
+
+    @Test
+    void rejectsRebindingNodesInCreate() {
+        for ( String query : List.of(
+                "CREATE (n:Foo)-[:T1]->(), (n:Bar)-[:T2]->()",
+                "CREATE (n:Foo) CREATE (n:Bar)-[:OWNS]->(:Dog)",
+                "CREATE (n:Foo) CREATE (n {})-[:OWNS]->(:Dog)",
+                "CREATE (n:Foo) CREATE (n {bad:[{x:1}]})-[:OWNS]->(:Dog)",
+                "CREATE (n:Foo), (n)" ) ) {
+            String error = CypherConnection.executeGetResponse( query ).getError();
+            assertNotNull( error, query );
+            assertTrue( error.contains( "VariableAlreadyBound" ), error );
+            assertEquals( 0, execute( "MATCH (n) RETURN n" ).getData().length, query );
+            assertEquals( 0, execute( "MATCH ()-[r]->() RETURN r" ).getData().length, query );
+        }
     }
 
 

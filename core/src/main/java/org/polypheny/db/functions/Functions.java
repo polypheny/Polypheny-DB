@@ -112,8 +112,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
-import org.polypheny.db.type.entity.graph.PolyEdge;
-import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
@@ -407,10 +406,15 @@ public class Functions {
             return bindGraphElement( element, bindings );
         }
         if ( value instanceof PolyPath path ) {
-            List<PolyNode> nodes = path.getNodes().stream().map( node -> (PolyNode) bindGraphElement( node, bindings ) ).toList();
-            List<PolyEdge> edges = path.getEdges().stream().map( edge -> (PolyEdge) bindGraphElement( edge, bindings ) ).toList();
-            List<GraphPropertyHolder> parts = path.getPath().stream().map( element -> bindGraphElement( element, bindings ) ).toList();
-            return new PolyPath( path.id, nodes, edges, path.getNames(), parts, path.getVariableName() );
+            return path.rebindGraphValues( part -> (PolyValue) bindGraphValue( part, bindings ) );
+        }
+        if ( value instanceof PolyList<?> list ) {
+            return PolyList.copyOf( list.stream().map( item -> (PolyValue) bindGraphValue( item, bindings ) ).toList() );
+        }
+        if ( value instanceof PolyDictionary map ) {
+            Map<PolyString, PolyValue> entries = new HashMap<>();
+            map.forEach( ( key, item ) -> entries.put( key, (PolyValue) bindGraphValue( item, bindings ) ) );
+            return new PolyDictionary( entries );
         }
         return value;
     }

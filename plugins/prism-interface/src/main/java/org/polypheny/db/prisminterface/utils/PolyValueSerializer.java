@@ -18,6 +18,7 @@ package org.polypheny.db.prisminterface.utils;
 
 import com.google.protobuf.ByteString;
 import java.util.List;
+import java.util.Map;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.prisminterface.PIServiceException;
 import org.polypheny.db.type.entity.PolyBinary;
@@ -27,7 +28,6 @@ import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyBlob;
-import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
@@ -105,11 +105,11 @@ public class PolyValueSerializer {
             case BINARY, VARBINARY -> serializeAsProtoBinary( polyValue.asBinary() );
             case NULL -> serializeAsProtoNull();
             case ARRAY -> serializeAsProtoList( polyValue.asList() );
-            case DOCUMENT -> serializeAsProtoDocument( polyValue.asDocument() );
+            case DOCUMENT, MAP -> ProtoValue.newBuilder().setDocument( buildProtoDocument( polyValue.asMap() ) ).build();
             case GEOMETRY -> serializeGeometry( polyValue.asGeometry() );
             case IMAGE, VIDEO, AUDIO, FILE -> serializeAsProtoFile( polyValue.asBlob() ); // used
             case NODE, EDGE, PATH, GRAPH -> serializeGraphValue( polyValue );
-            case MAP, DISTINCT, STRUCTURED, ROW, OTHER, CURSOR, COLUMN_LIST, DYNAMIC_STAR, SYMBOL, JSON, MULTISET, USER_DEFINED_TYPE, ANY -> throw new NotImplementedException( "Serialization of " + polyValue.getType() + " to proto not implemented" );
+            case DISTINCT, STRUCTURED, ROW, OTHER, CURSOR, COLUMN_LIST, DYNAMIC_STAR, SYMBOL, JSON, MULTISET, USER_DEFINED_TYPE, ANY -> throw new NotImplementedException( "Serialization of " + polyValue.getType() + " to proto not implemented" );
         };
     }
 
@@ -120,17 +120,16 @@ public class PolyValueSerializer {
     }
 
 
-    ProtoDocument buildProtoDocument( PolyDocument polyDocument ) {
+    ProtoDocument buildProtoDocument( Map<? extends PolyValue, ? extends PolyValue> properties ) {
+        // Prism represents maps with string keys as a document value.
         ProtoDocument.Builder document = ProtoDocument.newBuilder();
-        polyDocument.forEach( ( key, value ) -> document.putEntries( key.getValue(), serializeValue( value ) ) );
+        properties.forEach( ( key, value ) -> {
+            if ( !(key instanceof PolyString name) || name.isNull() ) {
+                throw new NotImplementedException( "Prism requires non-null string map keys." );
+            }
+            document.putEntries( name.getValue(), serializeValue( value ) );
+        } );
         return document.build();
-    }
-
-
-    private ProtoValue serializeAsProtoDocument( PolyDocument polyDocument ) {
-        return ProtoValue.newBuilder()
-                .setDocument( buildProtoDocument( polyDocument ) )
-                .build();
     }
 
 
