@@ -21,8 +21,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -30,7 +32,8 @@ import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.PIServiceException;
-import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.prisminterface.statements.PIStatement.ResultCursor;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.prism.ExecuteUnparameterizedStatementRequest;
 import org.polypheny.prism.PrepareStatementRequest;
 
@@ -183,7 +186,7 @@ public class StatementManager {
         }
         PIStatement statement = openStatements.get( statementId );
         try {
-            if ( statement != null && statement.getLanguage().dataModel() == DataModel.GRAPH ) {
+            if ( statement != null ) {
                 statement.closeResultsAndCommitIfAuto();
             }
         } finally {
@@ -204,11 +207,33 @@ public class StatementManager {
     }
 
 
-    private void rebindPreparedStatement( PIPreparedStatement statement ) {
-        Statement s = statement.getStatement();
-        if ( s != null && s.getTransaction().getId() != client.getOrCreateNewTransaction().getId() ) {
-            statement.setStatement( client.getCurrentTransaction().createStatement() );
+    public void checkAutocommitExecution( boolean graphStatement ) {
+        // Graph statements and unfinished write results require a transaction to themselves.
+        if ( client.isAutoCommit() && hasOpenResult( (statement, cursor) -> graphStatement
+                || statement.getLanguage().dataModel() == DataModel.GRAPH
+                || Kind.DML.contains( cursor.iterator().getImplementation().getKind() ) ) ) {
+            throw new PIServiceException( "Close or finish the open result before executing another statement in autocommit mode" );
         }
+    }
+
+
+    public void commitIfAutocommitAndNoOpenResults( Transaction transaction ) {
+        if ( client.isAutoCommit() && !hasOpenResult( (statement, cursor) -> cursor.transaction() == transaction ) ) {
+            client.commitAutocommitTransaction( transaction );
+        }
+    }
+
+
+    public boolean hasOpenResult( boolean graphOnly ) {
+        return hasOpenResult( (statement, cursor) -> !graphOnly || statement.getLanguage().dataModel() == DataModel.GRAPH );
+    }
+
+
+    private boolean hasOpenResult( BiPredicate<PIStatement, ResultCursor> predicate ) {
+        return openStatements.values().stream().anyMatch( statement -> {
+            ResultCursor cursor = statement.getResultCursor();
+            return cursor != null && cursor.transaction().isActive() && predicate.test( statement, cursor );
+        } );
     }
 
 
@@ -217,7 +242,6 @@ public class StatementManager {
         if ( !(statement instanceof PIPreparedNamedStatement prepared) ) {
             throw new PIServiceException( "A named prepared statement with id " + statementId + " does not exist for that client" );
         }
-        rebindPreparedStatement( prepared );
         return prepared;
     }
 
@@ -227,7 +251,6 @@ public class StatementManager {
         if ( !(statement instanceof PIPreparedIndexedStatement prepared) ) {
             throw new PIServiceException( "A prepared indexed statement with id " + statementId + " does not exist for that client" );
         }
-        rebindPreparedStatement( prepared );
         return prepared;
     }
 

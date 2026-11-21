@@ -38,15 +38,19 @@ import org.polypheny.prism.CloseResultRequest;
 import org.polypheny.prism.CloseStatementRequest;
 import org.polypheny.prism.CommitRequest;
 import org.polypheny.prism.ConnectionProperties;
+import org.polypheny.prism.ConnectionPropertiesUpdateRequest;
 import org.polypheny.prism.ConnectionRequest;
 import org.polypheny.prism.ConnectionResponse;
 import org.polypheny.prism.DisconnectRequest;
 import org.polypheny.prism.EntitiesRequest;
 import org.polypheny.prism.EntitiesResponse;
+import org.polypheny.prism.ExecuteUnparameterizedStatementBatchRequest;
 import org.polypheny.prism.ExecuteUnparameterizedStatementRequest;
 import org.polypheny.prism.FetchRequest;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.GraphElement;
+import org.polypheny.prism.NamespacesRequest;
+import org.polypheny.prism.PrepareStatementRequest;
 import org.polypheny.prism.ProtoEdge;
 import org.polypheny.prism.ProtoNode;
 import org.polypheny.prism.ProtoPath;
@@ -64,6 +68,7 @@ import org.polypheny.prism.StatementResult;
 class CypherTest {
 
     private static final String NAMESPACE = "cyphertest";
+    private static final String SQL_PAGE_QUERY = "SELECT n FROM (VALUES ('a'), ('b'), ('c')) AS t(n) ORDER BY n";
 
 
     @BeforeAll
@@ -93,6 +98,42 @@ class CypherTest {
 
 
     @Test
+    void acceptsSemicolonsInLiteralsAndCommentsWithATrailingSeparator() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true ) ) {
+            Frame frame = connection.cypher( """
+                    MATCH (n:Person {name: 'Alice'}) /* ; inside a block comment */
+                    RETURN 'literal;semicolon' AS message; // ; inside a line comment
+                    """, 1 ).getResult().getFrame();
+            Row row = singleRow( relationalFrame( frame, true, List.of( "message" ) ) );
+            assertEquals( "literal;semicolon", row.getValues( 0 ).getString().getString() );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void rejectsMultipleStatementsBeforeExecutingCypherDdl() throws IOException {
+        String namespace = "cyphermultistatementtest";
+        try ( PrismConnection connection = new PrismConnection( true ) ) {
+            try {
+                Response rejected = connection.send( statementRequest( NAMESPACE, "cypher",
+                        "CREATE DATABASE " + namespace + "; MATCH (n:Person) RETURN n", 1 ) );
+                expect( rejected, Response.TypeCase.ERROR_RESPONSE );
+                String message = rejected.getErrorResponse().getMessage();
+                assertTrue( message.contains( "exactly one Cypher statement" ), message );
+
+                Response namespaces = connection.send( Request.newBuilder().setNamespacesRequest(
+                        NamespacesRequest.newBuilder().setNamespacePattern( namespace ) ) );
+                assertEquals( 0, expect( namespaces, Response.TypeCase.NAMESPACES_RESPONSE ).getNamespacesResponse().getNamespacesCount() );
+                connection.checkTransactions( 0 );
+            } finally {
+                connection.execute( Catalog.DEFAULT_NAMESPACE_NAME, "sql", "DROP NAMESPACE IF EXISTS " + namespace, 1 );
+            }
+        }
+    }
+
+
+    @Test
     void pagesNodeResultsAndClosesTheAutocommitTransaction() throws IOException {
         try ( PrismConnection connection = new PrismConnection( true ) ) {
             StatementResponse statement = connection.cypher( "MATCH (n:Person) RETURN n ORDER BY n.id", 1 );
@@ -116,6 +157,83 @@ class CypherTest {
             assertTrue( exhausted.getErrorResponse().getMessage().contains( "No open Cypher result" ) );
             connection.checkTransactions( 0 );
         }
+    }
+
+
+    @Test
+    void rejectsOverlappingAutocommitQueriesAndKeepsTheFirstResultOpen() throws IOException {
+        String query = "MATCH (n:Person) RETURN n ORDER BY n.id";
+        try ( PrismConnection connection = new PrismConnection( true ) ) {
+            StatementResponse first = connection.cypher( query, 1 );
+            assertNode( graphElements( first.getResult().getFrame(), false ).get( 0 ), "Alice", 1 );
+            connection.checkTransactions( 1 );
+
+            assertOpenResultError( connection.send( statementRequest( NAMESPACE, "cypher", query, 3 ) ) );
+            assertOpenResultError( connection.send( statementRequest( Catalog.DEFAULT_NAMESPACE_NAME, "sql", SQL_PAGE_QUERY, 2 ) ) );
+            assertOpenResultError( connection.send( Request.newBuilder().setPrepareIndexedStatementRequest(
+                    PrepareStatementRequest.newBuilder()
+                            .setNamespaceName( Catalog.DEFAULT_NAMESPACE_NAME )
+                            .setLanguageName( "sql" )
+                            .setStatement( SQL_PAGE_QUERY ) ) ) );
+
+            ExecuteUnparameterizedStatementBatchRequest ddlBatch = ExecuteUnparameterizedStatementBatchRequest.newBuilder()
+                    .addStatements( ExecuteUnparameterizedStatementRequest.newBuilder()
+                            .setNamespaceName( Catalog.DEFAULT_NAMESPACE_NAME )
+                            .setLanguageName( "sql" )
+                            .setStatement( "DROP NAMESPACE IF EXISTS cypherblockedbatchtest" ) )
+                    .build();
+            assertOpenResultError( connection.send( Request.newBuilder().setExecuteUnparameterizedStatementBatchRequest( ddlBatch ) ) );
+
+            Response rejectedModeChange = connection.send( Request.newBuilder().setConnectionPropertiesUpdateRequest(
+                    ConnectionPropertiesUpdateRequest.newBuilder().setConnectionProperties(
+                            ConnectionProperties.newBuilder().setIsAutoCommit( false ) ) ) );
+            assertEquals( "Close or finish the open Cypher result before changing autocommit mode",
+                    expect( rejectedModeChange, Response.TypeCase.ERROR_RESPONSE ).getErrorResponse().getMessage() );
+            connection.checkTransactions( 1 );
+
+            Frame remaining = connection.fetch( first.getStatementId(), 2 );
+            List<GraphElement> nodes = graphElements( remaining, true );
+            assertEquals( 2, nodes.size() );
+            assertNode( nodes.get( 0 ), "Bob", 2 );
+            assertNode( nodes.get( 1 ), "Charlie", 3 );
+            connection.checkTransactions( 0 );
+
+            Frame retried = connection.cypher( query, 3 ).getResult().getFrame();
+            assertEquals( 3, graphElements( retried, true ).size() );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void rejectsAnAutocommitCypherQueryWhileAnSqlResultIsOpen() throws IOException {
+        String query = "MATCH (n:Person) RETURN n ORDER BY n.id";
+        try ( PrismConnection connection = new PrismConnection( true ) ) {
+            StatementResponse first = connection.execute( Catalog.DEFAULT_NAMESPACE_NAME, "sql", SQL_PAGE_QUERY, 1 );
+            Frame firstPage = first.getResult().getFrame();
+            assertTrue( firstPage.hasRelationalFrame() );
+            assertFalse( firstPage.getIsLast() );
+            assertEquals( "a", singleRow( firstPage.getRelationalFrame() ).getValues( 0 ).getString().getString() );
+            connection.checkTransactions( 1 );
+
+            assertOpenResultError( connection.send( statementRequest( NAMESPACE, "cypher", query, 3 ) ) );
+            connection.checkTransactions( 1 );
+
+            Frame remaining = connection.fetch( first.getStatementId(), 2 );
+            assertTrue( remaining.hasRelationalFrame() );
+            assertTrue( remaining.getIsLast() );
+            assertEquals( List.of( "b", "c" ), projectedNames( remaining.getRelationalFrame() ) );
+
+            Frame retried = connection.cypher( query, 3 ).getResult().getFrame();
+            assertEquals( 3, graphElements( retried, true ).size() );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    private static void assertOpenResultError( Response response ) {
+        String message = expect( response, Response.TypeCase.ERROR_RESPONSE ).getErrorResponse().getMessage();
+        assertTrue( message.contains( "Close or finish the open result" ), message );
     }
 
 

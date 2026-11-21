@@ -27,6 +27,7 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.prisminterface.NamedValueProcessor;
 import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
@@ -61,33 +62,33 @@ public class PIPreparedNamedStatement extends PIPreparedStatement {
 
     @SuppressWarnings("Duplicates")
     public StatementResult execute( Map<String, PolyValue> values, int fetchSize ) throws Exception {
-        if ( statement == null || client.hasNoTransaction() ) {
-            statement = client.getOrCreateNewTransaction().createStatement();
-        } else {
-            statement.getDataContext().resetParameterValues();
-        }
+        List<ParsedQueryContext> preParsedQueries = StatementProcessor.parseWithOpenAutocommitResult( this );
         List<PolyValue> valueList = namedValueProcessor.transformValueMap( values );
-        for ( int i = 0; i < valueList.size(); i++ ) {
-            AlgDataType type = (parameterPolyTypes != null && i < parameterPolyTypes.size())
-                    ? deriveType( statement.getDataContext().getTypeFactory(), parameterPolyTypes.get( i ) )
-                    : PolyValue.deriveType( valueList.get( i ), this.statement.getDataContext().getTypeFactory() );
-            statement.getDataContext().addParameterValues( i, type, List.of( valueList.get( i ) ) );
-        }
-        StatementProcessor.implement( this );
-        return StatementProcessor.executeAndGetResult( this, fetchSize );
+        return executeInTransaction( preParsedQueries != null, () -> {
+            for ( int i = 0; i < valueList.size(); i++ ) {
+                AlgDataType type = (parameterPolyTypes != null && i < parameterPolyTypes.size())
+                        ? deriveType( statement.getDataContext().getTypeFactory(), parameterPolyTypes.get( i ) )
+                        : PolyValue.deriveType( valueList.get( i ), statement.getDataContext().getTypeFactory() );
+                statement.getDataContext().addParameterValues( i, type, List.of( valueList.get( i ) ) );
+            }
+            StatementProcessor.implement( this, null, preParsedQueries );
+            return StatementProcessor.executeAndGetResult( this, fetchSize );
+        } );
     }
 
 
     @Override
     public void close() {
-        statement.close();
+        if ( statement != null ) {
+            statement.close();
+        }
         closeResults();
     }
 
 
     @Override
     public Transaction getTransaction() {
-        return statement.getTransaction();
+        return statement != null ? statement.getTransaction() : null;
     }
 
 }

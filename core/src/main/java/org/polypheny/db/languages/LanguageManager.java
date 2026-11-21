@@ -96,6 +96,14 @@ public class LanguageManager {
     // This should be refactored to use the new method only transmitting the transaction as soon as the
     // new prism interface is enabled
     public List<ImplementationContext> anyPrepareQuery( QueryContext context, Statement statement ) {
+        return anyPrepareQuery( context, statement, null );
+    }
+
+
+    /**
+     * Prepares the supplied parsed contexts when the caller has already inspected the query.
+     */
+    public List<ImplementationContext> anyPrepareQuery( QueryContext context, Statement statement, @Nullable List<ParsedQueryContext> preParsedQueries ) {
         Transaction transaction = statement.getTransaction();
         if ( transaction.isAnalyze() ) {
             transaction.getQueryAnalyzer().visitInformationTarget( context.getInformationTarget() );
@@ -103,7 +111,9 @@ public class LanguageManager {
 
         List<ParsedQueryContext> parsedQueries;
 
-        if ( context instanceof ParsedQueryContext ) {
+        if ( preParsedQueries != null ) {
+            parsedQueries = preParsedQueries;
+        } else if ( context instanceof ParsedQueryContext ) {
             parsedQueries = List.of( (ParsedQueryContext) context );
         } else {
             try {

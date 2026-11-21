@@ -247,9 +247,11 @@ class PIService {
 
 
     private Response handleMessage( Request req ) throws IOException {
-        if ( uuid == null || clientManager.getClient( uuid ) == null ) {
+        PIClient client = uuid == null ? null : clientManager.getClient( uuid );
+        if ( client == null ) {
             throw new IllegalStateException( "Clients must be authenticated before sending any messages" );
         }
+        checkAutocommitExecution( req, client );
 
         return switch ( req.getTypeCase() ) {
             case DBMS_VERSION_REQUEST -> getDbmsVersion( req.getDbmsVersionRequest(), new ResponseMaker<>( req, "dbms_version_response" ) );
@@ -285,6 +287,31 @@ class PIService {
             case CLOSE_RESULT_REQUEST -> closeResult( req.getCloseResultRequest(), new ResponseMaker<>( req, "close_result_response" ) );
             case TYPE_NOT_SET -> throw new NotImplementedException( "Unsupported call " + req.getTypeCase() );
         };
+    }
+
+
+    private void checkAutocommitExecution( Request request, PIClient client ) {
+        if ( !client.isAutoCommit() ) {
+            return;
+        }
+        boolean graphStatement;
+        switch ( request.getTypeCase() ) {
+            case EXECUTE_UNPARAMETERIZED_STATEMENT_REQUEST -> graphStatement = isGraphStatement( request.getExecuteUnparameterizedStatementRequest() );
+            case EXECUTE_UNPARAMETERIZED_STATEMENT_BATCH_REQUEST -> graphStatement = request.getExecuteUnparameterizedStatementBatchRequest()
+                    .getStatementsList().stream().anyMatch( PIService::isGraphStatement );
+            case PREPARE_INDEXED_STATEMENT_REQUEST, PREPARE_NAMED_STATEMENT_REQUEST, EXECUTE_INDEXED_STATEMENT_REQUEST,
+                    EXECUTE_INDEXED_STATEMENT_BATCH_REQUEST, EXECUTE_NAMED_STATEMENT_REQUEST -> graphStatement = false;
+            default -> {
+                return;
+            }
+        }
+        client.getStatementManager().checkAutocommitExecution( graphStatement );
+    }
+
+
+    private static boolean isGraphStatement( ExecuteUnparameterizedStatementRequest request ) {
+        String language = request.getLanguageName();
+        return QueryLanguage.containsLanguage( language ) && QueryLanguage.from( language ).dataModel() == DataModel.GRAPH;
     }
 
 
@@ -507,11 +534,7 @@ class PIService {
     private Response closeResult( CloseResultRequest request, ResponseMaker<CloseResultResponse> responseObserver ) {
         PIClient client = getClient();
         PIStatement statement = client.getStatementManager().getStatement( request.getStatementId() );
-        if ( statement.getLanguage().dataModel() == DataModel.GRAPH ) {
-            statement.closeResultsAndCommitIfAuto();
-        } else {
-            statement.closeResults();
-        }
+        statement.closeResultsAndCommitIfAuto();
         return responseObserver.makeResponse( CloseResultResponse.newBuilder().build() );
     }
 
@@ -519,6 +542,13 @@ class PIService {
     private Response updateConnectionProperties( ConnectionPropertiesUpdateRequest request, ResponseMaker<ConnectionPropertiesUpdateResponse> responseObserver ) {
         PIClient client = getClient();
         ConnectionProperties properties = request.getConnectionProperties();
+        boolean changesAutocommit = properties.hasIsAutoCommit() && properties.getIsAutoCommit() != client.isAutoCommit();
+        if ( changesAutocommit && client.getStatementManager().hasOpenResult( true ) ) {
+            throw new PIServiceException( "Close or finish the open Cypher result before changing autocommit mode" );
+        }
+        if ( changesAutocommit && client.hasActiveIsolatedReadTransactions() ) {
+            throw new PIServiceException( "Close or finish the open results before changing autocommit mode" );
+        }
         if ( properties.hasIsAutoCommit() ) {
             client.setAutoCommit( properties.getIsAutoCommit() );
         }
