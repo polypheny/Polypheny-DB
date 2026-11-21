@@ -17,13 +17,19 @@
 package org.polypheny.db.crossmodel;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.List;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.mql.MqlTestTemplate;
 import org.polypheny.db.type.entity.PolyString;
@@ -112,6 +118,40 @@ public class RelationalOnDocumentTest extends CrossModelTestTemplate {
                     """;
             try ( ResultSet result = s.executeQuery( query ) ) {
                 TestHelper.checkResultSet( result, List.<Object[]>of( new Object[]{ "9223372036854775808", "-9223372036854775809" } ) );
+            }
+        } );
+    }
+
+
+    @Test
+    public void jsonValueTruncatesInRangeTemporalValues() {
+        executeStatements( ( s, c ) -> {
+            String query = """
+                    SELECT JSON_VALUE('{"n":{"$numberDecimal":"1.9"}}', 'lax $.n' RETURNING DATE),
+                           JSON_VALUE('{"n":{"$numberDecimal":"1000.9"}}', 'lax $.n' RETURNING TIMESTAMP)
+                    """;
+            try ( ResultSet result = s.executeQuery( query ) ) {
+                TestHelper.checkResultSet( result, List.<Object[]>of( new Object[]{
+                        Date.valueOf( "1970-01-02" ), Timestamp.valueOf( "1970-01-01 00:00:01" ) } ) );
+            }
+        } );
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(strings = { "DATE", "TIMESTAMP" })
+    public void jsonValueRejectsTemporalOverflow( String type ) {
+        executeStatements( ( s, c ) -> {
+            // A cast must reject ±2^64, including Decimal128 values with a fractional part.
+            for ( String decimal : List.of( "18446744073709551616", "-18446744073709551616", "18446744073709551616.5", "-18446744073709551616.5" ) ) {
+                String overflowQuery = """
+                        SELECT JSON_VALUE('{"n":{"$numberDecimal":"%s"}}', 'lax $.n' RETURNING %s)
+                        """.formatted( decimal, type );
+                assertThrows( SQLException.class, () -> {
+                    try ( ResultSet result = s.executeQuery( overflowQuery ) ) {
+                        result.next();
+                    }
+                }, decimal );
             }
         } );
     }

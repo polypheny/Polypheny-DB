@@ -19,6 +19,9 @@ package org.polypheny.db.type.entity.temporal;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonToken;
+import com.google.common.math.DoubleMath;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -122,7 +125,15 @@ public class PolyDate extends PolyTemporal {
         if ( value.isDate() ) {
             return value.asDate();
         } else if ( value.isNumber() ) {
-            return ofDays( value.asNumber().intValue() );
+            PolyNumber number = value.asNumber();
+            return ofDays( switch ( number.getType() ) {
+                case DECIMAL -> {
+                    BigDecimal decimal = number.bigDecimalValue();
+                    yield decimal.setScale( Math.min( decimal.scale(), 0 ), RoundingMode.DOWN ).intValueExact();
+                }
+                case FLOAT, REAL, DOUBLE -> DoubleMath.roundToInt( number.doubleValue(), RoundingMode.DOWN );
+                default -> number.intValue();
+            } );
         }
 
         throw new GenericRuntimeException( getConvertError( value, PolyDate.class ) );
