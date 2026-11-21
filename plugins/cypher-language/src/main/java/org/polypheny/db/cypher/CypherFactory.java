@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.CypherResource.ResourceType;
 import org.polypheny.db.cypher.admin.CypherAdminAction;
 import org.polypheny.db.cypher.admin.CypherAdminCommand;
@@ -229,6 +230,9 @@ public interface CypherFactory {
 
     static CypherClause createMatch( ParserPos pos, boolean optional, List<CypherPattern> patterns, ParserPos pos1, List<CypherHint> hints, CypherWhere where, boolean fullScan ) {
         if ( fullScan ) {
+            if ( optional || where != null ) {
+                throw new GenericRuntimeException( "MATCH (*) does not support OPTIONAL or WHERE" );
+            }
             return new CypherFull( pos );
         }
         return new CypherMatch( pos, optional, patterns, pos1, hints, where, false );
@@ -315,7 +319,7 @@ public interface CypherFactory {
     }
 
     static CypherExpression contains( ParserPos pos, CypherExpression left, CypherExpression right ) {
-        return new CypherComparison( pos, OperatorName.CONTAINS, left, right );
+        return new CypherComparison( pos, OperatorName.CYPHER_CONTAINS, left, right );
     }
 
     static CypherExpression in( ParserPos pos, CypherExpression left, CypherExpression right ) {

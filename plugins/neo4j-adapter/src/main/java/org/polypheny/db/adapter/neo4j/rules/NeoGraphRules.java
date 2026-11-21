@@ -16,6 +16,8 @@
 
 package org.polypheny.db.adapter.neo4j.rules;
 
+import static org.polypheny.db.adapter.neo4j.util.NeoUtil.needsGraphValueDecoding;
+
 import java.util.function.Predicate;
 import org.polypheny.db.adapter.neo4j.NeoConvention;
 import org.polypheny.db.adapter.neo4j.NeoGraph;
@@ -30,6 +32,7 @@ import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgUnwind;
 import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgValues;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil.NeoSupportVisitor;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.lpg.LpgAggregate;
@@ -40,9 +43,15 @@ import org.polypheny.db.algebra.core.lpg.LpgProject;
 import org.polypheny.db.algebra.core.lpg.LpgSort;
 import org.polypheny.db.algebra.core.lpg.LpgUnwind;
 import org.polypheny.db.algebra.core.lpg.LpgValues;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.volcano.AlgSubset;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
+import org.polypheny.db.type.entity.graph.PolyPath;
 
 public interface NeoGraphRules {
 
@@ -59,17 +68,40 @@ public interface NeoGraphRules {
     };
 
     static boolean supports( LpgProject r ) {
-        NeoSupportVisitor visitor = new NeoSupportVisitor();
+        if ( containsSort( r.getInput() ) ) {
+            return false;
+        }
+        NeoSupportVisitor visitor = new NeoSupportVisitor( true );
         for ( RexNode project : r.getProjects() ) {
+            if ( project instanceof RexLiteral literal && literal.isNull() ) {
+                // Native projection expects a string expression, but the literal translator returns null.
+                return false;
+            }
             project.accept( visitor );
         }
         return visitor.isSupports();
     }
 
     static boolean supports( LpgFilter r ) {
-        NeoSupportVisitor visitor = new NeoSupportVisitor();
+        if ( containsSort( r.getInput() ) || needsGraphValueDecoding( r.getCondition().getType().getPolyType() ) ) {
+            return false;
+        }
+        NeoSupportVisitor visitor = new NeoSupportVisitor( true );
         r.getCondition().accept( visitor );
         return visitor.isSupports();
+    }
+
+
+    private static boolean containsSort( AlgNode input ) {
+        AlgNode node = input instanceof AlgSubset subset ? subset.getOriginal() : input;
+        // NeoLpgSort emits RETURN followed by ORDER BY/SKIP/LIMIT. Additional clauses need a new query stage.
+        return node instanceof LpgSort || node.getInputs().stream().anyMatch( NeoGraphRules::containsSort );
+    }
+
+
+    private static boolean supportsPatternProperties( GraphPropertyHolder holder ) {
+        // An exact decimal may be stored as a tagged string while still comparing equal to a native number.
+        return holder.properties.values().stream().allMatch( value -> value != null && !value.isNull() && (value.isString() || value.isBoolean()) );
     }
 
 
@@ -192,7 +224,13 @@ public interface NeoGraphRules {
 
     class NeoGraphSortRule extends NeoConverterRule {
 
-        public static NeoGraphSortRule INSTANCE = new NeoGraphSortRule( LpgSort.class, r -> true, "NeoGraphSortRule" );
+        public static NeoGraphSortRule INSTANCE = new NeoGraphSortRule( LpgSort.class, NeoGraphSortRule::supports, "NeoGraphSortRule" );
+
+
+        private static boolean supports( LpgSort sort ) {
+            return !containsSort( sort.getInput() ) && sort.collation.getFieldCollations().stream().noneMatch( field ->
+                    needsGraphValueDecoding( sort.getInput().getTupleType().getFields().get( field.getFieldIndex() ).getType().getPolyType() ) );
+        }
 
 
         private <R extends AlgNode> NeoGraphSortRule( Class<R> clazz, Predicate<? super R> supports, String description ) {
@@ -217,7 +255,8 @@ public interface NeoGraphRules {
 
     class NeoGraphUnwindRule extends NeoConverterRule {
 
-        public static NeoGraphUnwindRule INSTANCE = new NeoGraphUnwindRule( LpgUnwind.class, r -> true, "NeoGraphUnwindRule" );
+        public static NeoGraphUnwindRule INSTANCE = new NeoGraphUnwindRule( LpgUnwind.class, unwind -> !containsSort( unwind.getInput() )
+                && unwind.getInput().getTupleType().getFields().get( unwind.index ).getType().getPolyType() != PolyType.ANY, "NeoGraphUnwindRule" );
 
 
         private <R extends AlgNode> NeoGraphUnwindRule( Class<R> clazz, Predicate<? super R> supports, String description ) {
@@ -241,7 +280,21 @@ public interface NeoGraphRules {
 
     class NeoGraphAggregateRule extends NeoConverterRule {
 
-        public static NeoGraphAggregateRule INSTANCE = new NeoGraphAggregateRule( LpgAggregate.class, r -> true, "NeoGraphAggregateRule" );
+        public static NeoGraphAggregateRule INSTANCE = new NeoGraphAggregateRule(
+                LpgAggregate.class, NeoGraphAggregateRule::supports, "NeoGraphAggregateRule" );
+
+
+        private static boolean supports( LpgAggregate aggregate ) {
+            if ( aggregate.aggCalls.stream().anyMatch( call -> call.isDistinct() || call.function.getKind() != Kind.COUNT ) ) {
+                return false;
+            }
+            if ( aggregate.getTupleType().getFields().stream().anyMatch( field -> field.getType().getPolyType() == PolyType.DECIMAL
+                    || !field.getName().matches( "[A-Za-z_][A-Za-z0-9_]*" ) )
+                    || aggregate.groups.stream().anyMatch( group -> needsGraphValueDecoding( group.getType().getPolyType() ) ) ) {
+                return false;
+            }
+            return !containsSort( aggregate.getInput() );
+        }
 
 
         private <R extends AlgNode> NeoGraphAggregateRule( Class<R> clazz, Predicate<? super R> supports, String description ) {
@@ -266,7 +319,21 @@ public interface NeoGraphRules {
 
     class NeoGraphMatchRule extends NeoConverterRule {
 
-        public static NeoGraphMatchRule INSTANCE = new NeoGraphMatchRule( LpgMatch.class, r -> true, NeoGraphMatchRule.class.getSimpleName() );
+        public static NeoGraphMatchRule INSTANCE = new NeoGraphMatchRule( LogicalLpgMatch.class, NeoGraphMatchRule::supports, NeoGraphMatchRule.class.getSimpleName() );
+
+
+        private static boolean supports( LogicalLpgMatch match ) {
+            return !match.isEnumerableOnly() && !containsSort( match.getInput() )
+                    && match.getMatches().stream().flatMap( call -> call.operands.stream() ).allMatch( operand -> {
+                        if ( operand instanceof RexLiteral literal && literal.value instanceof GraphPropertyHolder holder ) {
+                            return supportsPatternProperties( holder );
+                        }
+                        if ( operand instanceof RexLiteral literal && literal.value instanceof PolyPath path ) {
+                            return path.getPath().stream().allMatch( NeoGraphRules::supportsPatternProperties );
+                        }
+                        return true;
+                    } );
+        }
 
 
         private <R extends AlgNode> NeoGraphMatchRule( Class<R> clazz, Predicate<? super R> supports, String description ) {

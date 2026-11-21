@@ -59,6 +59,7 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentUnwind;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgJoin;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
@@ -297,11 +298,19 @@ public class PolyAlgRegistry {
                 .creator( LogicalLpgMatch::create ).model( DataModel.GRAPH )
                 .opName( "LPG_MATCH" ).numInputs( 1 ).opTags( logAllTags )
                 .param( Parameter.builder().name( "matches" ).tag( ParamTag.ALIAS ).multiValued( 1 ).type( ParamType.REX ).build() )
+                .param( Parameter.builder().name( "enumerableOnly" ).type( ParamType.BOOLEAN ).simpleType( SimpleType.HIDDEN ).defaultValue( BooleanArg.FALSE ).build() )
                 .build() );
         declarations.put( LogicalLpgFilter.class, PolyAlgDeclaration.builder()
                 .creator( LogicalLpgFilter::create ).model( DataModel.GRAPH )
                 .opName( "LPG_FILTER" ).numInputs( 1 ).opTags( logAllTags )
                 .param( Parameter.builder().name( "condition" ).type( ParamType.REX ).simpleType( SimpleType.REX_PREDICATE ).build() )
+                .build() );
+        declarations.put( LogicalLpgJoin.class, PolyAlgDeclaration.builder()
+                .creator( LogicalLpgJoin::create ).model( DataModel.GRAPH )
+                .opName( "LPG_JOIN" ).numInputs( 2 ).opTags( logAllTags )
+                .param( Parameter.builder().name( "condition" ).type( ParamType.REX ).simpleType( SimpleType.REX_PREDICATE ).build() )
+                .param( Parameter.builder().name( "type" ).type( ParamType.JOIN_TYPE_ENUM ).build() )
+                .param( Parameter.builder().name( "variables" ).type( ParamType.CORR_ID ).simpleType( SimpleType.HIDDEN ).multiValued( 1 ).defaultValue( ListArg.EMPTY ).build() )
                 .build() );
         declarations.put( LogicalLpgProject.class, PolyAlgDeclaration.builder()
                 .creator( LogicalLpgProject::create ).model( DataModel.GRAPH )

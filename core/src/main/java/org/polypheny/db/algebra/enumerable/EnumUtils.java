@@ -185,8 +185,8 @@ public class EnumUtils {
             final ParameterExpression parameter = Expressions.parameter( Primitive.box( inputPhysType.getJavaTupleType() ), EnumUtils.LEFT_RIGHT.get( ord.i ) );
             parameters.add( parameter );
             if ( expressions.size() == outputFieldCount ) {
-                // For instance, if semi-join needs to return just the left inputs
-                break;
+                // The selector still needs both parameters when no fields are selected.
+                continue;
             }
             final int fieldCount = inputPhysType.getTupleType().getFieldCount();
             for ( int i = 0; i < fieldCount; i++ ) {

@@ -43,7 +43,7 @@ import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
-import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.constant.ResultKind;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
@@ -552,7 +552,7 @@ public class LanguageCrud {
                     .xid( statement.getTransaction().getXid().toString() )
                     .namespace( request.namespace );
 
-            if ( Kind.DML.contains( context.getIterator().getImplementation().getKind() ) ) {
+            if ( context.getImplementation().getResultKind() == ResultKind.UPDATE_COUNT ) {
                 builder.affectedTuples( data.get( 0 )[0].asNumber().longValue() );
             }
             return builder;

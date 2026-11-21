@@ -109,6 +109,10 @@ public class StatementManager {
         if ( !isSupportedLanguage( languageName ) ) {
             throw new PIServiceException( "Language " + languageName + " not supported." );
         }
+        QueryLanguage language = QueryLanguage.from( languageName );
+        if ( language.dataModel() == DataModel.GRAPH ) {
+            throw new PIServiceException( "Indexed prepared Cypher statements are not supported by Prism. Use named parameters." );
+        }
         int statementId = statementIdGenerator.getAndIncrement();
         LogicalNamespace namespace = client.getNamespace();
         if ( request.hasNamespaceName() ) {
@@ -118,7 +122,7 @@ public class StatementManager {
         PIPreparedIndexedStatement statement = new PIPreparedIndexedStatement(
                 statementId,
                 client,
-                QueryLanguage.from( languageName ),
+                language,
                 namespace,
                 request.getStatement()
         );

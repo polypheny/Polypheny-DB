@@ -38,6 +38,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.functions.CrossModelFunctions;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexLiteral;
@@ -182,10 +183,13 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
             RexLiteral id = getStringLiteral( node.id.value, ID_TYPE );
 
             for ( Entry<PolyString, PolyValue> entry : node.properties.entrySet() ) {
+                if ( entry.getValue() == null || entry.getValue().isNull() ) {
+                    continue;
+                }
                 ImmutableList.Builder<RexLiteral> row = ImmutableList.builder();
                 row.add( id );
                 row.add( getStringLiteral( entry.getKey().value, LABEL_TYPE ) );
-                row.add( getStringLiteral( entry.getValue().toJson(), VALUE_TYPE ) );
+                row.add( getStringLiteral( CrossModelFunctions.graphPropertyStorageValue( entry.getValue() ), VALUE_TYPE ) );
                 rows.add( row.build() );
             }
         }
@@ -215,10 +219,13 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
             RexLiteral id = getStringLiteral( edge.id.value, ID_TYPE );
 
             for ( Entry<PolyString, PolyValue> entry : edge.properties.entrySet() ) {
+                if ( entry.getValue() == null || entry.getValue().isNull() ) {
+                    continue;
+                }
                 ImmutableList.Builder<RexLiteral> row = ImmutableList.builder();
                 row.add( id );
                 row.add( getStringLiteral( entry.getKey().value, LABEL_TYPE ) );
-                row.add( getStringLiteral( entry.getValue().toString(), VALUE_TYPE ) );
+                row.add( getStringLiteral( CrossModelFunctions.graphPropertyStorageValue( entry.getValue() ), VALUE_TYPE ) );
                 rows.add( row.build() );
             }
         }

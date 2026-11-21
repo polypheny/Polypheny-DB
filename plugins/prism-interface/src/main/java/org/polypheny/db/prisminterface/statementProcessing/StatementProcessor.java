@@ -49,7 +49,31 @@ public class StatementProcessor {
 
 
     public static Node parseGraphStatement( PIStatement piStatement ) {
-        List<? extends Node> statements = piStatement.getLanguage().processorSupplier().get().parse( piStatement.getQuery() );
+        return parseGraphStatement( piStatement, piStatement.getLanguage().processorSupplier().get() );
+    }
+
+
+    public static Node parseUpdateBatchMember( PIStatement piStatement ) {
+        Processor processor = piStatement.getLanguage().processorSupplier().get();
+        Node parsed;
+        if ( piStatement.getLanguage().dataModel() == DataModel.GRAPH ) {
+            parsed = parseGraphStatement( piStatement, processor );
+        } else {
+            List<? extends Node> statements = processor.parse( piStatement.getQuery() );
+            if ( statements.size() != 1 ) {
+                throw new PIServiceException( "An update batch requires exactly one statement per member" );
+            }
+            parsed = statements.get( 0 );
+        }
+        if ( !processor.isUpdateOnly( parsed ) ) {
+            throw new PIServiceException( "Update batch statements must update data without returning rows" );
+        }
+        return parsed;
+    }
+
+
+    private static Node parseGraphStatement( PIStatement piStatement, Processor processor ) {
+        List<? extends Node> statements = processor.parse( piStatement.getQuery() );
         if ( statements.size() != 1 ) {
             throw new PIServiceException( "Prism requires exactly one Cypher statement per request." );
         }
@@ -155,7 +179,7 @@ public class StatementProcessor {
     public static void prepare( PIPreparedStatement piStatement ) {
         QueryLanguage queryLanguage = piStatement.getLanguage();
         if ( queryLanguage.dataModel() == DataModel.GRAPH ) {
-            throw new PIServiceException( "Prepared Cypher statements are not supported by Prism" );
+            throw new PIServiceException( "Indexed prepared Cypher statements are not supported by Prism. Use named parameters." );
         }
         Transaction transaction = piStatement.getClient().getOrCreateNewTransaction();
         String query = piStatement.getQuery();

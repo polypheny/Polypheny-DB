@@ -20,6 +20,7 @@ import java.util.List;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.ResultKind;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.monitoring.events.MonitoringType;
@@ -53,11 +54,11 @@ final class ResultExecutor {
             // Indexed SQL batch execution also consumes its command acknowledgment and completes autocommit.
             return model == DataModel.RELATIONAL ? updateCount( statement, implementation ) : scalar( 1 );
         }
-        if ( result == ResultKind.UPDATE_COUNT && model != DataModel.DOCUMENT ) {
+        if ( result == ResultKind.UPDATE_COUNT ) {
             return updateCount( statement, implementation );
         }
         if ( model == DataModel.GRAPH ) {
-            throw new PIServiceException( "Cypher batch statements must update the graph" );
+            throw new PIServiceException( "Cypher batch statements must update the graph without returning rows" );
         }
         throw new PIServiceException( "Can't execute a non DDL or non DML statement using this method.", "I9003", 9002 );
     }
@@ -110,7 +111,9 @@ final class ResultExecutor {
     private static ResultCase selectFrame( PIStatement statement, PolyImplementation implementation ) {
         return switch ( implementation.getResultKind() ) {
             case DOCUMENTS, UPDATE_COUNT -> ResultCase.DOCUMENT_FRAME;
-            case GRAPH_ELEMENTS -> ResultCase.GRAPH_FRAME;
+            case GRAPH_ELEMENTS -> isGraphStatement( statement ) && statement.getClient().wantsRelationalCypherResults()
+                    ? ResultCase.RELATIONAL_FRAME
+                    : ResultCase.GRAPH_FRAME;
             case ROWS -> {
                 // Prism 2.2 can decode a graph stream. Mixed Cypher projections use graph values in row cells.
                 if ( isGraphStatement( statement ) && !statement.getClient().supportsGraphValues()
@@ -209,7 +212,13 @@ final class ResultExecutor {
         }
         PIClient client = statement.getClient();
         try {
-            client.rollbackAutocommitTransaction( transaction, "Prism result could not be produced" );
+            if ( client.isAutoCommit() ) {
+                client.rollbackAutocommitTransaction( transaction, failure.getMessage() );
+            } else if ( isGraphStatement( statement ) && Kind.DML.contains( statement.getImplementation().getKind() )
+                    && client.getCurrentTransaction() == transaction ) {
+                // A Cypher write may reach the store before a later clause fails. Prism has no statement savepoint.
+                client.rollbackCurrentTransaction( failure.getMessage() );
+            }
         } catch ( RuntimeException cleanupFailure ) {
             failure.addSuppressed( cleanupFailure );
         }

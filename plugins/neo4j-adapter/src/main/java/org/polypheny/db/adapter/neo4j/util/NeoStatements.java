@@ -162,13 +162,20 @@ public interface NeoStatements {
     static List<PropertyStatement> properties_( PolyDictionary properties ) {
         List<PropertyStatement> props = new ArrayList<>();
         for ( Entry<PolyString, PolyValue> entry : properties.entrySet() ) {
-            props.add( property_( entry.getKey(), _literalOrString( entry.getValue() ) ) );
+            props.add( property_( entry.getKey(), graphProperty_( entry.getValue() ) ) );
         }
         return props;
     }
 
+    static NeoStatement graphProperty_( PolyValue value ) {
+        return _literalOrString( NeoUtil.encodeGraphProperty( value ) );
+    }
+
+
     static NeoStatement _literalOrString( PolyValue value ) {
-        if ( value.isString() ) {
+        if ( value == null || value.isNull() ) {
+            return new LiteralStatement( "null" );
+        } else if ( value.isString() ) {
             return string_( value );
         } else if ( value.isList() ) {
             return literal_( PolyString.of( String.format( "[%s]", value.asList().stream().map( value1 -> _literalOrString( (PolyValue) value1 ).build() ).collect( Collectors.joining( ", " ) ) ) ) );
@@ -215,19 +222,11 @@ public interface NeoStatements {
     }
 
     static LiteralStatement string_( PolyValue value ) {
-        return new LiteralStatement( value == null || value.isNull() ? null : "'" + value + "'" );
+        return new LiteralStatement( value == null || value.isNull() ? null : NeoUtil.quoteStringLiteral( value.asString().value ) );
     }
 
     static LiteralStatement literal_( RexLiteral literal ) {
-        String prePostFix = "";
-        if ( PolyTypeFamily.CHARACTER.contains( literal.getType() ) ) {
-            prePostFix = "\"";
-        }
-        return literal_( PolyString.of( String.format( "%s%s%s",
-                prePostFix,
-                NeoUtil.rexAsString( literal, null, false ),
-                prePostFix ) ) );
-
+        return new LiteralStatement( NeoUtil.rexAsString( literal, null, PolyTypeFamily.CHARACTER.contains( literal.getType() ) ) );
     }
 
     static DistinctStatement distinct_( NeoStatement statement ) {

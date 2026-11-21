@@ -19,6 +19,7 @@ package org.polypheny.db.cypher.pattern;
 import java.util.List;
 import javax.annotation.Nullable;
 import lombok.Getter;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherLiteral;
 import org.polypheny.db.cypher.expression.CypherLiteral.Literal;
@@ -61,14 +62,24 @@ public class CypherNodePattern extends CypherPattern {
 
 
     public Pair<PolyString, PolyNode> getPolyNode() {
-        PolyDictionary properties = this.properties != null ? (PolyDictionary) this.properties.getComparable() : new PolyDictionary();
+        return getPolyNode( null );
+    }
+
+
+    public Pair<PolyString, PolyNode> getPolyNode( @Nullable CypherContext context ) {
+        boolean project = context != null && context.usesCreateExpressions();
+        PolyDictionary properties = this.properties != null && !project ? (PolyDictionary) this.properties.getComparable() : new PolyDictionary();
 
         String name = null;
         if ( variable != null ) {
             name = variable.getName();
         }
 
-        return Pair.of( PolyString.of( name ), new PolyNode( properties, PolyList.copyOf( labels ), PolyString.of( name ) ) );
+        PolyNode node = new PolyNode( properties, PolyList.copyOf( labels ), PolyString.of( name ) );
+        if ( project ) {
+            context.addCreateProperties( node.id, this.properties );
+        }
+        return Pair.of( PolyString.of( name ), node );
     }
 
 

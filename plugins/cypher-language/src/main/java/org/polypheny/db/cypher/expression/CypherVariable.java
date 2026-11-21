@@ -65,7 +65,7 @@ public class CypherVariable extends CypherExpression {
         }
 
         for ( AlgDataTypeField field : node.getTupleType().getFields() ) {
-            if ( field.getType() instanceof PathType ) {
+            if ( field.getType() instanceof PathType && context.isImplicitPathBinding( field.getName() ) ) {
                 for ( AlgDataTypeField pathField : field.getType().getFields() ) {
                     if ( pathField.getName().equals( name ) ) {
                         // search r -> RowType(Path(r:Edge, n:Node))

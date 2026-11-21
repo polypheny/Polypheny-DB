@@ -17,20 +17,60 @@
 package org.polypheny.db.cypher;
 
 import lombok.Getter;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.Pair;
 
-@Getter
 public class CypherParameter extends CypherExpression {
 
+    @Getter
     private final ParameterType parameterType;
+    @Getter
     private final String name;
+    private final PolyValue value;
 
 
     protected CypherParameter( ParserPos pos, String name, ParameterType parameterType ) {
+        this( pos, name, parameterType, null );
+    }
+
+
+    private CypherParameter( ParserPos pos, String name, ParameterType parameterType, PolyValue value ) {
         super( pos );
         this.name = name;
         this.parameterType = parameterType;
+        this.value = value;
+    }
+
+
+    public CypherParameter withValue( PolyValue value ) {
+        return new CypherParameter( getPos(), name, parameterType, value );
+    }
+
+
+    @Override
+    public PolyValue getComparable() {
+        if ( value == null ) {
+            throw new GenericRuntimeException( "Missing Cypher parameter: $" + name );
+        }
+        return value;
+    }
+
+
+    @Override
+    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
+        PolyValue boundValue = getComparable();
+        RexNode literal = boundValue.isNull()
+                ? context.rexBuilder.makeNullLiteral( context.typeFactory.createPolyType( PolyType.NULL ) )
+                : context.rexBuilder.makeLiteral( boundValue );
+        return Pair.of( PolyString.of( "$" + name ), literal );
     }
 
 }

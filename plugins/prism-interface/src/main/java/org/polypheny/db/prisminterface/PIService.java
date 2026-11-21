@@ -31,6 +31,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
 import org.polypheny.db.prisminterface.statements.PIPreparedIndexedStatement;
 import org.polypheny.db.prisminterface.statements.PIPreparedNamedStatement;
@@ -296,11 +297,19 @@ class PIService {
         }
         boolean graphStatement;
         switch ( request.getTypeCase() ) {
-            case EXECUTE_UNPARAMETERIZED_STATEMENT_REQUEST -> graphStatement = isGraphStatement( request.getExecuteUnparameterizedStatementRequest() );
+            case EXECUTE_UNPARAMETERIZED_STATEMENT_REQUEST -> graphStatement = isGraphLanguage( request.getExecuteUnparameterizedStatementRequest().getLanguageName() );
             case EXECUTE_UNPARAMETERIZED_STATEMENT_BATCH_REQUEST -> graphStatement = request.getExecuteUnparameterizedStatementBatchRequest()
-                    .getStatementsList().stream().anyMatch( PIService::isGraphStatement );
-            case PREPARE_INDEXED_STATEMENT_REQUEST, PREPARE_NAMED_STATEMENT_REQUEST, EXECUTE_INDEXED_STATEMENT_REQUEST,
-                    EXECUTE_INDEXED_STATEMENT_BATCH_REQUEST, EXECUTE_NAMED_STATEMENT_REQUEST -> graphStatement = false;
+                    .getStatementsList().stream().anyMatch( item -> isGraphLanguage( item.getLanguageName() ) );
+            case PREPARE_NAMED_STATEMENT_REQUEST -> {
+                // Preparing a named Cypher statement only parses it and does not join the active transaction.
+                if ( isGraphLanguage( request.getPrepareNamedStatementRequest().getLanguageName() ) ) {
+                    return;
+                }
+                graphStatement = false;
+            }
+            case EXECUTE_NAMED_STATEMENT_REQUEST -> graphStatement = client.getStatementManager()
+                    .getStatement( request.getExecuteNamedStatementRequest().getStatementId() ).getLanguage().dataModel() == DataModel.GRAPH;
+            case PREPARE_INDEXED_STATEMENT_REQUEST, EXECUTE_INDEXED_STATEMENT_REQUEST, EXECUTE_INDEXED_STATEMENT_BATCH_REQUEST -> graphStatement = false;
             default -> {
                 return;
             }
@@ -309,8 +318,7 @@ class PIService {
     }
 
 
-    private static boolean isGraphStatement( ExecuteUnparameterizedStatementRequest request ) {
-        String language = request.getLanguageName();
+    private static boolean isGraphLanguage( String language ) {
         return QueryLanguage.containsLanguage( language ) && QueryLanguage.from( language ).dataModel() == DataModel.GRAPH;
     }
 
@@ -445,10 +453,19 @@ class PIService {
     private Response executeUnparameterizedStatementBatch( ExecuteUnparameterizedStatementBatchRequest request, ResponseMaker<StatementBatchResponse> responseObserver ) throws IOException {
         PIClient client = getClient();
         PIUnparameterizedStatementBatch batch = client.getStatementManager().createUnparameterizedStatementBatch( request.getStatementsList() );
-        Response mid = responseObserver.makeResponse( PrismUtils.createStatementBatchStatus( batch.getBatchId() ), false );
-        sendOneMessage( mid );
-        List<Long> updateCounts = batch.executeBatch();
-        return responseObserver.makeResponse( PrismUtils.createStatementBatchStatus( batch.getBatchId(), updateCounts ) );
+        try {
+            List<Node> parsedStatements = batch.validate();
+            sendOneMessage( responseObserver.makeResponse( PrismUtils.createStatementBatchStatus( batch.getBatchId() ), false ) );
+            List<Long> updateCounts = batch.executeBatch( parsedStatements );
+            return responseObserver.makeResponse( PrismUtils.createStatementBatchStatus( batch.getBatchId(), updateCounts ) );
+        } catch ( Throwable failure ) {
+            try {
+                client.getStatementManager().closeStatementOrBatch( batch.getBatchId() );
+            } catch ( RuntimeException closeFailure ) {
+                failure.addSuppressed( closeFailure );
+            }
+            throw failure;
+        }
     }
 
 
@@ -575,6 +592,15 @@ class PIService {
 
     private Response setClientInfoProperties( ClientInfoProperties properties, ResponseMaker<ClientInfoPropertiesResponse> reponseObserver ) {
         PIClient client = getClient();
+        String format = properties.getPropertiesMap().get( PIClientInfoProperties.CYPHER_RESULT_FORMAT );
+        if ( format != null && !PIClientInfoProperties.AUTO_FORMAT.equals( format ) ) {
+            if ( !PIClientInfoProperties.RELATIONAL_FORMAT.equals( format ) ) {
+                throw new PIServiceException( "CypherResultFormat must be 'auto' or 'relational'" );
+            }
+            if ( !client.supportsGraphValues() ) {
+                throw new PIServiceException( "Relational Cypher results require Prism 2.3 or later" );
+            }
+        }
         client.getPIClientInfoProperties().putAll( properties.getPropertiesMap() );
         return reponseObserver.makeResponse( ClientInfoPropertiesResponse.newBuilder().build() );
     }

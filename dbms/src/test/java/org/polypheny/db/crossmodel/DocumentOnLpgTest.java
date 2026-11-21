@@ -52,7 +52,7 @@ public class DocumentOnLpgTest extends CrossModelTestTemplate {
     public void simpleFindTest() {
         TestHelper.MongoConnection.checkDocResultSet(
                 execute( format( "db.%s.find({})", DATA_LABEL ), GRAPH_NAME ),
-                ImmutableList.of( "{\"key\":\"3\"}" ), true, true );
+                ImmutableList.of( "{\"key\":3}" ), true, true );
     }
 
 
@@ -62,7 +62,7 @@ public class DocumentOnLpgTest extends CrossModelTestTemplate {
 
         TestHelper.MongoConnection.checkDocResultSet(
                 execute( format( "db.%s.find({})", DATA_LABEL.toUpperCase() ), GRAPH_NAME ),
-                ImmutableList.of( "{\"key\":\"5\"}" ), true, true );
+                ImmutableList.of( "{\"key\":5}" ), true, true );
 
         CypherTestTemplate.execute( format( "MATCH (n:%s {key: 5}) DELETE n", DATA_LABEL.toUpperCase() ), GRAPH_NAME );
     }
@@ -72,7 +72,7 @@ public class DocumentOnLpgTest extends CrossModelTestTemplate {
     public void simpleProjectTest() {
         TestHelper.MongoConnection.checkDocResultSet(
                 execute( format( "db.%s.find({},{\"key\":1})", DATA_LABEL ), GRAPH_NAME ),
-                ImmutableList.of( "{\"key\":\"3\"}" ), true, true );
+                ImmutableList.of( "{\"key\":3}" ), true, true );
     }
 
 

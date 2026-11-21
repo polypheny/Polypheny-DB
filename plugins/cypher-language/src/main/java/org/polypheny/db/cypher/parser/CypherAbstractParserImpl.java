@@ -16,11 +16,35 @@
 
 package org.polypheny.db.cypher.parser;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherStatement;
 import org.polypheny.db.languages.ParserImpl;
+import org.polypheny.db.type.entity.PolyValue;
 
 public abstract class CypherAbstractParserImpl implements ParserImpl {
+
+    private final List<CypherParameter> parameters = new ArrayList<>();
+    private Map<String, PolyValue> bindings = null;
+
+
+    List<CypherParameter> getParameters() {
+        return List.copyOf( parameters );
+    }
+
+
+    void setBindings( Map<String, PolyValue> bindings ) {
+        this.bindings = bindings;
+    }
+
+
+    protected CypherParameter registerParameter( CypherParameter parameter ) {
+        parameters.add( parameter );
+        return bindings == null ? parameter : parameter.withValue( bindings.get( parameter.getName() ) );
+    }
+
 
     public abstract List<CypherStatement> parseExpressionsEof() throws Exception;
 

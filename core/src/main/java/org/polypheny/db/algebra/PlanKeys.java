@@ -48,6 +48,7 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentUnwind;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgJoin;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
@@ -57,6 +58,7 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgTransformer;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnion;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnwind;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgWriteRow;
 import org.polypheny.db.algebra.logical.relational.LogicalCalc;
 import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
@@ -123,23 +125,26 @@ public final class PlanKeys {
             attributes( LogicalDocumentTransformer.class, PlanKeys::transform ),
 
             attributes( LogicalLpgScan.class, node -> List.of( entity( node.entity ) ) ),
-            attributes( LogicalLpgMatch.class, node -> List.of( node.getNames(), node.getMatches() ) ),
+            attributes( LogicalLpgMatch.class, node -> List.of( node.getNames(), node.getMatches(), node.isEnumerableOnly() ) ),
+            attributes( LogicalLpgJoin.class, node -> List.of( node.getCondition(), node.getVariablesSet(), node.getJoinType() ) ),
             attributes( LogicalLpgFilter.class, node -> List.of( node.getCondition() ) ),
             attributes( LogicalLpgProject.class, node -> List.of( node.getNames(), node.getProjects() ) ),
-            attributes( LogicalLpgAggregate.class, node -> List.of( node.groups, laxAggregates( node.aggCalls ) ) ),
+            attributes( LogicalLpgAggregate.class, node -> List.of( node.groups, laxAggregates( node.aggCalls ), node.isWriteCount() ) ),
             attributes( LogicalLpgSort.class, PlanKeys::sort ),
             attributes( LogicalLpgUnwind.class, node -> Arrays.asList( node.index, node.alias ) ),
             attributes( LogicalLpgValues.class, node -> List.of( node.getNodes(), node.getEdges(), node.getValues() ) ),
-            attributes( LogicalLpgModify.class, node -> Arrays.asList( entity( node.entity ), node.operation, node.ids, node.operations, node.streamed ) ),
+            attributes( LogicalLpgModify.class, node -> Arrays.asList( entity( node.entity ), node.operation, node.ids, node.operations, node.streamed,
+                    node.getReturningParameters(), node.isDetachDelete() ) ),
             attributes( LogicalLpgUnion.class, PlanKeys::setOperation ),
-            attributes( LogicalLpgTransformer.class, node -> Arrays.asList( node.operationOrder, node.operation ) ),
+            attributes( LogicalLpgTransformer.class, node -> Arrays.asList( node.operationOrder, node.operation, node.detachDelete ) ),
+            attributes( LogicalLpgWriteRow.class, node -> Arrays.asList( node.getName() ) ),
 
             attributes( LogicalTransformer.class, PlanKeys::transform ),
             attributes( LogicalConditionalExecute.class, PlanKeys::conditional ),
             attributes( LogicalConstraintEnforcer.class, node -> List.of( node.getExceptionClasses(), node.getExceptionMessages() ) ),
             attributes( LogicalContextSwitcher.class, node -> List.of() ),
             attributes( LogicalBatchIterator.class, node -> List.of() ),
-            attributes( LogicalStreamer.class, node -> List.of() ) );
+            attributes( LogicalStreamer.class, node -> List.of( node.getReturningParameters(), node.isBatchGraphWrites() ) ) );
 
 
     private PlanKeys() {
@@ -209,7 +214,7 @@ public final class PlanKeys {
         if ( call.getClass() != LaxAggregateCall.class ) {
             return call;
         }
-        return Arrays.asList( call.name, call.function, call.getInput().orElse( null ) );
+        return Arrays.asList( call.name, call.function, call.getInput().orElse( null ), call.isDistinct(), call.getResultType() );
     }
 
 

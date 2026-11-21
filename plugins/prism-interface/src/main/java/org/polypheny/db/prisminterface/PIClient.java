@@ -21,6 +21,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -52,6 +53,7 @@ public class PIClient {
     @Getter
     @Setter
     private boolean isAutoCommit;
+    private boolean deferAutoCommit;
     @Getter
     @Setter
     private LogicalNamespace namespace;
@@ -96,6 +98,11 @@ public class PIClient {
     }
 
 
+    public boolean wantsRelationalCypherResults() {
+        return PIClientInfoProperties.RELATIONAL_FORMAT.equals( this.PIClientInfoProperties.getProperty( PIClientInfoProperties.CYPHER_RESULT_FORMAT ) );
+    }
+
+
     public Transaction getOrCreateNewTransaction() {
         if ( hasNoTransaction() ) {
             currentTransaction = transactionManager.startTransaction( catalogUser.id, namespace.id, null, "PrismInterface" );
@@ -131,7 +138,7 @@ public class PIClient {
 
 
     public void commitAutocommitTransaction( @Nullable Transaction transaction ) {
-        if ( isAutoCommit ) {
+        if ( isAutoCommit && !deferAutoCommit ) {
             finishTransaction( transaction, PIClient::commitTransaction );
         }
     }
@@ -140,6 +147,30 @@ public class PIClient {
     public void rollbackAutocommitTransaction( Transaction transaction, @Nullable String reason ) {
         if ( isAutoCommit ) {
             finishTransaction( transaction, owned -> rollbackTransaction( owned, reason ) );
+        }
+    }
+
+
+    public <T> T executeAtomicBatch( Supplier<T> execute ) {
+        // The request loop serializes operations on this client. Defer automatic
+        // commits until the batch completes and preserve the connection's commit mode.
+        deferAutoCommit = true;
+        try {
+            T result = execute.get();
+            if ( isAutoCommit ) {
+                commitCurrentTransaction();
+            }
+            return result;
+        } catch ( Throwable failure ) {
+            // There is no savepoint within a transaction. A failed batch aborts it.
+            try {
+                rollbackCurrentTransaction( failure.getMessage() );
+            } catch ( RuntimeException rollbackFailure ) {
+                failure.addSuppressed( rollbackFailure );
+            }
+            throw failure;
+        } finally {
+            deferAutoCommit = false;
         }
     }
 

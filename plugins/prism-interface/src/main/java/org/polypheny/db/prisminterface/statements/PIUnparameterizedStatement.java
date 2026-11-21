@@ -56,15 +56,21 @@ public class PIUnparameterizedStatement extends PIStatement {
 
 
     public StatementResult execute( int fetchSize ) {
-        return execute( fetchSize, StatementProcessor.parseWithOpenAutocommitResult( this ) );
-    }
-
-
-    StatementResult execute( int fetchSize, @Nullable List<ParsedQueryContext> preParsedQueries ) {
+        List<ParsedQueryContext> preParsedQueries = StatementProcessor.parseWithOpenAutocommitResult( this );
         Node parsedStatement = language.dataModel() == DataModel.GRAPH ? StatementProcessor.parseGraphStatement( this ) : null;
         return executeInTransaction( preParsedQueries != null, () -> {
             StatementProcessor.implement( this, parsedStatement, preParsedQueries );
             return StatementProcessor.executeAndGetResult( this, fetchSize );
+        } );
+    }
+
+
+    StatementResult executeBatchMember( @Nullable Node parsedStatement, int fetchSize, @Nullable List<ParsedQueryContext> preParsedQueries ) {
+        return executeInTransaction( preParsedQueries != null, () -> {
+            StatementProcessor.implement( this, parsedStatement, preParsedQueries );
+            return parsedStatement == null
+                    ? StatementProcessor.executeAndGetResult( this, fetchSize )
+                    : StatementProcessor.executeAndGetResult( this );
         } );
     }
 

@@ -49,6 +49,7 @@ import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Triple;
@@ -102,7 +103,7 @@ public class EnumerableSort extends Sort implements EnumerableAlg {
         Expression childExp = builder.append( "child", result.block() );
 
         PhysType inputPhysType = result.physType();
-        final Pair<Expression, Expression> pair = inputPhysType.generateCollationKey( collation.getFieldCollations() );
+        final Pair<Expression, Expression> pair = inputPhysType.generateCollationKey( collation.getFieldCollations(), traitSet.contains( ModelTrait.GRAPH ) );
 
         builder.add(
                 Expressions.return_(

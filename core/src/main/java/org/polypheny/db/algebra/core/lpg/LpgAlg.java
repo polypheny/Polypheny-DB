@@ -28,6 +28,7 @@ public interface LpgAlg {
 
     enum NodeType {
         MATCH,
+        JOIN,
         FILTER,
         SCAN,
         UNWIND,

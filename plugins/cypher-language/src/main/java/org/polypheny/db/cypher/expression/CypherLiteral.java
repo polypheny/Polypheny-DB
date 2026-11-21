@@ -22,6 +22,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.locationtech.jts.geom.Coordinate;
@@ -40,6 +41,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
@@ -119,7 +121,7 @@ public class CypherLiteral extends CypherExpression {
                             return convertMapToPolyGeometry( literal.getMapValue() );
                         }
                     }
-                    return e.getValue().getComparable();
+                    return Objects.requireNonNullElse( e.getValue().getComparable(), PolyNull.NULL );
                 } ) );
                 yield new PolyDictionary( map );
             }
@@ -195,7 +197,8 @@ public class CypherLiteral extends CypherExpression {
     @Override
     public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
         RexNode node = switch ( literalType ) {
-            case TRUE, FALSE -> context.rexBuilder.makeLiteral( (Boolean) value );
+            case TRUE -> context.rexBuilder.makeLiteral( true );
+            case FALSE -> context.rexBuilder.makeLiteral( false );
             case NULL -> context.rexBuilder.makeLiteral( null, context.typeFactory.createPolyType( PolyType.VARCHAR, 255 ), false );
             case LIST -> {
                 List<RexNode> list = listValue.stream().map( e -> e.getRex( context, type ).right ).toList();
@@ -205,7 +208,7 @@ public class CypherLiteral extends CypherExpression {
                     dataType = list.get( 0 ).getType();
                 }
                 dataType = context.typeFactory.createArrayType( dataType, -1 );
-                yield context.rexBuilder.makeLiteral( PolyList.copyOf( list.stream().map( e -> ((RexLiteral) e).value ).toList() ), dataType, false );
+                yield context.rexBuilder.makeArray( dataType, list.stream().map( e -> ((RexLiteral) e).value ).toList() );
             }
             case MAP, STAR, OCTAL, HEX -> throw new UnsupportedOperationException();
             case STRING -> context.rexBuilder.makeLiteral( (String) value );

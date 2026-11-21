@@ -487,6 +487,10 @@ public class RexImpTable {
                     new CallImplementor() {
                         @Override
                         public Expression implement( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
+                            if ( nullAs == NullAs.IS_NULL || nullAs == NullAs.IS_NOT_NULL ) {
+                                // NOT changes truth, but it preserves whether its operand is null.
+                                return translator.translate( call.getOperands().get( 0 ), nullAs );
+                            }
                             if ( Objects.requireNonNull( nullAs ) == NullAs.NULL ) {
                                 return Expressions.call( BuiltInMethod.NOT.method, translator.translateList( call.getOperands(), nullAs ) );
                             }
@@ -836,9 +840,19 @@ public class RexImpTable {
         map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_SINGLE_MATCH ), implementor );
         map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_NONE_MATCH ), implementor );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_LIKE ), BuiltInMethod.CYPHER_LIKE.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EQUALS ), BuiltInMethod.CYPHER_EQUALS.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_NOT_EQUALS ), BuiltInMethod.CYPHER_NOT_EQUALS.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_LESS_THAN ), BuiltInMethod.CYPHER_LESS_THAN.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_LESS_THAN_OR_EQUAL ), BuiltInMethod.CYPHER_LESS_THAN_OR_EQUAL.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_GREATER_THAN ), BuiltInMethod.CYPHER_GREATER_THAN.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_GREATER_THAN_OR_EQUAL ), BuiltInMethod.CYPHER_GREATER_THAN_OR_EQUAL.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.STARTS_WITH ), BuiltInMethod.CYPHER_STARTS_WITH.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.ENDS_WITH ), BuiltInMethod.CYPHER_ENDS_WITH.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_CONTAINS ), BuiltInMethod.CYPHER_CONTAINS.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_PATH_MATCH ), BuiltInMethod.CYPHER_PATH_MATCH.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_NODE_EXTRACT ), BuiltInMethod.CYPHER_NODE_EXTRACT.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_FROM_PATH ), BuiltInMethod.CYPHER_EXTRACT_FROM_PATH.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_PATHS_DISJOINT ), BuiltInMethod.CYPHER_PATHS_DISJOINT.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_NODE_MATCH ), BuiltInMethod.CYPHER_NODE_MATCH.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_HAS_LABEL ), BuiltInMethod.CYPHER_HAS_LABEL.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_HAS_PROPERTY ), BuiltInMethod.CYPHER_HAS_PROPERTY.method, NullPolicy.NONE );
@@ -849,6 +863,9 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_LABEL ), BuiltInMethod.CYPHER_EXTRACT_LABEL.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_TO_LIST ), BuiltInMethod.CYPHER_TO_LIST.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_ADJUST_EDGE ), BuiltInMethod.CYPHER_ADJUST_EDGE.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_CREATE_NODE ), BuiltInMethod.CYPHER_CREATE_NODE.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_CREATE_EDGE ), BuiltInMethod.CYPHER_CREATE_EDGE.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_CREATE_PATH ), BuiltInMethod.CYPHER_CREATE_PATH.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_SET_PROPERTY ), BuiltInMethod.CYPHER_SET_PROPERTY.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_SET_PROPERTIES ), BuiltInMethod.CYPHER_SET_PROPERTIES.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_SET_LABELS ), BuiltInMethod.CYPHER_SET_LABELS.method, NullPolicy.NONE );
@@ -1050,10 +1067,7 @@ public class RexImpTable {
                     }
                     // fall through
                 default:
-                    if ( (this == FALSE || this == TRUE) && Types.isAssignableFrom( PolyBoolean.class, x.type ) ) {
-                        return x;
-                    }
-                    // fall through
+                    break;
             }
             return switch ( this ) {
                 case NULL, NOT_POSSIBLE -> x;

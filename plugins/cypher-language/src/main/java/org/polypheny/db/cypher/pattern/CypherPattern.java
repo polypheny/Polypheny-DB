@@ -16,9 +16,12 @@
 
 package org.polypheny.db.cypher.pattern;
 
+import java.util.List;
+
 import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.cypher2alg.CypherSyntaxException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
+import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.entity.PolyString;
@@ -44,6 +47,11 @@ public abstract class CypherPattern extends CypherNode {
 
     public Pair<PolyString, RexNode> getPatternMatch( CypherContext context ) {
         throw new CypherSyntaxException( "Used pattern is not supported as graph filter." );
+    }
+
+
+    public List<CypherExpression> getPredicates() {
+        return List.of();
     }
 
 }

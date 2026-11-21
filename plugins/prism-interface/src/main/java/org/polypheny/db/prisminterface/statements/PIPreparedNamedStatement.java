@@ -23,14 +23,19 @@ import lombok.Setter;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prisminterface.NamedValueProcessor;
 import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
+import org.polypheny.db.processing.Processor.PreparedNamedQuery;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.prism.ParameterMeta;
 import org.polypheny.prism.StatementResult;
 
 public class PIPreparedNamedStatement extends PIPreparedStatement {
@@ -38,6 +43,7 @@ public class PIPreparedNamedStatement extends PIPreparedStatement {
     @Getter
     private final String query;
     private final NamedValueProcessor namedValueProcessor;
+    private final PreparedNamedQuery graphQuery;
     @Getter
     @Setter
     private PolyImplementation implementation;
@@ -55,13 +61,30 @@ public class PIPreparedNamedStatement extends PIPreparedStatement {
         super(
                 id, client, language, namespace
         );
-        this.namedValueProcessor = new NamedValueProcessor( query );
-        this.query = namedValueProcessor.getProcessedQuery();
+        if ( language.dataModel() == DataModel.GRAPH ) {
+            this.query = query;
+            this.namedValueProcessor = null;
+            this.graphQuery = language.processorSupplier().get().prepareNamedQuery( query );
+            this.parameterMetas = graphQuery.parameterNames().stream()
+                    .map( name -> ParameterMeta.newBuilder()
+                            .setName( name )
+                            .setParameterName( name )
+                            .setTypeName( PolyType.ANY.getTypeName() )
+                            .build() )
+                    .toList();
+        } else {
+            this.namedValueProcessor = new NamedValueProcessor( query );
+            this.query = namedValueProcessor.getProcessedQuery();
+            this.graphQuery = null;
+        }
     }
 
 
     @SuppressWarnings("Duplicates")
     public StatementResult execute( Map<String, PolyValue> values, int fetchSize ) throws Exception {
+        if ( graphQuery != null ) {
+            return executeGraphQuery( values, fetchSize );
+        }
         List<ParsedQueryContext> preParsedQueries = StatementProcessor.parseWithOpenAutocommitResult( this );
         List<PolyValue> valueList = namedValueProcessor.transformValueMap( values );
         return executeInTransaction( preParsedQueries != null, () -> {
@@ -77,12 +100,22 @@ public class PIPreparedNamedStatement extends PIPreparedStatement {
     }
 
 
+    private StatementResult executeGraphQuery( Map<String, PolyValue> values, int fetchSize ) {
+        Node parsed = graphQuery.bind().apply( values );
+        close();
+        statement = client.getOrCreateNewTransaction().createStatement();
+        implementation = null;
+        StatementProcessor.implement( this, parsed );
+        return StatementProcessor.executeAndGetResult( this, fetchSize );
+    }
+
+
     @Override
     public void close() {
+        closeResults();
         if ( statement != null ) {
             statement.close();
         }
-        closeResults();
     }
 
 

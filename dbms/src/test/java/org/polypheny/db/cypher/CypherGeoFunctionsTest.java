@@ -17,6 +17,8 @@
 package org.polypheny.db.cypher;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -35,15 +37,12 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
-import org.polypheny.db.type.entity.spatial.PolyGeometry.GeometryInputFormat;
 import org.polypheny.db.webui.models.results.GraphResult;
 
 @SuppressWarnings("SqlNoDataSourceInspection")
@@ -238,8 +237,9 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
         Map<String, Object> hsqldbResult = convertResultToMap( results.get( 0 ) ).get( 0 );
         Map<String, Object> neo4jResult = convertResultToMap( results.get( 1 ) ).get( 0 );
 
-        // Validate that the difference change between both numbers is smaller than a threshold, e.g. 0,2% (
-        assert isWithinPercentageChange( ((Number) hsqldbResult.get( "value" )).doubleValue(), (Integer) neo4jResult.get( "value" ), 0.2 );
+        double hsqldbDistance = assertInstanceOf( Double.class, hsqldbResult.get( "value" ) );
+        double neo4jDistance = assertInstanceOf( Double.class, neo4jResult.get( "value" ) );
+        assertTrue( isWithinPercentageChange( hsqldbDistance, neo4jDistance, 0.2 ) );
     }
 
 
@@ -289,36 +289,21 @@ public class CypherGeoFunctionsTest extends CypherTestTemplate {
 
     @Test
     @Tag("fileExcluded")
-    public void createNodeWithPointTest() throws InvalidGeometryException {
-        List<GraphResult> results = runQueries( List.of(
+    public void createNodeWithPointTest() {
+        for ( String create : List.of(
                 "CREATE (z:Station {name: 'Zürich', location: point({latitude: 47.3769, longitude: 8.5417})})",
-                "MATCH (n) RETURN n;"
-        ) );
-        assert results.size() == 2;
-        String name = "value";
-
-        boolean usesNeo4j = PolyphenyDb.defaultStoreName.equals( "neo4j" );
-
-        if ( usesNeo4j ) {
-            name = "wkt";
+                "CREATE (z:Station {name: 'Zürich', location: point({x: 15, y: 30})})" ) ) {
+            List<GraphResult> results = runQueries( List.of( create, "MATCH (n) RETURN n;" ) );
+            assertEquals( storedLocation( results.get( 1 ) ), storedLocation( results.get( 0 ) ) );
         }
+    }
 
-        Object hsqlValue = extractValueAtPath( convertResultToMap( results.get( 0 ) ).get( 0 ), List.of( "properties", "_ps", "location", name ) );
-        Object neo4jValue = extractValueAtPath( convertResultToMap( results.get( 1 ) ).get( 0 ), List.of( "properties", "_ps", "location", "wkt" ) );
-        PolyGeometry neo4jGeometry = PolyGeometry.of( neo4jValue.toString() );
-        PolyGeometry hsqlGeometry = usesNeo4j ? PolyGeometry.of( hsqlValue.toString() ) : new PolyGeometry( hsqlValue.toString(), 4326, GeometryInputFormat.GEO_JSON );
-        assertEquals( neo4jGeometry, hsqlGeometry );
 
-        results = runQueries( List.of(
-                "CREATE (z:Station {name: 'Zürich', location: point({x: 15, y: 30})})",
-                "MATCH (n) RETURN n;"
-        ) );
-        assert results.size() == 2;
-        hsqlValue = extractValueAtPath( convertResultToMap( results.get( 0 ) ).get( 0 ), List.of( "properties", "_ps", "location", name ) );
-        neo4jValue = extractValueAtPath( convertResultToMap( results.get( 1 ) ).get( 0 ), List.of( "properties", "_ps", "location", "wkt" ) );
-        neo4jGeometry = PolyGeometry.of( neo4jValue.toString() );
-        hsqlGeometry = usesNeo4j ? PolyGeometry.of( hsqlValue.toString() ) : new PolyGeometry( hsqlValue.toString(), 0, GeometryInputFormat.GEO_JSON );
-        assertEquals( neo4jGeometry, hsqlGeometry );
+    private PolyGeometry storedLocation( GraphResult result ) {
+        Object property = extractValueAtPath( convertResultToMap( result ).get( 0 ), List.of( "properties", "_ps", "location" ) );
+        Map<?, ?> geometry = assertInstanceOf( Map.class, property );
+        assertEquals( "GEOMETRY", geometry.get( "@type" ) );
+        return PolyGeometry.ofOrThrow( assertInstanceOf( String.class, geometry.get( "wkt" ) ) );
     }
 
 

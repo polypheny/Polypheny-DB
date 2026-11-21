@@ -24,6 +24,7 @@ import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 
 public interface ModifiableGraph extends Typed {
@@ -36,5 +37,10 @@ public interface ModifiableGraph extends Typed {
             Operation operation,
             List<PolyString> targets,
             List<? extends RexNode> sources );
+
+
+    default AlgNode toGraphRowModification( AlgCluster cluster, Operation operation, List<PolyType> parameterTypes, boolean detachDelete ) {
+        throw new UnsupportedOperationException( "This graph adapter does not support row-producing mutations" );
+    }
 
 }

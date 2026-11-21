@@ -202,7 +202,7 @@ public class NeoLpgModify extends LpgModify<NeoGraph> implements NeoGraphAlg {
 
     private void handleDelete( NeoGraphImplementor implementor ) {
         List<LiteralStatement> fieldNames = ids.stream().map( NeoStatements::literal_ ).toList();
-        implementor.add( delete_( true, list_( fieldNames ) ) );
+        implementor.add( delete_( false, list_( fieldNames ) ) );
     }
 
 }

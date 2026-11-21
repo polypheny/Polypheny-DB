@@ -21,25 +21,37 @@ import static org.polypheny.db.functions.spatial.GeoDistanceFunctions.EARTH_RADI
 import static org.polypheny.db.type.entity.spatial.PolyGeometry.WGS_84;
 import static org.polypheny.db.type.entity.spatial.PolyGeometry.WGS_84_3D;
 
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
+import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
+import java.util.function.Function;
+import java.util.function.IntPredicate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Deterministic;
+import org.apache.calcite.linq4j.function.EqualityComparer;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.graph.GraphObject;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
@@ -48,11 +60,14 @@ import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.spatial.GeometryTopologicalException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.spatial.PolyPoint;
+import org.polypheny.db.util.Pair;
 
 
 @Deterministic
@@ -159,7 +174,7 @@ public class CypherFunctions {
             if ( !key.isNull() ) {
                 // id | key | value | source | target
                 // 13 | null| null | 12      | 10 ( no key value present )
-                oldProps.put( key, val );
+                oldProps.put( key, CrossModelFunctions.readGraphPropertyStorageValue( val ) );
             }
         }
 
@@ -205,7 +220,7 @@ public class CypherFunctions {
             }
             if ( !key.isNull() ) {
                 // eventually no properties present
-                oldProps.put( key, val );
+                oldProps.put( key, CrossModelFunctions.readGraphPropertyStorageValue( val ) );
             }
         }
 
@@ -220,12 +235,12 @@ public class CypherFunctions {
     /**
      * Returns if the given node has the given key.
      *
-     * @param node the target node
+     * @param holder the target node or relationship
      * @param property the key to check
      */
     @SuppressWarnings("unused")
-    public static PolyBoolean hasProperty( PolyNode node, PolyValue property ) {
-        return PolyBoolean.of( node.properties.containsKey( property.asString() ) );
+    public static PolyBoolean hasProperty( GraphPropertyHolder holder, PolyString property ) {
+        return PolyBoolean.of( holder != null && holder.getProperties().containsKey( property ) );
     }
 
 
@@ -237,7 +252,7 @@ public class CypherFunctions {
      */
     @SuppressWarnings("unused")
     public static PolyBoolean hasLabel( PolyNode node, PolyValue label ) {
-        return PolyBoolean.of( node.labels.contains( label.asString() ) );
+        return node == null ? null : PolyBoolean.of( node.labels.contains( label.asString() ) );
     }
 
 
@@ -249,7 +264,15 @@ public class CypherFunctions {
      */
     @SuppressWarnings("unused")
     public static GraphObject extractFrom( PolyPath path, PolyString variableName ) {
-        return path.get( variableName );
+        return path == null ? null : path.get( variableName );
+    }
+
+
+    @SuppressWarnings("unused")
+    public static PolyBoolean pathsDisjoint( PolyPath left, PolyPath right ) {
+        Set<PolyString> relationships = new HashSet<>();
+        left.getEdges().forEach( edge -> relationships.add( edge.getId() ) );
+        return PolyBoolean.of( right.getEdges().stream().noneMatch( edge -> relationships.contains( edge.getId() ) ) );
     }
 
 
@@ -262,22 +285,19 @@ public class CypherFunctions {
      */
     @SuppressWarnings("unused")
     public static PolyValue extractProperty( GraphPropertyHolder holder, PolyString key ) {
-        if ( holder.getProperties().containsKey( key ) ) {
-            return holder.getProperties().get( key );
-        }
-        return null;
+        return holder == null ? null : holder.getProperties().get( key );
     }
 
 
     @SuppressWarnings("unused")
     public static PolyValue extractProperties( GraphPropertyHolder holder ) {
-        return holder.getProperties();
+        return holder == null ? null : holder.getProperties();
     }
 
 
     @SuppressWarnings("unused")
     public static PolyString extractId( GraphPropertyHolder holder ) {
-        return holder.getId();
+        return holder == null ? null : holder.getId();
     }
 
 
@@ -288,7 +308,7 @@ public class CypherFunctions {
      */
     @SuppressWarnings("unused")
     public static PolyString extractLabel( GraphPropertyHolder holder ) {
-        return holder.getLabels().get( 0 );
+        return holder == null ? null : holder.getLabels().get( 0 );
     }
 
 
@@ -299,7 +319,7 @@ public class CypherFunctions {
      */
     @SuppressWarnings("unused")
     public static List<PolyString> extractLabels( GraphPropertyHolder holder ) {
-        return holder.getLabels();
+        return holder == null ? null : holder.getLabels();
     }
 
 
@@ -342,6 +362,55 @@ public class CypherFunctions {
     }
 
 
+
+    public static PolyNode createNode( PolyNode template, PolyString rowId, List<PolyString> keys, List<PolyValue> values ) {
+        return new PolyNode( createdId( template.id, rowId ), properties( keys, values ), template.labels, template.getVariableName() );
+    }
+
+
+    public static PolyEdge createEdge( PolyEdge template, PolyString rowId, PolyNode source, PolyNode target,
+            List<PolyString> keys, List<PolyValue> values ) {
+        if ( source == null || target == null ) {
+            throw new GenericRuntimeException( "CREATE requires a bound source and target node" );
+        }
+        return new PolyEdge( createdId( template.id, rowId ), properties( keys, values ), template.labels, source.id, target.id,
+                template.direction, template.getVariableName() );
+    }
+
+
+    public static PolyPath createPath( List<PolyValue> elements ) {
+        List<Pair<PolyString, PolyNode>> nodes = new ArrayList<>();
+        List<Pair<PolyString, PolyEdge>> edges = new ArrayList<>();
+        for ( PolyValue element : elements ) {
+            if ( element.isNode() ) {
+                PolyNode node = element.asNode();
+                nodes.add( Pair.of( node.getVariableName(), node ) );
+            } else {
+                PolyEdge edge = element.asEdge();
+                edges.add( Pair.of( edge.getVariableName(), edge ) );
+            }
+        }
+        return PolyPath.create( nodes, edges );
+    }
+
+
+    private static PolyString createdId( PolyString template, PolyString rowId ) {
+        return PolyString.of( UUID.nameUUIDFromBytes( (template.value + rowId.value).getBytes( StandardCharsets.UTF_8 ) ).toString() );
+    }
+
+
+    private static PolyDictionary properties( List<PolyString> keys, List<PolyValue> values ) {
+        PolyDictionary properties = new PolyDictionary();
+        for ( int i = 0; i < keys.size(); i++ ) {
+            PolyValue value = values.get( i );
+            if ( value != null && !value.isNull() ) {
+                properties.put( keys.get( i ), value );
+            }
+        }
+        return properties;
+    }
+
+
     /**
      * Sets a property value for a given key.
      * If the key does not exist it gets created, if it does, it gets replaced.
@@ -353,7 +422,14 @@ public class CypherFunctions {
      */
     @SuppressWarnings("unused")
     public static GraphPropertyHolder setProperty( GraphPropertyHolder target, PolyString key, PolyValue value ) {
-        target.properties.put( key, value );
+        if ( target == null ) {
+            return null;
+        }
+        if ( value == null || value.isNull() ) {
+            target.properties.remove( key );
+        } else {
+            target.properties.put( key, value );
+        }
         return target;
     }
 
@@ -368,6 +444,9 @@ public class CypherFunctions {
      */
     @SuppressWarnings("unused")
     public static GraphPropertyHolder setLabels( GraphPropertyHolder target, List<PolyString> labels, PolyBoolean replace ) {
+        if ( target == null ) {
+            return null;
+        }
         if ( replace.value ) {
             target.labels.clear();
         }
@@ -387,13 +466,16 @@ public class CypherFunctions {
      */
     @SuppressWarnings("unused")
     public static GraphPropertyHolder setProperties( GraphPropertyHolder target, List<PolyString> keys, List<PolyValue> values, PolyBoolean replace ) {
+        if ( target == null ) {
+            return null;
+        }
         if ( replace.value ) {
             target.properties.clear();
         }
 
         int i = 0;
         for ( PolyString key : keys ) {
-            target.properties.put( key, values.get( i ) );
+            setProperty( target, key, values.get( i ) );
             i++;
         }
         return target;
@@ -408,8 +490,11 @@ public class CypherFunctions {
      * @return the modified graph element
      */
     @SuppressWarnings("unused")
-    public static GraphPropertyHolder removeLabels( GraphPropertyHolder target, List<String> labels ) {
-        target.labels.removeAll( labels.stream().map( PolyString::of ).toList() );
+    public static GraphPropertyHolder removeLabels( GraphPropertyHolder target, List<PolyString> labels ) {
+        if ( target == null ) {
+            return null;
+        }
+        target.labels.removeAll( labels );
         return target;
     }
 
@@ -422,17 +507,278 @@ public class CypherFunctions {
      * @return the modified graph element
      */
     @SuppressWarnings("unused")
-    public static GraphPropertyHolder removeProperty( GraphPropertyHolder target, String key ) {
-        target.properties.remove( PolyString.of( key ) );
+    public static GraphPropertyHolder removeProperty( GraphPropertyHolder target, PolyString key ) {
+        if ( target == null ) {
+            return null;
+        }
+        target.properties.remove( key );
         return target;
     }
 
 
     public static PolyBoolean like( PolyValue b0, PolyValue b1 ) {
+        if ( b0 == null || b1 == null || b0.isNull() || b1.isNull() ) {
+            return null;
+        }
         if ( b0.isString() && b1.isString() ) {
             return Functions.like( b0.asString(), b1.asString() );
         }
         return PolyBoolean.FALSE;
+    }
+
+
+    public static PolyBoolean equal( PolyValue left, PolyValue right ) {
+        if ( left == null || left.isNull() || right == null || right.isNull() ) {
+            return null;
+        }
+        if ( left instanceof PolyNumber && right instanceof PolyNumber
+                || left instanceof GraphObject && right instanceof GraphObject ) {
+            return PolyBoolean.of( aggregationKey( left ).equals( aggregationKey( right ) ) );
+        }
+        return Functions.eq( left, right );
+    }
+
+
+    /**
+     * Uses the same exact decimal normalization as numeric equality, so values
+     * with different numeric types or scales also agree as hash keys.
+     */
+    public static Object aggregationKey( Object value ) {
+        if ( value instanceof PolyValue poly && poly.isNull() ) {
+            return null;
+        }
+        if ( value instanceof PolyNumber number ) {
+            if ( PolyType.APPROX_TYPES.contains( number.getType() ) && !Double.isFinite( number.doubleValue() ) ) {
+                return number.doubleValue();
+            }
+            return number.bigDecimalValue().stripTrailingZeros();
+        }
+        if ( value instanceof GraphPropertyHolder element ) {
+            return Pair.of( element.getType(), element.getId() );
+        }
+        if ( value instanceof PolyPath path ) {
+            return Pair.of( PolyType.PATH, path.getPath().stream().map( GraphPropertyHolder::getId ).toList() );
+        }
+        if ( value instanceof List<?> list ) {
+            return list.stream().map( CypherFunctions::aggregationKey ).toList();
+        }
+        return value;
+    }
+
+
+    /**
+     * Compares keys without changing the types of the original projected values.
+     * A composite row key is distinct from a single key whose value is a list.
+     */
+    public static EqualityComparer<Object> groupingComparer( boolean composite ) {
+        Function<Object, Object> key = composite
+                ? row -> ((List<?>) row).stream().map( CypherFunctions::aggregationKey ).toList()
+                : CypherFunctions::aggregationKey;
+        return new EqualityComparer<>() {
+            @Override
+            public boolean equal( Object left, Object right ) {
+                return Objects.equals( key.apply( left ), key.apply( right ) );
+            }
+
+
+            @Override
+            public int hashCode( Object row ) {
+                return Objects.hashCode( key.apply( row ) );
+            }
+        };
+    }
+
+
+    public static PolyValue aggregateExtremum( PolyValue current, PolyValue candidate, boolean minimum ) {
+        if ( current == null ) {
+            return candidate;
+        }
+        int comparison = compareForOrdering( current, candidate, false );
+        return (minimum ? comparison > 0 : comparison < 0) ? candidate : current;
+    }
+
+
+    public static Comparator<PolyValue> orderingComparator( boolean nullsFirst, boolean descending ) {
+        return descending
+                ? (left, right) -> compareForOrdering( right, left, !nullsFirst )
+                : (left, right) -> compareForOrdering( left, right, nullsFirst );
+    }
+
+
+    public static int compareForOrdering( PolyValue left, PolyValue right, boolean nullsFirst ) {
+        boolean leftNull = left == null || left.isNull();
+        boolean rightNull = right == null || right.isNull();
+        if ( leftNull || rightNull ) {
+            return nullsFirst ? Boolean.compare( rightNull, leftNull ) : Boolean.compare( leftNull, rightNull );
+        }
+        if ( left instanceof PolyNumber a && right instanceof PolyNumber b ) {
+            return compareNumbers( a, b );
+        }
+        int typeOrder = Integer.compare( orderingRank( left ), orderingRank( right ) );
+        if ( typeOrder != 0 ) {
+            return typeOrder;
+        }
+        if ( left instanceof PolyList<?> a && right instanceof PolyList<?> b ) {
+            for ( int i = 0; i < Math.min( a.size(), b.size() ); i++ ) {
+                int elementOrder = compareForOrdering( a.get( i ), b.get( i ), false );
+                if ( elementOrder != 0 ) {
+                    return elementOrder;
+                }
+            }
+            return Integer.compare( a.size(), b.size() );
+        }
+        return left.compareTo( right );
+    }
+
+
+    private static int orderingRank( PolyValue value ) {
+        if ( value instanceof PolyNumber ) {
+            return 12;
+        }
+        return switch ( value.getType() ) {
+            case MAP, DOCUMENT -> 0;
+            case NODE -> 1;
+            case EDGE -> 2;
+            case ARRAY -> 3;
+            case PATH -> 4;
+            case TIMESTAMP -> 5;
+            case DATE -> 6;
+            case TIME -> 7;
+            case INTERVAL -> 8;
+            case GEOMETRY -> 9;
+            case CHAR, VARCHAR -> 10;
+            case BOOLEAN -> 11;
+            default -> 13 + value.getType().ordinal();
+        };
+    }
+
+
+    public static final class NumericAggregate {
+
+        private BigDecimal exactSum = BigDecimal.ZERO;
+        private double approximateSum;
+        private boolean approximate;
+        private boolean decimal;
+        private long count;
+
+
+        public void add( PolyValue value ) {
+            if ( value == null || value.isNull() ) {
+                return;
+            }
+            PolyNumber number = value.asNumber();
+            if ( approximate ) {
+                approximateSum += number.doubleValue();
+            } else if ( PolyType.APPROX_TYPES.contains( number.getType() ) ) {
+                approximate = true;
+                approximateSum = exactSum.doubleValue() + number.doubleValue();
+            } else {
+                exactSum = exactSum.add( number.bigDecimalValue() );
+                decimal |= number.getType() == PolyType.DECIMAL;
+            }
+            count++;
+        }
+
+
+        public PolyNumber sum( PolyType resultType ) {
+            if ( approximate || resultType == PolyType.DOUBLE ) {
+                return PolyDouble.of( approximate ? approximateSum : exactSum.doubleValue() );
+            }
+            return decimal || resultType == PolyType.DECIMAL ? PolyBigDecimal.of( exactSum ) : PolyLong.of( exactSum.longValueExact() );
+        }
+
+
+        public PolyDouble average() {
+            if ( count == 0 ) {
+                return null;
+            }
+            return PolyDouble.of( approximate ? approximateSum / count : exactSum.divide( BigDecimal.valueOf( count ), MathContext.DECIMAL128 ).doubleValue() );
+        }
+
+    }
+
+
+    public static PolyBoolean notEqual( PolyValue left, PolyValue right ) {
+        PolyBoolean equal = equal( left, right );
+        return equal == null ? null : PolyBoolean.of( !equal.value );
+    }
+
+
+    public static PolyBoolean lessThan( PolyValue left, PolyValue right ) {
+        return orderedComparison( left, right, order -> order < 0, Functions::lt );
+    }
+
+
+    public static PolyBoolean lessThanOrEqual( PolyValue left, PolyValue right ) {
+        return orderedComparison( left, right, order -> order <= 0, Functions::le );
+    }
+
+
+    public static PolyBoolean greaterThan( PolyValue left, PolyValue right ) {
+        return orderedComparison( left, right, order -> order > 0, Functions::gt );
+    }
+
+
+    public static PolyBoolean greaterThanOrEqual( PolyValue left, PolyValue right ) {
+        return orderedComparison( left, right, order -> order >= 0, Functions::ge );
+    }
+
+
+    private static PolyBoolean orderedComparison( PolyValue left, PolyValue right, IntPredicate test,
+            BiFunction<PolyValue, PolyValue, PolyBoolean> fallback ) {
+        if ( left == null || right == null || left.isNull() || right.isNull() ) {
+            return null;
+        }
+        if ( left instanceof PolyNumber a && right instanceof PolyNumber b ) {
+            return PolyBoolean.of( !Double.isNaN( a.doubleValue() ) && !Double.isNaN( b.doubleValue() )
+                    && test.test( compareNumbers( a, b ) ) );
+        }
+        return fallback.apply( left, right );
+    }
+
+
+    public static int compareNumbers( PolyNumber left, PolyNumber right ) {
+        int leftRank = numericRank( left );
+        int rightRank = numericRank( right );
+        return leftRank == 0 && rightRank == 0
+                ? left.bigDecimalValue().compareTo( right.bigDecimalValue() )
+                : Integer.compare( leftRank, rightRank );
+    }
+
+
+    private static int numericRank( PolyNumber number ) {
+        if ( PolyType.APPROX_TYPES.contains( number.getType() ) && !Double.isFinite( number.doubleValue() ) ) {
+            // Order negative infinity before finite values, then positive infinity and NaN.
+            double value = number.doubleValue();
+            if ( value == Double.NEGATIVE_INFINITY ) {
+                return -1;
+            }
+            return value == Double.POSITIVE_INFINITY ? 1 : 2;
+        }
+        return 0;
+    }
+
+
+    public static PolyBoolean startsWith( PolyValue value, PolyValue prefix ) {
+        return compareStrings( value, prefix, String::startsWith );
+    }
+
+
+    public static PolyBoolean endsWith( PolyValue value, PolyValue suffix ) {
+        return compareStrings( value, suffix, String::endsWith );
+    }
+
+
+    public static PolyBoolean contains( PolyValue value, PolyValue part ) {
+        return compareStrings( value, part, String::contains );
+    }
+
+
+    private static PolyBoolean compareStrings( PolyValue left, PolyValue right, BiPredicate<String, String> predicate ) {
+        if ( left == null || right == null || left.isNull() || right.isNull() || !left.isString() || !right.isString() ) {
+            return null;
+        }
+        return PolyBoolean.of( predicate.test( left.asString().value, right.asString().value ) );
     }
 
 
@@ -692,16 +1038,14 @@ public class CypherFunctions {
 
 
     private static double convertPolyValueToDouble( PolyValue value ) {
-        // This should be sufficient, as all numerical values from Cypher are stored as BigDecimal.
+        if ( value.isNumber() ) {
+            return value.asNumber().doubleValue();
+        }
         if ( value.isString() ) {
-            return Double.parseDouble( value.toString() );
+            // Existing normalized graph properties may have decimal coordinates stored as text.
+            return Double.parseDouble( value.asString().value );
         }
-        if ( value.isDouble() ) {
-            return value.asDouble().doubleValue();
-        }
-
-        assert value.isBigDecimal() : "Extend method to handle other numerical data types.";
-        return Objects.requireNonNull( value.asBigDecimal().getValue() ).doubleValue();
+        throw new GenericRuntimeException( "Point coordinates must be numeric." );
     }
 
 }

@@ -47,11 +47,16 @@ public enum ResultKind {
         return switch ( model ) {
             case RELATIONAL -> ROWS;
             case DOCUMENT -> DOCUMENTS;
-            case GRAPH -> rowType != null && (isGraphType( rowType.getPolyType() )
-                    || (rowType.getFieldCount() > 0 && rowType.getFields().stream().allMatch( field -> isGraphType( field.getType().getPolyType() ) )))
-                    ? GRAPH_ELEMENTS
-                    : ROWS;
+            case GRAPH -> forGraphProjection( rowType );
         };
+    }
+
+
+    public static ResultKind forGraphProjection( @Nullable AlgDataType rowType ) {
+        return rowType != null && (isGraphType( rowType.getPolyType() )
+                || (rowType.getFieldCount() > 0 && rowType.getFields().stream().allMatch( field -> isGraphType( field.getType().getPolyType() ) )))
+                ? GRAPH_ELEMENTS
+                : ROWS;
     }
 
 
