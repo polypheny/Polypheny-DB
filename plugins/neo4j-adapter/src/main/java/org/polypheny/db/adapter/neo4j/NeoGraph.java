@@ -19,8 +19,11 @@ package org.polypheny.db.adapter.neo4j;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.AbstractQueryable;
@@ -29,6 +32,7 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.function.Function1;
+import org.apache.calcite.linq4j.tree.Blocks;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
@@ -40,11 +44,20 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.neo4j.Neo4jPlugin.Neo4jStore;
 import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgScan;
 import org.polypheny.db.adapter.neo4j.types.NestedPolyType;
+import org.polypheny.db.adapter.neo4j.types.NestedSingleType;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
+import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgWriter;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.common.Modify;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.core.relational.RelModify;
+import org.polypheny.db.algebra.enumerable.EnumerableAlg;
+import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
+import org.polypheny.db.algebra.enumerable.EnumerableConvention;
+import org.polypheny.db.algebra.enumerable.JavaTupleFormat;
+import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.catalog.Catalog;
@@ -53,8 +66,10 @@ import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.entity.physical.PhysicalGraph;
 import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
 import org.polypheny.db.rex.RexNode;
@@ -66,9 +81,11 @@ import org.polypheny.db.schema.types.TranslatableEntity;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyNode;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.util.Pair;
 
@@ -146,6 +163,48 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
 
 
     @Override
+    public AlgNode toGraphRowModification( AlgCluster cluster, Operation operation, List<PolyType> parameterTypes, boolean detachDelete ) {
+        return new NeoGraphRowModification( cluster, this, operation, parameterTypes.size(), detachDelete );
+    }
+
+
+    private static final class NeoGraphRowModification extends AbstractAlgNode implements EnumerableAlg {
+
+        private final NeoGraph graph;
+        private final Operation operation;
+        private final int parameterCount;
+        private final boolean detachDelete;
+
+
+        private NeoGraphRowModification( AlgCluster cluster, NeoGraph graph, Operation operation, int parameterCount, boolean detachDelete ) {
+            super( cluster, cluster.traitSetOf( EnumerableConvention.INSTANCE ).replace( ModelTrait.GRAPH ) );
+            this.graph = graph;
+            this.operation = operation;
+            this.parameterCount = parameterCount;
+            this.detachDelete = detachDelete;
+            this.rowType = AlgOptUtil.createDmlRowType( Kind.INSERT, cluster.getTypeFactory() );
+        }
+
+
+        @Override
+        public AlgWriter explainTerms( AlgWriter writer ) {
+            return super.explainTerms( writer ).item( "graph", graph.id ).item( "operation", operation ).item( "parameters", parameterCount )
+                    .itemIf( "detachDelete", true, detachDelete );
+        }
+
+
+        @Override
+        public Result implement( EnumerableAlgImplementor implementor, Prefer pref ) {
+            Expression execute = Expressions.call( graph.asExpression(), "modifyRow", Expressions.constant( operation ),
+                    Expressions.constant( parameterCount ), Expressions.constant( detachDelete ) );
+            return implementor.result( PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), JavaTupleFormat.ARRAY, false ),
+                    Blocks.toBlock( execute ) );
+        }
+
+    }
+
+
+    @Override
     public AlgNode toAlg( AlgCluster cluster, AlgTraitSet traitSet ) {
         return new NeoLpgScan( cluster, cluster.traitSetOf( NeoConvention.INSTANCE ).replace( ModelTrait.GRAPH ), this );
     }
@@ -206,6 +265,138 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
         }
 
 
+        @SuppressWarnings("UnusedDeclaration")
+        public Enumerable<PolyValue[]> modifyRow( Operation operation, int parameterCount, boolean detachDelete ) {
+            Transaction trx = getTrx();
+            dataContext.getStatement().getTransaction().registerInvolvedAdapter( graph.store );
+            if ( operation == Operation.DELETE ) {
+                return deleteRows( trx, parameterCount, detachDelete );
+            }
+            Map<Long, PolyValue> parameters = dataContext.getParameterValues().get( 0 );
+            List<GraphPropertyHolder> elements = new ArrayList<>();
+            for ( int i = 0; i < parameterCount; i++ ) {
+                PolyValue value = parameters.get( (long) i );
+                if ( value != null && !value.isNull() ) {
+                    elements.add( (GraphPropertyHolder) value );
+                }
+            }
+            for ( GraphPropertyHolder element : elements ) {
+                modifyElement( trx, operation, element );
+            }
+            return Functions.singletonEnumerable( new PolyValue[]{ PolyLong.of( elements.size() ) } );
+        }
+
+
+        private Enumerable<PolyValue[]> deleteRows( Transaction trx, int parameterCount, boolean detachDelete ) {
+            Set<String> nodes = new LinkedHashSet<>();
+            Set<String> edges = new LinkedHashSet<>();
+            long count = 0;
+            for ( Map<Long, PolyValue> row : dataContext.getParameterValues() ) {
+                boolean hasTarget = false;
+                for ( int i = 0; i < parameterCount; i++ ) {
+                    PolyValue value = row.get( (long) i );
+                    if ( value == null || value.isNull() ) {
+                        continue;
+                    }
+                    hasTarget = true;
+                    if ( value instanceof PolyNode node ) {
+                        nodes.add( node.id.value );
+                    } else if ( value instanceof PolyEdge edge ) {
+                        edges.add( edge.id.value );
+                    } else {
+                        throw new GenericRuntimeException( "Graph deletes require a node or relationship binding" );
+                    }
+                }
+                if ( hasTarget ) {
+                    count++;
+                }
+            }
+            String graphLabel = identifier( graph.mappingLabel );
+            if ( !edges.isEmpty() ) {
+                trx.run( "UNWIND $ids AS id MATCH (:" + graphLabel + ")-[r {_id: id}]->(:" + graphLabel + ") DELETE r",
+                        Map.of( "ids", List.copyOf( edges ) ) ).consume();
+            }
+            if ( !nodes.isEmpty() ) {
+                trx.run( "UNWIND $ids AS id MATCH (n:" + graphLabel + " {_id: id})" + (detachDelete ? " DETACH DELETE n" : " DELETE n"),
+                        Map.of( "ids", List.copyOf( nodes ) ) ).consume();
+            }
+            return Functions.singletonEnumerable( new PolyValue[]{ PolyLong.of( count ) } );
+        }
+
+
+        private void modifyElement( Transaction trx, Operation operation, GraphPropertyHolder element ) {
+            String graphLabel = identifier( graph.mappingLabel );
+            boolean isNode = element.isNode();
+            String match = isNode ? "MATCH (n:" + graphLabel + " {_id: $id})"
+                    : "MATCH (:" + graphLabel + ")-[n {_id: $id}]->(:" + graphLabel + ")";
+            Map<String, Object> params = new LinkedHashMap<>();
+            params.put( "id", element.id.value );
+            Map<String, Object> properties = new LinkedHashMap<>();
+            element.properties.forEach( (key, value) -> {
+                if ( value != null && !value.isNull() ) {
+                    PolyValue encoded = NeoUtil.encodeGraphProperty( value );
+                    properties.put( key.value, NeoUtil.fixParameterValue( encoded, new NestedSingleType( encoded.getType() ), false ) );
+                }
+            } );
+            properties.put( "_id", element.id.value );
+            params.put( "properties", properties );
+            if ( isNode ) {
+                applyNodeWrite( trx, operation, element.asNode(), graphLabel, match, params );
+            } else {
+                applyEdgeWrite( trx, operation, element.asEdge(), graphLabel, match, params, properties );
+            }
+        }
+
+
+        private void applyNodeWrite( Transaction trx, Operation operation, PolyNode node, String graphLabel, String match, Map<String, Object> params ) {
+            String labels = node.labels.stream().map( label -> ":" + identifier( label.value ) ).collect( Collectors.joining() );
+            if ( operation == Operation.INSERT ) {
+                trx.run( "CREATE (n:" + graphLabel + labels + ") SET n = $properties", params ).consume();
+                return;
+            }
+            List<Record> current = trx.run( match + " RETURN labels(n)", params ).list();
+            if ( current.isEmpty() ) {
+                throw new GenericRuntimeException( "Graph node disappeared before the update" );
+            }
+            String previous = current.get( 0 ).get( 0 ).asList( org.neo4j.driver.Value::asString ).stream()
+                    .filter( label -> !label.equals( graph.mappingLabel ) ).map( label -> ":" + identifier( label ) ).collect( Collectors.joining() );
+            trx.run( match + (previous.isEmpty() ? "" : " REMOVE n" + previous)
+                    + (labels.isEmpty() ? "" : " SET n" + labels) + " SET n = $properties", params ).consume();
+        }
+
+
+        private void applyEdgeWrite( Transaction trx, Operation operation, PolyEdge edge, String graphLabel, String match,
+                Map<String, Object> params, Map<String, Object> properties ) {
+            String relationship = edge.labels.get( 0 ).value;
+            properties.put( "__sourceId__", edge.left.value );
+            properties.put( "__targetId__", edge.right.value );
+            if ( operation == Operation.UPDATE ) {
+                List<Record> current = trx.run( match + " RETURN type(n)", params ).list();
+                if ( current.isEmpty() ) {
+                    throw new GenericRuntimeException( "Graph relationship disappeared before the update" );
+                }
+                if ( relationship.equals( current.get( 0 ).get( 0 ).asString() ) ) {
+                    trx.run( match + " SET n = $properties", params ).consume();
+                    return;
+                }
+                trx.run( match + " DELETE n", params ).consume();
+            }
+            params.put( "left", edge.left.value );
+            params.put( "right", edge.right.value );
+            String endpoints = "MATCH (a:" + graphLabel + " {_id: $left}), (b:" + graphLabel + " {_id: $right})";
+            int written = trx.run( endpoints + " CREATE (a)-[n:" + identifier( relationship ) + "]->(b) SET n = $properties", params )
+                    .consume().counters().relationshipsCreated();
+            if ( written != 1 ) {
+                throw new GenericRuntimeException( "Graph relationship requires exactly one source and one target node" );
+            }
+        }
+
+
+        private static String identifier( String identifier ) {
+            return "`" + identifier.replace( "`", "``" ) + "`";
+        }
+
+
         /**
          * Creates a cypher statement which returns all edges and nodes separately
          *
@@ -215,7 +406,6 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
          */
         @SuppressWarnings("UnusedDeclaration")
         public Enumerable<PolyValue[]> executeAll( String nodes, String edges ) {
-            commit();
             Transaction trx = getTrx();
 
             dataContext.getStatement().getTransaction().registerInvolvedAdapter( graph.store );
@@ -235,7 +425,7 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
          */
         static <T> Function1<Record, T> getter( NestedPolyType types ) {
             //noinspection unchecked
-            return (Function1<Record, T>) NeoUtil.getTypesFunction( types );
+            return (Function1<Record, T>) NeoUtil.getTypesFunction( types, true );
         }
 
 
@@ -244,14 +434,6 @@ public class NeoGraph extends PhysicalGraph implements TranslatableEntity, Modif
          */
         private Transaction getTrx() {
             return graph.transactionProvider.get( dataContext.getStatement().getTransaction().getXid() );
-        }
-
-
-        /**
-         * Commit the transaction.
-         */
-        private void commit() {
-            graph.transactionProvider.commit( dataContext.getStatement().getTransaction().getXid() );
         }
 
 

@@ -62,6 +62,10 @@ public class RelationalMetaRetriever {
 
     public static List<ColumnMeta> retrieveColumnMetas( PolyImplementation polyImplementation ) {
         AlgDataType algDataType = polyImplementation.getResultRowType();
+        if ( algDataType.getPolyType() == PolyType.GRAPH ) {
+            // GraphType's storage fields describe its ID, but a full scan returns one graph value.
+            return List.of( retrieveColumnMeta( 0, "graph", algDataType, null ) );
+        }
         AlgDataType whatever = QueryProcessorHelpers.makeStruct( polyImplementation.getStatement().getTransaction().getTypeFactory(), algDataType );
         List<List<String>> origins = polyImplementation.getPreparedResult().getFieldOrigins();
         List<ColumnMeta> columns = new ArrayList<>();

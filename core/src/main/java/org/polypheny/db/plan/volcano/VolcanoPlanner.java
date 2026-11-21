@@ -65,6 +65,7 @@ import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.convert.Converter;
 import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.enumerable.EnumerableRules;
 import org.polypheny.db.algebra.enumerable.common.ModelSwitcherRule;
 import org.polypheny.db.algebra.metadata.AlgMetadataProvider;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -824,6 +825,7 @@ public class VolcanoPlanner extends AbstractAlgPlanner {
 
     public void registerModelRules() {
         // Graph
+        addRule( EnumerableRules.ENUMERABLE_LPG_JOIN_RULE );
         addRule( LpgToEnumerableRule.PROJECT_TO_ENUMERABLE );
         addRule( LpgToEnumerableRule.FILTER_TO_ENUMERABLE );
         addRule( LpgToEnumerableRule.AGGREGATE_TO_ENUMERABLE );

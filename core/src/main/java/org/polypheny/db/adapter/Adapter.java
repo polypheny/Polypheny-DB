@@ -171,6 +171,14 @@ public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scanna
     public abstract void truncate( Context context, long allocId );
 
 
+    /**
+     * Check whether the adapter can publish the transaction without changing its contents.
+     * Called for all involved adapters before the first commit, even when two-phase commit is disabled.
+     */
+    public void validateCommit( PolyXid xid ) {
+    }
+
+
     public abstract boolean prepare( PolyXid xid );
 
 

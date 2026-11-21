@@ -206,13 +206,7 @@ public class Translator extends RexVisitorImpl<String> {
         List<PolyValue> rexKeys = ((RexLiteral) call.operands.get( 1 )).value.asList();
         List<String> keys = rexKeys.stream().map( l -> l.asString().value ).toList();
         List<PolyValue> rexValues = ((RexLiteral) call.operands.get( 2 )).value.asList().value;
-        List<String> values = rexValues.stream().map( l -> {
-            String literal = l.toJson();
-            if ( l.isString() ) {
-                return String.format( "'%s'", literal );
-            }
-            return literal;
-        } ).toList();
+        List<String> values = rexValues.stream().map( value -> NeoStatements.graphProperty_( value ).build() ).toList();
 
         boolean replace = ((RexLiteral) call.operands.get( 3 )).value.asBoolean().value;
 
@@ -235,11 +229,7 @@ public class Translator extends RexVisitorImpl<String> {
     private String handleSetProperty( RexCall call ) {
         String identifier = call.operands.get( 0 ).accept( this );
         String key = call.operands.get( 1 ).unwrapOrThrow( RexLiteral.class ).value.asString().value;
-        RexLiteral rex = (RexLiteral) call.operands.get( 2 );
-        String literal = NeoUtil.rexAsString( rex, null, true );
-        if ( PolyType.STRING_TYPES.contains( rex.getType().getPolyType() ) ) {
-            literal = String.format( "'%s'", rex.getValue() );
-        }
+        String literal = NeoStatements.graphProperty_( call.operands.get( 2 ).unwrapOrThrow( RexLiteral.class ).value ).build();
         return String.format( "%s.%s = %s", identifier, key, literal );
     }
 

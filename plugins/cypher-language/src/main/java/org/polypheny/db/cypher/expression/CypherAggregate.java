@@ -16,12 +16,13 @@
 
 package org.polypheny.db.cypher.expression;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nullable;
 import org.polypheny.db.algebra.AlgCollations;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
+import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -53,8 +54,6 @@ public class CypherAggregate extends CypherExpression {
 
 
     public Pair<PolyString, RexNode> getAggregate( CypherContext context, String alias ) {
-        List<Integer> aggIndexes = new ArrayList<>();
-
         PolyString name = null;
         Pair<PolyString, RexNode> namedNode = null;
         if ( target != null ) {
@@ -62,17 +61,21 @@ public class CypherAggregate extends CypherExpression {
             name = namedNode.left;
         }
 
-        Pair<RexNode, AlgDataType> typeAndValue = getReturnType( context, namedNode != null ? namedNode.right : null );
+        RexNode operand = namedNode != null ? namedNode.right : null;
+        if ( operand != null && operand.getType().getPolyType() == PolyType.NULL ) {
+            operand = context.rexBuilder.makeNullLiteral( context.typeFactory.createPolyType( PolyType.ANY ) );
+        }
+        Pair<RexNode, AlgDataType> typeAndValue = getReturnType( context, operand );
 
         AggregateCall call = AggregateCall.create(
                 OperatorRegistry.getAgg( op ),
                 distinct,
                 false,
-                aggIndexes,
+                List.of(),
                 -1,
                 AlgCollations.EMPTY,
                 typeAndValue.right,
-                alias != null ? alias : String.format( "%s(%s)", op.name(), name )
+                alias != null ? alias : op.name()
         );
 
         context.addAgg( Pair.of( name != null ? name.value : null, call ) );
@@ -92,10 +95,9 @@ public class CypherAggregate extends CypherExpression {
                 Pair<PolyString, RexNode> rex = Objects.requireNonNull( this.target ).getRex( context, RexType.PROJECT );
                 yield Pair.of( node, context.typeFactory.createArrayType( rex.getValue().getType(), -1 ) );
             }
-            case AVG -> {
-                RexNode casted = context.rexBuilder.makeCast( context.typeFactory.createTypeWithNullability( context.typeFactory.createPolyType( PolyType.DOUBLE ), true ), node );
-                yield Pair.of( casted, context.typeFactory.createTypeWithNullability( context.typeFactory.createPolyType( PolyType.DOUBLE ), true ) );
-            }
+            case SUM, AVG -> Pair.of( node, LaxAggregateCall.inferGraphNumericType( context.typeFactory,
+                    op == OperatorName.SUM ? Kind.SUM : Kind.AVG, Objects.requireNonNull( node ).getType() ) );
+            case MIN, MAX -> Pair.of( node, context.typeFactory.createTypeWithNullability( Objects.requireNonNull( node ).getType(), true ) );
             default -> Pair.of( node, context.typeFactory.createPolyType( PolyType.BIGINT ) );
         };
     }

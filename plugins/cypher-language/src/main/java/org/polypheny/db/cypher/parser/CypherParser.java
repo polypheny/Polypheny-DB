@@ -17,13 +17,16 @@
 package org.polypheny.db.cypher.parser;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import org.polypheny.db.cypher.CypherParameter;
 import org.polypheny.db.cypher.CypherStatement;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.Parser;
 import org.polypheny.db.languages.ParserFactory;
 import org.polypheny.db.languages.ParserImpl;
 import org.polypheny.db.nodes.Node;
+import org.polypheny.db.type.entity.PolyValue;
 
 public class CypherParser implements Parser {
 
@@ -39,6 +42,16 @@ public class CypherParser implements Parser {
         ParserImpl parser = parserConfig.parserFactory().getParser( query );
 
         return new CypherParser( (CypherAbstractParserImpl) parser );
+    }
+
+
+    public List<CypherParameter> getParameters() {
+        return parser.getParameters();
+    }
+
+
+    public void setBindings( Map<String, PolyValue> bindings ) {
+        parser.setBindings( bindings );
     }
 
 

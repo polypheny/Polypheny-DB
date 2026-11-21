@@ -278,6 +278,7 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                 case ARRAY:
                 case MULTISET:
                     return PolyList.class;
+                case NULL:
                 case ANY:
                     return PolyValue.class;
 

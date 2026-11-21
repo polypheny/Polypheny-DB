@@ -19,13 +19,16 @@ package org.polypheny.db.cypher.pattern;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.Getter;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.EdgeVariableHolder;
+import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
@@ -84,7 +87,7 @@ public class CypherEveryPathPattern extends CypherPattern {
     private List<Pair<PolyString, PolyNode>> getPolyNodes( CypherContext context ) {
         List<Pair<PolyString, PolyNode>> nodes = new LinkedList<>();
         for ( CypherNodePattern node : this.nodes ) {
-            Pair<PolyString, PolyNode> namedNode = node.getPolyNode();
+            Pair<PolyString, PolyNode> namedNode = node.getPolyNode( context );
             if ( namedNode.left != null && !namedNode.left.isNull() && context.getNodeVariable( namedNode.left ) != null ) {
                 // this node exists already in the scope, we replace it with the existing one
                 namedNode = context.getNodeVariable( namedNode.left );
@@ -98,7 +101,15 @@ public class CypherEveryPathPattern extends CypherPattern {
     }
 
 
-    private List<Pair<PolyString, EdgeVariableHolder>> getPolyEdges( List<Pair<PolyString, PolyNode>> nodes ) {
+    @Override
+    public List<CypherExpression> getPredicates() {
+        return Stream.concat( nodes.stream().map( CypherNodePattern::getPredicate ), edges.stream().map( CypherRelPattern::getPredicate ) )
+                .filter( Objects::nonNull )
+                .toList();
+    }
+
+
+    private List<Pair<PolyString, EdgeVariableHolder>> getPolyEdges( List<Pair<PolyString, PolyNode>> nodes, CypherContext context ) {
         List<Pair<PolyString, EdgeVariableHolder>> edges = new ArrayList<>();
         assert nodes.size() == this.edges.size() + 1;
 
@@ -107,7 +118,7 @@ public class CypherEveryPathPattern extends CypherPattern {
 
         for ( CypherRelPattern edge : this.edges ) {
             Pair<PolyString, PolyNode> next = nodes.get( ++i ); // next node
-            Pair<PolyString, PolyEdge> now = edge.getPolyEdge( node.right.id, next.right.id );
+            Pair<PolyString, PolyEdge> now = edge.getPolyEdge( node.right.id, next.right.id, context );
             edges.add( Pair.of( now.left, new EdgeVariableHolder( now.right, now.left, node.left, next.left ) ) );
             node = next;
         }
@@ -118,11 +129,17 @@ public class CypherEveryPathPattern extends CypherPattern {
 
     @Override
     public void getPatternValues( CypherContext context ) {
+        getPatternValues( context, null );
+    }
+
+
+    public void getPatternValues( CypherContext context, PolyString pathName ) {
         List<Pair<PolyString, PolyNode>> nodes = getPolyNodes( context );
-        List<Pair<PolyString, EdgeVariableHolder>> edges = getPolyEdges( nodes );
-
+        List<Pair<PolyString, EdgeVariableHolder>> edges = getPolyEdges( nodes, context );
         context.addEdges( edges );
-
+        if ( pathName != null ) {
+            context.addCreatedPath( pathName, nodes, edges );
+        }
     }
 
 
@@ -171,10 +188,17 @@ public class CypherEveryPathPattern extends CypherPattern {
     }
 
 
-    private RexNode getPathFilter( CypherContext context ) {
-        List<Pair<PolyString, PolyNode>> polyNodes = getPolyNodes( context );
+    RexNode getPathFilter( CypherContext context ) {
+        List<Pair<PolyString, PolyNode>> polyNodes = new ArrayList<>();
+        for ( CypherNodePattern node : nodes ) {
+            Pair<PolyString, PolyNode> binding = node.getPolyNode();
+            Pair<PolyString, PolyNode> previous = context.getNodeVariable( binding.left );
+            polyNodes.add( binding.right.isBlank() && previous != null ? previous : binding );
+        }
+        // Register after collecting all occurrences so a repeated variable keeps each occurrence's constraints.
+        context.addNodes( polyNodes );
 
-        List<Pair<PolyString, EdgeVariableHolder>> polyEdges = getPolyEdges( polyNodes );
+        List<Pair<PolyString, EdgeVariableHolder>> polyEdges = getPolyEdges( polyNodes, null );
         PolyPath path = PolyPath.create( polyNodes, Pair.right( polyEdges ).stream().map( EdgeVariableHolder::asNamedEdge ).toList() );
 
         AlgDataType pathType = context.typeFactory.createPathType( path.getPathType( context.nodeType, context.edgeType ) );

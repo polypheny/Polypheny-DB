@@ -51,6 +51,7 @@ import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBinary;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 
 
@@ -215,6 +216,13 @@ public class MonetdbSqlDialect extends SqlDialect {
     @Override
     public void unparseOffsetFetch( SqlWriter writer, SqlNode offset, SqlNode fetch ) {
         unparseFetchUsingLimit( writer, offset, fetch );
+    }
+
+
+    @Override
+    public void unparseCharStringLiteral( SqlWriter writer, PolyString value ) {
+        // MonetDB interprets C-style escapes in ordinary SQL string literals.
+        super.unparseCharStringLiteral( writer, PolyString.of( value.value.replace( "\\", "\\\\" ), value.charset ) );
     }
 
 

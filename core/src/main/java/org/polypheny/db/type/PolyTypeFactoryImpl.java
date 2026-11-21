@@ -235,6 +235,8 @@ public class PolyTypeFactoryImpl extends AlgDataTypeFactoryImpl {
         final AlgDataType newType;
         if ( type instanceof BasicPolyType basicPolyType ) {
             newType = basicPolyType.createWithNullability( nullable );
+        } else if ( type instanceof PathType pathType ) {
+            newType = new PathType( nullable, pathType.getFields() );
         } else if ( type instanceof MapPolyType mapPolyType ) {
             newType = copyMapType( mapPolyType, nullable );
         } else if ( type instanceof VectorType vectorType ) {

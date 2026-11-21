@@ -24,8 +24,10 @@ import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.BinaryOperator;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
 
@@ -50,11 +52,28 @@ public class CypherBinary extends CypherExpression {
 
         Pair<PolyString, RexNode> left = this.left.getRex( context, type );
         Pair<PolyString, RexNode> right = this.right.getRex( context, type );
+        PolyType leftType = left.right.getType().getPolyType();
+        PolyType rightType = right.right.getType().getPolyType();
+        boolean differentFamilies = leftType.getFamily() != rightType.getFamily();
 
+        OperatorName comparison = switch ( op ) {
+            case EQUALS -> OperatorName.CYPHER_EQUALS;
+            case NOT_EQUALS -> OperatorName.CYPHER_NOT_EQUALS;
+            case LESS_THAN -> OperatorName.CYPHER_LESS_THAN;
+            case LESS_THAN_OR_EQUAL -> OperatorName.CYPHER_LESS_THAN_OR_EQUAL;
+            case GREATER_THAN -> OperatorName.CYPHER_GREATER_THAN;
+            case GREATER_THAN_OR_EQUAL -> OperatorName.CYPHER_GREATER_THAN_OR_EQUAL;
+            default -> null;
+        };
+        if ( comparison != null ) {
+            return Pair.of( null, context.rexBuilder.makeCall(
+                    context.typeFactory.createTypeWithNullability( context.booleanType, true ),
+                    OperatorRegistry.get( QueryLanguage.from( "cypher" ), comparison ), List.of( left.right, right.right ) ) );
+        }
         if ( OperatorRegistry.get( op ) instanceof BinaryOperator ) {
             // when we have a binary comparison, we have to adjust potential mismatches
             // this is the case if one of the sides is a literal, which has an explicit type
-            if ( left.right.getType().getPolyType().getFamily() != right.right.getType().getPolyType().getFamily() ) {
+            if ( differentFamilies ) {
                 if ( left.right.isA( Kind.LITERAL ) && right.right.isA( Kind.LITERAL ) ) {
                     throw new UnsupportedOperationException( "Both binary sides define non matching types" );
                 } else if ( left.right.isA( Kind.LITERAL ) ) {

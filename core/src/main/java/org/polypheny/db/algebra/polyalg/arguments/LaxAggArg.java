@@ -53,6 +53,9 @@ public class LaxAggArg implements PolyAlgArg {
     private String aggToString( List<String> inputFieldNames ) {
         StringBuilder sb = new StringBuilder( agg.function.toString() );
         sb.append( "(" );
+        if ( agg.isDistinct() ) {
+            sb.append( agg.getInput().isPresent() ? "DISTINCT " : "DISTINCT" );
+        }
         if ( agg.getInput().isPresent() ) {
             sb.append( PolyAlgUtils.digestWithNames( agg.getInput().get(), inputFieldNames ) );
         }
@@ -65,6 +68,9 @@ public class LaxAggArg implements PolyAlgArg {
     public ObjectNode serialize( AlgNode context, @NonNull List<String> inputFieldNames, ObjectMapper mapper ) {
         ObjectNode node = mapper.createObjectNode();
         node.put( "function", agg.function.toString() );
+        if ( agg.isDistinct() ) {
+            node.put( "distinct", true );
+        }
         if ( agg.getInput().isPresent() ) {
             node.put( "input", PolyAlgUtils.digestWithNames( agg.getInput().get(), inputFieldNames ) );
         }

@@ -55,12 +55,14 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.functions.CrossModelFunctions;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
@@ -80,6 +82,7 @@ import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.spatial.PolyPoint;
@@ -110,11 +113,11 @@ public interface NeoUtil {
             case DATE -> v -> PolyDate.of( v.asNumber() );
             case TIME -> v -> PolyTime.of( v.asNumber() );
             case TIMESTAMP -> v -> PolyTimestamp.of( v.asNumber() );
-            case BIGINT -> v -> PolyBigDecimal.of( v.asLong() );
+            case BIGINT -> v -> PolyLong.of( v.asLong() );
             case DECIMAL -> v -> v instanceof StringValue ? PolyBigDecimal.of( v.asString() ) : PolyBigDecimal.of( v.asDouble() );
             case FLOAT, REAL -> v -> v instanceof StringValue ? PolyFloat.of( Float.valueOf( v.asString() ) ) : PolyFloat.of( v.asNumber() );
             case DOUBLE -> v -> v instanceof StringValue ? PolyDouble.of( Double.valueOf( v.asString() ) ) : PolyDouble.of( v.asNumber() );
-            case ANY -> v -> PolyString.of( v.asObject().toString() );
+            case ANY -> NeoUtil::asPolyValue;
             case CHAR, VARCHAR, TEXT -> v -> PolyString.of( v.asString() );
             case BINARY, VARBINARY -> v -> PolyBinary.of( v.asByteArray() );
             case FILE, IMAGE, VIDEO, AUDIO -> v -> PolyBlob.of( v.asByteArray() );
@@ -192,7 +195,7 @@ public interface NeoUtil {
     }
 
     static PolyNode asPolyNode( Node node ) {
-        Map<PolyString, PolyValue> map = new HashMap<>( node.asMap( NeoUtil::getComparableOrString ).entrySet().stream().collect( Collectors.toMap( e -> PolyString.of( e.getKey() ), Entry::getValue ) ) );
+        Map<PolyString, PolyValue> map = new HashMap<>( node.asMap( NeoUtil::readGraphProperty ).entrySet().stream().collect( Collectors.toMap( e -> PolyString.of( e.getKey() ), Entry::getValue ) ) );
         PolyString id = map.remove( PolyString.of( "_id" ) ).asString();
         List<PolyString> labels = new ArrayList<>();
         node.labels().forEach( e -> {
@@ -205,12 +208,29 @@ public interface NeoUtil {
 
 
     static PolyEdge asPolyEdge( Relationship relationship ) {
-        Map<PolyString, PolyValue> map = new HashMap<>( relationship.asMap( NeoUtil::getComparableOrString ).entrySet().stream().collect( Collectors.toMap( e -> PolyString.of( e.getKey() ), Entry::getValue ) ) );
+        Map<PolyString, PolyValue> map = new HashMap<>( relationship.asMap( NeoUtil::readGraphProperty ).entrySet().stream().collect( Collectors.toMap( e -> PolyString.of( e.getKey() ), Entry::getValue ) ) );
         String id = map.remove( PolyString.of( "_id" ) ).toString();
         String sourceId = map.remove( PolyString.of( "__sourceId__" ) ).toString();
         String targetId = map.remove( PolyString.of( "__targetId__" ) ).toString();
         return new PolyEdge( PolyString.of( id ), new PolyDictionary( map ), List.of( PolyString.of( relationship.type() ) ), PolyString.of( sourceId ), PolyString.of( targetId ), EdgeDirection.LEFT_TO_RIGHT, null );
     }
+
+    static PolyValue encodeGraphProperty( PolyValue value ) {
+        if ( value != null && !value.isNull()
+                && (value.getType() == PolyType.DECIMAL || value.isList() || value.isMap() || value.isString()) ) {
+            // Neo4j has no exact decimal or nested property representation. Use the graph type codec and escape tagged user strings.
+            return PolyString.of( CrossModelFunctions.graphPropertyStorageValue( value ) );
+        }
+        return value;
+    }
+
+
+    private static PolyValue readGraphProperty( Value value ) {
+        return value instanceof StringValue
+                ? CrossModelFunctions.readGraphPropertyStorageValue( PolyString.of( value.asString() ) )
+                : getComparableOrString( value );
+    }
+
 
     static PolyValue getComparableOrString( Value e ) {
         if ( e.isNull() ) {
@@ -226,25 +246,38 @@ public interface NeoUtil {
 
     static PolyValue asPolyValue( @NonNull Value value ) {
         if ( value instanceof IntegerValue ) {
-            return PolyString.of( String.valueOf( value.asLong() ) );
+            return PolyLong.of( value.asLong() );
         } else if ( value instanceof StringValue ) {
             return PolyString.of( value.asString() );
         } else if ( value instanceof FloatValue ) {
-            return PolyString.of( String.valueOf( value.asDouble() ) );
-
+            return PolyDouble.of( value.asDouble() );
         } else if ( value instanceof ListValue ) {
             return new PolyList<>( value.asList( NeoUtil::getComparableOrString ) );
         } else if ( value instanceof PointValue ) {
             return asPolyGeometry( value );
         }
-        throw new NotImplementedException( "Type not supported" );
+        Object raw = value.asObject();
+        if ( raw instanceof Boolean bool ) {
+            return PolyBoolean.of( bool );
+        }
+        if ( raw instanceof byte[] bytes ) {
+            return PolyBinary.of( bytes );
+        }
+        return PolyString.of( raw.toString() );
     }
 
     static Function1<Record, PolyValue[]> getTypesFunction( NestedPolyType types ) {
+        return getTypesFunction( types, false );
+    }
+
+
+    static Function1<Record, PolyValue[]> getTypesFunction( NestedPolyType types, boolean graph ) {
 
         List<Function1<Value, PolyValue>> functions = new ArrayList<>();
         for ( NestedPolyType type : types.asList().types ) {
-            functions.add( getTypeFunction( type, false ) );
+            functions.add( graph && type.getType() == PolyType.ANY
+                    ? value -> value.isNull() ? PolyNull.NULL : readGraphProperty( value )
+                    : getTypeFunction( type, false ) );
         }
         if ( functions.size() == 1 ) {
             // SCALAR
@@ -255,6 +288,11 @@ public interface NeoUtil {
         return o -> Pair.zip( o.fields(), functions ).stream()
                 .map( e -> e.right.apply( e.left.value() ) )
                 .toArray( PolyValue[]::new );
+    }
+
+
+    static boolean needsGraphValueDecoding( PolyType type ) {
+        return type == PolyType.ANY || type == PolyType.DECIMAL || type == PolyType.ARRAY || type == PolyType.MAP;
     }
 
     static String asParameter( long key, boolean withDollar ) {
@@ -289,14 +327,9 @@ public interface NeoUtil {
             case BIGINT, INTERVAL, SYMBOL -> literal.getValue().toString();
             case TIMESTAMP -> literal.value.asTemporal().getMillisSinceEpoch().toString();
             case DECIMAL, FLOAT, REAL, DOUBLE -> literal.getValue().toString();
-            case CHAR, VARCHAR -> {
-                if ( isLiteral ) {
-                    yield "'" + literal.value.asString() + "'";
-                }
-                yield literal.value.asString().value;
-
-            }
-            case MAP, DOCUMENT, ARRAY -> literal.value.asList().toString();
+            case CHAR, VARCHAR, TEXT -> isLiteral ? quoteStringLiteral( literal.value.asString().value ) : literal.value.asString().value;
+            case ARRAY -> NeoStatements._literalOrString( literal.value ).build();
+            case MAP, DOCUMENT -> literal.value.asList().toString();
             case BINARY, VARBINARY -> literal.value.asBinary().as64String();
             case FILE, IMAGE, VIDEO, AUDIO -> Arrays.toString( literal.value.asBlob().asByteArray() );
             case NULL -> null;
@@ -313,19 +346,29 @@ public interface NeoUtil {
 
     }
 
+    static String quoteStringLiteral( String value ) {
+        return "'" + value.replace( "\\", "\\\\" )
+                .replace( "'", "\\'" )
+                .replace( "\n", "\\n" )
+                .replace( "\r", "\\r" )
+                .replace( "\t", "\\t" )
+                .replace( "\b", "\\b" )
+                .replace( "\f", "\\f" ) + "'";
+    }
+
     static Function1<List<String>, String> getOpAsNeo( OperatorName operatorName, List<RexNode> operands, AlgDataType returnType, List<AlgDataTypeField> beforeFields ) {
         return switch ( operatorName ) {
             case AND -> o -> o.stream().map( e -> String.format( "(%s)", e ) ).collect( Collectors.joining( " AND " ) );
             case DIVIDE -> handleDivide( operatorName, operands, returnType );
             case DIVIDE_INTEGER -> o -> String.format( "%s / %s", o.get( 0 ), o.get( 1 ) );
-            case EQUALS, IS_DISTINCT_FROM -> o -> String.format( "%s = %s", o.get( 0 ), o.get( 1 ) );
+            case EQUALS, CYPHER_EQUALS, IS_DISTINCT_FROM -> o -> String.format( "%s = %s", o.get( 0 ), o.get( 1 ) );
             case GREATER_THAN -> o -> String.format( "%s > %s", o.get( 0 ), o.get( 1 ) );
             case GREATER_THAN_OR_EQUAL -> o -> String.format( "%s >= %s", o.get( 0 ), o.get( 1 ) );
             case LESS_THAN -> o -> String.format( "%s < %s", o.get( 0 ), o.get( 1 ) );
             case LESS_THAN_OR_EQUAL -> o -> String.format( "%s <= %s", o.get( 0 ), o.get( 1 ) );
             case MINUS -> o -> String.format( "%s - %s", o.get( 0 ), o.get( 1 ) );
             case MULTIPLY -> o -> String.format( "%s * %s", o.get( 0 ), o.get( 1 ) );
-            case NOT_EQUALS, IS_NOT_DISTINCT_FROM -> o -> String.format( "%s <> %s", o.get( 0 ), o.get( 1 ) );
+            case NOT_EQUALS, CYPHER_NOT_EQUALS, IS_NOT_DISTINCT_FROM -> o -> String.format( "%s <> %s", o.get( 0 ), o.get( 1 ) );
             case OR -> o -> o.stream().map( e -> String.format( "(%s)", e ) ).collect( Collectors.joining( " OR " ) );
             case PLUS -> o -> String.format( "%s + %s", o.get( 0 ), o.get( 1 ) );
             case IS_NOT_NULL -> o -> String.format( "%s IS NOT NULL ", o.get( 0 ) );
@@ -340,7 +383,10 @@ public interface NeoUtil {
             case UNARY_PLUS -> o -> o.get( 0 );
             case COALESCE -> o -> "coalesce(" + String.join( ", ", o ) + ")";
             case NOT_LIKE -> handleLike( operands, true );
-            case CYPHER_LIKE -> o -> String.format( "%s =~ '%s'", o.get( 0 ), maybeUnquote( getAsRegex( o.get( 1 ) ) ) );
+            case CYPHER_LIKE -> handleLike( operands, false );
+            case STARTS_WITH -> o -> o.get( 0 ) + " STARTS WITH " + o.get( 1 );
+            case ENDS_WITH -> o -> o.get( 0 ) + " ENDS WITH " + o.get( 1 );
+            case CYPHER_CONTAINS -> o -> o.get( 0 ) + " CONTAINS " + o.get( 1 );
             case LIKE -> handleLike( operands, false );
             case POWER -> o -> String.format( "%s^%s", o.get( 0 ), o.get( 1 ) );
             case SQRT -> o -> String.format( "sqrt(%s)", o.get( 0 ) );
@@ -423,7 +469,7 @@ public interface NeoUtil {
                     // Unknown value, we are done.
                     break;
                 }
-                String arg = argNameLiteral.value.toString() + ":" + argValueLiteral.value.toString();
+                String arg = argNameLiteral.value.toString() + ":" + rexAsString( argValueLiteral, null, true );
                 arguments.add( arg );
             }
 
@@ -473,7 +519,16 @@ public interface NeoUtil {
             return null;
         }
 
-        Function1<List<String>, String> func = o -> String.format( "%s =~ '%s'", o.get( 0 ), getAsRegex( o.get( 1 ) ) );
+        Function1<List<String>, String> func = o -> {
+            String rendered = o.get( 1 );
+            if ( rendered == null ) {
+                return o.get( 0 ) + " =~ null";
+            }
+            String pattern = operands.get( 1 ) instanceof RexLiteral literal
+                    ? literal.value.asString().value
+                    : maybeUnquote( rendered );
+            return o.get( 0 ) + " =~ " + quoteStringLiteral( getAsRegex( pattern ) );
+        };
         if ( operands.get( 1 ).isA( Kind.INPUT_REF ) ) {
             func = o -> String.format( "%s = %s", o.get( 0 ), o.get( 1 ) );
         }
@@ -571,20 +626,53 @@ public interface NeoUtil {
     class NeoSupportVisitor extends RexVisitorImpl<Void> {
 
         private boolean supports;
+        private final boolean graph;
 
 
         public NeoSupportVisitor() {
+            this( false );
+        }
+
+
+        public NeoSupportVisitor( boolean graph ) {
             super( true );
+            this.graph = graph;
             this.supports = true;
         }
 
 
         @Override
         public Void visitCall( RexCall call ) {
-            if ( NeoUtil.getOpAsNeo( call.op.getOperatorName(), call.operands, call.type, List.of() ) == null ) {
-                supports = false;
+            // Graph mutations in a projection construct values for the row writer.
+            // Their native spelling is a SET/REMOVE clause, never a return expression.
+            switch ( call.op.getOperatorName() ) {
+                case CYPHER_SET_PROPERTY, CYPHER_SET_PROPERTIES, CYPHER_SET_LABELS, CYPHER_REMOVE_LABELS, CYPHER_REMOVE_PROPERTY -> supports = false;
+                default -> {
+                    if ( NeoUtil.getOpAsNeo( call.op.getOperatorName(), call.operands, call.type, List.of() ) == null ) {
+                        supports = false;
+                    }
+                    if ( graph && call.operands.stream().anyMatch( operand -> needsGraphValueDecoding( operand.getType().getPolyType() ) )
+                            && call.op.getOperatorName() != OperatorName.IS_NULL && call.op.getOperatorName() != OperatorName.IS_NOT_NULL ) {
+                        supports = false;
+                    }
+                }
             }
             return super.visitCall( call );
+        }
+
+
+        @Override
+        public Void visitLiteral( RexLiteral literal ) {
+            if ( literal.getPolyType() == PolyType.BINARY || literal.getPolyType() == PolyType.VARBINARY
+                    || literal.getPolyType() == PolyType.DECIMAL ) {
+                // Native Cypher literals do not preserve byte arrays or exact decimals.
+                supports = false;
+            }
+            if ( literal.getType() instanceof ArrayType arrayType && arrayType.getDimension() < 1 ) {
+                // The native result decoder needs a declared dimension to decode arrays.
+                supports = false;
+            }
+            return super.visitLiteral( literal );
         }
 
     }

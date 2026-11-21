@@ -50,6 +50,8 @@ public interface DmlRouter {
 
     AlgNode routeDocumentDml( LogicalDocumentModify alg, Statement statement, @Nullable AllocationEntity target, @Nullable List<Long> excludedPlacements );
 
+    AlgNode routeGraphDml( AlgNode root, Statement statement );
+
     AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement, @Nullable AllocationEntity target, @Nullable List<Long> excludedPlacements );
 
 }

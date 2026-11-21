@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.Getter;
 import org.polypheny.db.algebra.AbstractAlgNode;
+import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
 import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
@@ -69,6 +70,16 @@ public abstract class LpgValues extends AbstractAlgNode implements LpgAlg {
     @Override
     public NodeType getNodeType() {
         return NodeType.VALUES;
+    }
+
+
+    @Override
+    public AlgWriter explainTerms( AlgWriter writer ) {
+        return super.explainTerms( writer )
+                .item( "type", rowType )
+                .itemIf( "nodes", nodes, !nodes.isEmpty() )
+                .itemIf( "edges", edges, !edges.isEmpty() )
+                .itemIf( "values", values, !values.isEmpty() );
     }
 
 

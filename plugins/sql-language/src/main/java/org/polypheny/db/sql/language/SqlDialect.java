@@ -270,6 +270,11 @@ public class SqlDialect {
     }
 
 
+    public void unparseCharStringLiteral( SqlWriter writer, PolyString value ) {
+        writer.literal( value.toPrefixedString() );
+    }
+
+
     public void unparseSqlDatetimeArithmetic( SqlWriter writer, SqlCall call, Kind kind, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startList( "(", ")" );
         ((SqlNode) call.operand( 0 )).unparse( writer, leftPrec, rightPrec );

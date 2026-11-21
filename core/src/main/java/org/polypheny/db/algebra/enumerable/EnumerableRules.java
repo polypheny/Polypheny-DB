@@ -47,6 +47,7 @@ import org.polypheny.db.algebra.enumerable.document.EnumerableDocumentUnwindRule
 import org.polypheny.db.algebra.enumerable.document.EnumerableDocumentValuesRule;
 import org.polypheny.db.algebra.enumerable.lpg.EnumerableLpgMatchRule;
 import org.polypheny.db.algebra.enumerable.lpg.EnumerableLpgTransformerRule;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgJoin;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
@@ -62,6 +63,7 @@ public class EnumerableRules {
     public static final boolean BRIDGE_METHODS = true;
 
     public static final AlgOptRule ENUMERABLE_JOIN_RULE = new EnumerableJoinRule();
+    public static final AlgOptRule ENUMERABLE_LPG_JOIN_RULE = new EnumerableJoinRule( LogicalLpgJoin.class, "EnumerableLpgJoinRule" );
 
     public static final AlgOptRule ENUMERABLE_MERGE_JOIN_RULE = new EnumerableMergeJoinRule();
 

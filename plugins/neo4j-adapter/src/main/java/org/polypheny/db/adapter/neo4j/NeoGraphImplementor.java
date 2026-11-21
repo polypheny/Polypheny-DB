@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.neo4j;
 
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.as_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.count_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.distinct_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.edge_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.labels_;
@@ -95,8 +96,8 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
     }
 
 
-    private void addRowCount( int size ) {
-        statements.add( return_( as_( literal_( PolyInteger.of( size ) ), literal_( PolyString.of( "ROWCOUNT" ) ) ) ) );
+    private void addRowCount( NeoStatement count ) {
+        statements.add( return_( as_( count, literal_( PolyString.of( "ROWCOUNT" ) ) ) ) );
     }
 
 
@@ -129,13 +130,16 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
                     path_( node_( "" ), edge_( PolyString.of( "e" ), this.graph.mappingLabel, list_( List.of() ), EdgeDirection.NONE ), node_( "" ) ) ) );
         }
         if ( statements.get( statements.size() - 1 ).type == StatementType.CREATE ) {
-            addRowCount( 1 );
+            addRowCount( literal_( PolyInteger.of( 1 ) ) );
         }
 
         OperatorStatement statement = statements.get( statements.size() - 1 );
         if ( statements.get( statements.size() - 1 ).type != StatementType.RETURN ) {
             if ( isDml ) {
-                addRowCount( 1 );
+                addRowCount( switch ( statement.type ) {
+                    case SET, DELETE, DELETE_DETACH -> count_( "*" );
+                    default -> literal_( PolyInteger.of( 1 ) );
+                } );
             } else if ( statement.type == StatementType.WITH ) {
                 // Reuse the translated projection so its aliases remain bound.
                 statements.set( statements.size() - 1, return_( statement.statements ) );

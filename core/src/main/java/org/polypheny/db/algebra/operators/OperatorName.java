@@ -1674,6 +1674,18 @@ public enum OperatorName {
 
     REG_EQUALS( LangFunctionOperator.class ),
 
+    CYPHER_EQUALS( LangFunctionOperator.class ),
+
+    CYPHER_NOT_EQUALS( LangFunctionOperator.class ),
+
+    CYPHER_LESS_THAN( LangFunctionOperator.class ),
+
+    CYPHER_LESS_THAN_OR_EQUAL( LangFunctionOperator.class ),
+
+    CYPHER_GREATER_THAN( LangFunctionOperator.class ),
+
+    CYPHER_GREATER_THAN_OR_EQUAL( LangFunctionOperator.class ),
+
     STARTS_WITH( LangFunctionOperator.class ),
 
     ENDS_WITH( LangFunctionOperator.class ),
@@ -1704,6 +1716,8 @@ public enum OperatorName {
 
     CYPHER_EXTRACT_FROM_PATH( LangFunctionOperator.class ),
 
+    CYPHER_PATHS_DISJOINT( LangFunctionOperator.class ),
+
     CYPHER_EXTRACT_PROPERTY( LangFunctionOperator.class ),
 
     CYPHER_EXTRACT_ID( LangFunctionOperator.class ),
@@ -1717,6 +1731,9 @@ public enum OperatorName {
     CYPHER_TO_LIST( LangFunctionOperator.class ),
 
     CYPHER_ADJUST_EDGE( LangFunctionOperator.class ),
+    CYPHER_CREATE_NODE( LangFunctionOperator.class ),
+    CYPHER_CREATE_EDGE( LangFunctionOperator.class ),
+    CYPHER_CREATE_PATH( LangFunctionOperator.class ),
 
     CYPHER_SET_PROPERTY( LangFunctionOperator.class ),
 
@@ -1731,6 +1748,7 @@ public enum OperatorName {
     CYPHER_REMOVE_PROPERTIES( LangFunctionOperator.class ),
 
     CYPHER_LIKE( LangFunctionOperator.class ),
+    CYPHER_CONTAINS( LangFunctionOperator.class ),
 
 
     CYPHER_GEO_DISTANCE( LangFunctionOperator.class ),

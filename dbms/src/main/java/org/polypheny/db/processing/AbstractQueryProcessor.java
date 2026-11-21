@@ -555,6 +555,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     private PolyImplementation implementPhysicalPlan( AlgRoot root, AlgDataType parameterRowType ) {
         final Convention resultConvention = ENABLE_BINDABLE ? BindableConvention.INSTANCE : EnumerableConvention.INSTANCE;
+        ResultKind resultKind = root.resultKind == ResultKind.UPDATE_COUNT && isGraphInsertReturning( root )
+                ? ResultKind.forGraphProjection( root.validatedRowType )
+                : root.resultKind;
 
         PreparedResult<PolyValue> preparedResult = implement( root, parameterRowType );
         UiRoutingPageUtil.addPhysicalPlanPage( root.alg, statement.getAnalyzer(), shouldAttachTextualPolyAlg() );
@@ -566,7 +569,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 resultConvention,
                 new ExecutionTimeMonitor(),
                 Objects.requireNonNull( root.alg.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).dataModel(),
-                root.resultKind );
+                resultKind );
     }
 
 
@@ -978,7 +981,27 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
+    private static boolean isGraphInsertReturning( AlgRoot root ) {
+        return root.kind == Kind.INSERT
+                && root.getModel() == ModelTrait.GRAPH
+                && root.alg instanceof LogicalConditionalExecute returning
+                && returning.getLeft() instanceof LogicalLpgModify;
+    }
+
+
     private List<ProposedRoutingPlan> routeGraph( AlgRoot logicalRoot, LogicalQueryInformation queryInformation, DmlRouter dmlRouter ) {
+        if ( LogicalLpgModify.containsReturningWrite( logicalRoot.alg ) ) {
+            // A later MATCH can read from a sibling of the returning write in the algebra tree.
+            AlgNode routed = dmlRouter.routeGraphDml( logicalRoot.alg, statement );
+            return Lists.newArrayList( new ProposedRoutingPlanImpl( routed, logicalRoot, queryInformation.getQueryHash() ) );
+        }
+        if ( isGraphInsertReturning( logicalRoot ) ) {
+            LogicalConditionalExecute returning = (LogicalConditionalExecute) logicalRoot.alg;
+            LogicalLpgModify insert = (LogicalLpgModify) returning.getLeft();
+            AlgNode routedInsert = dmlRouter.routeGraphDml( insert, statement, null, null );
+            AlgNode routed = LogicalConditionalExecute.create( routedInsert, returning.getRight(), returning );
+            return Lists.newArrayList( new ProposedRoutingPlanImpl( routed, logicalRoot, queryInformation.getQueryHash() ) );
+        }
         if ( logicalRoot.alg instanceof LogicalLpgModify logicalLpgModify ) {
             AlgNode routedDml = dmlRouter.routeGraphDml( logicalLpgModify, statement, null, null );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryHash() ) );

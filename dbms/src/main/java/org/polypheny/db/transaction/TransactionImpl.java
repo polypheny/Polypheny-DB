@@ -213,15 +213,32 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             log.trace( "This transaction has already been finished!" );
             return;
         }
+        try {
+            commitChanges();
+        } catch ( RuntimeException | Error failure ) {
+            if ( isActive() ) {
+                try {
+                    rollback( failure.getMessage() );
+                } catch ( RuntimeException | Error cleanupFailure ) {
+                    failure.addSuppressed( cleanupFailure );
+                }
+            }
+            throw failure;
+        }
+    }
 
+
+    private void commitChanges() {
         Pair<Boolean, String> isValid = checkIntegrity();
         if ( !isValid.left ) {
-            rollback( "Constraint violation" );
             throw new TransactionException( isValid.right + "\nThere are violated constraints, the transaction was rolled back!" );
         }
 
         // physical changes
         commitActions.forEach( Runnable::run );
+
+        // Reject predictable commit errors before any adapter publishes its changes.
+        involvedAdapters.forEach( adapter -> adapter.validateCommit( xid ) );
 
         // Prepare to commit changes on all involved adapters and the catalog
         boolean okToCommit = true;
@@ -243,7 +260,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             if ( !rows.isEmpty() ) {
                 int index = ((List<PolyNumber>) rows.get( 0 ).get( 0 )).get( 1 ).intValue();
                 String error = infos.get( 0 ).errorMessages().get( index ) + "\nThere are violated constraints, the transaction was rolled back!";
-                rollback( error );
                 throw new TransactionException( error );
             }
         }
@@ -267,7 +283,6 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
             IndexManager.getInstance().commit( this.xid );
         } else {
-            rollback( "Unable to prepare all involved entities for commit. Rollback changes!" );
             throw new TransactionException( "Unable to prepare all involved entities for commit. Changes have been rolled back." );
         }
 

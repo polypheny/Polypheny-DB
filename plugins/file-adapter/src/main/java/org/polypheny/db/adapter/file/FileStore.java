@@ -297,6 +297,32 @@ public class FileStore extends DataStore<RelAdapterCatalog> {
 
 
     @Override
+    public void validateCommit( PolyXid xid ) {
+        String insertPrefix = "_ins_" + SHA.hashString( xid.toString(), CHARSET ) + "_";
+        File[] folders = rootDir.listFiles( File::isDirectory );
+        if ( folders == null ) {
+            throw new GenericRuntimeException( "Could not read the file store before committing" );
+        }
+        for ( File folder : folders ) {
+            File[] staged = folder.listFiles( file -> !file.isHidden() && file.getName().startsWith( insertPrefix ) );
+            if ( staged == null ) {
+                throw new GenericRuntimeException( "Could not read staged files in " + folder );
+            }
+            for ( File file : staged ) {
+                requireUnusedCommitTarget( new File( folder, file.getName().substring( insertPrefix.length() ) ) );
+            }
+        }
+    }
+
+
+    private static void requireUnusedCommitTarget( File target ) {
+        if ( target.exists() ) {
+            throw new GenericRuntimeException( "Could not commit: a row with the same primary key already exists" );
+        }
+    }
+
+
+    @Override
     public boolean prepare( PolyXid xid ) {
         return true;
     }
@@ -405,9 +431,7 @@ public class FileStore extends DataStore<RelAdapterCatalog> {
                         String hash = data.getName().substring( 70 );// 3 + 3 + 64 (three underlines + "ins" + xid hash)
                         target = new File( columnFolder, hash );
                         if ( commit ) {
-                            if ( target.exists() ) {
-                                throw new GenericRuntimeException( "Could not commit uniqueness constraint was invalidated" );
-                            }
+                            requireUnusedCommitTarget( target );
                             Files.move( data.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING );
                         } else {
                             Files.move( data.toPath(), target.toPath() );

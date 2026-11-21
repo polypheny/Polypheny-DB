@@ -50,7 +50,8 @@ public class EnumerableLpgTransformerRule extends ConverterRule {
                 alg.getInputs().stream().map( i -> convert( i, inputOut ) ).collect( Collectors.toList() ),
                 alg.getTupleType(),
                 lpgTransformer.operationOrder,
-                lpgTransformer.operation );
+                lpgTransformer.operation,
+                lpgTransformer.detachDelete );
     }
 
 }

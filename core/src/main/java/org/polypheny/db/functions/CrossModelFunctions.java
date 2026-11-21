@@ -19,9 +19,11 @@ package org.polypheny.db.functions;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -38,8 +40,10 @@ import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.algebra.type.GraphType;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
@@ -52,6 +56,9 @@ import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.relational.PolyMap;
 
 public class CrossModelFunctions {
+
+    // Existing normalized graph properties contain plain text. Keep this marker printable across SQL adapters.
+    private static final String TYPED_GRAPH_VALUE_PREFIX = "~{PolyphenyGraphValue:v1}~:";
 
     private CrossModelFunctions() {
         // empty on purpose
@@ -68,52 +75,145 @@ public class CrossModelFunctions {
      * @return the result of the modify operation
      */
     @SuppressWarnings("unused")
-    public static Enumerable<PolyValue[]> sendGraphModifies( DataContext context, List<Function0<Enumerable<?>>> enumerables, List<PolyType> order, Operation operation ) {
+    public static Enumerable<PolyValue[]> sendGraphModifies( DataContext context, List<Function0<Enumerable<?>>> enumerables,
+            List<PolyType> order, Operation operation, boolean detachDelete ) {
         if ( operation == Modify.Operation.DELETE ) {
-            return sendDeletes( context, enumerables, order );
+            return sendGraphDeletes( context, enumerables, order, detachDelete );
         }
         if ( operation == Modify.Operation.UPDATE ) {
-            return sendUpdates( context, enumerables, order );
+            return sendGraphUpdates( context, enumerables, order );
         }
+        return sendGraphInserts( context, enumerables, order );
+    }
 
-        int i = 0;
+
+    private static Enumerable<PolyValue[]> sendGraphInserts( DataContext context, List<Function0<Enumerable<?>>> enumerables, List<PolyType> order ) {
         Map<Long, PolyValue> values = context.getParameterValues().get( 0 );
         Map<Long, AlgDataType> typeBackup = context.getParameterTypes();
         JavaTypeFactory typeFactory = context.getStatement().getTransaction().getTypeFactory();
-        AlgDataType idType = typeFactory.createPolyType( PolyType.VARCHAR, 36 );
+        AlgDataType idType = typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE );
         AlgDataType labelType = typeFactory.createPolyType( PolyType.VARCHAR, 255 );
         AlgDataType valueType = typeFactory.createPolyType( PolyType.VARCHAR, 255 );
 
-        context.resetParameterValues();
-        Enumerator<?> enumerable;
-        for ( PolyType polyType : order ) {
-            if ( polyType == PolyType.NODE ) {
-                PolyNode node = (PolyNode) values.get( (long) i );
-
-                // node table insert
-                nodeTableInsert( context, enumerables, 2 * i, idType, labelType, node );
-
-                // node property table insert
-                nodePropertiesTableInsert( context, enumerables, 2 * i + 1, idType, labelType, valueType, node );
-
-            } else if ( polyType == PolyType.EDGE ) {
-                PolyEdge edge = (PolyEdge) values.get( (long) i );
-
-                // edge table insert
-                edgeTableInsert( context, enumerables, 2 * i, idType, labelType, edge );
-
-                // edge property table insert
-                edgePropertiesTableInsert( context, enumerables, 2 * i + 1, idType, labelType, valueType, edge );
+        try {
+            if ( order.contains( PolyType.EDGE ) ) {
+                validateInsertEndpoints( context, enumerables.get( 2 * order.size() ), order, values, idType );
             }
-
-            i++;
+            context.resetParameterValues();
+            for ( int i = 0; i < order.size(); i++ ) {
+                PolyValue element = values.get( (long) i );
+                if ( element == null || element.isNull() ) {
+                    continue;
+                }
+                if ( order.get( i ) == PolyType.NODE ) {
+                    PolyNode node = element.asNode();
+                    nodeTableInsert( context, enumerables, 2 * i, idType, labelType, node );
+                    nodePropertiesTableInsert( context, enumerables, 2 * i + 1, idType, labelType, valueType, node );
+                } else if ( order.get( i ) == PolyType.EDGE ) {
+                    PolyEdge edge = element.asEdge();
+                    edgeTableInsert( context, enumerables, 2 * i, idType, labelType, edge );
+                    edgePropertiesTableInsert( context, enumerables, 2 * i + 1, idType, labelType, valueType, edge );
+                }
+            }
+        } finally {
+            context.resetParameterValues();
+            context.setParameterValues( List.of( values ) );
+            context.setParameterTypes( typeBackup );
         }
-        // restore original context
-        context.resetParameterValues();
-        context.setParameterValues( List.of( values ) );
-        context.setParameterTypes( typeBackup );
 
         return Linq4j.singletonEnumerable( new PolyValue[]{ PolyInteger.of( 1 ) } );
+    }
+
+
+    private static Enumerable<PolyValue[]> sendGraphUpdates( DataContext context, List<Function0<Enumerable<?>>> enumerables, List<PolyType> order ) {
+        List<Map<Long, PolyValue>> rows = context.getParameterValues();
+        Map<Long, AlgDataType> types = context.getParameterTypes();
+        long count = 0;
+        try {
+            validateUpdateTargets( context, enumerables, order, rows );
+            for ( Map<Long, PolyValue> row : rows ) {
+                if ( row.values().stream().allMatch( value -> value == null || value.isNull() ) ) {
+                    continue;
+                }
+                sendUpdates( context, enumerables, order, row );
+                count++;
+            }
+        } finally {
+            context.resetParameterValues();
+            context.setParameterValues( rows );
+            context.setParameterTypes( types );
+        }
+        return Linq4j.singletonEnumerable( new PolyValue[]{ PolyLong.of( count ) } );
+    }
+
+
+    private static void validateInsertEndpoints( DataContext context, Function0<Enumerable<?>> nodeLookup, List<PolyType> order,
+            Map<Long, PolyValue> values, AlgDataType idType ) {
+        Set<PolyString> insertedNodes = new LinkedHashSet<>();
+        Set<PolyString> endpoints = new LinkedHashSet<>();
+        for ( int i = 0; i < order.size(); i++ ) {
+            PolyValue element = values.get( (long) i );
+            if ( element == null || element.isNull() ) {
+                continue;
+            }
+            if ( order.get( i ) == PolyType.NODE ) {
+                insertedNodes.add( element.asNode().id );
+            } else if ( order.get( i ) == PolyType.EDGE ) {
+                PolyEdge edge = element.asEdge();
+                endpoints.add( edge.left );
+                endpoints.add( edge.right );
+            }
+        }
+        // Newly declared endpoints in this row will be inserted by the same CREATE.
+        endpoints.removeAll( insertedNodes );
+        requireGraphElements( context, nodeLookup, endpoints, idType, "Graph relationship requires exactly one source and one target node" );
+    }
+
+
+    private static void validateUpdateTargets( DataContext context, List<Function0<Enumerable<?>>> enumerables,
+            List<PolyType> order, List<Map<Long, PolyValue>> rows ) {
+        Set<PolyString> nodes = new LinkedHashSet<>();
+        Set<PolyString> edges = new LinkedHashSet<>();
+        Set<PolyString> endpoints = new LinkedHashSet<>();
+        for ( Map<Long, PolyValue> row : rows ) {
+            for ( int i = 0; i < order.size(); i++ ) {
+                PolyValue element = row.get( (long) i );
+                if ( element == null || element.isNull() ) {
+                    continue;
+                }
+                if ( order.get( i ) == PolyType.NODE ) {
+                    nodes.add( element.asNode().id );
+                } else if ( order.get( i ) == PolyType.EDGE ) {
+                    PolyEdge edge = element.asEdge();
+                    edges.add( edge.id );
+                    endpoints.add( edge.left );
+                    endpoints.add( edge.right );
+                }
+            }
+        }
+
+        AlgDataType idType = context.getStatement().getTransaction().getTypeFactory().createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE );
+        int nodeIndex = 4 * order.size();
+        Function0<Enumerable<?>> nodeLookup = enumerables.get( nodeIndex );
+        requireGraphElements( context, nodeLookup, nodes, idType, "Graph node disappeared before the update" );
+        if ( !edges.isEmpty() ) {
+            requireGraphElements( context, enumerables.get( nodeIndex + 1 ), edges, idType, "Graph relationship disappeared before the update" );
+            endpoints.removeAll( nodes );
+            requireGraphElements( context, nodeLookup, endpoints, idType, "Graph relationship requires exactly one source and one target node" );
+        }
+    }
+
+
+    private static void requireGraphElements( DataContext context, Function0<Enumerable<?>> lookup, Set<PolyString> ids, AlgDataType idType, String error ) {
+        for ( PolyString id : ids ) {
+            context.resetParameterValues();
+            context.addParameterValues( 0, idType, List.of( id ) );
+            try ( Enumerator<?> matches = lookup.apply().enumerator() ) {
+                if ( !matches.moveNext() ) {
+                    throw new GenericRuntimeException( error );
+                }
+            }
+        }
     }
 
 
@@ -195,13 +295,7 @@ public class CrossModelFunctions {
      * @param edge the edge for which the properties are inserted
      */
     private static void edgePropertiesTableInsert( DataContext context, List<Function0<Enumerable<?>>> enumerables, int i, AlgDataType idType, AlgDataType labelType, AlgDataType valueType, PolyEdge edge ) {
-        if ( !edge.properties.isEmpty() ) {
-            context.addParameterValues( 0, idType, Collections.nCopies( edge.properties.size(), edge.id ) );
-            context.addParameterValues( 1, labelType, new ArrayList<>( edge.properties.keySet() ) );
-            context.addParameterValues( 2, valueType, new ArrayList<>( edge.properties.values().stream().map( value -> PolyString.of( value.toString() ) ).toList() ) );
-            drainInserts( enumerables.get( i ), edge.labels.size() );
-            context.resetParameterValues();
-        }
+        graphPropertiesTableInsert( context, enumerables.get( i ), idType, labelType, valueType, edge.id, edge.properties );
     }
 
 
@@ -219,7 +313,7 @@ public class CrossModelFunctions {
         context.addParameterValues( 3, idType, List.of( edge.right ) );
 
         // execute all inserts
-        drainInserts( enumerables.get( i ), edge.labels.size() );
+        drainWrites( enumerables.get( i ), edge.labels.size() );
         context.resetParameterValues();
     }
 
@@ -232,13 +326,51 @@ public class CrossModelFunctions {
      * @param node the edge for which the properties are inserted
      */
     private static void nodePropertiesTableInsert( DataContext context, List<Function0<Enumerable<?>>> enumerables, int i, AlgDataType idType, AlgDataType labelType, AlgDataType valueType, PolyNode node ) {
-        if ( !node.properties.isEmpty() ) {
-            context.addParameterValues( 0, idType, Collections.nCopies( node.properties.size(), node.id ) );
-            context.addParameterValues( 1, labelType, new ArrayList<>( node.properties.keySet() ) );
-            context.addParameterValues( 2, valueType, new ArrayList<>( node.properties.values().stream().map( e -> PolyString.of( e.toJson() ) ).toList() ) );
-            drainInserts( enumerables.get( i ), node.properties.size() );
+        graphPropertiesTableInsert( context, enumerables.get( i ), idType, labelType, valueType, node.id, node.properties );
+    }
+
+
+    private static void graphPropertiesTableInsert( DataContext context, Function0<Enumerable<?>> enumerable, AlgDataType idType,
+            AlgDataType labelType, AlgDataType valueType, PolyString id, PolyDictionary properties ) {
+        List<PolyString> keys = new ArrayList<>();
+        List<PolyString> values = new ArrayList<>();
+        for ( Entry<PolyString, PolyValue> entry : properties.entrySet() ) {
+            PolyValue value = entry.getValue();
+            if ( value != null && !value.isNull() ) {
+                keys.add( entry.getKey() );
+                values.add( PolyString.of( graphPropertyStorageValue( value ) ) );
+            }
+        }
+        if ( !keys.isEmpty() ) {
+            context.addParameterValues( 0, idType, Collections.nCopies( keys.size(), id ) );
+            context.addParameterValues( 1, labelType, new ArrayList<>( keys ) );
+            context.addParameterValues( 2, valueType, new ArrayList<>( values ) );
+            drainWrites( enumerable, keys.size() );
             context.resetParameterValues();
         }
+    }
+
+
+    public static String graphPropertyStorageValue( PolyValue value ) {
+        if ( value.isString() && !value.asString().value.startsWith( TYPED_GRAPH_VALUE_PREFIX ) ) {
+            return value.asString().value;
+        }
+        return TYPED_GRAPH_VALUE_PREFIX + value.toTypedJson();
+    }
+
+
+    public static PolyValue readGraphPropertyStorageValue( PolyString stored ) {
+        if ( stored.isNull() ) {
+            return PolyNull.NULL;
+        }
+        if ( stored.value.startsWith( TYPED_GRAPH_VALUE_PREFIX ) ) {
+            String json = stored.value.substring( TYPED_GRAPH_VALUE_PREFIX.length() );
+            PolyValue decoded = PolyValue.fromTypedJson( json, PolyValue.class );
+            if ( decoded != null && decoded.toTypedJson().equals( json ) ) {
+                return decoded;
+            }
+        }
+        return stored;
     }
 
 
@@ -254,58 +386,76 @@ public class CrossModelFunctions {
         labels.add( 0, PolyString.of( "$" ) ); // id + key (null ) is required for each node to enable label-less nodes
         context.addParameterValues( 0, idType, Collections.nCopies( labels.size(), node.id ) );
         context.addParameterValues( 1, labelType, labels );
-        drainInserts( enumerables.get( i ), labels.size() );
+        drainWrites( enumerables.get( i ), labels.size() );
         context.resetParameterValues();
     }
 
 
-    /**
-     * Modify operation, which deletes specific elements
-     *
-     * @param context dataContext of the delete operation
-     * @param enumerables collection of all modify enumerables
-     * @param order the order of modify operations
-     */
-    private static Enumerable<PolyValue[]> sendDeletes( DataContext context, List<Function0<Enumerable<?>>> enumerables, List<PolyType> order ) {
-        int i = 0;
-        Map<Long, PolyValue> values = context.getParameterValues().get( 0 );
-        Map<Long, AlgDataType> typeBackup = context.getParameterTypes();
-        JavaTypeFactory typeFactory = context.getStatement().getTransaction().getTypeFactory();
-        AlgDataType idType = typeFactory.createPolyType( PolyType.VARCHAR, 36 );
-        AlgDataType labelType = typeFactory.createPolyType( PolyType.VARCHAR, 255 );
-        AlgDataType valueType = typeFactory.createPolyType( PolyType.VARCHAR, 255 );
-
-        context.resetParameterValues();
-        for ( PolyType polyType : order ) {
-            if ( polyType == PolyType.NODE ) {
-                PolyNode node = (PolyNode) values.get( (long) i );
-
-                // node table delete
-                nodeTableDelete( context, enumerables, 2 * i, idType, labelType, node );
-
-                // node property table delete
-                nodePropertiesTableDelete( context, enumerables, 2 * i + 1, idType, labelType, node );
-
-            } else if ( polyType == PolyType.EDGE ) {
-                PolyEdge edge = (PolyEdge) values.get( (long) i );
-
-                // edge table delete
-                edgeTableDelete( context, enumerables, 2 * i, idType, labelType, edge );
-
-                // edge property table delete
-                edgePropertiesTableDelete( context, enumerables, 2 * i, idType, labelType, edge );
-
+    private static Enumerable<PolyValue[]> sendGraphDeletes( DataContext context, List<Function0<Enumerable<?>>> inputs,
+            List<PolyType> order, boolean detachDelete ) {
+        List<Map<Long, PolyValue>> rows = context.getParameterValues();
+        Map<Long, AlgDataType> types = context.getParameterTypes();
+        Set<PolyString> nodes = new LinkedHashSet<>();
+        Set<PolyString> edges = new LinkedHashSet<>();
+        long count = 0;
+        for ( Map<Long, PolyValue> row : rows ) {
+            boolean hasTarget = false;
+            for ( int i = 0; i < order.size(); i++ ) {
+                PolyValue value = row.get( (long) i );
+                if ( value == null || value.isNull() ) {
+                    continue;
+                }
+                hasTarget = true;
+                if ( order.get( i ) == PolyType.NODE ) {
+                    nodes.add( value.asNode().id );
+                } else {
+                    edges.add( value.asEdge().id );
+                }
             }
-
-            i++;
+            if ( hasTarget ) {
+                count++;
+            }
         }
-        // restore original context
+        JavaTypeFactory typeFactory = context.getStatement().getTransaction().getTypeFactory();
+        AlgDataType idType = typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE );
+        try {
+            if ( !nodes.isEmpty() ) {
+                context.resetParameterValues();
+                try ( Enumerator<?> incidentEdges = inputs.get( 4 ).apply().enumerator() ) {
+                    while ( incidentEdges.moveNext() ) {
+                        Object[] edge = (Object[]) incidentEdges.current();
+                        if ( !nodes.contains( edge[1] ) && !nodes.contains( edge[2] ) ) {
+                            continue;
+                        }
+                        PolyString id = (PolyString) edge[0];
+                        if ( !detachDelete && !edges.contains( id ) ) {
+                            throw new GenericRuntimeException( "Cannot delete a node with relationships. Delete its relationships or use DETACH DELETE." );
+                        }
+                        edges.add( id );
+                    }
+                }
+            }
+            // The first two inputs delete relationships and their properties. The next two handle nodes.
+            for ( PolyString id : edges ) {
+                deleteGraphElement( context, inputs, 0, idType, id );
+            }
+            for ( PolyString id : nodes ) {
+                deleteGraphElement( context, inputs, 2, idType, id );
+            }
+        } finally {
+            context.resetParameterValues();
+            context.setParameterValues( rows );
+            context.setParameterTypes( types );
+        }
+        return Linq4j.singletonEnumerable( new PolyValue[]{ PolyLong.of( count ) } );
+    }
+
+
+    private static void deleteGraphElement( DataContext context, List<Function0<Enumerable<?>>> inputs, int index, AlgDataType idType, PolyString id ) {
         context.resetParameterValues();
-        context.setParameterValues( List.of( values ) );
-        context.setParameterTypes( typeBackup );
-
-        return Linq4j.singletonEnumerable( new PolyValue[]{ PolyLong.of( values.size() ) } );
-
+        context.addParameterValues( 0, idType, List.of( id ) );
+        drainWrites( inputs.get( index ), 1 );
+        drainWrites( inputs.get( index + 1 ), 1 );
     }
 
 
@@ -319,8 +469,7 @@ public class CrossModelFunctions {
      */
     private static void edgePropertiesTableDelete( DataContext context, List<Function0<Enumerable<?>>> enumerables, int enumIndex, AlgDataType idType, AlgDataType labelType, PolyEdge edge ) {
         context.addParameterValues( 0, idType, List.of( edge.id ) );
-        Enumerator<?> enumerableE = enumerables.get( enumIndex ).apply().enumerator();
-        enumerableE.moveNext();
+        drainWrites( enumerables.get( enumIndex ), 1 );
         context.resetParameterValues();
     }
 
@@ -336,8 +485,7 @@ public class CrossModelFunctions {
     private static void edgeTableDelete( DataContext context, List<Function0<Enumerable<?>>> enumerables, int enumIndex, AlgDataType idType, AlgDataType labelType, PolyEdge edge ) {
         context.addParameterValues( 0, idType, List.of( edge.id ) );
         context.addParameterValues( 1, labelType, List.copyOf( edge.labels ) );
-        Enumerator<?> enumerable = enumerables.get( enumIndex ).apply().enumerator();
-        enumerable.moveNext();
+        drainWrites( enumerables.get( enumIndex ), 1 );
         context.resetParameterValues();
     }
 
@@ -352,8 +500,7 @@ public class CrossModelFunctions {
      */
     private static void nodePropertiesTableDelete( DataContext context, List<Function0<Enumerable<?>>> enumerables, int enumIndex, AlgDataType idType, AlgDataType labelType, PolyNode node ) {
         context.addParameterValues( 0, idType, List.of( node.id ) );
-        Enumerator<?> enumerable = enumerables.get( enumIndex ).apply().enumerator();
-        enumerable.moveNext();
+        drainWrites( enumerables.get( enumIndex ), 1 );
         context.resetParameterValues();
     }
 
@@ -368,8 +515,7 @@ public class CrossModelFunctions {
      */
     private static void nodeTableDelete( DataContext context, List<Function0<Enumerable<?>>> enumerables, int enumIndex, AlgDataType idType, AlgDataType labelType, PolyNode node ) {
         context.addParameterValues( 0, idType, List.of( node.id ) );
-        Enumerator<?> enumerable = enumerables.get( enumIndex ).apply().enumerator();
-        enumerable.moveNext();
+        drainWrites( enumerables.get( enumIndex ), 1 );
         context.resetParameterValues();
     }
 
@@ -380,12 +526,9 @@ public class CrossModelFunctions {
      * @param context the dataContext for the update operation
      * @param enumerables collection of all modify operations
      * @param order the types included in the update operation
-     * @return the result of the update operation
      */
-    private static Enumerable<PolyValue[]> sendUpdates( DataContext context, List<Function0<Enumerable<?>>> enumerables, List<PolyType> order ) {
+    private static void sendUpdates( DataContext context, List<Function0<Enumerable<?>>> enumerables, List<PolyType> order, Map<Long, PolyValue> values ) {
         int i = 0;
-        Map<Long, PolyValue> values = context.getParameterValues().get( 0 );
-        Map<Long, AlgDataType> typeBackup = context.getParameterTypes();
         JavaTypeFactory typeFactory = context.getStatement().getTransaction().getTypeFactory();
         AlgDataType idType = typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE );
         AlgDataType labelType = typeFactory.createPolyType( PolyType.TEXT );
@@ -393,6 +536,11 @@ public class CrossModelFunctions {
 
         context.resetParameterValues();
         for ( PolyType polyType : order ) {
+            PolyValue element = values.get( (long) i );
+            if ( element == null || element.isNull() ) {
+                i++;
+                continue;
+            }
             if ( polyType == PolyType.NODE ) {
                 PolyNode node = (PolyNode) values.get( (long) i );
 
@@ -419,26 +567,20 @@ public class CrossModelFunctions {
 
             i++;
         }
-        // restore original context
-        context.resetParameterValues();
-        context.setParameterValues( List.of( values ) );
-        context.setParameterTypes( typeBackup );
-
-        return Linq4j.singletonEnumerable( new PolyValue[]{ PolyLong.of( values.size() ) } );
-
     }
 
 
     /**
-     * Executes all insert operations.
+     * Executes the bound write operations.
      *
-     * @param activator functions, which execute the inserts
-     * @param size the amount of inserts to execute
+     * @param activator the function that executes the writes
+     * @param size the maximum number of rows the write returns
      */
-    private static void drainInserts( Function0<Enumerable<?>> activator, int size ) {
-        Enumerator<?> enumerable = activator.apply().enumerator();
-        for ( int i1 = 0; i1 < size; i1++ ) {
-            enumerable.moveNext();
+    private static void drainWrites( Function0<Enumerable<?>> activator, int size ) {
+        try ( Enumerator<?> enumerable = activator.apply().enumerator() ) {
+            for ( int i = 0; i < size && enumerable.moveNext(); i++ ) {
+                // The adapter performs the write while advancing its cursor.
+            }
         }
     }
 
