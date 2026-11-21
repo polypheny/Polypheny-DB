@@ -76,13 +76,6 @@ public class HepAlgVertex extends AbstractAlgNode {
 
 
     @Override
-    public String algCompareString() {
-        // Compare makes no sense here. Use hashCode() to avoid errors.
-        return this.getClass().getSimpleName() + "$" + hashCode() + "&";
-    }
-
-
-    @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // HepAlgMetadataProvider is supposed to intercept this and redirect to the real rels. But sometimes it doesn't.
         return planner.getCostFactory().makeTinyCost();

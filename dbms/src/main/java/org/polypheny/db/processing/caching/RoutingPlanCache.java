@@ -21,11 +21,16 @@ import com.google.common.cache.CacheBuilder;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.PlanKey;
+import org.polypheny.db.algebra.PlanKeys;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationAction;
 import org.polypheny.db.information.InformationGraph;
@@ -39,7 +44,6 @@ import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.information.InformationText;
 import org.polypheny.db.monitoring.core.MonitoringServiceProvider;
 import org.polypheny.db.routing.dto.CachedProposedRoutingPlan;
-import org.polypheny.db.util.Pair;
 
 
 /**
@@ -49,7 +53,7 @@ import org.polypheny.db.util.Pair;
 public class RoutingPlanCache {
 
     public static final RoutingPlanCache INSTANCE = new RoutingPlanCache();
-    private final Cache<Pair<String, Set<Long>>, List<CachedProposedRoutingPlan>> planCache;
+    private final Cache<PlanKey, CachedProposedRoutingPlan> planCache;
 
     private final AtomicLong hitsCounter = new AtomicLong(); // Number of requests for which the cache contained the value
     private final AtomicLong missesCounter = new AtomicLong(); // Number of requests when the cache didn't contain the value
@@ -64,25 +68,35 @@ public class RoutingPlanCache {
     }
 
 
-    public boolean isKeyPresent( String queryId, Set<Long> partitionIds ) {
-        return planCache.getIfPresent( Pair.of( queryId, partitionIds ) ) != null;
+    /** Identity of the plan as supplied to the router, including its catalog and partitions. */
+    public static Optional<PlanKey> keyFor( AlgRoot root, Map<Long, List<Long>> accessedPartitions, Snapshot liveSnapshot ) {
+        Snapshot snapshot = root.alg.getCluster().getSnapshot();
+        if ( snapshot == null || snapshot != liveSnapshot ) {
+            return Optional.empty();
+        }
+        // The router looks up lists by entity. It can process each list in order.
+        List<?> partitions = accessedPartitions.entrySet().stream()
+                .sorted( Map.Entry.comparingByKey() )
+                .map( entry -> List.of( entry.getKey(), entry.getValue() ) )
+                .toList();
+        return PlanKeys.forTree( root.alg )
+                .flatMap( tree -> PlanKey.of( tree, root.kind, root.resultKind, root.validatedRowType, root.fields, root.collation, partitions, snapshot ) );
     }
 
 
-    public List<CachedProposedRoutingPlan> getIfPresent( String queryId, Set<Long> partitionIds ) {
-        List<CachedProposedRoutingPlan> routingPlans = planCache.getIfPresent( Pair.of( queryId, partitionIds ) );
-        if ( routingPlans == null ) {
+    public @Nullable CachedProposedRoutingPlan getIfPresent( PlanKey key ) {
+        CachedProposedRoutingPlan plan = planCache.getIfPresent( key );
+        if ( plan == null ) {
             missesCounter.incrementAndGet();
         } else {
             hitsCounter.incrementAndGet();
         }
-
-        return routingPlans != null ? routingPlans : Collections.emptyList();
+        return plan;
     }
 
 
-    public void put( String queryId, Set<Long> partitionIds, List<CachedProposedRoutingPlan> routingPlans ) {
-        planCache.put( new Pair<>( queryId, partitionIds ), routingPlans );
+    public void put( PlanKey key, CachedProposedRoutingPlan plan ) {
+        planCache.asMap().putIfAbsent( key, plan );
     }
 
 
@@ -205,6 +219,16 @@ public class RoutingPlanCache {
 
     public long getSize() {
         return planCache.size();
+    }
+
+
+    long getHitCount() {
+        return hitsCounter.get();
+    }
+
+
+    long getMissCount() {
+        return missesCounter.get();
     }
 
 }

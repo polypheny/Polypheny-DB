@@ -18,9 +18,7 @@ package org.polypheny.db.algebra.core.document;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgNode;
@@ -58,15 +56,6 @@ public class DocumentAggregate extends SingleAlg implements DocumentAlg {
 
     public Optional<RexNameRef> getGroup() {
         return Optional.ofNullable( group );
-    }
-
-
-    @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                input.algCompareString() + "$" +
-                (group != null ? group.hashCode() : "") + "$" +
-                aggCalls.stream().map( Objects::toString ).collect( Collectors.joining( " $ " ) ) + "&";
     }
 
 

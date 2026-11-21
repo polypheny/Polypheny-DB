@@ -40,7 +40,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Enumerable;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgCollation;
@@ -270,15 +269,6 @@ public class Bindables {
 
             // Multiply the cost by a factor that makes a relScan more attractive if filters and projects are pushed to the table relScan
             return super.computeSelfCost( planner, mq ).multiplyBy( f * p * 0.01d * 100.0d );  //TODO(s3lph): Temporary *100, otherwise foreign key enforcement breaks
-        }
-
-
-        @Override
-        public String algCompareString() {
-            return getClass().getSimpleName() + "$" +
-                    "." + entity.id +
-                    (filters != null ? filters.stream().map( RexNode::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
-                    (projects != null ? projects.toString() : "") + "&";
         }
 
 

@@ -23,9 +23,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.algebra.PlanKey;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
@@ -82,10 +84,10 @@ public final class ColumnDistribution implements FieldDistribution {
     public ColumnDistribution( long logicalEntityId, List<Long> targetColumns, List<Long> targetPartitions, List<Long> sourcePartitions, List<Long> excludedAllocations, Snapshot snapshot, @NotNull MergeStrategy mergeStrategy ) {
         this.logicalEntityId = logicalEntityId;
 
-        this.targetColumns = targetColumns;
-        this.targetPartitions = targetPartitions;
-        this.sourcePartitions = sourcePartitions;
-        this.excludedAllocations = excludedAllocations;
+        this.targetColumns = List.copyOf( targetColumns );
+        this.targetPartitions = List.copyOf( targetPartitions );
+        this.sourcePartitions = List.copyOf( sourcePartitions );
+        this.excludedAllocations = List.copyOf( excludedAllocations );
         this.snapshot = snapshot;
 
         this.table = snapshot.rel().getTable( logicalEntityId ).orElseThrow();
@@ -97,7 +99,7 @@ public final class ColumnDistribution implements FieldDistribution {
 
         this.placementColumns = getPlacementColumns();
 
-        targetPartitions.forEach( this::checkFullPlacement );
+        this.targetPartitions.forEach( this::checkFullPlacement );
         this.mergeStrategy = mergeStrategy;
 
     }
@@ -157,6 +159,14 @@ public final class ColumnDistribution implements FieldDistribution {
 
     public RoutedDistribution route() {
         return mergeStrategy.pick( this );
+    }
+
+
+    public Optional<PlanKey> cacheKey( Snapshot liveSnapshot ) {
+        if ( snapshot != liveSnapshot || mergeStrategy.getClass() != ShrinkingMergeStrategy.class ) {
+            return Optional.empty();
+        }
+        return PlanKey.of( logicalEntityId, targetColumns, targetPartitions, sourcePartitions, excludedAllocations, snapshot );
     }
 
 
@@ -344,6 +354,10 @@ public final class ColumnDistribution implements FieldDistribution {
 
     public record PartialPartition( AllocationEntity entity, List<AllocationColumn> columns ) {
 
+        public PartialPartition {
+            columns = List.copyOf( columns );
+        }
+
     }
 
 
@@ -360,6 +374,11 @@ public final class ColumnDistribution implements FieldDistribution {
      * @param partials
      */
     public record FullPartition( long id, List<PartialPartition> partials ) implements FieldDistribution {
+
+        public FullPartition {
+            partials = List.copyOf( partials );
+        }
+
 
         public boolean needsJoin() {
             return partials.size() > 1;
@@ -384,6 +403,11 @@ public final class ColumnDistribution implements FieldDistribution {
 
 
     public record RoutedDistribution( LogicalEntity entity, List<FullPartition> partitions ) {
+
+        public RoutedDistribution {
+            partitions = List.copyOf( partitions );
+        }
+
 
         public boolean needsUnion() {
             return partitions.size() > 1;

@@ -66,13 +66,6 @@ public class EnumerableBindable extends ConverterImpl implements BindableAlg {
 
 
     @Override
-    public String algCompareString() {
-        return EnumerableBindable.class.getSimpleName() + "$"
-                + input.algCompareString() + "&";
-    }
-
-
-    @Override
     public Class<PolyValue[]> getElementType() {
         return PolyValue[].class;
     }

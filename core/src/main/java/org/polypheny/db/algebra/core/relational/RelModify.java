@@ -20,7 +20,6 @@ package org.polypheny.db.algebra.core.relational;
 import com.google.common.base.Preconditions;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
@@ -200,18 +199,6 @@ public abstract class RelModify<E extends Entity> extends Modify<E> implements R
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         // REVIEW jvs: Just for now...
         return mq.getTupleCount( this ).map( count -> planner.getCostFactory().makeCost( count, 0, 0 ) ).orElse( planner.getCostFactory().makeInfiniteCost() );
-    }
-
-
-    @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                "." + entity.id + "$" +
-                (getInputs() != null ? getInputs().stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) ) + "$" : "") +
-                getOperation().name() + "$" +
-                (getUpdateColumns() != null ? getUpdateColumns().stream().map( c -> "c" ).collect( Collectors.joining( "$" ) ) + "$" : "") +
-                (getSourceExpressions() != null ? getSourceExpressions().stream().map( RexNode::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
-                isFlattened() + "&";
     }
 
 

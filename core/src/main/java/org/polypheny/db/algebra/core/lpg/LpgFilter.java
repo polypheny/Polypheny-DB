@@ -45,14 +45,6 @@ public abstract class LpgFilter extends SingleAlg implements LpgAlg {
 
 
     @Override
-    public String algCompareString() {
-        return getClass().getSimpleName() + "$"
-                + this.condition.hashCode() + "$"
-                + getInput().algCompareString() + "&";
-    }
-
-
-    @Override
     public NodeType getNodeType() {
         return NodeType.FILTER;
     }

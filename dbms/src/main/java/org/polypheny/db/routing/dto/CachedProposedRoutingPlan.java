@@ -16,42 +16,12 @@
 
 package org.polypheny.db.routing.dto;
 
-import lombok.Getter;
-import lombok.Setter;
-import org.polypheny.db.plan.AlgOptCost;
-import org.polypheny.db.routing.ColumnDistribution.RoutedDistribution;
-import org.polypheny.db.routing.FieldDistribution;
-import org.polypheny.db.routing.ProposedRoutingPlan;
-import org.polypheny.db.routing.Router;
-import org.polypheny.db.routing.RoutingPlan;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 
 
 /**
- * Cached version of the routing plan.
+ * Allocation chosen by the router for a single direct relational scan.
  */
-@Getter
-@Setter
-public class CachedProposedRoutingPlan implements RoutingPlan {
-
-    @Getter
-    public RoutedDistribution routedDistribution; // PartitionId -> List<Pair<PlacementId, ColumnId>>
-    @Getter
-    public FieldDistribution fieldDistribution; // PartitionId -> List<AllocationColumn>
-
-    protected String queryClass;
-    protected String physicalQueryClass;
-    protected AlgOptCost preCosts;
-    protected Class<? extends Router> router;
-
-
-    public CachedProposedRoutingPlan( ProposedRoutingPlan routingPlan, AlgOptCost approximatedCosts ) {
-        this.queryClass = routingPlan.getQueryClass();
-        this.preCosts = approximatedCosts;
-        this.router = routingPlan.getRouter();
-        this.routedDistribution = routingPlan.getRoutedDistribution();
-        this.fieldDistribution = getFieldDistribution();
-        this.physicalQueryClass = routingPlan.getPhysicalQueryClass();
-    }
-
+public record CachedProposedRoutingPlan( AllocationTable allocation, String physicalQueryClass ) {
 
 }

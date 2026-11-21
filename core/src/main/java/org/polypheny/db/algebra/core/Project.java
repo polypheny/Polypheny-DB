@@ -37,10 +37,8 @@ package org.polypheny.db.algebra.core;
 import com.google.common.collect.ImmutableList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
@@ -315,19 +313,6 @@ public abstract class Project extends SingleAlg {
             }
         }
         return true;
-    }
-
-
-    @Override
-    public String algCompareString() {
-        String types = "";
-        if ( exps != null ) {
-            types = "$" + exps.stream().map( e -> e.accept( new AlgComparatorBuilder() ) ).collect( Collectors.joining( "$" ) );
-        }
-        return this.getClass().getSimpleName() + "$" + input.algCompareString() + "$" +
-                (exps != null ? exps.stream().map( Objects::hashCode ).map( Objects::toString )
-                        .collect( Collectors.joining( "$" ) ) : "") + "$" +
-                rowType.toString() + types + "&";
     }
 
 

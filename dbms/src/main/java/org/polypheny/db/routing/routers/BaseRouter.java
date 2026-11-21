@@ -35,6 +35,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.PlanKey;
 import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.core.document.DocumentScan;
@@ -91,7 +92,7 @@ import org.polypheny.db.util.mapping.Mappings;
 @Slf4j
 public abstract class BaseRouter implements Router {
 
-    public static final Cache<Integer, AlgNode> joinedScanCache = CacheBuilder.newBuilder()
+    public static final Cache<PlanKey, RoutedDistribution> joinedScanCache = CacheBuilder.newBuilder()
             .maximumSize( RuntimeConfig.JOINED_TABLE_SCAN_CACHE_SIZE.getInteger() )
             .build();
 
@@ -227,13 +228,13 @@ public abstract class BaseRouter implements Router {
     public AlgNode buildJoinedScan( ColumnDistribution columnDistribution, RoutingContext context ) {
         RoutedAlgBuilder builder = context.getRoutedAlgBuilder();
 
-        if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
-            AlgNode cachedNode = joinedScanCache.getIfPresent( columnDistribution.hashCode() );
-            if ( cachedNode != null ) {
-                return cachedNode;
-            }
-        }
-        RoutedDistribution routedDistribution = columnDistribution.route();
+        Optional<PlanKey> cacheKey = RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() && context.getStatement().getTransaction().getUseCache()
+                ? columnDistribution.cacheKey( Catalog.snapshot() )
+                : Optional.empty();
+        // Rebuild the scan in this statement's cluster, using the cached placement decision.
+        RoutedDistribution routedDistribution = cacheKey
+                .map( key -> joinedScanCache.asMap().computeIfAbsent( key, ignored -> columnDistribution.route() ) )
+                .orElseGet( columnDistribution::route );
         context.routedDistribution = routedDistribution;
 
         for ( FullPartition partition : routedDistribution.partitions() ) {
@@ -298,10 +299,6 @@ public abstract class BaseRouter implements Router {
         builder.union( true, columnDistribution.getPartitions().size() );
 
         AlgNode node = builder.build();
-        if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
-            joinedScanCache.put( columnDistribution.hashCode(), node );
-        }
-
         // todo dl: remove after RowType refactor
         if ( catalog.getSnapshot().getNamespace( columnDistribution.getTable().namespaceId ).orElseThrow().dataModel == DataModel.DOCUMENT ) {
             AlgDataType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( 1L, DocumentType.DOCUMENT_FIELD, 0, context.getCluster().getTypeFactory().createPolyType( PolyType.DOCUMENT ) ) ) );

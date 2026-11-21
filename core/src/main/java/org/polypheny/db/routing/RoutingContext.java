@@ -19,6 +19,7 @@ package org.polypheny.db.routing;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.routing.ColumnDistribution.RoutedDistribution;
@@ -39,6 +40,10 @@ public class RoutingContext {
     @Nullable
     @NonFinal
     public RoutedDistribution routedDistribution; // PartitionId -> List<AdapterId, CatalogColumnPlacementId>
+
+    @Nullable
+    @NonFinal
+    public AllocationTable directScanAllocation;
 
 
     public RoutingContext( AlgCluster cluster, Statement statement, LogicalQueryInformation queryInformation ) {

@@ -108,15 +108,6 @@ public class EnumerableLimit extends SingleAlg implements EnumerableAlg {
 
 
     @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                input.algCompareString() + "$" +
-                (offset != null ? offset.hashCode() + "$" : "") +
-                (fetch != null ? fetch.hashCode() : "") + "&";
-    }
-
-
-    @Override
     public AlgWriter explainTerms( AlgWriter pw ) {
         return super.explainTerms( pw )
                 .itemIf( "offset", offset, offset != null )
