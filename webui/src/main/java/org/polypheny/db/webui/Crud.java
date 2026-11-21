@@ -74,7 +74,6 @@ import org.polypheny.db.adapter.AbstractAdapterSettingDirectory;
 import org.polypheny.db.adapter.AbstractAdapterSettingString;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
-import org.polypheny.db.adapter.AdapterManager.AdapterInformation;
 import org.polypheny.db.adapter.ConnectionMethod;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DataStore;
@@ -88,7 +87,6 @@ import org.polypheny.db.algebra.polyalg.PolyAlgRegistry;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
-import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
@@ -174,8 +172,6 @@ import org.polypheny.db.webui.crud.LanguageCrud.TriFunction;
 import org.polypheny.db.webui.crud.StatisticCrud;
 import org.polypheny.db.webui.models.DbTable;
 import org.polypheny.db.webui.models.ForeignKey;
-import org.polypheny.db.webui.models.IndexAdapterModel;
-import org.polypheny.db.webui.models.IndexAdapterModel.IndexMethodModel;
 import org.polypheny.db.webui.models.IndexModel;
 import org.polypheny.db.webui.models.MaterializedInfos;
 import org.polypheny.db.webui.models.Namespace;
@@ -1588,6 +1584,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         }
     }
 
+
     /**
      * Run any query coming from the SQL console
      */
@@ -1734,8 +1731,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
         return results;
     }*/
-
-
     private long copyCollectionDocuments( LogicalCollection sourceCollection, String sourceNamespace, String targetCollectionName, String targetNamespace ) {
         Transaction transaction = getTransaction();
         ImplementationContext implementationContext = null;
@@ -3148,31 +3143,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     /**
-     * Get the available stores on which a new index can be placed. 'Polypheny-DB' is part of the list, if polystore-indexes are enabled
-     */
-    void getAvailableStoresForIndexes( final Context ctx ) {
-        IndexModel index = ctx.bodyAsClass( IndexModel.class );
-        PlacementModel dataPlacements = getPlacements( index );
-        Map<String, DataStore<?>> stores = AdapterManager.getInstance().getStores();
-        List<IndexAdapterModel> filtered = stores.values().stream().filter( ( s ) -> {
-            if ( s.getAvailableIndexMethods() == null || s.getAvailableIndexMethods().isEmpty() ) {
-                return false;
-            }
-            return dataPlacements.stores.stream().anyMatch( ( dp ) -> dp.uniqueName.equals( s.getUniqueName() ) );
-        } ).map( IndexAdapterModel::from ).collect( Collectors.toCollection( ArrayList::new ) );
-
-        if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() ) {
-            IndexAdapterModel poly = new IndexAdapterModel(
-                    -1L,
-                    "Polypheny-DB",
-                    IndexManager.getAvailableIndexMethods().stream().map( IndexMethodModel::from ).toList() );
-            filtered.add( poly );
-        }
-        ctx.json( filtered );
-    }
-
-
-    /**
      * Update the settings of an adapter
      */
     void updateAdapterSettings( final Context ctx ) {
@@ -3203,25 +3173,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         }
 
         ctx.json( RelationalResult.builder().affectedTuples( 1 ).build() );
-    }
-
-
-    /**
-     * Get available adapters
-     */
-    private void getAvailableAdapters( Context ctx, AdapterType adapterType ) {
-        List<AdapterInformation> adapters = AdapterManager.getInstance().getAdapterTemplates( adapterType );
-        ctx.json( adapters.toArray( new AdapterInformation[0] ) );
-    }
-
-
-    void getAvailableStores( final Context ctx ) {
-        getAvailableAdapters( ctx, AdapterType.STORE );
-    }
-
-
-    void getAvailableSources( final Context ctx ) {
-        getAvailableAdapters( ctx, AdapterType.SOURCE );
     }
 
 
