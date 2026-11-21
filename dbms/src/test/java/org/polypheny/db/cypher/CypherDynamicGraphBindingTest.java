@@ -64,6 +64,47 @@ class CypherDynamicGraphBindingTest extends CypherTestTemplate {
 
 
     @Test
+    void evaluatesInlinePredicatesBeforeRejectingMatchesByWhere() {
+        for ( String match : List.of( "MATCH", "OPTIONAL MATCH" ) ) {
+            for ( String guard : List.of( "null", "false" ) ) {
+                assertError( "%s (n:Start WHERE 1/0 = 1) WHERE %s RETURN n".formatted( match, guard ), "/ by zero" );
+            }
+        }
+        assertEquals( 0, number( "OPTIONAL MATCH (n:Start WHERE n.v = 1) WHERE null RETURN count(n)" ) );
+    }
+
+
+    @Test
+    void treatsNullPredicatesAsNonMatches() {
+        assertEquals( 0, number( "MATCH (n:Start) WHERE null RETURN count(n)" ) );
+        assertEquals( 0, number( "MATCH p=(:Start)-[:R*]->() WHERE null RETURN count(p)" ) );
+        assertEquals( 0, number( "MATCH (n:Start) WHERE [null][0] RETURN count(n)" ) );
+        assertError( "WITH last([null,'x']) AS i MATCH (n:Start) WHERE [null][i] RETURN n", "A list index or slice bound must be an integer" );
+        GraphResult optional = execute( """
+                MATCH (n:Start) OPTIONAL MATCH (n)-[:R*]->(b) WHERE null OR false
+                RETURN count(*) AS rows, count(b) AS matched
+                """ );
+        assertEquals( 1, value( optional, 0 ) );
+        assertEquals( 0, value( optional, 1 ) );
+        assertError( "WITH last([null,1]) AS n MATCH (n:Start) WHERE null OR false RETURN n", "MATCH requires a NODE binding" );
+    }
+
+
+    @Test
+    void appliesConstantAndRowDependentGuardsBeforeCheckingBindings() {
+        String with = "WITH last([null,1]) AS n, last([null,false]) AS guard ";
+        for ( String where : List.of( "1=0", "false OR false", "guard", "last([null,false])" ) ) {
+            assertEquals( 0, number( with + "MATCH (n:Start) WHERE " + where + " RETURN count(*)" ) );
+            assertEquals( 1, number( with + "OPTIONAL MATCH (n:Start)-[:R*]->(b) WHERE " + where + " RETURN n" ) );
+        }
+        assertError( "WITH last([null,1]) AS n, last([true,null]) AS guard MATCH (n:Start) WHERE guard RETURN n",
+                "MATCH requires a NODE binding" );
+        assertEquals( 0, number( "WITH last([null,1]) AS r MATCH (:Start)-[r:R]->() RETURN count(r)" ) );
+        assertEquals( 1, number( "WITH last([null,1]) AS r OPTIONAL MATCH (:Start)-[r:R]->() RETURN r" ) );
+    }
+
+
+    @Test
     void writesNodesAndRelationshipsFromTheSameDynamicBinding() {
         assertEquals( 2, number( """
                 MATCH (:Start)-[rs:R*]->(b:Target)

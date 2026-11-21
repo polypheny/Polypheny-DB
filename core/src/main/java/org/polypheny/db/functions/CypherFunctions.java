@@ -315,13 +315,27 @@ public class CypherFunctions {
 
 
     public static PolyString matchElementId( PolyValue value, PolyString expected ) {
-        if ( value == null || value.isNull() ) {
-            return null;
-        }
         if ( value instanceof GraphPropertyHolder element && expected.value.equals( element.getType().name() ) ) {
             return element.getId();
         }
-        throw new GenericRuntimeException( "MATCH requires a %s binding, got %s.", expected.value, value.getType() );
+        // Dynamic node and relationship-list bindings are checked before matching.
+        return null;
+    }
+
+
+    public static PolyBoolean booleanPredicate( PolyValue value ) {
+        if ( isNull( value ) ) {
+            return null;
+        }
+        if ( value instanceof PolyBoolean predicate ) {
+            return predicate;
+        }
+        throw new GenericRuntimeException( "Cypher predicates require a BOOLEAN, got %s.", value.getType() );
+    }
+
+
+    public static PolyBoolean matchWithWhere( PolyBoolean patternPredicate, PolyBoolean wherePredicate ) {
+        return PolyBoolean.of( PolyBoolean.TRUE.equals( patternPredicate ) && PolyBoolean.TRUE.equals( wherePredicate ) );
     }
 
 

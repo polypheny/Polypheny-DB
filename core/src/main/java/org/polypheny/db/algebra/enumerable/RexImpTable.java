@@ -870,6 +870,8 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_MATCH_ELEMENT_ID ), BuiltInMethod.CYPHER_MATCH_ELEMENT_ID.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_VALIDATE_MATCH_NODE ), BuiltInMethod.CYPHER_VALIDATE_MATCH_NODE.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_VALIDATE_MATCH_RELATIONSHIP_LIST ), BuiltInMethod.CYPHER_VALIDATE_MATCH_RELATIONSHIP_LIST.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_BOOLEAN_PREDICATE ), BuiltInMethod.CYPHER_BOOLEAN_PREDICATE.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_MATCH_WITH_WHERE ), BuiltInMethod.CYPHER_MATCH_WITH_WHERE.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_LABELS ), BuiltInMethod.CYPHER_EXTRACT_LABELS.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_LABEL ), BuiltInMethod.CYPHER_EXTRACT_LABEL.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_TO_LIST ), BuiltInMethod.CYPHER_TO_LIST.method, NullPolicy.NONE );

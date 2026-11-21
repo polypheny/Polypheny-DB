@@ -81,6 +81,8 @@ public class CypherRegisterer {
         register( OperatorName.CYPHER_MATCH_ELEMENT_ID, new LangFunctionOperator( OperatorName.CYPHER_MATCH_ELEMENT_ID.name(), Kind.CYPHER_FUNCTION, PolyType.VARCHAR ) );
         register( OperatorName.CYPHER_VALIDATE_MATCH_NODE, new LangFunctionOperator( OperatorName.CYPHER_VALIDATE_MATCH_NODE.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
         register( OperatorName.CYPHER_VALIDATE_MATCH_RELATIONSHIP_LIST, new LangFunctionOperator( OperatorName.CYPHER_VALIDATE_MATCH_RELATIONSHIP_LIST.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
+        register( OperatorName.CYPHER_BOOLEAN_PREDICATE, new LangFunctionOperator( OperatorName.CYPHER_BOOLEAN_PREDICATE.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
+        register( OperatorName.CYPHER_MATCH_WITH_WHERE, new LangFunctionOperator( OperatorName.CYPHER_MATCH_WITH_WHERE.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
 
         register( OperatorName.CYPHER_EXTRACT_LABELS, new LangFunctionOperator( OperatorName.CYPHER_EXTRACT_LABELS.name(), Kind.CYPHER_FUNCTION, PolyType.ARRAY, PolyType.VARCHAR ) );
 

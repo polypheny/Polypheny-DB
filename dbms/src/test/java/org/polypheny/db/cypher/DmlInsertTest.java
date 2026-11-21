@@ -136,6 +136,23 @@ public class DmlInsertTest extends CypherTestTemplate {
 
 
     @Test
+    void rejectsRebindingNodesInCreate() {
+        for ( String query : List.of(
+                "CREATE (n:Foo)-[:T1]->(), (n:Bar)-[:T2]->()",
+                "CREATE (n:Foo) CREATE (n:Bar)-[:OWNS]->(:Dog)",
+                "CREATE (n:Foo) CREATE (n {})-[:OWNS]->(:Dog)",
+                "CREATE (n:Foo) CREATE (n {bad:[{x:1}]})-[:OWNS]->(:Dog)",
+                "CREATE (n:Foo), (n)" ) ) {
+            String error = CypherConnection.executeGetResponse( query ).getError();
+            assertNotNull( error, query );
+            assertTrue( error.contains( "VariableAlreadyBound" ), error );
+            assertEquals( 0, execute( "MATCH (n) RETURN n" ).getData().length, query );
+            assertEquals( 0, execute( "MATCH ()-[r]->() RETURN r" ).getData().length, query );
+        }
+    }
+
+
+    @Test
     @Disabled
     public void insertReturnNodeTest() {
         GraphResult res = execute(

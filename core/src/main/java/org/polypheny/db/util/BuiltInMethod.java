@@ -557,6 +557,8 @@ public enum BuiltInMethod {
     CYPHER_EXTRACT_ID( CypherFunctions.class, "extractId", GraphPropertyHolder.class ),
     CYPHER_MATCH_ELEMENT_ID( CypherFunctions.class, "matchElementId", PolyValue.class, PolyString.class ),
     CYPHER_VALIDATE_MATCH_NODE( CypherFunctions.class, "validateMatchNode", PolyValue.class ),
+    CYPHER_BOOLEAN_PREDICATE( CypherFunctions.class, "booleanPredicate", PolyValue.class ),
+    CYPHER_MATCH_WITH_WHERE( CypherFunctions.class, "matchWithWhere", PolyBoolean.class, PolyBoolean.class ),
     CYPHER_VALIDATE_MATCH_RELATIONSHIP_LIST( CypherFunctions.class, "validateMatchRelationshipList", PolyValue.class ),
     CYPHER_EXTRACT_LABELS( CypherFunctions.class, "extractLabels", GraphPropertyHolder.class ),
     CYPHER_EXTRACT_LABEL( CypherFunctions.class, "extractLabel", GraphPropertyHolder.class ),

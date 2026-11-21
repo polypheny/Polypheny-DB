@@ -21,10 +21,12 @@ import org.polypheny.db.cypher.cypher2alg.CypherSyntaxException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.parser.StringPos;
+import org.polypheny.db.functions.CypherFunctions;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -57,6 +59,12 @@ public class CypherProperty extends CypherExpression {
 
     public String getSubjectName() {
         return this.getSubject().getName();
+    }
+
+
+    @Override
+    public PolyValue getComparable() {
+        return CypherFunctions.extractProperty( subject.getComparable(), PolyString.of( getPropertyKey() ) );
     }
 
 

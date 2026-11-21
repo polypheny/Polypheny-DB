@@ -105,7 +105,11 @@ public class PolyNode extends GraphPropertyHolder {
 
     @Override
     public void setLabels( PolyList<PolyString> labels ) {
-        this.labels.addAll( labels );
+        for ( PolyString label : labels ) {
+            if ( !this.labels.contains( label ) ) {
+                this.labels.add( label );
+            }
+        }
     }
 
 
