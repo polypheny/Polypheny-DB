@@ -325,6 +325,15 @@ public class CypherFunctions {
     }
 
 
+    public static PolyBoolean validateMatchRelationshipList( PolyValue value ) {
+        // Neo4j 4.4 lets dynamically typed strings reach the comparison, where they match no relationship list.
+        if ( isNull( value ) || value.isList() || value.isString() ) {
+            return PolyBoolean.TRUE;
+        }
+        throw new GenericRuntimeException( "MATCH requires a relationship list binding, got %s.", value.getType() );
+    }
+
+
     /**
      * Returns a single label of a given graph element.
      *

@@ -35,6 +35,7 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
@@ -340,12 +341,18 @@ public class CypherToAlgConverter {
 
         List<Integer> sortFields = new ArrayList<>();
         if ( !order.isEmpty() ) {
-            Map<PropertyReference, RexNode> properties = projectedProperties( clause, outputValues );
+            Map<PropertyReference, RexNode> sortKeys = projectedProperties( clause, outputValues, true );
+            Map<PropertyReference, RexNode> properties = projectedProperties( clause, outputValues, false );
             for ( CypherOrderItem item : order ) {
                 CypherExpression expression = item.getExpression();
+                RexNode projectedKey = projectedProperty( expression, sortKeys );
                 RexNode value;
                 try {
-                    if ( expression instanceof CypherAggregate aggregate ) {
+                    // An exact projected property is already a sort key. Inside another expression,
+                    // an output alias still shadows the original subject.
+                    if ( projectedKey != null ) {
+                        value = projectedKey;
+                    } else if ( expression instanceof CypherAggregate aggregate ) {
                         value = resolveProjectedAggregate( aggregate, clause, outputValues );
                     } else {
                         value = context.resolveInScope( expression, name -> outputValues.getOrDefault( name, original.get( name ) ), properties );
@@ -363,7 +370,7 @@ public class CypherToAlgConverter {
         RexNode predicate = null;
         if ( where != null ) {
             Map<String, RexNode> filterInputs = new HashMap<>( outputRefs );
-            Map<PropertyReference, RexNode> properties = projectedProperties( clause, outputRefs );
+            Map<PropertyReference, RexNode> properties = projectedProperties( clause, outputRefs, false );
             predicate = context.resolveInScope( where.getExpression(), name -> filterInputs.computeIfAbsent( name, key -> {
                 RexNode originalValue = original.get( key );
                 if ( originalValue == null ) {
@@ -385,7 +392,9 @@ public class CypherToAlgConverter {
         if ( values.size() > width ) {
             List<RexNode> visible = result.getTupleType().getFields().subList( 0, width ).stream()
                     .map( field -> (RexNode) rexBuilder.makeInputRef( field.getType(), field.getIndex() ) ).toList();
-            result = LogicalLpgProject.create( result, visible, names.subList( 0, width ) );
+            // The sort still orders the rows, but its keys can refer to columns removed here.
+            result = new LogicalLpgProject( cluster, result.getTraitSet().replace( AlgCollations.EMPTY ),
+                    result, visible, names.subList( 0, width ) );
         }
         context.add( result );
     }
@@ -418,11 +427,21 @@ public class CypherToAlgConverter {
     }
 
 
-    private static Map<PropertyReference, RexNode> projectedProperties( CypherReturnClause clause, Map<String, RexNode> output ) {
+    @Nullable
+    private static RexNode projectedProperty( CypherExpression expression, Map<PropertyReference, RexNode> properties ) {
+        if ( expression instanceof CypherProperty property && property.getSubject() instanceof CypherVariable subject ) {
+            return properties.get( new PropertyReference( subject.getName(), property.getPropertyKey() ) );
+        }
+        return null;
+    }
+
+
+    private static Map<PropertyReference, RexNode> projectedProperties( CypherReturnClause clause, Map<String, RexNode> output, boolean includeShadowedSubjects ) {
         Map<PropertyReference, RexNode> properties = new HashMap<>();
         for ( CypherReturn item : clause.getReturnItems() ) {
             if ( item instanceof CypherReturnItem projection && projection.getExpression() instanceof CypherProperty property
-                    && property.getSubject() instanceof CypherVariable subject && !output.containsKey( subject.getName() ) ) {
+                    && property.getSubject() instanceof CypherVariable subject
+                    && ( includeShadowedSubjects || !output.containsKey( subject.getName() ) ) ) {
                 String alias = projection.columnName();
                 RexNode value = output.get( alias );
                 if ( value != null ) {
@@ -571,16 +590,26 @@ public class CypherToAlgConverter {
         int offset = left.getTupleType().getFieldCount();
         Map<PolyString, RexNode> leftBindings = matchBindings( leftRows, 0, Map.of() );
         Map<PolyString, RexNode> rightBindings = matchBindings( rightRows, offset, Map.of() );
+        List<RexNode> bindingChecks = new ArrayList<>();
         List<RexNode> conditions = new ArrayList<>();
         Map<PolyString, RexNode> scope = new LinkedHashMap<>( leftBindings );
         rightBindings.forEach( ( name, value ) -> {
             RexNode current = scope.putIfAbsent( name, value );
             if ( current != null ) {
+                if ( current.getType().getPolyType() == PolyType.ANY && isRelationshipList( value.getType() ) ) {
+                    bindingChecks.add( rexBuilder.makeCall( context.booleanType,
+                            OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_VALIDATE_MATCH_RELATIONSHIP_LIST ),
+                            List.of( current ) ) );
+                }
                 // Multiple patterns in one MATCH cannot share a relationship binding, even an empty list.
                 boolean repeatedRelationship = clausePatterns && isRelationshipList( current.getType() ) && isRelationshipList( value.getType() );
                 conditions.add( repeatedRelationship ? rexBuilder.makeLiteral( false ) : sameBinding( name, current, value ) );
             }
         } );
+        // Validate incoming rows even if the traversal supplies no candidate for the join predicate.
+        if ( !bindingChecks.isEmpty() ) {
+            left = LogicalLpgFilter.create( left, RexUtil.composeConjunction( rexBuilder, bindingChecks, false ) );
+        }
         // Patterns in the same clause cannot reuse a relationship, even when that relationship is unnamed.
         List<RexNode> paths = new ArrayList<>();
         if ( clausePatterns ) {
@@ -872,10 +901,7 @@ public class CypherToAlgConverter {
 
         @Nullable
         public RexNode projectedProperty( CypherProperty property ) {
-            if ( property.getSubject() instanceof CypherVariable variable ) {
-                return scopedProperties.get( new PropertyReference( variable.getName(), property.getPropertyKey() ) );
-            }
-            return null;
+            return CypherToAlgConverter.projectedProperty( property, scopedProperties );
         }
 
 

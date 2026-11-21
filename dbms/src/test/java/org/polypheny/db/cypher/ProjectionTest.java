@@ -19,6 +19,7 @@ package org.polypheny.db.cypher;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
 import java.util.List;
@@ -121,6 +122,20 @@ class ProjectionTest extends CypherTestTemplate {
 
 
     @Test
+    void ordersByAnExactProjectedPropertyWhenItsSubjectIsAlsoAnAlias() {
+        String input = """
+                UNWIND [{source:{k:'B'}, replacement:{k:'A'}},{source:{k:'A'}, replacement:{k:'B'}}] AS row
+                WITH row.source AS n, row.replacement AS replacement
+                """;
+        String projection = "WITH n.k AS x, replacement AS n ";
+        assertEquals( List.of( "A", "B" ), strings( execute( input + projection + "ORDER BY n.k RETURN x" ) ) );
+        assertEquals( List.of( "B", "A" ), strings( execute( input + projection + "ORDER BY n.k + '' RETURN x" ) ) );
+        assertEquals( List.of( "B" ), strings( execute( input + projection + "WHERE n.k = 'A' RETURN x" ) ) );
+        assertEquals( List.of( "B", "A" ), strings( execute( input + "RETURN DISTINCT n.k AS n ORDER BY n.k DESC" ) ) );
+    }
+
+
+    @Test
     void sortsAnExpressionOfAProjectedAlias() {
         GraphResult result = execute( "MATCH (n:SortNumber) RETURN n.num AS n ORDER BY n + 2" );
         assertEquals( List.of( -5, 1, 3 ), Arrays.stream( result.getData() )
@@ -177,6 +192,30 @@ class ProjectionTest extends CypherTestTemplate {
         assertNull( unmatched.getData()[0][1] );
         assertNotNull( CypherConnection.executeGetResponse( "WITH [1] AS rs MATCH ()-[rs:T*]->() RETURN rs" ).getError() );
         assertNotNull( CypherConnection.executeGetResponse( "WITH last([null,1]) AS x MATCH (x) RETURN x" ).getError() );
+    }
+
+
+    @Test
+    void validatesDynamicRelationshipListBindingsBeforeMatching() {
+        for ( String match : List.of( "MATCH", "OPTIONAL MATCH" ) ) {
+            for ( String start : List.of( "Start", "Missing" ) ) {
+                String query = "WITH last([null,1]) AS rs %s (:%s)-[rs:T*]->(n) RETURN count(*) AS total".formatted( match, start );
+                String error = CypherConnection.executeGetResponse( query ).getError();
+                assertNotNull( error, query );
+                assertTrue( error.contains( "MATCH requires a relationship list binding" ), error );
+            }
+        }
+
+        String match = " AS rs MATCH (:Start)-[rs:T*]->() RETURN count(*) AS total";
+        assertEquals( 0, countResult( execute( "WITH last([null,[1]])" + match ) ) );
+        assertEquals( 0, countResult( execute( "WITH last([null,''])" + match ) ) );
+        GraphResult unmatched = execute( "WITH [null] AS rs OPTIONAL MATCH (:Start)-[rs:T*]->(n) RETURN rs,n" );
+        assertEquals( 1, unmatched.getData().length );
+        var relationships = value( unmatched.getData()[0][0] ).asList();
+        assertEquals( 1, relationships.size() );
+        PolyValue relationship = relationships.get( 0 );
+        assertTrue( relationship == null || relationship.isNull() );
+        assertNull( unmatched.getData()[0][1] );
     }
 
 

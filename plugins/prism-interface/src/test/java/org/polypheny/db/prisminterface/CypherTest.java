@@ -1694,6 +1694,32 @@ class CypherTest {
 
 
     @Test
+    void validatesDynamicRelationshipListBindingsBeforeMatching() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            for ( String match : List.of( "MATCH", "OPTIONAL MATCH" ) ) {
+                for ( String start : List.of( "Person", "NoSuchLabel" ) ) {
+                    String query = "WITH last([null,1]) AS rs %s (:%s)-[rs:KNOWS*]->(n) RETURN count(*) AS total".formatted( match, start );
+                    Response error = expect( connection.send( statementRequest( NAMESPACE, "cypher", query, -1 ) ), Response.TypeCase.ERROR_RESPONSE );
+                    String message = error.getErrorResponse().getMessage();
+                    assertTrue( message.contains( "MATCH requires a relationship list binding" ), message );
+                    connection.checkTransactions( 0 );
+                }
+            }
+
+            String match = " AS rs MATCH (:Person)-[rs:KNOWS*]->() RETURN count(*) AS total";
+            Frame nonRelationship = connection.cypher( "WITH last([null,[1]])" + match, -1 ).getResult().getFrame();
+            assertEquals( 0, integerValue( singleRow( relationalFrame( nonRelationship, true, List.of( "total" ) ) ).getValues( 0 ) ) );
+
+            Frame unmatched = connection.cypher( "WITH [null] AS rs OPTIONAL MATCH (:Person)-[rs:KNOWS*]->(n) RETURN rs,n", -1 ).getResult().getFrame();
+            Row row = singleRow( relationalFrame( unmatched, true, List.of( "rs", "n" ) ) );
+            assertEquals( 1, row.getValues( 0 ).getList().getValuesCount() );
+            assertTrue( row.getValues( 0 ).getList().getValues( 0 ).hasNull() );
+            assertTrue( row.getValues( 1 ).hasNull() );
+        }
+    }
+
+
+    @Test
     void rejectsConflictingPatternBindingsBeforeScanningTheGraph() throws IOException {
         try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
             List<String> conflicting = List.of(
