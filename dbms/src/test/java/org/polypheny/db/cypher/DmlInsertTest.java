@@ -153,6 +153,22 @@ public class DmlInsertTest extends CypherTestTemplate {
 
 
     @Test
+    void rejectsInlinePredicatesInCreate() {
+        for ( String query : List.of(
+                "CREATE (n:PredicateCreate WHERE false) RETURN n",
+                "CREATE (:PredicateCreate)-[r:PREDICATE_CREATE WHERE false]->(:PredicateCreate) RETURN r",
+                "CREATE p=(n:PredicateCreate WHERE false)-[:PREDICATE_CREATE]->(:PredicateCreate) RETURN p",
+                "CREATE (:PredicateCreate) CREATE (:PredicateCreate)-[r:PREDICATE_CREATE WHERE true]->(:PredicateCreate)" ) ) {
+            String error = CypherConnection.executeGetResponse( query ).getError();
+            assertNotNull( error, query );
+            assertTrue( error.contains( "Inline WHERE predicates are not allowed in CREATE patterns" ), error );
+            assertEquals( 0, execute( "MATCH (n) RETURN n" ).getData().length, query );
+            assertEquals( 0, execute( "MATCH ()-[r]->() RETURN r" ).getData().length, query );
+        }
+    }
+
+
+    @Test
     @Disabled
     public void insertReturnNodeTest() {
         GraphResult res = execute(

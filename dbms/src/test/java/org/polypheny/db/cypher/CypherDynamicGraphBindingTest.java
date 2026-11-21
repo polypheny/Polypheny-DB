@@ -71,6 +71,19 @@ class CypherDynamicGraphBindingTest extends CypherTestTemplate {
             }
         }
         assertEquals( 0, number( "OPTIONAL MATCH (n:Start WHERE n.v = 1) WHERE null RETURN count(n)" ) );
+        assertError( "OPTIONAL MATCH (a:Start WHERE 1/0 = 1)-[:R]->(b:Target WHERE null) RETURN count(a)", "/ by zero" );
+        assertError( "OPTIONAL MATCH (a:Start WHERE null)-[:R]->(b:Target WHERE 1/0 = 1) RETURN count(a)", "/ by zero" );
+        assertEquals( 0, number( "OPTIONAL MATCH (a:Start WHERE true)-[:R]->(b:Target WHERE null) RETURN count(a)" ) );
+    }
+
+
+    @Test
+    void evaluatesWhereOnlyWhenADynamicNodeHasAMatchCandidate() {
+        execute( "CREATE (:GuardStart {zero:0})" );
+        String query = "MATCH (a:GuardStart) WITH last([null,a]) AS n %s (n:%s) WHERE 1/n.zero = 1 RETURN count(n)";
+        assertEquals( 1, number( query.formatted( "OPTIONAL MATCH", "Missing" ) ) );
+        assertEquals( 0, number( query.formatted( "MATCH", "Missing" ) ) );
+        assertError( query.formatted( "OPTIONAL MATCH", "GuardStart" ), "/ by zero" );
     }
 
 
@@ -96,6 +109,9 @@ class CypherDynamicGraphBindingTest extends CypherTestTemplate {
         for ( String where : List.of( "1=0", "false OR false", "guard", "last([null,false])" ) ) {
             assertEquals( 0, number( with + "MATCH (n:Start) WHERE " + where + " RETURN count(*)" ) );
             assertEquals( 1, number( with + "OPTIONAL MATCH (n:Start)-[:R*]->(b) WHERE " + where + " RETURN n" ) );
+        }
+        for ( String where : List.of( "false", "guard" ) ) {
+            assertEquals( 1, number( with + "OPTIONAL MATCH (n:Start WHERE true) WHERE " + where + " RETURN n" ) );
         }
         assertError( "WITH last([null,1]) AS n, last([true,null]) AS guard MATCH (n:Start) WHERE guard RETURN n",
                 "MATCH requires a NODE binding" );

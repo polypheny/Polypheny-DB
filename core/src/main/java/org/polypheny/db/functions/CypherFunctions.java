@@ -339,11 +339,12 @@ public class CypherFunctions {
     }
 
 
-    public static PolyBoolean validateMatchNode( PolyValue value ) {
-        if ( !isNull( value ) && !(value instanceof PolyNode) ) {
+    public static PolyBoolean validateMatchNode( PolyValue value, PolyBoolean reportError ) {
+        boolean compatible = isNull( value ) || value instanceof PolyNode;
+        if ( !compatible && reportError.value ) {
             throw new GenericRuntimeException( "MATCH requires a NODE binding, got %s.", value.getType() );
         }
-        return PolyBoolean.TRUE;
+        return PolyBoolean.of( compatible );
     }
 
 
@@ -358,12 +359,13 @@ public class CypherFunctions {
     }
 
 
-    public static PolyBoolean validateMatchRelationshipList( PolyValue value ) {
+    public static PolyBoolean validateMatchRelationshipList( PolyValue value, PolyBoolean reportError ) {
         // Neo4j 4.4 lets dynamically typed strings reach the comparison, where they match no relationship list.
-        if ( isNull( value ) || value.isList() || value.isString() ) {
-            return PolyBoolean.TRUE;
+        boolean compatible = isNull( value ) || value.isList() || value.isString();
+        if ( !compatible && reportError.value ) {
+            throw new GenericRuntimeException( "MATCH requires a relationship list binding, got %s.", value.getType() );
         }
-        throw new GenericRuntimeException( "MATCH requires a relationship list binding, got %s.", value.getType() );
+        return PolyBoolean.of( compatible );
     }
 
 

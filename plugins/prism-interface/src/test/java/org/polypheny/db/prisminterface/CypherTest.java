@@ -1421,6 +1421,27 @@ class CypherTest {
 
 
     @Test
+    void returnsNodesAsListElements() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            Frame frame = connection.cypher( "MATCH (n:Person) RETURN [n] AS people", -1 ).getResult().getFrame();
+            RelationalFrame rows = relationalFrame( frame, true, List.of( "people" ) );
+            var type = rows.getColumnMeta( 0 ).getTypeMeta();
+            assertEquals( ProtoPolyType.ARRAY, type.getProtoValueType() );
+            assertEquals( ProtoPolyType.NODE, type.getArrayMeta().getElementType().getProtoValueType() );
+            assertEquals( List.of( "Alice", "Bob", "Charlie" ), rows.getRowsList().stream().map( row -> {
+                ProtoValue value = row.getValues( 0 );
+                assertTrue( value.hasList() );
+                ProtoList people = value.getList();
+                assertEquals( 1, people.getValuesCount() );
+                assertTrue( people.getValues( 0 ).hasNode() );
+                return people.getValues( 0 ).getNode().getPropertiesOrThrow( "name" ).getString().getString();
+            } ).sorted().toList() );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
     void returnsPathsAsListElements() throws IOException {
         try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
             for ( var expected : Map.of( "*", List.of( 1, 2 ), "*0..", List.of( 0, 1, 2 ) ).entrySet() ) {
@@ -1522,10 +1543,12 @@ class CypherTest {
 
 
     @Test
-    void matchesAnonymousLabelledNodesBeforeReturningScalars() throws IOException {
+    void countsNamedAndAnonymousLabelledNodes() throws IOException {
         try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
-            Frame frame = connection.cypher( "MATCH (:Person) RETURN count(*) AS total", -1 ).getResult().getFrame();
-            assertEquals( 3, integerValue( singleRow( relationalFrame( frame, true, List.of( "total" ) ) ).getValues( 0 ) ) );
+            for ( String query : List.of( "MATCH (:Person) RETURN count(*) AS total", "MATCH (n:Person) RETURN count(n) AS total" ) ) {
+                Frame frame = connection.cypher( query, -1 ).getResult().getFrame();
+                assertEquals( 3, integerValue( singleRow( relationalFrame( frame, true, List.of( "total" ) ) ).getValues( 0 ) ), query );
+            }
             connection.checkTransactions( 0 );
         }
     }
@@ -1866,6 +1889,34 @@ class CypherTest {
                     connection.checkTransactions( 0 );
                 }
             }
+            for ( String query : List.of(
+                    "OPTIONAL MATCH (a:Person WHERE 1/0 = 1)-[:KNOWS]->(b:Person WHERE null) RETURN count(a)",
+                    "OPTIONAL MATCH (a:Person WHERE null)-[:KNOWS]->(b:Person WHERE 1/0 = 1) RETURN count(a)" ) ) {
+                Response response = expect( connection.send( statementRequest( NAMESPACE, "cypher", query, -1 ) ), Response.TypeCase.ERROR_RESPONSE );
+                String message = response.getErrorResponse().getMessage();
+                assertTrue( message.contains( "/ by zero" ), message );
+                connection.checkTransactions( 0 );
+            }
+        }
+    }
+
+
+    @Test
+    void evaluatesWhereOnlyForOptionalMatchCandidatesAcrossStores() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            String query = """
+                    MATCH (a:Person {id:1})
+                    WITH last([null,a]) AS n
+                    OPTIONAL MATCH (n:%s) WHERE 1/(n.id-1) = 1
+                    RETURN count(n) AS total
+                    """;
+            Frame frame = connection.cypher( query.formatted( "MissingPerson" ), -1 ).getResult().getFrame();
+            assertEquals( 1, integerValue( singleRow( relationalFrame( frame, true, List.of( "total" ) ) ).getValues( 0 ) ) );
+
+            Response response = expect( connection.send( statementRequest( NAMESPACE, "cypher", query.formatted( "Person" ), -1 ) ), Response.TypeCase.ERROR_RESPONSE );
+            String message = response.getErrorResponse().getMessage();
+            assertTrue( message.contains( "/ by zero" ), message );
+            connection.checkTransactions( 0 );
         }
     }
 
@@ -1896,6 +1947,14 @@ class CypherTest {
                 Row row = singleRow( relationalFrame( frame, true, List.of( "n", "b" ) ) );
                 assertEquals( 1, integerValue( row.getValues( 0 ) ) );
                 assertTrue( row.getValues( 1 ).hasNull() );
+            }
+            for ( String guard : List.of( "false", "guard" ) ) {
+                String query = """
+                        WITH last([null,1]) AS n, last([null,false]) AS guard
+                        OPTIONAL MATCH (n:Person WHERE true) WHERE %s RETURN n
+                        """.formatted( guard );
+                Frame frame = connection.cypher( query, -1 ).getResult().getFrame();
+                assertEquals( 1, integerValue( singleRow( relationalFrame( frame, true, List.of( "n" ) ) ).getValues( 0 ) ) );
             }
             connection.checkTransactions( 0 );
         }
@@ -2171,6 +2230,31 @@ class CypherTest {
             assertEquals( 7, integerValue( row.getValues( 0 ) ) );
             assertEquals( 2, integerValue( row.getValues( 1 ) ) );
             writer.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void rejectsInlinePredicatesInCreateBeforeAnyWriteAcrossStores() throws IOException {
+        try ( PrismConnection writer = new PrismConnection( true, 3 ); PrismConnection reader = new PrismConnection( true, 3 ) ) {
+            for ( String query : List.of(
+                    "CREATE (n:PredicateCreateCheck WHERE false) RETURN n",
+                    "CREATE (:PredicateCreateCheck)-[r:PREDICATE_CREATE_CHECK WHERE false]->(:PredicateCreateCheck) RETURN r",
+                    "CREATE p=(n:PredicateCreateCheck WHERE false)-[:PREDICATE_CREATE_CHECK]->(:PredicateCreateCheck) RETURN p",
+                    """
+                            CREATE (:PredicateCreateCheck)
+                            UNWIND [false,true] AS passes
+                            CREATE (:PredicateCreateCheck)-[r:PREDICATE_CREATE_CHECK WHERE passes]->(:PredicateCreateCheck)
+                            """ ) ) {
+                Response error = expect( writer.send( statementRequest( WRITE_RETURN_NAMESPACE, "cypher", query, -1 ) ), Response.TypeCase.ERROR_RESPONSE );
+                assertTrue( error.getErrorResponse().getMessage().contains( "Inline WHERE predicates are not allowed in CREATE patterns" ), error.getErrorResponse().getMessage() );
+                writer.checkTransactions( 0 );
+                for ( String match : List.of( "MATCH (n:PredicateCreateCheck) RETURN n", "MATCH ()-[r:PREDICATE_CREATE_CHECK]->() RETURN r" ) ) {
+                    Frame absent = reader.execute( WRITE_RETURN_NAMESPACE, "cypher", match, -1 ).getResult().getFrame();
+                    assertTrue( graphElements( absent, true ).isEmpty(), query );
+                }
+            }
+            reader.checkTransactions( 0 );
         }
     }
 

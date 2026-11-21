@@ -1725,6 +1725,7 @@ public enum OperatorName {
     CYPHER_MATCH_ELEMENT_ID( LangFunctionOperator.class ),
     CYPHER_VALIDATE_MATCH_NODE( LangFunctionOperator.class ),
     CYPHER_VALIDATE_MATCH_RELATIONSHIP_LIST( LangFunctionOperator.class ),
+    CYPHER_MATCH_BINDING_GUARD( LangFunctionOperator.class ),
     CYPHER_BOOLEAN_PREDICATE( LangFunctionOperator.class ),
     CYPHER_MATCH_WITH_WHERE( LangFunctionOperator.class ),
 

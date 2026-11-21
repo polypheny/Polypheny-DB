@@ -870,6 +870,7 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_MATCH_ELEMENT_ID ), BuiltInMethod.CYPHER_MATCH_ELEMENT_ID.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_VALIDATE_MATCH_NODE ), BuiltInMethod.CYPHER_VALIDATE_MATCH_NODE.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_VALIDATE_MATCH_RELATIONSHIP_LIST ), BuiltInMethod.CYPHER_VALIDATE_MATCH_RELATIONSHIP_LIST.method, NullPolicy.NONE );
+        map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_MATCH_BINDING_GUARD ), RexImpTable::implementCypherMatchBindingGuard );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_BOOLEAN_PREDICATE ), BuiltInMethod.CYPHER_BOOLEAN_PREDICATE.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_MATCH_WITH_WHERE ), BuiltInMethod.CYPHER_MATCH_WITH_WHERE.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_LABELS ), BuiltInMethod.CYPHER_EXTRACT_LABELS.method, NullPolicy.NONE );
@@ -893,6 +894,24 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( cypher, OperatorName.DISTANCE_NEO4J ), BuiltInMethod.CYPHER_DISTANCE_NEO4J.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_WITHIN_BBOX ), BuiltInMethod.CYPHER_WITHIN_BBOX.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_WITHIN_GEOMETRY ), BuiltInMethod.CYPHER_WITHIN_GEOMETRY.method, NullPolicy.NONE );
+    }
+
+
+    private static Expression implementCypherMatchBindingGuard( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
+        List<RexNode> operands = call.getOperands();
+        Expression compatible = translator.translate( operands.get( 0 ), NullAs.FALSE );
+
+        // Keep candidate-dependent expressions out of the enclosing filter block.
+        BlockBuilder onIncompatible = new BlockBuilder( true, translator.getList() );
+        RexToLixTranslator guardTranslator = translator.setBlock( onIncompatible );
+        Expression excluded = guardTranslator.translate( operands.get( 1 ), NullAs.FALSE );
+
+        BlockBuilder onRequired = new BlockBuilder( true, onIncompatible );
+        Expression validation = translator.setBlock( onRequired ).translateWithoutAttach( operands.get( 2 ), NullAs.FALSE, null );
+        onRequired.add( Expressions.statement( validation ) );
+        onIncompatible.add( EnumUtils.ifThen( EnumUtils.not( excluded ), onRequired.toBlock() ) );
+        translator.getList().add( EnumUtils.ifThen( EnumUtils.not( compatible ), onIncompatible.toBlock() ) );
+        return nullAs.handle( TRUE_EXPR );
     }
 
 

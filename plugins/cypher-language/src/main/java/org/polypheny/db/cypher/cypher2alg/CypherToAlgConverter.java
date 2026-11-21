@@ -523,6 +523,9 @@ public class CypherToAlgConverter {
             }
         }
         for ( CypherPattern pattern : patterns ) {
+            if ( !pattern.getPredicates().isEmpty() ) {
+                throw new CypherSyntaxException( "Inline WHERE predicates are not allowed in CREATE patterns." );
+            }
             if ( pattern instanceof CypherNamedPattern named ) {
                 registerCreatedVariable( bindings, named.getVariable(), PolyType.PATH );
                 pattern = named.getAnonymousPattern();
@@ -540,7 +543,7 @@ public class CypherToAlgConverter {
                     continue;
                 }
                 // An existing node can only be reused as a bare relationship endpoint.
-                if ( path.getEdges().isEmpty() || !node.getLabels().isEmpty() || node.getProperties() != null || node.getPredicate() != null ) {
+                if ( path.getEdges().isEmpty() || !node.getLabels().isEmpty() || node.getProperties() != null ) {
                     throw createVariableAlreadyBound( name );
                 }
                 if ( boundType != PolyType.NODE && !isDynamicBinding( boundType ) ) {
@@ -682,7 +685,7 @@ public class CypherToAlgConverter {
         int offset = left.getTupleType().getFieldCount();
         Map<PolyString, RexNode> leftBindings = matchBindings( leftRows, 0, Map.of() );
         Map<PolyString, RexNode> rightBindings = matchBindings( rightRows, offset, Map.of() );
-        List<RexNode> bindingChecks = new ArrayList<>();
+        List<MatchBindingCheck> bindingChecks = new ArrayList<>();
         List<RexNode> conditions = new ArrayList<>();
         Map<PolyString, RexNode> scope = new LinkedHashMap<>( leftBindings );
         rightBindings.forEach( ( name, value ) -> {
@@ -690,9 +693,7 @@ public class CypherToAlgConverter {
             if ( current != null ) {
                 OperatorName check = matchBindingValidator( current.getType(), value.getType() );
                 if ( check != null ) {
-                    bindingChecks.add( rexBuilder.makeCall( context.booleanType,
-                            OperatorRegistry.get( QueryLanguage.from( "cypher" ), check ),
-                            List.of( current ) ) );
+                    bindingChecks.add( new MatchBindingCheck( check, current ) );
                 }
                 // Multiple patterns in one MATCH cannot share a relationship binding, even an empty list.
                 boolean repeatedRelationship = clausePatterns && isRelationshipList( current.getType() ) && isRelationshipList( value.getType() );
@@ -736,17 +737,14 @@ public class CypherToAlgConverter {
             context.pop();
         }
 
-        if ( !inlineConditions.isEmpty() && whereCondition != null && (RexUtil.isNull( whereCondition ) || whereCondition.isAlwaysFalse()) ) {
-            // Evaluating a pattern predicate can raise an error before WHERE rejects its match.
-            // A normal AND with a constant would allow the planner to discard that evaluation.
-            conditions.add( rexBuilder.makeCall( context.booleanType,
-                    OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_MATCH_WITH_WHERE ),
-                    List.of( RexUtil.composeConjunction( rexBuilder, inlineConditions, false ), rexBuilder.makeLiteral( false ) ) ) );
-        } else {
-            conditions.addAll( inlineConditions );
-            if ( whereCondition != null ) {
-                conditions.add( whereCondition );
-            }
+        boolean whereRejectsMatch = whereCondition != null && (RexUtil.isNull( whereCondition ) || whereCondition.isAlwaysFalse());
+        if ( !inlineConditions.isEmpty() ) {
+            RexNode inline = combineInlineMatchPredicates( inlineConditions, context );
+            // Inline predicates can raise an error before the clause WHERE rejects the match.
+            conditions.add( whereRejectsMatch ? requireBothMatchPredicates( inline, rexBuilder.makeLiteral( false ), context ) : inline );
+        }
+        if ( whereCondition != null && (inlineConditions.isEmpty() || !whereRejectsMatch) ) {
+            conditions.add( whereCondition );
         }
         boolean nullPredicate = conditions.removeIf( RexUtil::isNull );
         RexNode condition = RexUtil.composeConjunction( rexBuilder, conditions, false );
@@ -755,18 +753,20 @@ public class CypherToAlgConverter {
         boolean validate = !bindingChecks.isEmpty() && !condition.isAlwaysFalse();
         boolean rejectInput = nullPredicate && type == JoinAlgType.INNER && validate;
         if ( validate ) {
-            RexNode validation = RexUtil.composeConjunction( rexBuilder, bindingChecks, false );
+            RexNode validation = matchBindingChecks( bindingChecks, context, true );
             // A bare null WHERE cannot match. For an inner join, reject input via the validator,
             // which returns true or throws, so the planner cannot discard the validation.
             if ( rejectInput ) {
                 validation = RexUtil.not( validation );
-            } else if ( whereCondition != null && !nullPredicate && inlineConditions.isEmpty()
+            } else if ( whereCondition != null && !RexUtil.isNull( whereCondition )
                     && RexUtil.isDeterministic( whereCondition ) && AlgOptUtil.InputFinder.bits( whereCondition ).length() <= offset ) {
-                // A left-only false predicate rules out this row before any graph binding is needed.
-                // A null predicate still requires the type check.
+                // Only consult a left-only guard to decide whether an incompatible binding
+                // should raise. Evaluate WHERE on candidates alone when the binding is valid.
                 RexNode isFalse = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_FALSE ), whereCondition );
-                validation = rexBuilder.makeCall( context.booleanType, OperatorRegistry.get( OperatorName.CASE ),
-                        List.of( isFalse, rexBuilder.makeLiteral( true ), validation ) );
+                RexNode compatible = matchBindingChecks( bindingChecks, context, false );
+                validation = rexBuilder.makeCall( context.booleanType,
+                        OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_MATCH_BINDING_GUARD ),
+                        List.of( compatible, isFalse, validation ) );
             }
             left = LogicalLpgFilter.create( left, validation );
         }
@@ -781,6 +781,39 @@ public class CypherToAlgConverter {
             }
         }
         return projectMatchRows( join, output, paths );
+    }
+
+
+    private RexNode combineInlineMatchPredicates( List<RexNode> predicates, CypherContext context ) {
+        if ( predicates.size() == 1 || predicates.stream().noneMatch( RexUtil::isNull ) ) {
+            return RexUtil.composeConjunction( rexBuilder, predicates );
+        }
+        // A bare null makes the conjunction unable to match. Keep the other inline
+        // predicates in the plan, since evaluating them for a candidate can still fail.
+        RexNode result = predicates.get( 0 );
+        for ( int i = 1; i < predicates.size(); i++ ) {
+            result = requireBothMatchPredicates( result, predicates.get( i ), context );
+        }
+        return result;
+    }
+
+
+    private RexNode requireBothMatchPredicates( RexNode left, RexNode right, CypherContext context ) {
+        return rexBuilder.makeCall( context.booleanType,
+                OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_MATCH_WITH_WHERE ),
+                List.of( left, right ) );
+    }
+
+
+    private RexNode matchBindingChecks( List<MatchBindingCheck> checks, CypherContext context, boolean reportError ) {
+        RexNode report = rexBuilder.makeLiteral( reportError );
+        return RexUtil.composeConjunction( rexBuilder, checks.stream().map( check -> rexBuilder.makeCall( context.booleanType,
+                OperatorRegistry.get( QueryLanguage.from( "cypher" ), check.operator() ), List.of( check.value(), report ) ) ).toList() );
+    }
+
+
+    private record MatchBindingCheck( OperatorName operator, RexNode value ) {
+
     }
 
 
