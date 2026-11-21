@@ -182,9 +182,14 @@ public class CrossModelFunctions {
                 if ( element == null || element.isNull() ) {
                     continue;
                 }
-                if ( order.get( i ) == PolyType.NODE ) {
+                PolyType expected = order.get( i );
+                PolyType actual = element.getType();
+                if ( (expected != PolyType.ANY && expected != actual) || (actual != PolyType.NODE && actual != PolyType.EDGE) ) {
+                    throw new GenericRuntimeException( "Graph writes require a node or relationship binding, got %s.", actual );
+                }
+                if ( actual == PolyType.NODE ) {
                     nodes.add( element.asNode().id );
-                } else if ( order.get( i ) == PolyType.EDGE ) {
+                } else {
                     PolyEdge edge = element.asEdge();
                     edges.add( edge.id );
                     endpoints.add( edge.left );
@@ -194,7 +199,7 @@ public class CrossModelFunctions {
         }
 
         AlgDataType idType = context.getStatement().getTransaction().getTypeFactory().createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE );
-        int nodeIndex = 4 * order.size();
+        int nodeIndex = order.stream().mapToInt( CrossModelFunctions::updateStatementCount ).sum();
         Function0<Enumerable<?>> nodeLookup = enumerables.get( nodeIndex );
         requireGraphElements( context, nodeLookup, nodes, idType, "Graph node disappeared before the update" );
         if ( !edges.isEmpty() ) {
@@ -202,6 +207,15 @@ public class CrossModelFunctions {
             endpoints.removeAll( nodes );
             requireGraphElements( context, nodeLookup, endpoints, idType, "Graph relationship requires exactly one source and one target node" );
         }
+    }
+
+
+    private static int updateStatementCount( PolyType type ) {
+        return switch ( type ) {
+            case NODE, EDGE -> 4;
+            case ANY -> 8;
+            default -> 0;
+        };
     }
 
 
@@ -511,44 +525,40 @@ public class CrossModelFunctions {
      * @param order the types included in the update operation
      */
     private static void sendUpdates( DataContext context, List<Function0<Enumerable<?>>> enumerables, List<PolyType> order, Map<Long, PolyValue> values ) {
-        int i = 0;
         JavaTypeFactory typeFactory = context.getStatement().getTransaction().getTypeFactory();
         AlgDataType idType = typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE );
         AlgDataType labelType = typeFactory.createPolyType( PolyType.TEXT );
         AlgDataType valueType = typeFactory.createPolyType( PolyType.TEXT );
 
         context.resetParameterValues();
-        for ( PolyType polyType : order ) {
+        int offset = 0;
+        for ( int i = 0; i < order.size(); i++ ) {
+            PolyType expected = order.get( i );
+            int start = offset;
+            offset += updateStatementCount( expected );
             PolyValue element = values.get( (long) i );
             if ( element == null || element.isNull() ) {
-                i++;
                 continue;
             }
-            if ( polyType == PolyType.NODE ) {
-                PolyNode node = (PolyNode) values.get( (long) i );
-
+            if ( element instanceof PolyNode node ) {
                 // delete previous nodes and properties
-                nodeTableDelete( context, enumerables, 4 * i, idType, labelType, node );
-                nodePropertiesTableDelete( context, enumerables, 4 * i + 1, idType, labelType, node );
+                nodeTableDelete( context, enumerables, start, idType, labelType, node );
+                nodePropertiesTableDelete( context, enumerables, start + 1, idType, labelType, node );
 
                 // insert new node and properties
-                nodeTableInsert( context, enumerables, 4 * i + 2, idType, labelType, node );
-                nodePropertiesTableInsert( context, enumerables, 4 * i + 3, idType, labelType, valueType, node );
+                nodeTableInsert( context, enumerables, start + 2, idType, labelType, node );
+                nodePropertiesTableInsert( context, enumerables, start + 3, idType, labelType, valueType, node );
 
-            } else if ( polyType == PolyType.EDGE ) {
-                PolyEdge edge = (PolyEdge) values.get( (long) i );
-
+            } else if ( element instanceof PolyEdge edge ) {
+                int edgeStart = expected == PolyType.ANY ? start + updateStatementCount( PolyType.NODE ) : start;
                 // edge table delete
-                edgeTableDelete( context, enumerables, 4 * i, idType, labelType, edge );
-                edgePropertiesTableDelete( context, enumerables, 4 * i + 1, idType, labelType, edge );
+                edgeTableDelete( context, enumerables, edgeStart, idType, labelType, edge );
+                edgePropertiesTableDelete( context, enumerables, edgeStart + 1, idType, labelType, edge );
 
                 // edge table insert
-                edgeTableInsert( context, enumerables, 4 * i + 2, idType, labelType, edge );
-                edgePropertiesTableInsert( context, enumerables, 4 * i + 3, idType, labelType, valueType, edge );
-
+                edgeTableInsert( context, enumerables, edgeStart + 2, idType, labelType, edge );
+                edgePropertiesTableInsert( context, enumerables, edgeStart + 3, idType, labelType, valueType, edge );
             }
-
-            i++;
         }
     }
 

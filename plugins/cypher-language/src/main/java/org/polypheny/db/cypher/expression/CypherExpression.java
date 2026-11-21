@@ -77,7 +77,13 @@ public class CypherExpression extends CypherNode {
     }
 
 
-    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
+    public final Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
+        RexNode projected = context.projectedExpression( this );
+        return projected == null ? toRex( context, type ) : Pair.of( null, projected );
+    }
+
+
+    protected Pair<PolyString, RexNode> toRex( CypherContext context, RexType type ) {
         if ( this instanceof CypherFunctionInvocation func ) {
             // var is null in case of function call
             return Pair.of( PolyString.of( null ), func.getRexCall( context, type ) );

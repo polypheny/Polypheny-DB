@@ -61,12 +61,7 @@ public class CypherProperty extends CypherExpression {
 
 
     @Override
-    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
-        RexNode projected = context.projectedProperty( this );
-        if ( projected != null ) {
-            return Pair.of( PolyString.of( getName() ), projected );
-        }
-
+    protected Pair<PolyString, RexNode> toRex( CypherContext context, RexType type ) {
         RexNode operand = subject.getRex( context, type ).right;
         PolyType operandType = operand.getType().getPolyType();
         if ( operandType != PolyType.MAP && operandType != PolyType.NODE && operandType != PolyType.EDGE

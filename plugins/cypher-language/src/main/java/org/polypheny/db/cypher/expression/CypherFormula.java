@@ -52,7 +52,7 @@ public class CypherFormula extends CypherExpression {
 
 
     @Override
-    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
+    protected Pair<PolyString, RexNode> toRex( CypherContext context, RexType type ) {
         return Pair.of( null, createCall( context, op, left.getRex( context, type ).right, right.getRex( context, type ).right ) );
     }
 

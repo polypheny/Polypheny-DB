@@ -144,6 +144,72 @@ class ProjectionTest extends CypherTestTemplate {
 
 
     @Test
+    void reusesAnExactProjectedExpressionBeforeResolvingOutputAliases() {
+        assertEquals( List.of( List.of( -2, 1 ), List.of( -1, 2 ) ), integerRows( execute(
+                "UNWIND [1,2] AS x RETURN DISTINCT x * -1 AS neg, 3 - x AS x ORDER BY x * (-1)" ) ) );
+        assertEquals( List.of( List.of( 0, 1 ), List.of( 1, 2 ) ), integerRows( execute(
+                "UNWIND [0,1,3] AS n RETURN n % 2 AS bucket, count(n) AS n ORDER BY n%2" ) ) );
+        assertEquals( List.of( List.of( 1 ), List.of( 2 ) ), integerRows( execute(
+                "UNWIND [[2],[1]] AS rs RETURN DISTINCT last(rs) AS value ORDER BY LAST(rs)" ) ) );
+    }
+
+
+    @Test
+    void sortsProjectedPathLengthsAndAggregatesWithComplexArguments() {
+        String match = "MATCH p=(:Start)-[:T*]->(:End) ";
+        assertEquals( List.of( List.of( 1 ), List.of( 2 ) ), integerRows( execute(
+                match + "RETURN DISTINCT length(p) AS len ORDER BY length(p)" ) ) );
+        assertEquals( List.of( List.of( 1, 2 ), List.of( 2, 1 ) ), integerRows( execute(
+                match + "RETURN length(p) AS len, count(*) AS matches ORDER BY length(p)" ) ) );
+        assertEquals( List.of( List.of( 1, 2 ) ), integerRows( execute( """
+                UNWIND [1,2] AS x
+                WITH x % 2 AS bucket, sum(x + 1) AS total ORDER BY sum(x + 1) LIMIT 1
+                RETURN bucket, total
+                """ ) ) );
+    }
+
+
+    @Test
+    void matchesEquivalentProjectedExpressionsInWithWhere() {
+        assertEquals( List.of( List.of( 2 ) ), integerRows( execute(
+                "WITH 1 AS x WITH DISTINCT x + 1 AS y WHERE x+1 = 2 RETURN y" ) ) );
+        assertEquals( List.of( List.of( 1, 2 ) ), integerRows( execute( """
+                UNWIND [0,1,3] AS x
+                WITH x % 2 AS bucket, count(*) AS total WHERE x%2 = 1
+                RETURN bucket, total
+                """ ) ) );
+        assertEquals( List.of( List.of( 2 ) ), integerRows( execute(
+                "WITH 1 AS x WITH x + 1 AS x WHERE x + 1 = 3 RETURN x" ) ) );
+    }
+
+
+    @Test
+    void checksProjectionNamesAndLetsExplicitColumnsReplaceWildcardBindings() {
+        assertNotNull( CypherConnection.executeGetResponse( "WITH 1 + 2 RETURN `1 + 2`" ).getError() );
+        assertNotNull( CypherConnection.executeGetResponse( "MATCH (n) WITH n.name RETURN `n.name`" ).getError() );
+        assertNotNull( CypherConnection.executeGetResponse( "WITH 1 AS x, 2 AS x RETURN x" ).getError() );
+        assertNotNull( CypherConnection.executeGetResponse( "RETURN 1 AS x, 2 AS x" ).getError() );
+
+        GraphResult result = execute( "WITH 1 AS b, 2 AS a RETURN *, 3 AS a" );
+        assertEquals( List.of( "b", "a" ), Arrays.stream( result.getHeader() ).map( field -> field.name ).toList() );
+        assertEquals( List.of( List.of( 1, 3 ) ), integerRows( result ) );
+    }
+
+
+    @Test
+    void ordersWildcardColumnsAlphabeticallyAfterUnwind() {
+        GraphResult result = execute( """
+                WITH [1,2] AS xs, [3,4] AS ys, [5,6] AS zs
+                UNWIND xs AS x UNWIND ys AS y UNWIND zs AS z
+                RETURN *
+                """ );
+        assertEquals( List.of( "x", "xs", "y", "ys", "z", "zs" ),
+                Arrays.stream( result.getHeader() ).map( field -> field.name ).toList() );
+        assertEquals( 8, result.getData().length );
+    }
+
+
+    @Test
     void sortsRenamedGroupKeysAndProjectedAggregates() {
         String match = "MATCH (:Start)-[:T*]->(b:End) ";
         GraphResult grouped = execute( match + "RETURN b.name AS name, count(*) ORDER BY count(*) DESC" );
@@ -245,6 +311,13 @@ class ProjectionTest extends CypherTestTemplate {
     private static int countResult( GraphResult result ) {
         assertEquals( 1, result.getData().length );
         return value( result.getData()[0][0] ).asNumber().intValue();
+    }
+
+
+    private static List<List<Integer>> integerRows( GraphResult result ) {
+        return Arrays.stream( result.getData() )
+                .map( row -> Arrays.stream( row ).map( cell -> value( cell ).asNumber().intValue() ).toList() )
+                .toList();
     }
 
 }

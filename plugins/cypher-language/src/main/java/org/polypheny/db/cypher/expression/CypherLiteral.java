@@ -208,7 +208,7 @@ public class CypherLiteral extends CypherExpression {
 
 
     @Override
-    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
+    protected Pair<PolyString, RexNode> toRex( CypherContext context, RexType type ) {
         RexNode node = switch ( literalType ) {
             case TRUE -> context.rexBuilder.makeLiteral( true );
             case FALSE -> context.rexBuilder.makeLiteral( false );

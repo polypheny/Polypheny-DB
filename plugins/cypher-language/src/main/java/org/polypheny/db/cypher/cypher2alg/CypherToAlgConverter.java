@@ -38,6 +38,7 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.PlanKey;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.ResultKind;
 import org.polypheny.db.algebra.core.AggregateCall;
@@ -229,7 +230,7 @@ public class CypherToAlgConverter {
                 convertMatch( (CypherMatch) clause, context );
                 break;
             case RETURN:
-                convertProjection( (CypherReturnClause) clause, null, context );
+                convertProjection( (CypherReturnClause) clause, null, context, false );
                 break;
             case CREATE:
                 materializePathBindings( context );
@@ -284,18 +285,24 @@ public class CypherToAlgConverter {
 
 
     private void convertWith( CypherWith clause, CypherContext context ) {
-        convertProjection( clause.getReturnClause(), clause.getWhere(), context );
+        for ( CypherReturn item : clause.getReturnClause().getReturnItems() ) {
+            if ( item instanceof CypherReturnItem expression && expression.getVariable() == null
+                    && !(expression.getExpression() instanceof CypherVariable) ) {
+                throw new CypherSyntaxException( "An expression in WITH must have an alias (use AS)." );
+            }
+        }
+        convertProjection( clause.getReturnClause(), clause.getWhere(), context, true );
         // A projected path is a value. Its original node and relationship variables are out of scope.
         context.implicitPathBindings.clear();
     }
 
 
-    private void convertProjection( CypherReturnClause clause, @Nullable CypherWhere where, CypherContext context ) {
+    private void convertProjection( CypherReturnClause clause, @Nullable CypherWhere where, CypherContext context, boolean withClause ) {
         if ( clause.getReturnItems().stream().anyMatch( CypherReturn::isStar ) ) {
             materializePathBindings( context );
         }
         AlgNode source = context.stack.isEmpty() ? null : context.peek();
-        AlgNode projection = clause.getGraphProject( context );
+        AlgNode projection = clause.getGraphProject( context, withClause );
         List<CypherOrderItem> order = clause.getOrder() == null ? List.of() : clause.getOrder();
         boolean sort = !order.isEmpty() || clause.getLimit() != null || clause.getSkip() != null;
         if ( order.isEmpty() && where == null ) {
@@ -304,14 +311,15 @@ public class CypherToAlgConverter {
         }
 
         // Only a regular projection can look up unprojected input variables. DISTINCT and
-        // aggregation expose their outputs, including equivalent projected property expressions.
+        // aggregation expose their outputs, including expressions already projected.
         LogicalLpgProject project = projection instanceof LogicalLpgProject output && output.getInput() == source ? output : null;
         AlgNode input = project == null ? projection : project.getInput();
-        Map<String, RexNode> original = new LinkedHashMap<>();
-        if ( input == source ) {
+        Map<String, RexNode> sourceBindings = new LinkedHashMap<>();
+        if ( source != null ) {
             matchBindings( new MatchRows( source, 0 ), 0, context.implicitPathBindings )
-                    .forEach( ( name, value ) -> original.put( name.value, value ) );
+                    .forEach( ( name, value ) -> sourceBindings.put( name.value, value ) );
         }
+        Map<String, RexNode> original = input == source ? sourceBindings : Map.of();
         List<AlgDataTypeField> fields = projection.getTupleType().getFields();
         List<RexNode> values = new ArrayList<>( project == null
                 ? fields.stream().map( field -> (RexNode) rexBuilder.makeInputRef( projection, field.getIndex() ) ).toList()
@@ -329,6 +337,10 @@ public class CypherToAlgConverter {
             }
         }
 
+        Map<String, RexNode> unshadowedBindings = new HashMap<>( sourceBindings );
+        outputValues.keySet().forEach( unshadowedBindings::remove );
+        Map<PlanKey, String> projectedExpressions = projectedExpressions( clause, sourceBindings, context );
+
         for ( CypherReturn item : clause.getReturnItems() ) {
             if ( item instanceof CypherReturnItem projected && projected.getExpression() instanceof CypherVariable variable ) {
                 String column = projected.columnName();
@@ -341,21 +353,20 @@ public class CypherToAlgConverter {
 
         List<Integer> sortFields = new ArrayList<>();
         if ( !order.isEmpty() ) {
-            Map<PropertyReference, RexNode> sortKeys = projectedProperties( clause, outputValues, true );
-            Map<PropertyReference, RexNode> properties = projectedProperties( clause, outputValues, false );
             for ( CypherOrderItem item : order ) {
                 CypherExpression expression = item.getExpression();
-                RexNode projectedKey = projectedProperty( expression, sortKeys );
+                RexNode projectedKey = projectedExpression( expression, projectedExpressions, sourceBindings, outputValues, context );
                 RexNode value;
                 try {
-                    // An exact projected property is already a sort key. Inside another expression,
-                    // an output alias still shadows the original subject.
+                    // An exact projected expression is already a sort key. Inside another
+                    // expression, a new output alias still shadows the original binding.
                     if ( projectedKey != null ) {
                         value = projectedKey;
-                    } else if ( expression instanceof CypherAggregate aggregate ) {
-                        value = resolveProjectedAggregate( aggregate, clause, outputValues );
+                    } else if ( expression instanceof CypherAggregate ) {
+                        throw new CypherSyntaxException( "The aggregation used to order rows must also be projected." );
                     } else {
-                        value = context.resolveInScope( expression, name -> outputValues.getOrDefault( name, original.get( name ) ), properties );
+                        value = context.resolveInScope( expression, name -> outputValues.getOrDefault( name, original.get( name ) ),
+                                part -> projectedExpression( part, projectedExpressions, part instanceof CypherAggregate ? sourceBindings : unshadowedBindings, outputValues, context ) );
                     }
                 } catch ( CypherSyntaxException ex ) {
                     String name = expression instanceof CypherVariable || expression instanceof CypherProperty property && property.getSubject() instanceof CypherVariable
@@ -370,7 +381,6 @@ public class CypherToAlgConverter {
         RexNode predicate = null;
         if ( where != null ) {
             Map<String, RexNode> filterInputs = new HashMap<>( outputRefs );
-            Map<PropertyReference, RexNode> properties = projectedProperties( clause, outputRefs, false );
             predicate = context.resolveInScope( where.getExpression(), name -> filterInputs.computeIfAbsent( name, key -> {
                 RexNode originalValue = original.get( key );
                 if ( originalValue == null ) {
@@ -378,7 +388,7 @@ public class CypherToAlgConverter {
                 }
                 int index = appendHiddenColumn( originalValue, values, names );
                 return rexBuilder.makeInputRef( originalValue.getType(), index );
-            } ), properties );
+            } ), part -> projectedExpression( part, projectedExpressions, unshadowedBindings, outputRefs, context ) );
         }
         AlgNode result = values.size() == width ? projection
                 : LogicalLpgProject.create( input, values, names );
@@ -412,49 +422,44 @@ public class CypherToAlgConverter {
     }
 
 
-    private static RexNode resolveProjectedAggregate( CypherAggregate order, CypherReturnClause clause, Map<String, RexNode> output ) {
+    private static Map<PlanKey, String> projectedExpressions( CypherReturnClause clause, Map<String, RexNode> sourceBindings, CypherContext context ) {
+        Map<PlanKey, String> expressions = new HashMap<>();
         for ( CypherReturn item : clause.getReturnItems() ) {
-            if ( item instanceof CypherReturnItem projection && projection.getExpression() instanceof CypherAggregate aggregate
-                    && order.isSameAggregation( aggregate ) ) {
-                String name = projection.columnName() == null ? aggregate.op.name() : projection.columnName();
-                RexNode value = output.get( name );
-                if ( value != null ) {
-                    return value;
+            if ( item instanceof CypherReturnItem projection && !(projection.getExpression() instanceof CypherVariable) ) {
+                String name = projection.columnName() == null && projection.getExpression() instanceof CypherAggregate aggregate
+                        ? aggregate.op.name() : projection.columnName();
+                if ( name != null ) {
+                    expressionKey( projection.getExpression(), sourceBindings, context ).ifPresent( key -> expressions.putIfAbsent( key, name ) );
                 }
             }
         }
-        throw new CypherSyntaxException( "The aggregate used to order rows must also be projected." );
+        return expressions;
     }
 
 
     @Nullable
-    private static RexNode projectedProperty( CypherExpression expression, Map<PropertyReference, RexNode> properties ) {
-        if ( expression instanceof CypherProperty property && property.getSubject() instanceof CypherVariable subject ) {
-            return properties.get( new PropertyReference( subject.getName(), property.getPropertyKey() ) );
+    private static RexNode projectedExpression( CypherExpression expression, Map<PlanKey, String> projections,
+            Map<String, RexNode> sourceBindings, Map<String, RexNode> output, CypherContext context ) {
+        if ( projections.isEmpty() || expression instanceof CypherVariable ) {
+            return null;
         }
-        return null;
+        return expressionKey( expression, sourceBindings, context ).map( projections::get ).map( output::get ).orElse( null );
     }
 
 
-    private static Map<PropertyReference, RexNode> projectedProperties( CypherReturnClause clause, Map<String, RexNode> output, boolean includeShadowedSubjects ) {
-        Map<PropertyReference, RexNode> properties = new HashMap<>();
-        for ( CypherReturn item : clause.getReturnItems() ) {
-            if ( item instanceof CypherReturnItem projection && projection.getExpression() instanceof CypherProperty property
-                    && property.getSubject() instanceof CypherVariable subject
-                    && ( includeShadowedSubjects || !output.containsKey( subject.getName() ) ) ) {
-                String alias = projection.columnName();
-                RexNode value = output.get( alias );
-                if ( value != null ) {
-                    properties.putIfAbsent( new PropertyReference( subject.getName(), property.getPropertyKey() ), value );
-                }
+    private static Optional<PlanKey> expressionKey( CypherExpression expression, Map<String, RexNode> sourceBindings, CypherContext context ) {
+        try {
+            // Use the existing structural Rex representation in the input scope. Aggregate
+            // keys include their operation and argument without adding another aggregate call.
+            if ( expression instanceof CypherAggregate aggregate ) {
+                RexNode argument = aggregate.getTarget() == null ? null : context.resolveInScope( aggregate.getTarget(), sourceBindings::get, null );
+                return PlanKey.of( aggregate.op, aggregate.isDistinct(), argument );
             }
+            return PlanKey.of( context.resolveInScope( expression, sourceBindings::get, null ) );
+        } catch ( CypherSyntaxException | UnsupportedOperationException ex ) {
+            // This may refer to output aliases instead. The normal scope resolves it below.
+            return Optional.empty();
         }
-        return properties;
-    }
-
-
-    private record PropertyReference( String variable, String key ) {
-
     }
 
 
@@ -596,9 +601,10 @@ public class CypherToAlgConverter {
         rightBindings.forEach( ( name, value ) -> {
             RexNode current = scope.putIfAbsent( name, value );
             if ( current != null ) {
-                if ( current.getType().getPolyType() == PolyType.ANY && isRelationshipList( value.getType() ) ) {
+                OperatorName check = matchBindingValidator( current.getType(), value.getType() );
+                if ( check != null ) {
                     bindingChecks.add( rexBuilder.makeCall( context.booleanType,
-                            OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_VALIDATE_MATCH_RELATIONSHIP_LIST ),
+                            OperatorRegistry.get( QueryLanguage.from( "cypher" ), check ),
                             List.of( current ) ) );
                 }
                 // Multiple patterns in one MATCH cannot share a relationship binding, even an empty list.
@@ -718,6 +724,18 @@ public class CypherToAlgConverter {
     }
 
 
+    @Nullable
+    private static OperatorName matchBindingValidator( AlgDataType boundType, AlgDataType patternType ) {
+        if ( boundType.getPolyType() != PolyType.ANY ) {
+            return null;
+        }
+        if ( patternType.getPolyType() == PolyType.NODE ) {
+            return OperatorName.CYPHER_VALIDATE_MATCH_NODE;
+        }
+        return isRelationshipList( patternType ) ? OperatorName.CYPHER_VALIDATE_MATCH_RELATIONSHIP_LIST : null;
+    }
+
+
     private static boolean isRelationshipList( AlgDataType type ) {
         if ( !(type instanceof ArrayType array) ) {
             return false;
@@ -828,7 +846,7 @@ public class CypherToAlgConverter {
         // Paths still represented by a single match column. The value says whether the path itself has a user alias.
         private final Map<String, Boolean> implicitPathBindings = new HashMap<>();
         private Function<String, RexNode> scopedVariables;
-        private Map<PropertyReference, RexNode> scopedProperties = Map.of();
+        private Function<CypherExpression, RexNode> scopedExpressions;
         public CypherNode active;
         public Kind kind;
         private boolean writeHasConsumer;
@@ -900,21 +918,21 @@ public class CypherToAlgConverter {
 
 
         @Nullable
-        public RexNode projectedProperty( CypherProperty property ) {
-            return CypherToAlgConverter.projectedProperty( property, scopedProperties );
+        public RexNode projectedExpression( CypherExpression expression ) {
+            return scopedExpressions == null ? null : scopedExpressions.apply( expression );
         }
 
 
-        private RexNode resolveInScope( CypherExpression expression, Function<String, RexNode> variables, Map<PropertyReference, RexNode> properties ) {
+        private RexNode resolveInScope( CypherExpression expression, Function<String, RexNode> variables, @Nullable Function<CypherExpression, RexNode> expressions ) {
             Function<String, RexNode> previousVariables = scopedVariables;
-            Map<PropertyReference, RexNode> previousProperties = scopedProperties;
+            Function<CypherExpression, RexNode> previousExpressions = scopedExpressions;
             scopedVariables = variables;
-            scopedProperties = properties;
+            scopedExpressions = expressions;
             try {
                 return expression.getRex( this, RexType.PROJECT ).right;
             } finally {
                 scopedVariables = previousVariables;
-                scopedProperties = previousProperties;
+                scopedExpressions = previousExpressions;
             }
         }
 
@@ -1208,8 +1226,11 @@ public class CypherToAlgConverter {
                 PolyNode node = binding.right;
                 PolyString name = node.getVariableName();
                 int slot = name == null ? -1 : inputNames.indexOf( name.value );
-                if ( slot >= 0 && withRowId.getTupleType().getFields().get( slot ).getType().getPolyType() != PolyType.NODE ) {
-                    throw new GenericRuntimeException( "CREATE requires a node binding: " + name.value );
+                if ( slot >= 0 ) {
+                    PolyType boundType = graphValues.get( slot ).getType().getPolyType();
+                    if ( boundType != PolyType.NODE && !isDynamicBinding( boundType ) ) {
+                        throw new GenericRuntimeException( "CREATE requires a node binding: " + name.value );
+                    }
                 }
                 if ( slot < 0 ) {
                     slot = graphValues.size();

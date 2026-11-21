@@ -45,7 +45,7 @@ public class CypherComparison extends CypherExpression {
 
 
     @Override
-    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
+    protected Pair<PolyString, RexNode> toRex( CypherContext context, RexType type ) {
         if ( right == null ) {
             RexNode input = left.getRex( context, RexType.PROJECT ).right;
             return Pair.of( null, context.rexBuilder.makeCall( OperatorRegistry.get( operatorName ), input ) );

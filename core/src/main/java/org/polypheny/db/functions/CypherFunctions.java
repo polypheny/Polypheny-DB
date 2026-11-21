@@ -325,6 +325,25 @@ public class CypherFunctions {
     }
 
 
+    public static PolyBoolean validateMatchNode( PolyValue value ) {
+        if ( !isNull( value ) && !(value instanceof PolyNode) ) {
+            throw new GenericRuntimeException( "MATCH requires a NODE binding, got %s.", value.getType() );
+        }
+        return PolyBoolean.TRUE;
+    }
+
+
+    private static GraphPropertyHolder requireGraphUpdateTarget( PolyValue value ) {
+        if ( isNull( value ) ) {
+            return null;
+        }
+        if ( value instanceof GraphPropertyHolder target ) {
+            return target;
+        }
+        throw new GenericRuntimeException( "Graph writes require a node or relationship binding, got %s.", value.getType() );
+    }
+
+
     public static PolyBoolean validateMatchRelationshipList( PolyValue value ) {
         // Neo4j 4.4 lets dynamically typed strings reach the comparison, where they match no relationship list.
         if ( isNull( value ) || value.isList() || value.isString() ) {
@@ -401,12 +420,16 @@ public class CypherFunctions {
     }
 
 
-    public static PolyEdge createEdge( PolyEdge template, PolyString rowId, PolyNode source, PolyNode target,
+    public static PolyEdge createEdge( PolyEdge template, PolyString rowId, PolyValue source, PolyValue target,
             List<PolyString> keys, List<PolyValue> values ) {
-        if ( source == null || target == null ) {
+        if ( isNull( source ) || isNull( target ) ) {
             throw new GenericRuntimeException( "CREATE requires a bound source and target node" );
         }
-        return new PolyEdge( createdId( template.id, rowId ), properties( keys, values ), template.labels, source.id, target.id,
+        if ( !(source instanceof PolyNode sourceNode) || !(target instanceof PolyNode targetNode) ) {
+            throw new GenericRuntimeException( "CREATE requires node bindings for the source and target, got %s and %s.",
+                    source.getType(), target.getType() );
+        }
+        return new PolyEdge( createdId( template.id, rowId ), properties( keys, values ), template.labels, sourceNode.id, targetNode.id,
                 template.direction, template.getVariableName() );
     }
 
@@ -448,22 +471,29 @@ public class CypherFunctions {
      * Sets a property value for a given key.
      * If the key does not exist it gets created, if it does, it gets replaced.
      *
-     * @param target the graph element to modify
+     * @param targetValue the graph element to modify
      * @param key the key of the property to replace
      * @param value the value to replace it by
      * @return the adjusted graph element
      */
     @SuppressWarnings("unused")
-    public static GraphPropertyHolder setProperty( GraphPropertyHolder target, PolyString key, PolyValue value ) {
+    public static GraphPropertyHolder setProperty( PolyValue targetValue, PolyString key, PolyValue value ) {
+        GraphPropertyHolder target = requireGraphUpdateTarget( targetValue );
         if ( target == null ) {
             return null;
         }
-        if ( value == null || value.isNull() ) {
+        validatePropertyValue( value );
+        assignProperty( target, key, value );
+        return target;
+    }
+
+
+    private static void assignProperty( GraphPropertyHolder target, PolyString key, PolyValue value ) {
+        if ( isNull( value ) ) {
             target.properties.remove( key );
         } else {
             target.properties.put( key, value );
         }
-        return target;
     }
 
 
@@ -476,9 +506,13 @@ public class CypherFunctions {
      * @return the adjusted graph element
      */
     @SuppressWarnings("unused")
-    public static GraphPropertyHolder setLabels( GraphPropertyHolder target, List<PolyString> labels, PolyBoolean replace ) {
+    public static GraphPropertyHolder setLabels( PolyValue targetValue, List<PolyString> labels, PolyBoolean replace ) {
+        GraphPropertyHolder target = requireGraphUpdateTarget( targetValue );
         if ( target == null ) {
             return null;
+        }
+        if ( target instanceof PolyEdge && labels.size() != 1 ) {
+            throw new GenericRuntimeException( "Edges require exactly one label" );
         }
         if ( replace.value ) {
             target.labels.clear();
@@ -491,27 +525,76 @@ public class CypherFunctions {
     /**
      * Sets all given properties for the given graph element.
      *
-     * @param target the graph element to modify
-     * @param keys the keys, which are set
-     * @param values the values for the keys
+     * @param targetValue the graph element to modify
+     * @param source the properties to copy
      * @param replace if the properties are replaced completely or only added and replaced
      * @return the modified graph element
      */
     @SuppressWarnings("unused")
-    public static GraphPropertyHolder setProperties( GraphPropertyHolder target, List<PolyString> keys, List<PolyValue> values, PolyBoolean replace ) {
+    public static GraphPropertyHolder setProperties( PolyValue targetValue, PolyValue source, PolyBoolean replace ) {
+        GraphPropertyHolder target = requireGraphUpdateTarget( targetValue );
         if ( target == null ) {
             return null;
         }
+
+        Map<? extends PolyValue, ? extends PolyValue> sourceProperties;
+        if ( source instanceof GraphPropertyHolder element ) {
+            sourceProperties = element.properties;
+        } else if ( source instanceof PolyMap<?, ?> map && !map.isNull() ) {
+            sourceProperties = map;
+        } else {
+            throw new GenericRuntimeException( "SET requires a map, node, or relationship as the source of properties." );
+        }
+
+        // Validate the whole assignment and retain the source when it is the target itself.
+        Map<PolyString, PolyValue> properties = new HashMap<>();
+        sourceProperties.forEach( (key, value) -> {
+            if ( !(key instanceof PolyString name) || name.isNull() ) {
+                throw new GenericRuntimeException( "SET requires a string property name." );
+            }
+            validatePropertyValue( value );
+            properties.put( name, value );
+        } );
         if ( replace.value ) {
             target.properties.clear();
         }
-
-        int i = 0;
-        for ( PolyString key : keys ) {
-            setProperty( target, key, values.get( i ) );
-            i++;
-        }
+        properties.forEach( (key, value) -> assignProperty( target, key, value ) );
         return target;
+    }
+
+
+    private static void validatePropertyValue( PolyValue value ) {
+        if ( isNull( value ) || propertyScalarType( value.getType() ) != null ) {
+            return;
+        }
+        if ( value instanceof PolyList<?> list ) {
+            PolyType elementType = null;
+            for ( PolyValue element : list ) {
+                PolyType candidate = isNull( element ) ? null : propertyScalarType( element.getType() );
+                if ( candidate == null || elementType != null && elementType != candidate ) {
+                    throw invalidPropertyType();
+                }
+                elementType = candidate;
+            }
+            return;
+        }
+        throw invalidPropertyType();
+    }
+
+
+    private static PolyType propertyScalarType( PolyType type ) {
+        return switch ( type ) {
+            case TINYINT, SMALLINT, INTEGER, BIGINT, FLOAT, REAL, DOUBLE, DECIMAL -> PolyType.DECIMAL;
+            case CHAR, VARCHAR, TEXT -> PolyType.VARCHAR;
+            case BINARY, VARBINARY -> PolyType.VARBINARY;
+            case BOOLEAN, DATE, TIME, TIMESTAMP, INTERVAL, GEOMETRY, FILE, IMAGE, VIDEO, AUDIO -> type;
+            default -> null;
+        };
+    }
+
+
+    private static GenericRuntimeException invalidPropertyType() {
+        return new GenericRuntimeException( "InvalidPropertyType: Graph properties require a scalar or a homogeneous list of non-null scalars." );
     }
 
 
@@ -523,7 +606,8 @@ public class CypherFunctions {
      * @return the modified graph element
      */
     @SuppressWarnings("unused")
-    public static GraphPropertyHolder removeLabels( GraphPropertyHolder target, List<PolyString> labels ) {
+    public static GraphPropertyHolder removeLabels( PolyValue targetValue, List<PolyString> labels ) {
+        GraphPropertyHolder target = requireGraphUpdateTarget( targetValue );
         if ( target == null ) {
             return null;
         }
@@ -540,7 +624,8 @@ public class CypherFunctions {
      * @return the modified graph element
      */
     @SuppressWarnings("unused")
-    public static GraphPropertyHolder removeProperty( GraphPropertyHolder target, PolyString key ) {
+    public static GraphPropertyHolder removeProperty( PolyValue targetValue, PolyString key ) {
+        GraphPropertyHolder target = requireGraphUpdateTarget( targetValue );
         if ( target == null ) {
             return null;
         }
@@ -620,6 +705,13 @@ public class CypherFunctions {
 
     public static void addCollectedValue( PolyList<PolyValue> values, PolyValue value ) {
         if ( !isNull( value ) ) {
+            values.add( value );
+        }
+    }
+
+
+    public static void addDistinctCollectedValue( PolyList<PolyValue> values, Set<Object> seen, PolyValue value ) {
+        if ( !isNull( value ) && seen.add( aggregationKey( value ) ) ) {
             values.add( value );
         }
     }

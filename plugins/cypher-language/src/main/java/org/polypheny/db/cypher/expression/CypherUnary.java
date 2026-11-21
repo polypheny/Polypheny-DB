@@ -43,7 +43,7 @@ public class CypherUnary extends CypherExpression {
 
 
     @Override
-    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
+    protected Pair<PolyString, RexNode> toRex( CypherContext context, RexType type ) {
         return Pair.of( null, CypherFormula.createCall( context, unaryPlus,
                 context.rexBuilder.makeLiteral( PolyLong.of( 0 ) ), expression.getRex( context, type ).right ) );
     }

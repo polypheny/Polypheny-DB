@@ -17,7 +17,9 @@
 package org.polypheny.db.cypher.clause;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.IntStream;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgCollation;
@@ -34,6 +36,7 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.cypher.cypher2alg.CypherSyntaxException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.expression.CypherAggregate;
@@ -90,18 +93,31 @@ public class CypherReturnClause extends CypherClause {
     }
 
 
-    public AlgNode getGraphProject( CypherContext context ) {
+    public AlgNode getGraphProject( CypherContext context, boolean withClause ) {
+        Set<String> explicitNames = new HashSet<>();
+        for ( CypherReturn item : returnItems ) {
+            if ( item instanceof CypherReturnItem projected ) {
+                String name = projected.columnName();
+                if ( name != null && !explicitNames.add( name ) ) {
+                    throw new CypherSyntaxException( "Multiple result columns named '%s'.".formatted( name ) );
+                }
+            }
+        }
+
         List<Pair<PolyString, RexNode>> projections = new ArrayList<>();
         List<Pair<PolyString, RexNode>> operands = new ArrayList<>();
         List<Integer> requestedOrder = new ArrayList<>();
         for ( CypherReturn item : returnItems ) {
-            Pair<PolyString, RexNode> expression = item.getRex( context, RexType.PROJECT );
-            if ( item.isStar() ) {
-                for ( Pair<PolyString, RexNode> field : context.popNodes() ) {
+            if ( item instanceof CypherStarReturn star ) {
+                for ( Pair<PolyString, RexNode> field : star.expand( context, explicitNames, withClause ) ) {
                     requestedOrder.add( projections.size() );
                     projections.add( field );
                 }
-            } else if ( item instanceof CypherReturnItem value && value.getExpression() instanceof CypherAggregate ) {
+                continue;
+            }
+
+            Pair<PolyString, RexNode> expression = item.getRex( context, RexType.PROJECT );
+            if ( item instanceof CypherReturnItem value && value.getExpression() instanceof CypherAggregate ) {
                 requestedOrder.add( -1 - operands.size() );
                 operands.add( expression );
             } else {

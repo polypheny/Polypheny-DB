@@ -1720,6 +1720,68 @@ class CypherTest {
 
 
     @Test
+    void rejectsDynamicallyTypedScalarsAsNodeBindingsWithoutMatchCandidates() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            for ( String match : List.of( "MATCH", "OPTIONAL MATCH" ) ) {
+                for ( String start : List.of( "Person", "NoSuchLabel" ) ) {
+                    String query = "WITH last([null,1]) AS a %s (a:%s)-[:KNOWS*]->() RETURN count(*)".formatted( match, start );
+                    Response error = expect( connection.send( statementRequest( NAMESPACE, "cypher", query, -1 ) ), Response.TypeCase.ERROR_RESPONSE );
+                    String message = error.getErrorResponse().getMessage();
+                    assertTrue( message.contains( "MATCH requires a NODE binding" ), message );
+                    connection.checkTransactions( 0 );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    void writesDynamicallyTypedNodesAndRelationships() throws IOException {
+        try ( PrismConnection writer = new PrismConnection( true, 3 ); PrismConnection reader = new PrismConnection( true, 3 ) ) {
+            writer.execute( WRITE_RETURN_NAMESPACE, "cypher", """
+                    CREATE (:DynamicWriteSource)-[:DYNAMIC_WRITE {value:1}]->(:DynamicWriteTarget {value:2})
+                    """, -1 );
+            String match = "MATCH (:DynamicWriteSource)-[rs:DYNAMIC_WRITE*]->(b:DynamicWriteTarget) ";
+            Frame updated = writer.execute( WRITE_RETURN_NAMESPACE, "cypher", match + """
+                    UNWIND [b,last(rs)] AS target
+                    SET target.value = target.value + 10
+                    RETURN count(*) AS total
+                    """, -1 ).getResult().getFrame();
+            assertEquals( 2, integerValue( singleRow( relationalFrame( updated, true, List.of( "total" ) ) ).getValues( 0 ) ) );
+
+            Frame created = writer.execute( WRITE_RETURN_NAMESPACE, "cypher", match + """
+                    WITH last([null,b]) AS target
+                    CREATE p=(target)-[:DYNAMIC_CREATED]->(:DynamicCreatedTarget)
+                    RETURN length(p) AS hops
+                    """, -1 ).getResult().getFrame();
+            assertEquals( 1, integerValue( singleRow( relationalFrame( created, true, List.of( "hops" ) ) ).getValues( 0 ) ) );
+
+            String invalidCreate = match + "UNWIND [b,1] AS target CREATE (target)-[:DYNAMIC_INVALID]->(:DynamicInvalidTarget)";
+            Response error = expect( writer.send( statementRequest( WRITE_RETURN_NAMESPACE, "cypher", invalidCreate, -1 ) ), Response.TypeCase.ERROR_RESPONSE );
+            assertTrue( error.getErrorResponse().getMessage().contains( "CREATE requires node bindings for the source and target" ),
+                    error.getErrorResponse().getMessage() );
+            writer.checkTransactions( 0 );
+
+            Response invalidLabels = expect( writer.send( statementRequest( WRITE_RETURN_NAMESPACE, "cypher",
+                    match + "WITH last(rs) AS target SET target:First:Second", -1 ) ), Response.TypeCase.ERROR_RESPONSE );
+            assertTrue( invalidLabels.getErrorResponse().getMessage().contains( "Edges require exactly one label" ) );
+            writer.checkTransactions( 0 );
+
+            Frame persisted = reader.execute( WRITE_RETURN_NAMESPACE, "cypher", """
+                    MATCH (:DynamicWriteSource)-[r:DYNAMIC_WRITE]->(b:DynamicWriteTarget)-[:DYNAMIC_CREATED]->(:DynamicCreatedTarget)
+                    RETURN r.value AS relationship, b.value AS node
+                    """, -1 ).getResult().getFrame();
+            Row row = singleRow( relationalFrame( persisted, true, List.of( "relationship", "node" ) ) );
+            assertEquals( 11, integerValue( row.getValues( 0 ) ) );
+            assertEquals( 12, integerValue( row.getValues( 1 ) ) );
+            Frame rejected = reader.execute( WRITE_RETURN_NAMESPACE, "cypher",
+                    "MATCH (n:DynamicInvalidTarget) RETURN count(n) AS total", -1 ).getResult().getFrame();
+            assertEquals( 0, integerValue( singleRow( relationalFrame( rejected, true, List.of( "total" ) ) ).getValues( 0 ) ) );
+        }
+    }
+
+
+    @Test
     void rejectsConflictingPatternBindingsBeforeScanningTheGraph() throws IOException {
         try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
             List<String> conflicting = List.of(
@@ -1845,6 +1907,51 @@ class CypherTest {
                 Frame absent = connection.cypher( "MATCH (n:InvalidRangeCreate) RETURN n", -1 ).getResult().getFrame();
                 assertTrue( graphElements( absent, true ).isEmpty() );
             }
+        }
+    }
+
+
+    @Test
+    void rejectsInvalidSetPropertiesAndRollsBackAcrossStores() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            connection.cypher( "CREATE (:SetRegressionOriginal {marker:1})", 1 );
+            for ( String query : List.of(
+                    "CREATE (n:SetRegressionUnexpected) SET n.value = [{num:1}]",
+                    "CREATE (n:SetRegressionUnexpected) SET n += {value:[{num:1}]}",
+                    """
+                            MATCH (n:SetRegressionOriginal)
+                            UNWIND [{rank:0, value:[1]}, {rank:1, value:[{num:1}]}] AS row
+                            WITH n, row.value AS value ORDER BY row.rank
+                            SET n.marker = 2, n.value = value
+                            """,
+                    """
+                            MATCH (n:SetRegressionOriginal) SET n.marker = 2
+                            WITH n, {value:{num:1}} AS props
+                            SET n = props
+                            """ ) ) {
+                Response error = expect( connection.send( statementRequest( NAMESPACE, "cypher", query, -1 ) ), Response.TypeCase.ERROR_RESPONSE );
+                assertTrue( error.getErrorResponse().getMessage().contains( "InvalidPropertyType" ), query );
+                connection.checkTransactions( 0 );
+
+                Frame unexpected = connection.cypher( "MATCH (n:SetRegressionUnexpected) RETURN count(n) AS total", -1 ).getResult().getFrame();
+                assertEquals( 0, integerValue( singleRow( relationalFrame( unexpected, true, List.of( "total" ) ) ).getValues( 0 ) ), query );
+
+                Frame original = connection.cypher( "MATCH (n:SetRegressionOriginal) RETURN n.marker AS marker, n.value AS value", -1 ).getResult().getFrame();
+                Row row = singleRow( relationalFrame( original, true, List.of( "marker", "value" ) ) );
+                assertEquals( 1, integerValue( row.getValues( 0 ) ), query );
+                assertTrue( row.getValues( 1 ).hasNull(), query );
+            }
+
+            Frame updated = connection.cypher( """
+                    MATCH (n:SetRegressionOriginal)
+                    WITH n, {marker:null, value:[1,2]} AS props
+                    SET n += props
+                    RETURN n.marker AS marker, n.value[1] AS value
+                    """, -1 ).getResult().getFrame();
+            Row row = singleRow( relationalFrame( updated, true, List.of( "marker", "value" ) ) );
+            assertTrue( row.getValues( 0 ).hasNull() );
+            assertEquals( 2, integerValue( row.getValues( 1 ) ) );
+            connection.checkTransactions( 0 );
         }
     }
 
@@ -3660,6 +3767,112 @@ class CypherTest {
             case STRING -> Long.parseLong( value.getString().getString() );
             default -> throw new AssertionError( "Expected a numeric graph property but got " + value.getValueCase() );
         };
+    }
+
+
+    @Test
+    void sortsProjectedExpressionsBeforeApplyingSkipOrLimit() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            Frame distinct = connection.cypher( """
+                    UNWIND [1,2] AS x
+                    RETURN DISTINCT x * -1 AS neg, 3 - x AS x ORDER BY x * (-1)
+                    """, -1 ).getResult().getFrame();
+            List<Row> sorted = relationalFrame( distinct, true, List.of( "neg", "x" ) ).getRowsList();
+            assertEquals( List.of( List.of( -2L, 1L ), List.of( -1L, 2L ) ), sorted.stream()
+                    .map( row -> List.of( integerValue( row.getValues( 0 ) ), integerValue( row.getValues( 1 ) ) ) ).toList() );
+
+            Frame paths = connection.cypher( """
+                    MATCH p=(:Person)-[:KNOWS*]->(:Person)
+                    RETURN length(p) AS len, count(*) AS matches ORDER BY length(p)
+                    """, -1 ).getResult().getFrame();
+            List<Row> grouped = relationalFrame( paths, true, List.of( "len", "matches" ) ).getRowsList();
+            assertEquals( List.of( List.of( 1L, 2L ), List.of( 2L, 1L ) ), grouped.stream()
+                    .map( row -> List.of( integerValue( row.getValues( 0 ) ), integerValue( row.getValues( 1 ) ) ) ).toList() );
+
+            Frame limited = connection.cypher( """
+                    UNWIND [1,2] AS x
+                    WITH x % 2 AS bucket, sum(x + 1) AS total ORDER BY sum(x + 1) LIMIT 1
+                    RETURN bucket,total
+                    """, -1 ).getResult().getFrame();
+            Row row = singleRow( relationalFrame( limited, true, List.of( "bucket", "total" ) ) );
+            assertEquals( 1, integerValue( row.getValues( 0 ) ) );
+            assertEquals( 2, integerValue( row.getValues( 1 ) ) );
+        }
+    }
+
+
+    @Test
+    void validatesProjectionAliasesAndOrdersWildcardColumns() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            Frame filtered = connection.cypher( "WITH 1 AS x WITH DISTINCT x + 1 AS y WHERE x+1 = 2 RETURN y", -1 ).getResult().getFrame();
+            assertEquals( 2, integerValue( singleRow( relationalFrame( filtered, true, List.of( "y" ) ) ).getValues( 0 ) ) );
+
+            Frame unwound = connection.cypher( """
+                    WITH [1,2] AS xs, [3,4] AS ys, [5,6] AS zs
+                    UNWIND xs AS x UNWIND ys AS y UNWIND zs AS z
+                    RETURN *
+                    """, -1 ).getResult().getFrame();
+            assertEquals( 8, relationalFrame( unwound, true, List.of( "x", "xs", "y", "ys", "z", "zs" ) ).getRowsCount() );
+
+            for ( String query : List.of( "WITH 1 + 2 RETURN *", "RETURN 1 AS x, 2 AS x" ) ) {
+                Response error = expect( connection.send( statementRequest( NAMESPACE, "cypher", query, -1 ) ), Response.TypeCase.ERROR_RESPONSE );
+                String message = error.getErrorResponse().getMessage();
+                assertTrue( message.contains( "must have an alias" ) || message.contains( "Multiple result columns named" ), message );
+                connection.checkTransactions( 0 );
+            }
+        }
+    }
+
+
+    @Test
+    void collectsDistinctPathsAndSkipsNulls() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            Frame matched = connection.cypher( """
+                    MATCH p=(:Person {name:'Alice'})-[:KNOWS*]->(:Person)
+                    UNWIND [1,2] AS duplicate
+                    WITH p ORDER BY length(p)
+                    RETURN collect(DISTINCT p) AS paths, count(*) AS total
+                    """, -1 ).getResult().getFrame();
+            Row row = singleRow( relationalFrame( matched, true, List.of( "paths", "total" ) ) );
+            assertEquals( List.of( 1, 2 ), row.getValues( 0 ).getList().getValuesList().stream()
+                    .map( value -> value.getPath().getEdgesCount() ).toList() );
+            assertEquals( 4, integerValue( row.getValues( 1 ) ) );
+
+            Frame missing = connection.cypher( """
+                    OPTIONAL MATCH p=(:NoSuchPathStart)-[:KNOWS*]->()
+                    RETURN collect(DISTINCT p) AS paths
+                    """, -1 ).getResult().getFrame();
+            assertEquals( 0, singleRow( relationalFrame( missing, true, List.of( "paths" ) ) )
+                    .getValues( 0 ).getList().getValuesCount() );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void returnsNestedCypherMapsOverPrism() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            Frame result = connection.cypher( """
+                    MATCH p=(:Person {name:'Alice'})-[:KNOWS*1]->(b:Person)
+                    RETURN {name:b.name, items:[{path:p, missing:null}], empty:{}} AS details,
+                           [{person:b}] AS nested
+                    """, -1 ).getResult().getFrame();
+            RelationalFrame frame = relationalFrame( result, true, List.of( "details", "nested" ) );
+            assertEquals( ProtoPolyType.MAP, frame.getColumnMeta( 0 ).getTypeMeta().getProtoValueType() );
+            assertEquals( ProtoPolyType.MAP, frame.getColumnMeta( 1 ).getTypeMeta().getArrayMeta().getElementType().getProtoValueType() );
+            Row row = singleRow( frame );
+            var details = row.getValues( 0 ).getDocument();
+            assertEquals( "Bob", details.getEntriesOrThrow( "name" ).getString().getString() );
+            assertTrue( details.getEntriesOrThrow( "empty" ).hasDocument() );
+            assertEquals( 0, details.getEntriesOrThrow( "empty" ).getDocument().getEntriesCount() );
+            var item = details.getEntriesOrThrow( "items" ).getList().getValues( 0 ).getDocument();
+            assertTrue( item.getEntriesOrThrow( "missing" ).hasNull() );
+            ProtoPath path = item.getEntriesOrThrow( "path" ).getPath();
+            assertEquals( 1, path.getEdgesCount() );
+            ProtoNode person = row.getValues( 1 ).getList().getValues( 0 ).getDocument().getEntriesOrThrow( "person" ).getNode();
+            assertEquals( path.getNodes( 1 ).getId(), person.getId() );
+            connection.checkTransactions( 0 );
+        }
     }
 
 

@@ -54,7 +54,7 @@ public class CypherGate extends CypherExpression {
 
 
     @Override
-    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
+    protected Pair<PolyString, RexNode> toRex( CypherContext context, RexType type ) {
         OperatorName operatorName = switch ( gate ) {
             case OR -> OperatorName.OR;
             case AND -> OperatorName.AND;

@@ -19,6 +19,7 @@ package org.polypheny.db.cypher.expression;
 import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nullable;
+import lombok.Getter;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.AggregateCall;
@@ -38,7 +39,9 @@ import org.polypheny.db.util.Pair;
 public class CypherAggregate extends CypherExpression {
 
     public final OperatorName op;
+    @Getter
     private final CypherExpression target;
+    @Getter
     private final boolean distinct;
 
 
@@ -47,28 +50,9 @@ public class CypherAggregate extends CypherExpression {
         this.op = op;
         this.target = target;
         this.distinct = distinct;
-        if ( this.op != OperatorName.COUNT && distinct ) {
-            throw new GenericRuntimeException( "Only count([name]) aggregations can be DISTINCT." );
+        if ( distinct && op != OperatorName.COUNT && op != OperatorName.COLLECT ) {
+            throw new GenericRuntimeException( "DISTINCT is supported for COUNT and COLLECT aggregations." );
         }
-    }
-
-
-    public boolean isSameAggregation( CypherAggregate other ) {
-        if ( op != other.op || distinct != other.distinct ) {
-            return false;
-        }
-        if ( target == other.target ) {
-            return true;
-        }
-        if ( target instanceof CypherVariable a && other.target instanceof CypherVariable b ) {
-            return a.getName().equals( b.getName() );
-        }
-        if ( target instanceof CypherProperty a && other.target instanceof CypherProperty b
-                && a.getSubject() instanceof CypherVariable first && b.getSubject() instanceof CypherVariable second ) {
-            return first.getName().equals( second.getName() ) && a.getPropertyKey().equals( b.getPropertyKey() );
-        }
-        return target instanceof CypherLiteral a && other.target instanceof CypherLiteral b
-                && Objects.equals( a.getComparable(), b.getComparable() );
     }
 
 

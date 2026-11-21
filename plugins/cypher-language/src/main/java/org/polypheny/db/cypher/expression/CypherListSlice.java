@@ -50,7 +50,7 @@ public class CypherListSlice extends CypherExpression {
 
 
     @Override
-    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
+    protected Pair<PolyString, RexNode> toRex( CypherContext context, RexType type ) {
         RexNode value = subject.getRex( context, type ).right;
         requireListOperand( value, "Slicing requires a list." );
         RexNode lower = from == null ? context.rexBuilder.makeLiteral( PolyLong.of( 0 ) ) : from.getRex( context, type ).right;

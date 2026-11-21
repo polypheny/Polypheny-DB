@@ -18,13 +18,10 @@ package org.polypheny.db.adapter.neo4j.util;
 
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.quoteIdentifier;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.calcite.linq4j.function.Function1;
 import org.polypheny.db.adapter.neo4j.NeoRelationalImplementor;
@@ -43,7 +40,6 @@ import org.polypheny.db.rex.RexLocalRef;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.util.Pair;
 
 public class Translator extends RexVisitorImpl<String> {
 
@@ -142,9 +138,6 @@ public class Translator extends RexVisitorImpl<String> {
         if ( call.op.getOperatorName() == OperatorName.CYPHER_SET_LABELS ) {
             return handleSetLabels( call );
         }
-        if ( call.op.getOperatorName() == OperatorName.CYPHER_SET_PROPERTIES ) {
-            return handleSetProperties( call );
-        }
         if ( call.op.getOperatorName() == OperatorName.CYPHER_EXTRACT_FROM_PATH ) {
             return handleExtractFromPath( call );
         }
@@ -193,31 +186,6 @@ public class Translator extends RexVisitorImpl<String> {
         assert call.operands.get( 1 ).isA( Kind.LITERAL );
 
         return quoteIdentifier( ((RexLiteral) call.operands.get( 1 )).value.asString().value );
-    }
-
-
-    private String handleSetProperties( RexCall call ) {
-        String identifier = call.operands.get( 0 ).accept( this );
-        List<PolyValue> rexKeys = ((RexLiteral) call.operands.get( 1 )).value.asList();
-        List<String> keys = rexKeys.stream().map( l -> l.asString().value ).toList();
-        List<PolyValue> rexValues = ((RexLiteral) call.operands.get( 2 )).value.asList().value;
-        List<String> values = rexValues.stream().map( value -> NeoStatements.graphProperty_( value ).build() ).toList();
-
-        boolean replace = ((RexLiteral) call.operands.get( 3 )).value.asBoolean().value;
-
-        List<String> mappings = new ArrayList<>();
-        mappings.add( String.format( "_id:%s._id", identifier ) );
-        if ( call.getType().getPolyType() == PolyType.EDGE ) {
-            mappings.add( String.format( "__sourceId__:%s.__sourceId__", identifier ) );
-            mappings.add( String.format( "__targetId__:%s.__targetId__", identifier ) );
-        }
-
-        return identifier + (replace ? " = " : " += ") + "{" + Stream.concat(
-                        Pair.zip( keys, values )
-                                .stream()
-                                .map( e -> String.format( "%s:%s", quoteIdentifier( e.left ), e.right ) ),
-                        mappings.stream() ) // preserve id
-                .collect( Collectors.joining( "," ) ) + "}";
     }
 
 

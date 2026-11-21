@@ -65,7 +65,7 @@ public class CypherParameter extends CypherExpression {
 
 
     @Override
-    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
+    protected Pair<PolyString, RexNode> toRex( CypherContext context, RexType type ) {
         PolyValue boundValue = getComparable();
         RexNode literal = boundValue.isNull()
                 ? context.rexBuilder.makeNullLiteral( context.typeFactory.createPolyType( PolyType.NULL ) )

@@ -119,6 +119,26 @@ class CypherValueAccessTest extends CypherTestTemplate {
 
 
     @Test
+    void collectsDistinctValuesUsingCypherGroupingEquality() {
+        GraphResult numbers = execute( """
+                UNWIND [1,1.0,null,2,1] AS value
+                RETURN collect(DISTINCT value) AS values
+                """ );
+        assertEquals( List.of( 1L, 2L ), numbers( numbers, 0 ).stream().sorted().toList() );
+
+        GraphResult nested = execute( """
+                UNWIND [{x:[1,null]}, {x:[1.0,null]}, {x:[2,null]}] AS value
+                WITH collect(DISTINCT value) AS collected
+                UNWIND collected AS v
+                RETURN v.x[0] AS value ORDER BY value
+                """ );
+        assertEquals( 2, nested.getData().length );
+        assertEquals( 1, cell( nested, 0, 0 ).asNumber().longValue() );
+        assertEquals( 2, cell( nested, 1, 0 ).asNumber().longValue() );
+    }
+
+
+    @Test
     void namesUnaliasedScalarColumnsFromTheirSourceAndRejectsDistinct() {
         GraphResult result = execute( "RETURN last([1,2]),\n\tlast([3, 4]), [[1]][0][0]" );
         assertEquals( List.of( "last([1,2])", "last([3, 4])", "[[1]][0][0]" ),

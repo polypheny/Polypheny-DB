@@ -1723,6 +1723,7 @@ public enum OperatorName {
     CYPHER_EXTRACT_ID( LangFunctionOperator.class ),
 
     CYPHER_MATCH_ELEMENT_ID( LangFunctionOperator.class ),
+    CYPHER_VALIDATE_MATCH_NODE( LangFunctionOperator.class ),
     CYPHER_VALIDATE_MATCH_RELATIONSHIP_LIST( LangFunctionOperator.class ),
 
     CYPHER_EXTRACT_PROPERTIES( LangFunctionOperator.class ),

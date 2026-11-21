@@ -47,7 +47,7 @@ public class CypherListLookup extends CypherExpression {
 
 
     @Override
-    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
+    protected Pair<PolyString, RexNode> toRex( CypherContext context, RexType type ) {
         RexNode value = subject.getRex( context, type ).right;
         RexNode index = list.getRex( context, type ).right;
         PolyType valueType = value.getType().getPolyType();

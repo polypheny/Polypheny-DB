@@ -118,7 +118,7 @@ public class CypherFunctionInvocation extends CypherExpression {
 
 
     @Override
-    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
+    protected Pair<PolyString, RexNode> toRex( CypherContext context, RexType type ) {
         return Pair.of( null, getRexCall( context, type ) );
     }
 
