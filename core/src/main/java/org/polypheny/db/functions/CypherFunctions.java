@@ -459,7 +459,8 @@ public class CypherFunctions {
         PolyDictionary properties = new PolyDictionary();
         for ( int i = 0; i < keys.size(); i++ ) {
             PolyValue value = values.get( i );
-            if ( value != null && !value.isNull() ) {
+            if ( !isNull( value ) ) {
+                validatePropertyValue( value );
                 properties.put( keys.get( i ), value );
             }
         }
@@ -498,21 +499,20 @@ public class CypherFunctions {
 
 
     /**
-     * Sets all given labels for the target graph element.
+     * Sets the given labels on a node.
      *
-     * @param target the graph element to modify
+     * @param targetValue the node to modify
      * @param labels the labels to set
-     * @param replace if the labels a replaced completely or only added
-     * @return the adjusted graph element
+     * @param replace whether to clear the existing labels before adding the new labels
+     * @return the modified node
      */
     @SuppressWarnings("unused")
     public static GraphPropertyHolder setLabels( PolyValue targetValue, List<PolyString> labels, PolyBoolean replace ) {
-        GraphPropertyHolder target = requireGraphUpdateTarget( targetValue );
-        if ( target == null ) {
+        if ( isNull( targetValue ) ) {
             return null;
         }
-        if ( target instanceof PolyEdge && labels.size() != 1 ) {
-            throw new GenericRuntimeException( "Edges require exactly one label" );
+        if ( !(targetValue instanceof PolyNode target) ) {
+            throw new GenericRuntimeException( "SET label assignment requires a node binding" );
         }
         if ( replace.value ) {
             target.labels.clear();
@@ -563,7 +563,7 @@ public class CypherFunctions {
     }
 
 
-    private static void validatePropertyValue( PolyValue value ) {
+    public static void validatePropertyValue( PolyValue value ) {
         if ( isNull( value ) || propertyScalarType( value.getType() ) != null ) {
             return;
         }

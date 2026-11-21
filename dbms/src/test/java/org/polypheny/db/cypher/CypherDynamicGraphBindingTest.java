@@ -52,6 +52,18 @@ class CypherDynamicGraphBindingTest extends CypherTestTemplate {
 
 
     @Test
+    void doesNotValidateBindingsWhenTheMatchPredicateIsFalse() {
+        assertEquals( 0, number( "WITH last([null,1]) AS n MATCH (n:Start) WHERE false RETURN count(*)" ) );
+        assertEquals( 1, number( "WITH last([null,1]) AS n OPTIONAL MATCH (n:Start) WHERE false RETURN n" ) );
+        assertEquals( 1, number( "WITH last([null,1]) AS n OPTIONAL MATCH (n:Start) WHERE false AND n.v = 1 RETURN n" ) );
+        assertEquals( 0, number( "WITH 1 AS v OPTIONAL MATCH (n:Start) WHERE null RETURN count(n)" ) );
+        assertEquals( 0, number( "MATCH (n:Start) WITH last([null,n]) AS target MATCH (target:Start) WHERE null RETURN count(*)" ) );
+        assertError( "WITH last([null,1]) AS n MATCH (n:Start) WHERE null RETURN count(*)", "MATCH requires a NODE binding" );
+        assertError( "WITH last([null,1]) AS n OPTIONAL MATCH (n:Start) WHERE null RETURN n", "MATCH requires a NODE binding" );
+    }
+
+
+    @Test
     void writesNodesAndRelationshipsFromTheSameDynamicBinding() {
         assertEquals( 2, number( """
                 MATCH (:Start)-[rs:R*]->(b:Target)
@@ -96,12 +108,32 @@ class CypherDynamicGraphBindingTest extends CypherTestTemplate {
         assertError( input + "SET target.v = 9", "Graph writes require a node or relationship binding" );
         assertEquals( 2, number( "MATCH (b:Target) RETURN b.v" ) );
 
-        assertError( "MATCH ()-[r:R]->() WITH last([null,r]) AS target SET target:A:B", "Edges require exactly one label" );
-        assertEquals( 1, number( "MATCH ()-[r:R]->() RETURN count(r)" ) );
-
         assertError( input + "CREATE (target)-[:MADE]->(:New)", "CREATE requires node bindings for the source and target" );
         assertEquals( 0, number( "MATCH (n:New) RETURN count(n)" ) );
         assertEquals( 0, number( "MATCH ()-[r:MADE]->() RETURN count(r)" ) );
+    }
+
+
+    @Test
+    void labelsCanBeSetOnlyOnNodes() {
+        for ( String query : List.of(
+                "MATCH ()-[r:R]->() SET r:Changed",
+                "MATCH ()-[r:R]->() WITH last([null,r]) AS target SET target:Changed",
+                "MATCH ()-[r:R]->() WITH last([null,r]) AS target SET target:A:B" ) ) {
+            assertError( query, "SET label assignment requires a node binding" );
+        }
+        assertEquals( 1, number( "MATCH ()-[r:R]->() RETURN r.v" ) );
+        assertEquals( 0, number( "MATCH ()-[r:Changed]->() RETURN count(r)" ) );
+
+        assertEquals( 1, number( """
+                MATCH (n:Target) WITH last([null,n]) AS target
+                SET target:Extra RETURN count(target)
+                """ ) );
+        assertEquals( 1, number( "MATCH (n:Target:Extra) RETURN count(n)" ) );
+        assertEquals( 0, number( """
+                OPTIONAL MATCH (n:Missing) WITH last([null,n]) AS target
+                SET target:Extra RETURN count(target)
+                """ ) );
     }
 
 

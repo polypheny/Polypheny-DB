@@ -16,6 +16,10 @@
 
 package org.polypheny.db.cypher;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper.CypherConnection;
@@ -111,6 +115,26 @@ public class CypherVectorDistanceTest extends CypherTestTemplate {
                 Row.of( TestLiteral.from( "a" ), TestLiteral.from( "0.0" ) ),
                 Row.of( TestLiteral.from( "b" ), TestLiteral.from( "1.4142135623730951" ) )
         );
+    }
+
+
+    @Test
+    public void sortsUsingTheProjectedVectorMetricAlias() {
+        String query = """
+                UNWIND [[3,4],[1,2]] AS vec
+                WITH vec, 'COSINE' AS metric
+                RETURN vec AS v, '%s' AS metric
+                ORDER BY vector_distance(vec, [0,0], metric)
+                """;
+        GraphResult result = execute( query.formatted( "L2" ) );
+        assertEquals( 2, result.getData().length );
+        assertTrue( containsRows( result, true, true,
+                Row.of( TestLiteral.from( "[1,2]" ), TestLiteral.from( "L2" ) ),
+                Row.of( TestLiteral.from( "[3,4]" ), TestLiteral.from( "L2" ) ) ) );
+
+        String error = CypherConnection.executeGetResponse( query.formatted( "UNKNOWN" ) ).getError();
+        assertNotNull( error );
+        assertTrue( error.contains( "Unknown distance metric" ), error );
     }
 
 

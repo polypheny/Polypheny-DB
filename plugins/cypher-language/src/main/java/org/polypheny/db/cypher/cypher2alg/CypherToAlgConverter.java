@@ -96,6 +96,7 @@ import org.polypheny.db.cypher.pattern.CypherNodePattern;
 import org.polypheny.db.cypher.pattern.CypherPattern;
 import org.polypheny.db.cypher.pattern.CypherRelPattern;
 import org.polypheny.db.cypher.query.CypherSingleQuery;
+import org.polypheny.db.functions.CypherFunctions;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.plan.AlgCluster;
@@ -456,8 +457,9 @@ public class CypherToAlgConverter {
                 return PlanKey.of( aggregate.op, aggregate.isDistinct(), argument );
             }
             return PlanKey.of( context.resolveInScope( expression, sourceBindings::get, null ) );
-        } catch ( CypherSyntaxException | UnsupportedOperationException ex ) {
-            // This may refer to output aliases instead. The normal scope resolves it below.
+        } catch ( GenericRuntimeException | UnsupportedOperationException ex ) {
+            // A failed probe is not a query error. Resolve the expression normally to apply
+            // output aliases and report any errors in the resulting scope.
             return Optional.empty();
         }
     }
@@ -612,10 +614,6 @@ public class CypherToAlgConverter {
                 conditions.add( repeatedRelationship ? rexBuilder.makeLiteral( false ) : sameBinding( name, current, value ) );
             }
         } );
-        // Validate incoming rows even if the traversal supplies no candidate for the join predicate.
-        if ( !bindingChecks.isEmpty() ) {
-            left = LogicalLpgFilter.create( left, RexUtil.composeConjunction( rexBuilder, bindingChecks, false ) );
-        }
         // Patterns in the same clause cannot reuse a relationship, even when that relationship is unnamed.
         List<RexNode> paths = new ArrayList<>();
         if ( clausePatterns ) {
@@ -648,7 +646,20 @@ public class CypherToAlgConverter {
             context.pop();
         }
 
-        AlgNode join = LogicalLpgJoin.create( left, right, RexUtil.composeConjunction( rexBuilder, conditions, false ), type );
+        boolean nullPredicate = conditions.removeIf( RexUtil::isNull );
+        RexNode condition = RexUtil.composeConjunction( rexBuilder, conditions, false );
+        // A false predicate rules out matching the pattern. Otherwise validate the bindings
+        // even if the traversal supplies no candidate for the join predicate.
+        boolean validate = !bindingChecks.isEmpty() && !condition.isAlwaysFalse();
+        boolean rejectInput = nullPredicate && type == JoinAlgType.INNER && validate;
+        if ( validate ) {
+            RexNode validation = RexUtil.composeConjunction( rexBuilder, bindingChecks, false );
+            // A bare null WHERE cannot match. For an inner join, reject input via the validator,
+            // which returns true or throws, so the planner cannot discard the validation.
+            left = LogicalLpgFilter.create( left, rejectInput ? RexUtil.not( validation ) : validation );
+        }
+        RexNode joinCondition = nullPredicate && !rejectInput ? rexBuilder.makeLiteral( false ) : condition;
+        AlgNode join = LogicalLpgJoin.create( left, right, joinCondition, type );
         Map<PolyString, RexNode> output = new LinkedHashMap<>( leftBindings );
         // Derive new bindings from the join's row type, which makes its optional side nullable.
         for ( AlgDataTypeField field : rightRows.visibleFields() ) {
@@ -1172,7 +1183,10 @@ public class CypherToAlgConverter {
                 createRows( nodes, edges );
             } else {
                 Stream.<GraphPropertyHolder>concat( nodes.stream().map( binding -> binding.right ), edges.stream().map( binding -> binding.right.edge ) )
-                        .forEach( element -> element.properties.values().removeIf( PolyValue::isNull ) );
+                        .forEach( element -> {
+                            element.properties.values().forEach( CypherFunctions::validatePropertyValue );
+                            element.properties.values().removeIf( value -> value == null || value.isNull() );
+                        } );
                 LogicalLpgValues values = LogicalLpgValues.create(
                         cluster,
                         cluster.traitSet(),
@@ -1489,8 +1503,9 @@ public class CypherToAlgConverter {
             }
             AlgDataTypeField field = node.getTupleType().getFields().get( index );
 
-            if ( field.getType().getPolyType() == PolyType.EDGE && labels.size() != 1 ) {
-                throw new GenericRuntimeException( "Edges require exactly one label" );
+            PolyType type = field.getType().getPolyType();
+            if ( type != PolyType.NODE && !isDynamicBinding( type ) ) {
+                throw new GenericRuntimeException( "SET label assignment requires a node binding" );
             }
 
             RexNode ref = getRexNode( variable );
