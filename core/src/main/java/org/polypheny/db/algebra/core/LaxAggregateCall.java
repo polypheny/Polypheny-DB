@@ -68,7 +68,7 @@ public class LaxAggregateCall {
 
     public static LaxAggregateCall from( AggregateCall call, AlgNode parent ) {
         AlgDataType resultType = switch ( call.getAggregation().getKind() ) {
-            case MIN, MAX, SUM, AVG, COLLECT -> call.getType();
+            case MIN, MAX, SUM, AVG, COLLECT, STDDEV_SAMP, STDDEV_POP -> call.getType();
             default -> null;
         };
         if ( parent == null ) {
@@ -118,6 +118,7 @@ public class LaxAggregateCall {
     public static AlgDataType getType( AlgCluster cluster, AggFunction function ) {
         return switch ( function.getKind() ) {
             case COUNT -> cluster.getTypeFactory().createPolyType( PolyType.BIGINT );
+            case STDDEV_SAMP, STDDEV_POP -> cluster.getTypeFactory().createPolyType( PolyType.DOUBLE );
             case SUM, AVG, MIN, MAX -> cluster.getTypeFactory().createTypeWithNullability( cluster.getTypeFactory().createPolyType( PolyType.DOUBLE ), true );
             default -> null;
         };
@@ -137,6 +138,9 @@ public class LaxAggregateCall {
 
 
     public static AlgDataType inferGraphNumericType( AlgDataTypeFactory factory, Kind kind, AlgDataType operand ) {
+        if ( kind == Kind.STDDEV_SAMP || kind == Kind.STDDEV_POP ) {
+            return factory.createPolyType( PolyType.DOUBLE );
+        }
         if ( kind == Kind.AVG ) {
             return factory.createTypeWithNullability( factory.createPolyType( PolyType.DOUBLE ), true );
         }

@@ -835,6 +835,7 @@ public class RexImpTable {
     private void defineCypherMethods() {
         CypherImplementor implementor = new CypherImplementor();
         QueryLanguage cypher = QueryLanguage.from( "cypher" );
+        map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_CASE ), RexImpTable::implementCypherCase );
         map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_ALL_MATCH ), implementor );
         map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_ANY_MATCH ), implementor );
         map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_SINGLE_MATCH ), implementor );
@@ -849,6 +850,11 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_NODES ), BuiltInMethod.CYPHER_NODES.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_RELATIONSHIPS ), BuiltInMethod.CYPHER_RELATIONSHIPS.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_LENGTH ), BuiltInMethod.CYPHER_LENGTH.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_SIZE ), BuiltInMethod.CYPHER_SIZE.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_RANGE ), BuiltInMethod.CYPHER_RANGE.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_TYPE ), BuiltInMethod.CYPHER_TYPE.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_ID ), BuiltInMethod.CYPHER_ID.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_LABELS ), BuiltInMethod.CYPHER_LABELS.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_ARITHMETIC ), BuiltInMethod.CYPHER_ARITHMETIC.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_LESS_THAN ), BuiltInMethod.CYPHER_LESS_THAN.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_LESS_THAN_OR_EQUAL ), BuiltInMethod.CYPHER_LESS_THAN_OR_EQUAL.method, NullPolicy.NONE );
@@ -894,6 +900,47 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( cypher, OperatorName.DISTANCE_NEO4J ), BuiltInMethod.CYPHER_DISTANCE_NEO4J.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_WITHIN_BBOX ), BuiltInMethod.CYPHER_WITHIN_BBOX.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_WITHIN_GEOMETRY ), BuiltInMethod.CYPHER_WITHIN_GEOMETRY.method, NullPolicy.NONE );
+    }
+
+
+    private static Expression implementCypherCase( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
+        List<RexNode> operands = call.getOperands();
+        // An optional selector precedes the WHEN/THEN pairs and the final ELSE operand.
+        boolean simple = operands.size() % 2 == 0;
+        Expression selector = simple ? translator.translate( operands.get( 0 ), NullAs.NULL, PolyValue.class ) : null;
+
+        BlockBuilder block = translator.getList();
+        ParameterExpression result = Expressions.parameter( PolyValue.class, block.newName( "caseResult" ) );
+        block.add( Expressions.declare( 0, result, null ) );
+        block.add( cypherCaseBranch( translator, operands, simple ? 1 : 0, selector, result ) );
+        Class<?> javaType = EnumUtils.javaRowClass( translator.typeFactory, call.getType() );
+        return nullAs.handle( Expressions.convert_( result, javaType ) );
+    }
+
+
+    private static BlockStatement cypherCaseBranch(
+            RexToLixTranslator translator, List<RexNode> operands, int index, Expression selector, ParameterExpression result ) {
+        BlockBuilder block = new BlockBuilder( true, translator.getList() );
+        RexToLixTranslator branch = translator.setBlock( block );
+        RexNode operand = operands.get( index );
+        if ( index == operands.size() - 1 ) {
+            Expression value = branch.translate( operand, NullAs.NULL, PolyValue.class );
+            block.add( Expressions.statement( Expressions.assign( result, value ) ) );
+        } else {
+            Expression matches;
+            if ( selector == null ) {
+                matches = branch.translate( operand, NullAs.FALSE );
+            } else {
+                Expression candidate = branch.translate( operand, NullAs.NULL, PolyValue.class );
+                matches = NullAs.FALSE.handle( Expressions.call( BuiltInMethod.CYPHER_EQUALS.method, selector, candidate ) );
+            }
+
+            BlockBuilder thenBlock = new BlockBuilder( true, block );
+            Expression value = branch.setBlock( thenBlock ).translate( operands.get( index + 1 ), NullAs.NULL, PolyValue.class );
+            thenBlock.add( Expressions.statement( Expressions.assign( result, value ) ) );
+            block.add( EnumUtils.ifThenElse( matches, thenBlock.toBlock(), cypherCaseBranch( branch, operands, index + 2, selector, result ) ) );
+        }
+        return block.toBlock();
     }
 
 

@@ -50,9 +50,11 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgJoin;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgMergeRows;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnion;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgWriteRow;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -72,11 +74,14 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.CypherNode.CypherFamily;
 import org.polypheny.db.cypher.CypherNode.CypherKind;
+import org.polypheny.db.cypher.MergeActionType;
 import org.polypheny.db.cypher.clause.CypherClause;
 import org.polypheny.db.cypher.clause.CypherCreate;
 import org.polypheny.db.cypher.clause.CypherDelete;
 import org.polypheny.db.cypher.clause.CypherMatch;
+import org.polypheny.db.cypher.clause.CypherMerge;
 import org.polypheny.db.cypher.clause.CypherOrderItem;
+import org.polypheny.db.cypher.clause.CypherQuery;
 import org.polypheny.db.cypher.clause.CypherRemove;
 import org.polypheny.db.cypher.clause.CypherReturn;
 import org.polypheny.db.cypher.clause.CypherReturnClause;
@@ -96,7 +101,10 @@ import org.polypheny.db.cypher.pattern.CypherNodePattern;
 import org.polypheny.db.cypher.pattern.CypherPattern;
 import org.polypheny.db.cypher.pattern.CypherRelPattern;
 import org.polypheny.db.cypher.query.CypherSingleQuery;
+import org.polypheny.db.cypher.query.CypherUnion;
+import org.polypheny.db.cypher.set.CypherSetItem;
 import org.polypheny.db.functions.CypherFunctions;
+import org.polypheny.db.functions.CypherMergeRows;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.plan.AlgCluster;
@@ -148,7 +156,14 @@ public class CypherToAlgConverter {
 
     public AlgRoot convert( CypherNode query, ParsedQueryContext parsedContext, AlgCluster cluster ) {
         long namespaceId = parsedContext.getNamespaceId();
+        if ( query instanceof CypherUnion union ) {
+            return convertUnion( union, namespaceId, cluster );
+        }
+        return convertBranch( query, namespaceId, cluster, false );
+    }
 
+
+    private AlgRoot convertBranch( CypherNode query, long namespaceId, AlgCluster cluster, boolean unionBranch ) {
         LogicalEntity entity = getEntity( namespaceId, query );
 
         if ( query.isFullScan() ) {
@@ -162,7 +177,7 @@ public class CypherToAlgConverter {
 
         CypherContext context = new CypherContext( query, entity, cluster, algBuilder, rexBuilder, snapshot );
 
-        convertQuery( query, context );
+        convertQuery( query, context, unionBranch );
 
         AlgNode output = context.build();
         if ( context.returningInsert != null ) {
@@ -177,6 +192,57 @@ public class CypherToAlgConverter {
             result = ResultKind.forGraphProjection( root.validatedRowType );
         }
         return root.withResultKind( result );
+    }
+
+
+    private AlgRoot convertUnion( CypherUnion union, long namespaceId, AlgCluster cluster ) {
+        // The parser builds a left-deep tree. Flatten equal operators and preserve source order.
+        List<CypherQuery> branches = new ArrayList<>();
+        CypherQuery first = union;
+        while ( first instanceof CypherUnion part ) {
+            if ( part.isAll() != union.isAll() ) {
+                throw new CypherSyntaxException( "InvalidClauseComposition: UNION and UNION ALL cannot be mixed." );
+            }
+            branches.add( part.getRight() );
+            first = part.getLeft();
+        }
+        branches.add( first );
+
+        List<AlgNode> inputs = new ArrayList<>( branches.size() );
+        List<String> names = null;
+        Kind kind = Kind.SELECT;
+        for ( int i = branches.size() - 1; i >= 0; i-- ) {
+            CypherQuery branch = branches.get( i );
+            if ( !(branch instanceof CypherSingleQuery single) || single.isFullScan() || single.isDdl()
+                    || !(single.getClauses().get( single.getClauses().size() - 1 ) instanceof CypherReturnClause) ) {
+                throw new CypherSyntaxException( "InvalidClauseComposition: Each UNION branch must end in a RETURN clause." );
+            }
+
+            AlgRoot converted = convertBranch( branch, namespaceId, cluster, true );
+            if ( Kind.DML.contains( converted.kind ) ) {
+                kind = converted.kind;
+            }
+            List<String> branchNames = converted.validatedRowType.getFieldNames();
+            if ( names == null ) {
+                names = branchNames;
+            }
+            if ( names.size() != branchNames.size() || !branchNames.containsAll( names ) ) {
+                throw new CypherSyntaxException( "DifferentColumnsInUnion: All UNION branches must return the same column names." );
+            }
+
+            AlgNode input = converted.alg;
+            if ( !names.equals( branchNames ) ) {
+                List<RexNode> fields = new ArrayList<>( names.size() );
+                for ( String name : names ) {
+                    fields.add( rexBuilder.makeInputRef( input, branchNames.indexOf( name ) ) );
+                }
+                input = LogicalLpgProject.create( input, fields, names.stream().map( PolyString::of ).toList() );
+            }
+            inputs.add( input );
+        }
+
+        AlgRoot root = AlgRoot.of( LogicalLpgUnion.create( inputs, union.isAll() ), kind );
+        return root.withResultKind( ResultKind.forGraphProjection( root.validatedRowType ) );
     }
 
 
@@ -205,14 +271,14 @@ public class CypherToAlgConverter {
     }
 
 
-    private void convertQuery( CypherNode node, CypherContext context ) {
+    private void convertQuery( CypherNode node, CypherContext context, boolean unionBranch ) {
         switch ( node.getCypherKind() ) {
             case SINGLE:
                 CypherSingleQuery query = (CypherSingleQuery) node;
                 List<CypherClause> clauses = query.getClauses().stream()
                         .filter( clause -> clause.getCypherKind() != CypherKind.USE )
                         .toList();
-                context.createReturning = clauses.size() == 2
+                context.createReturning = !unionBranch && clauses.size() == 2
                         && clauses.get( 0 ).getCypherKind() == CypherKind.CREATE
                         && clauses.get( 1 ).getCypherKind() == CypherKind.RETURN;
 
@@ -240,6 +306,10 @@ public class CypherToAlgConverter {
             case CREATE:
                 materializePathBindings( context );
                 convertCreate( (CypherCreate) clause, context );
+                break;
+            case MERGE:
+                materializePathBindings( context );
+                convertMerge( (CypherMerge) clause, context );
                 break;
             case USE:
                 break;
@@ -497,6 +567,127 @@ public class CypherToAlgConverter {
         AlgNode input = context.pop();
         context.add( projectBindings( input, matchBindings( new MatchRows( input, 0 ), 0, context.implicitPathBindings ) ) );
         context.implicitPathBindings.clear();
+    }
+
+
+    private void convertMerge( CypherMerge clause, CypherContext context ) {
+        if ( !context.hasInput() ) {
+            context.add( context.asValues( List.of() ) );
+        }
+        AlgNode input = context.peek();
+        List<AlgDataTypeField> fields = new ArrayList<>( input.getTupleType().getFields() );
+        Map<String, Integer> names = new HashMap<>();
+        for ( AlgDataTypeField field : fields ) {
+            names.put( field.getName(), field.getIndex() );
+        }
+
+        CypherPattern pattern = clause.getPattern();
+        CypherVariable pathVariable = null;
+        if ( pattern instanceof CypherNamedPattern named ) {
+            pathVariable = named.getVariable();
+            pattern = named.getAnonymousPattern();
+        }
+        if ( !(pattern instanceof CypherEveryPathPattern path) || !path.getPredicates().isEmpty() ) {
+            throw new CypherSyntaxException( "MERGE requires a path pattern without inline WHERE predicates." );
+        }
+
+        List<RexNode> properties = new ArrayList<>();
+        List<CypherMergeRows.Node> nodes = new ArrayList<>();
+        int inputCount = fields.size();
+        for ( CypherNodePattern node : path.getNodes() ) {
+            CypherVariable variable = node.getVariable();
+            Integer existing = variable == null ? null : names.get( variable.getName() );
+            boolean bound = existing != null && existing < inputCount;
+            if ( existing != null ) {
+                if ( path.getEdges().isEmpty() || !node.getLabels().isEmpty() || node.getProperties() != null ) {
+                    throw mergeVariableAlreadyBound( variable.getName() );
+                }
+                PolyType type = fields.get( existing ).getType().getPolyType();
+                if ( type != PolyType.NODE && !isDynamicBinding( type ) ) {
+                    throw new CypherSyntaxException( "MERGE requires a node binding: " + variable.getName() );
+                }
+            }
+            int slot = existing == null ? addMergeBinding( variable, context.nodeType, names, fields ) : existing;
+            nodes.add( new CypherMergeRows.Node( slot, bound, mergeProperties( context, node.getProperties(), properties ), node.getLabels() ) );
+        }
+
+        List<CypherMergeRows.Relationship> relationships = new ArrayList<>();
+        for ( CypherRelPattern edge : path.getEdges() ) {
+            int slot = addMergeBinding( edge.getVariable(), context.edgeType, names, fields );
+            if ( edge.getPathLength() != null ) {
+                throw new CypherSyntaxException( "CreatingVarLength: MERGE does not allow variable-length relationships." );
+            }
+            if ( edge.getLabels().size() != 1 ) {
+                throw new CypherSyntaxException( "NoSingleRelationshipType: MERGE requires exactly one relationship type." );
+            }
+            EdgeDirection direction = edge.isLeft() == edge.isRight() ? EdgeDirection.NONE
+                    : edge.isRight() ? EdgeDirection.LEFT_TO_RIGHT : EdgeDirection.RIGHT_TO_LEFT;
+            relationships.add( new CypherMergeRows.Relationship( slot, mergeProperties( context, edge.getProperties(), properties ),
+                    PolyString.of( edge.getLabels().get( 0 ) ), direction ) );
+        }
+
+        int pathSlot = addMergeBinding( pathVariable, context.pathType, names, fields );
+        AlgDataType rowType = new AlgRecordType( fields );
+        List<LogicalLpgMergeRows.Action> onCreate = new ArrayList<>();
+        List<LogicalLpgMergeRows.Action> onMatch = new ArrayList<>();
+        AlgNode actionScope = LogicalLpgValues.create( cluster, cluster.traitSet(), rowType, ImmutableList.of() );
+        context.add( actionScope );
+        try {
+            for ( int i = 0; i < clause.getClauses().size(); i++ ) {
+                List<LogicalLpgMergeRows.Action> actions = clause.getActionTypes().get( i ) == MergeActionType.ON_CREATE ? onCreate : onMatch;
+                for ( CypherSetItem item : clause.getClauses().get( i ).getInput() ) {
+                    item.convertItem( context );
+                    for ( Pair<PolyString, RexNode> action : context.popNodes() ) {
+                        actions.add( new LogicalLpgMergeRows.Action( names.get( action.left.value ), action.right ) );
+                    }
+                }
+            }
+        } finally {
+            context.pop();
+        }
+
+        context.pop();
+        LogicalLpgScan scan = new LogicalLpgScan( cluster, cluster.traitSet(), context.graph, GraphType.of() );
+        List<PolyString> outputNames = fields.stream().map( field -> PolyString.of( field.getName() ) ).toList();
+        CypherMergeRows.Pattern specification = new CypherMergeRows.Pattern( nodes, relationships, pathSlot, inputCount, outputNames );
+        AlgNode rows = new LogicalLpgMergeRows( input, scan, rowType, specification, properties, onCreate, onMatch, !context.writeHasConsumer );
+        AlgNode write = new LogicalLpgModify( cluster, cluster.traitSet(), context.graph, rows, Modify.Operation.MERGE, null, null, 1 );
+        context.add( context.writeHasConsumer ? write : LogicalLpgAggregate.countWrites( write ) );
+        context.clearVariables();
+        // The graph-write result and monitoring pipeline uses INSERT for a possible creation.
+        context.kind = Kind.INSERT;
+    }
+
+
+    private static int mergeProperties( CypherContext context, @Nullable CypherExpression expression, List<RexNode> properties ) {
+        if ( expression == null ) {
+            return -1;
+        }
+        if ( !(expression instanceof CypherLiteral literal) || literal.getLiteralType() != CypherLiteral.Literal.MAP ) {
+            throw new CypherSyntaxException( "InvalidParameterUse: MERGE pattern properties require a literal map of expressions." );
+        }
+        int slot = properties.size();
+        properties.add( literal.getRex( context, RexType.PROJECT ).right );
+        return slot;
+    }
+
+
+    private static int addMergeBinding( @Nullable CypherVariable variable, AlgDataType type, Map<String, Integer> names, List<AlgDataTypeField> fields ) {
+        if ( variable == null ) {
+            return -1;
+        }
+        String name = variable.getName();
+        int index = fields.size();
+        if ( names.putIfAbsent( name, index ) != null ) {
+            throw mergeVariableAlreadyBound( name );
+        }
+        fields.add( new AlgDataTypeFieldImpl( -1L, name, index, type ) );
+        return index;
+    }
+
+
+    private static CypherSyntaxException mergeVariableAlreadyBound( String name ) {
+        return new CypherSyntaxException( "VariableAlreadyBound: Cannot rebind '" + name + "' in MERGE." );
     }
 
 

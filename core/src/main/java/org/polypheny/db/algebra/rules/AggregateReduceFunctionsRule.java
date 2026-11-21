@@ -137,7 +137,7 @@ public class AggregateReduceFunctionsRule extends AlgOptRule {
      * Returns whether the aggregate call is a reducible function
      */
     private boolean isReducible( Kind kind, Aggregate aggregate ) {
-        if ( aggregate.getTraitSet().contains( ModelTrait.GRAPH ) && (kind == Kind.SUM || kind == Kind.AVG) ) {
+        if ( aggregate.getTraitSet().contains( ModelTrait.GRAPH ) && (kind == Kind.SUM || kind == Kind.AVG || kind == Kind.STDDEV_SAMP || kind == Kind.STDDEV_POP) ) {
             return false;
         }
         if ( Kind.AVG_AGG_FUNCTIONS.contains( kind ) || Kind.COVAR_AVG_AGG_FUNCTIONS.contains( kind ) ) {

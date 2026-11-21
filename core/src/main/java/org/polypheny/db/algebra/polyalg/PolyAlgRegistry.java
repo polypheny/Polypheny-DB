@@ -46,6 +46,7 @@ import org.polypheny.db.algebra.enumerable.common.EnumerableCollect;
 import org.polypheny.db.algebra.enumerable.common.EnumerableContextSwitcher;
 import org.polypheny.db.algebra.enumerable.common.EnumerableModifyCollect;
 import org.polypheny.db.algebra.enumerable.lpg.EnumerableLpgMatch;
+import org.polypheny.db.algebra.enumerable.lpg.EnumerableLpgUnion;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.logical.common.LogicalBatchIterator;
 import org.polypheny.db.algebra.logical.common.LogicalTransformer;
@@ -463,6 +464,11 @@ public class PolyAlgRegistry {
                 .param( Parameter.builder().name( "out" ).alias( "outModel" ).type( ParamType.DATAMODEL_ENUM ).build() )
                 .param( Parameter.builder().name( "names" ).multiValued( 1 ).type( ParamType.STRING ).defaultValue( ListArg.EMPTY ).build() )
                 .param( Parameter.builder().name( "isCrossModel" ).type( ParamType.BOOLEAN ).defaultValue( BooleanArg.FALSE ).build() )
+                .build() );
+        declarations.put( EnumerableLpgUnion.class, PolyAlgDeclaration.builder()
+                .creator( EnumerableLpgUnion::create ).model( DataModel.GRAPH )
+                .opName( "E_LPG_UNION" ).convention( c ).numInputs( -1 ).opTags( physTags )
+                .params( getParams( LogicalLpgUnion.class ) )
                 .build() );
         declarations.put( EnumerableLpgMatch.class, PolyAlgDeclaration.builder()
                 .creator( EnumerableLpgMatch::create ).model( DataModel.GRAPH )

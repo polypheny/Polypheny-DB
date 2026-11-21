@@ -826,6 +826,7 @@ public class VolcanoPlanner extends AbstractAlgPlanner {
     public void registerModelRules() {
         // Graph
         addRule( EnumerableRules.ENUMERABLE_LPG_JOIN_RULE );
+        addRule( EnumerableRules.ENUMERABLE_LPG_UNION_RULE );
         addRule( LpgToEnumerableRule.PROJECT_TO_ENUMERABLE );
         addRule( LpgToEnumerableRule.FILTER_TO_ENUMERABLE );
         addRule( LpgToEnumerableRule.AGGREGATE_TO_ENUMERABLE );

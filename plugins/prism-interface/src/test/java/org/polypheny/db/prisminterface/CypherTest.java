@@ -169,14 +169,143 @@ class CypherTest {
             assertNamedCypherError( executeNamedCypher( connection, statementId, Map.of() ), "Missing Cypher parameter: $value" );
             assertNamedCypherError( executeNamedCypher( connection, statementId, Map.of( "value", stringParameter( "valid" ), "other", stringParameter( "extra" ) ) ),
                     "Unexpected Cypher parameter: $other" );
-            ProtoValue list = ProtoValue.newBuilder().setList( ProtoList.newBuilder().addValues( stringParameter( "nested" ) ) ).build();
-            assertNamedCypherError( executeNamedCypher( connection, statementId, Map.of( "value", list ) ), "Unsupported Cypher parameter type" );
+            ProtoValue invalid = PolyValueSerializer.serialize( PolyDouble.of( Double.NaN ) );
+            assertNamedCypherError( executeNamedCypher( connection, statementId, Map.of( "value", invalid ) ), "Unsupported Cypher parameter type" );
             connection.checkTransactions( 0 );
 
             Response response = expect( executeNamedCypher( connection, statementId, Map.of( "value", stringParameter( "valid" ) ) ), Response.TypeCase.STATEMENT_RESULT );
             Row row = singleRow( relationalFrame( response.getStatementResult().getFrame(), true, List.of( "supplied" ) ) );
             assertEquals( "valid", row.getValues( 0 ).getString().getString() );
             connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void bindsTopLevelCypherListsWithNoInferredParameterType() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            int statementId = prepareNamedCypher( connection, "RETURN $list[$index] AS selected, $list AS supplied" ).getStatementId();
+            ProtoValue list = ProtoValue.newBuilder().setList( ProtoList.newBuilder()
+                    .addValues( stringParameter( "first" ) )
+                    .addValues( PolyValueSerializer.serialize( PolyNull.NULL ) ) ).build();
+            ProtoValue index = PolyValueSerializer.serialize( PolyInteger.of( 0 ) );
+
+            StatementResult result = expect( executeNamedCypher( connection, statementId, Map.of( "list", list, "index", index ) ),
+                    Response.TypeCase.STATEMENT_RESULT ).getStatementResult();
+            Row row = singleRow( relationalFrame( result.getFrame(), true, List.of( "selected", "supplied" ) ) );
+            assertEquals( stringParameter( "first" ), row.getValues( 0 ) );
+            assertEquals( list, row.getValues( 1 ) );
+
+            ProtoValue empty = ProtoValue.newBuilder().setList( ProtoList.getDefaultInstance() ).build();
+            result = expect( executeNamedCypher( connection, statementId, Map.of( "list", empty, "index", index ) ),
+                    Response.TypeCase.STATEMENT_RESULT ).getStatementResult();
+            row = singleRow( relationalFrame( result.getFrame(), true, List.of( "selected", "supplied" ) ) );
+            assertTrue( row.getValues( 0 ).hasNull() );
+            assertEquals( empty, row.getValues( 1 ) );
+        }
+    }
+
+
+    @Test
+    void unwindsNamedCypherListOfMaps() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            int statementId = prepareNamedCypher( connection, """
+                    UNWIND $people AS person
+                    RETURN person.name AS name ORDER BY name
+                    """ ).getStatementId();
+            ProtoValue list = ProtoValue.newBuilder().setList( ProtoList.newBuilder()
+                    .addValues( ProtoValue.newBuilder().setDocument( ProtoDocument.newBuilder().putEntries( "name", stringParameter( "Lin" ) ) ) )
+                    .addValues( ProtoValue.newBuilder().setDocument( ProtoDocument.newBuilder().putEntries( "name", stringParameter( "Ada" ) ) ) ) ).build();
+            StatementResult result = expect( executeNamedCypher( connection, statementId, Map.of( "people", list ) ),
+                    Response.TypeCase.STATEMENT_RESULT ).getStatementResult();
+            assertEquals( List.of( stringParameter( "Ada" ), stringParameter( "Lin" ) ),
+                    relationalFrame( result.getFrame(), true, List.of( "name" ) ).getRowsList().stream()
+                            .map( row -> row.getValues( 0 ) ).toList() );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void pagesCypherUnionWithGraphAndScalarColumns() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            StatementResponse result = connection.cypher( """
+                    MATCH (a:Person {id: 1}) RETURN a AS person, 'first' AS branch
+                    UNION ALL
+                    MATCH (b:Person {id: 2}) RETURN 'second' AS branch, b AS person
+                    """, 1 );
+            Frame frame = result.getResult().getFrame();
+            Row first = singleRow( relationalFrame( frame, false, List.of( "person", "branch" ) ) );
+            assertNode( first.getValues( 0 ).getNode(), "Alice", 1 );
+            assertEquals( "first", first.getValues( 1 ).getString().getString() );
+            Row second = singleRow( relationalFrame( connection.fetch( result.getStatementId(), 1 ), true, List.of( "person", "branch" ) ) );
+            assertNode( second.getValues( 0 ).getNode(), "Bob", 2 );
+            assertEquals( "second", second.getValues( 1 ).getString().getString() );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void mergesInUpdateBatchesAndReturnsGraphValuesDirectly() throws IOException {
+        String namespace = "cyphermergeprism";
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            connection.execute( Catalog.DEFAULT_NAMESPACE_NAME, "sql", "CREATE GRAPH NAMESPACE " + namespace, 1 );
+            try {
+                Response batch = expect( cypherBatch( connection, namespace,
+                        "MERGE (:MergeTarget {id: 1})", "MERGE (:MergeTarget {id: 1})" ), Response.TypeCase.STATEMENT_BATCH_RESPONSE );
+                assertEquals( List.of( 1L, 0L ), batch.getStatementBatchResponse().getScalarsList() );
+                connection.checkTransactions( 0 );
+
+                String query = """
+                        MERGE (n:MergeTarget {id: 1})
+                        ON MATCH SET n.seen = true
+                        RETURN n AS node, n.seen AS seen
+                        """;
+                Frame frame = connection.execute( namespace, "cypher", query, -1 ).getResult().getFrame();
+                Row row = singleRow( relationalFrame( frame, true, List.of( "node", "seen" ) ) );
+                ProtoNode node = row.getValues( 0 ).getNode();
+                assertEquals( "n", node.getName() );
+                assertEquals( List.of( "MergeTarget" ), node.getLabelsList() );
+                assertEquals( 1L, integerValue( node.getPropertiesOrThrow( "id" ) ) );
+                assertTrue( row.getValues( 1 ).getBoolean().getBoolean() );
+                connection.checkTransactions( 0 );
+
+                String relationship = """
+                        MERGE (a:MergeTarget {id: 1})
+                        MERGE (b:MergeTarget {id: 2})
+                        MERGE (a)-[r:LINK]->(b)
+                        ON CREATE SET r.weight = 1
+                        ON MATCH SET r.weight = r.weight + 1
+                        RETURN r AS relationship, type(r) AS kind
+                        """;
+                String relationshipId = null;
+                for ( long weight : List.of( 1L, 2L ) ) {
+                    Frame edges = connection.execute( namespace, "cypher", relationship, -1 ).getResult().getFrame();
+                    Row edgeRow = singleRow( relationalFrame( edges, true, List.of( "relationship", "kind" ) ) );
+                    ProtoEdge edge = edgeRow.getValues( 0 ).getEdge();
+                    assertEquals( "r", edge.getName() );
+                    assertEquals( "LINK", edgeRow.getValues( 1 ).getString().getString() );
+                    assertEquals( weight, integerValue( edge.getPropertiesOrThrow( "weight" ) ) );
+                    if ( relationshipId == null ) {
+                        relationshipId = edge.getId();
+                    } else {
+                        assertEquals( relationshipId, edge.getId() );
+                    }
+                    connection.checkTransactions( 0 );
+                }
+
+                Frame union = connection.execute( namespace, "cypher", """
+                        MATCH (n:MergeUnion) RETURN n.name AS value
+                        UNION ALL MERGE (n:MergeUnion {name: 'created'}) RETURN n.name AS value
+                        UNION ALL MATCH (n:MergeUnion) RETURN n.name AS value
+                        """, -1 ).getResult().getFrame();
+                assertEquals( List.of( stringParameter( "created" ), stringParameter( "created" ) ),
+                        relationalFrame( union, true, List.of( "value" ) ).getRowsList().stream().map( match -> match.getValues( 0 ) ).toList() );
+                connection.checkTransactions( 0 );
+            } finally {
+                connection.execute( Catalog.DEFAULT_NAMESPACE_NAME, "sql", "DROP NAMESPACE " + namespace, 1 );
+            }
         }
     }
 
@@ -2926,6 +3055,7 @@ class CypherTest {
         try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
             String firstWrite = "CREATE (:BatchRejected {reason: 'preceding write'})";
             for ( String rowProducing : List.of( "MATCH (n:Person) RETURN n", "CREATE (n:BatchRejected {reason: 'returning write'}) RETURN n",
+                    "MERGE (n:BatchRejected {reason: 'returning merge'}) RETURN n",
                     "CREATE (n:BatchRejected {reason: 'unfinished write'}) WITH n" ) ) {
                 Response result = expect( cypherBatch( connection, NAMESPACE, firstWrite, rowProducing ), Response.TypeCase.ERROR_RESPONSE );
                 assertTrue( result.getErrorResponse().getMessage().contains( "without returning rows" ) );
@@ -2940,7 +3070,7 @@ class CypherTest {
     void rollsBackAutocommitBatchWhenALaterCypherMemberCannotBePlanned() throws IOException {
         try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
             String firstWrite = "CREATE (:BatchMustRollBack)";
-            for ( String unsupported : List.of( "MATCH (n:Person) SET missing.name = 'unplanned'", "MERGE (:Person {name: 'Bob'}) CREATE (:BatchMustRollBack)" ) ) {
+            for ( String unsupported : List.of( "MATCH (n:Person) SET missing.name = 'unplanned'", "MERGE (a)-[:BAD*2]->(b)" ) ) {
                 expect( cypherBatch( connection, NAMESPACE, firstWrite, unsupported ), Response.TypeCase.ERROR_RESPONSE );
                 connection.checkTransactions( 0 );
                 try ( PrismConnection reader = new PrismConnection( true, 3 ) ) {

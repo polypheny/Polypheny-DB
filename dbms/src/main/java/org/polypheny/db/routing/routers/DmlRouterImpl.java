@@ -48,6 +48,7 @@ import org.polypheny.db.algebra.logical.common.LogicalStreamer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgMergeRows;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
@@ -756,17 +757,31 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         }
 
         AlgNode provider = buildGraphDml( modify.getInput(), statement, target, excludedPlacements );
+        if ( modify.operation == Operation.MERGE && provider instanceof LogicalLpgMergeRows merge ) {
+            List<AlgNode> inputs = new ArrayList<>( merge.getInputs() );
+            inputs.add( graphWriteCollector( modify, statement, targets, Operation.INSERT, merge.getInsertTypes() ) );
+            if ( !merge.getUpdateTypes().isEmpty() ) {
+                inputs.add( graphWriteCollector( modify, statement, targets, Operation.UPDATE, merge.getUpdateTypes() ) );
+            }
+            return merge.copy( merge.getTraitSet(), inputs );
+        }
         List<PolyType> parameters = provider.getTupleType().getFields().stream().limit( modify.getReturningParameters() )
                 .map( field -> field.getType().getPolyType() ).toList();
+        AlgNode collector = graphWriteCollector( modify, statement, targets, modify.operation, parameters );
+        return new LogicalStreamer( modify.getCluster(), modify.getTraitSet(), provider, collector,
+                modify.getReturningParameters(), modify.operation == Operation.DELETE );
+    }
+
+
+    private AlgNode graphWriteCollector( LogicalLpgModify modify, Statement statement, List<AllocationEntity> targets,
+            Operation operation, List<PolyType> parameters ) {
         AlgBuilder builder = AlgBuilder.create( statement, modify.getCluster() );
         List<AlgNode> collectors = targets.stream()
                 .map( allocation -> AdapterManager.getInstance().getStore( allocation.adapterId ).orElseThrow()
-                        .getGraphRowModification( allocation.id, modify.operation, parameters, builder, modify.isDetachDelete() ) )
+                        .getGraphRowModification( allocation.id, operation, parameters, builder, modify.isDetachDelete() ) )
                 .toList();
-        AlgNode collector = collectors.size() == 1 ? collectors.get( 0 )
+        return collectors.size() == 1 ? collectors.get( 0 )
                 : new LogicalModifyCollect( modify.getCluster(), modify.getTraitSet(), collectors, true );
-        return new LogicalStreamer( modify.getCluster(), modify.getTraitSet(), provider, collector,
-                modify.getReturningParameters(), modify.operation == Operation.DELETE );
     }
 
 

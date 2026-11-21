@@ -16,10 +16,21 @@
 
 package org.polypheny.db.cypher.clause;
 
+import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.expression.CypherExpression;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.util.Pair;
 
 
 @Getter
@@ -42,6 +53,29 @@ public class CypherCase extends CypherExpression {
         this.when = when;
         this.then = then;
         this.elseCase = elseCase;
+    }
+
+
+    @Override
+    protected Pair<PolyString, RexNode> toRex( CypherContext context, RexType type ) {
+        List<RexNode> operands = new ArrayList<>();
+        List<AlgDataType> resultTypes = new ArrayList<>();
+        if ( condition != null ) {
+            operands.add( condition.getRex( context, type ).right );
+        }
+        for ( int i = 0; i < when.size(); i++ ) {
+            RexNode test = when.get( i ).getRex( context, type ).right;
+            RexNode value = then.get( i ).getRex( context, type ).right;
+            operands.add( condition == null ? context.booleanPredicate( test ) : test );
+            operands.add( value );
+            resultTypes.add( value.getType() );
+        }
+        RexNode fallback = elseCase == null ? context.rexBuilder.constantNull() : elseCase.getRex( context, type ).right;
+        operands.add( fallback );
+        resultTypes.add( fallback.getType() );
+        AlgDataType resultType = PolyTypeUtil.commonDynamicType( context.typeFactory, resultTypes );
+        return Pair.of( null, context.rexBuilder.makeCall( resultType,
+                OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_CASE ), operands ) );
     }
 
 
