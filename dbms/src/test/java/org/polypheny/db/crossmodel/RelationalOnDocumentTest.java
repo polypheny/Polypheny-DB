@@ -88,6 +88,20 @@ public class RelationalOnDocumentTest extends CrossModelTestTemplate {
 
 
     @Test
+    public void jsonValuePreservesDecimalsOutsideLongRange() {
+        executeStatements( ( s, c ) -> {
+            String query = """
+                    SELECT JSON_VALUE('{"n":{"$numberDecimal":"9223372036854775808"}}', 'lax $.n'),
+                           JSON_VALUE('{"n":{"$numberDecimal":"-9223372036854775809"}}', 'lax $.n')
+                    """;
+            try ( ResultSet result = s.executeQuery( query ) ) {
+                TestHelper.checkResultSet( result, List.<Object[]>of( new Object[]{ "9223372036854775808", "-9223372036854775809" } ) );
+            }
+        } );
+    }
+
+
+    @Test
     public void joinOnJsonStringTest() {
         String joinCollection = "crossJoinProducts";
         List<String> names = List.of( "widget", "null", "12.00", "{quoted\"\\key" );
@@ -123,6 +137,33 @@ public class RelationalOnDocumentTest extends CrossModelTestTemplate {
                 }
             } finally {
                 s.executeUpdate( "DROP TABLE crossJoinOrders" );
+            }
+        } );
+    }
+
+
+    @Test
+    public void joinOnJsonPathSumPreservesInfinity() {
+        String samplesCollection = "crossJoinSamples";
+        MqlTestTemplate.createCollection( samplesCollection, DATABASE_NAME );
+        MqlTestTemplate.insert( "{\"samples\":[1e308,1e308]}", samplesCollection, DATABASE_NAME );
+
+        executeStatements( ( s, c ) -> {
+            s.executeUpdate( "CREATE TABLE crossJoinTotals (id INTEGER PRIMARY KEY, total VARCHAR(32) NOT NULL)" );
+            try {
+                s.executeUpdate( "INSERT INTO crossJoinTotals VALUES (1, 'Infinity')" );
+                s.executeUpdate( "INSERT INTO crossJoinTotals VALUES (2, '0')" );
+
+                String query = String.format( """
+                        SELECT t.id, JSON_VALUE(s.d, 'lax $.samples.sum()')
+                        FROM crossJoinTotals t
+                        JOIN %s.%s s ON t.total = JSON_VALUE(s.d, 'lax $.samples.sum()')
+                        """, DATABASE_NAME, samplesCollection );
+                try ( ResultSet result = s.executeQuery( query ) ) {
+                    TestHelper.checkResultSet( result, List.<Object[]>of( new Object[]{ 1, "Infinity" } ) );
+                }
+            } finally {
+                s.executeUpdate( "DROP TABLE crossJoinTotals" );
             }
         } );
     }

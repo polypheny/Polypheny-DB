@@ -51,6 +51,8 @@ import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.relational.PolyMap;
 
@@ -127,6 +129,33 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
                 PolyDocument.ofDocument( Map.of( key, payload ) ),
                 PolyString.of( "strict $.payload" ),
                 contextMatches( PathContext.withReturned( Functions.PathMode.STRICT, payload ) ) );
+    }
+
+
+    @Test
+    public void testJsonPathPreservesDecimalOutsideLongRange() {
+        PolyBigDecimal decimal = PolyBigDecimal.of( "9223372036854775808" );
+        PolyDocument document = PolyDocument.ofDocument( Map.of( PolyString.of( "n" ), decimal ) );
+
+        PathContext result = Functions.jsonApiCommonSyntax( document, PolyString.of( "strict $.n" ) );
+        assertThat( result, contextMatches( PathContext.withReturned( Functions.PathMode.STRICT, decimal ) ) );
+        assertThat( result.pathReturned.asBigDecimal().value, is( decimal.value ) );
+        assertJsonExists( result, JsonExistsErrorBehavior.ERROR, is( true ) );
+    }
+
+
+    @Test
+    public void testJsonPathPreservesNonFiniteAggregateResults() {
+        PolyDouble sample = PolyDouble.of( 1e308 );
+        PolyDocument document = PolyDocument.ofDocument( Map.of( PolyString.of( "samples" ), PolyList.of( sample, sample ) ) );
+        Map<String, Double> aggregates = Map.of( "sum()", Double.POSITIVE_INFINITY, "avg()", Double.POSITIVE_INFINITY, "stddev()", Double.NaN );
+
+        for ( Map.Entry<String, Double> aggregate : aggregates.entrySet() ) {
+            PolyString path = PolyString.of( "lax $.samples." + aggregate.getKey() );
+            PathContext result = Functions.jsonApiCommonSyntax( document, path );
+            assertThat( path.value, result, contextMatches( PathContext.withReturned( Functions.PathMode.LAX, PolyDouble.of( aggregate.getValue() ) ) ) );
+            assertJsonExists( result, JsonExistsErrorBehavior.ERROR, is( true ) );
+        }
     }
 
 

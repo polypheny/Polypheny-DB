@@ -26,7 +26,6 @@ import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
@@ -108,10 +107,12 @@ import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyPath;
@@ -168,7 +169,6 @@ public class Functions {
 
     private static final JsonProvider JSON_PATH_JSON_PROVIDER = new JacksonJsonProvider( PolyValue.JSON_WRAPPER.configure( Feature.ALLOW_UNQUOTED_FIELD_NAMES, true ) );
     private static final MappingProvider JSON_PATH_MAPPING_PROVIDER = new JacksonMappingProvider( PolyValue.JSON_WRAPPER );
-    private static final Gson JSON_PATH_RESULT_SERIALIZER = new GsonBuilder().serializeNulls().create();
 
 
     private Functions() {
@@ -2749,19 +2749,50 @@ public class Functions {
             };
             try {
                 Object result = ctx.read( pathWff );
-                if ( result == null ) {
-                    return PathContext.withReturned( mode, null );
-                }
-                if ( result instanceof String text ) {
-                    return PathContext.withReturned( mode, PolyString.of( text ) );
-                }
-                return PathContext.withReturned( mode, PolyValue.fromJson( JSON_PATH_RESULT_SERIALIZER.toJson( result ) ) );
+                return PathContext.withReturned( mode, result == null ? null : jsonPathResultToPolyValue( result ) );
             } catch ( Exception e ) {
                 return PathContext.withStrictException( e );
             }
         } catch ( Exception e ) {
             return PathContext.withUnknownException( e );
         }
+    }
+
+
+    private static PolyValue jsonPathResultToPolyValue( Object result ) {
+        if ( result == null ) {
+            return PolyNull.NULL;
+        }
+        if ( result instanceof String text ) {
+            return PolyString.of( text );
+        }
+        if ( result instanceof Boolean bool ) {
+            return PolyBoolean.of( bool );
+        }
+        if ( result instanceof Integer number ) {
+            return PolyInteger.of( number );
+        }
+        if ( result instanceof Long number ) {
+            return PolyLong.of( number );
+        }
+        if ( result instanceof BigInteger number ) {
+            return PolyBigDecimal.of( new BigDecimal( number ) );
+        }
+        if ( result instanceof BigDecimal number ) {
+            return PolyBigDecimal.of( number );
+        }
+        if ( result instanceof Number number ) {
+            return PolyDouble.of( number );
+        }
+        if ( result instanceof Collection<?> values ) {
+            return PolyList.copyOf( values.stream().map( Functions::jsonPathResultToPolyValue ).toList() );
+        }
+        if ( result instanceof Map<?, ?> values ) {
+            Map<PolyString, PolyValue> document = new HashMap<>();
+            values.forEach( ( key, value ) -> document.put( PolyString.of( (String) key ), jsonPathResultToPolyValue( value ) ) );
+            return PolyDocument.ofDocument( document );
+        }
+        throw new GenericRuntimeException( "Unsupported JSON path result type: " + result.getClass().getName() );
     }
 
 
