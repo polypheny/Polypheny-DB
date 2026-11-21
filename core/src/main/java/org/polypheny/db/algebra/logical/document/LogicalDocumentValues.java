@@ -96,7 +96,10 @@ public class LogicalDocumentValues extends DocumentValues implements RelationalT
 
     public static AlgNode createDynamic( AlgCluster cluster, List<RexDynamicParam> ids ) {
         final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
-        return new LogicalDocumentValues( cluster, traitSet, List.of( new PolyDocument() ), ids );
+        // A prepared input reads its documents from the execution context. A literal placeholder
+        // would acquire a new _id for every plan even though the prepared input never reads it.
+        List<PolyDocument> documents = ids.isEmpty() ? List.of( new PolyDocument() ) : List.of();
+        return new LogicalDocumentValues( cluster, traitSet, documents, ids );
     }
 
 

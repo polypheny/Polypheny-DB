@@ -94,13 +94,6 @@ public abstract class ConverterImpl extends SingleAlg implements Converter {
 
 
     @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$"
-                + input.algCompareString() + "&";
-    }
-
-
-    @Override
     public boolean isDataModifying() {
         return false;
     }

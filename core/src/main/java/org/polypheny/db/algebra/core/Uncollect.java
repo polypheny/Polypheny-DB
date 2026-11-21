@@ -111,12 +111,6 @@ public class Uncollect extends SingleAlg {
     }
 
 
-    @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" + input.algCompareString() + "$" + withOrdinality + "&";
-    }
-
-
     public AlgNode copy( AlgTraitSet traitSet, AlgNode input ) {
         assert traitSet.containsIfApplicable( Convention.NONE );
         return new Uncollect( getCluster(), traitSet, input, withOrdinality );

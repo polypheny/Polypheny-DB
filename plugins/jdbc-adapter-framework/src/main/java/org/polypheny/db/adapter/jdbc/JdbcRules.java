@@ -496,14 +496,6 @@ public class JdbcRules {
             return implementor.implement( this );
         }
 
-
-        @Override
-        public String algCompareString() {
-            return this.getClass().getSimpleName() + "$" +
-                    input.algCompareString() + "$" +
-                    (program != null ? program.toString() : "") + "&";
-        }
-
     }
 
 

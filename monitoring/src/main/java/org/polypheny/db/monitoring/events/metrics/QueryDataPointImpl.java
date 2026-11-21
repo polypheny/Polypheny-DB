@@ -50,7 +50,7 @@ public class QueryDataPointImpl implements QueryDataPoint, Serializable {
     long rowCount;
     List<String> fieldNames;
     List<Long> accessedPartitions;
-    String algCompareString;
+    String planFingerprint;
     String queryClass;
     String physicalQueryClass;
     Integer indexSize;

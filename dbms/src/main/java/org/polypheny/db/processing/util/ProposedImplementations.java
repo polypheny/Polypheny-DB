@@ -20,7 +20,6 @@ import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Value;
-import org.polypheny.db.routing.LogicalQueryInformation;
 import org.polypheny.db.routing.ProposedRoutingPlan;
 
 @AllArgsConstructor
@@ -29,7 +28,6 @@ import org.polypheny.db.routing.ProposedRoutingPlan;
 public class ProposedImplementations {
 
     public List<Plan> plans;
-    public LogicalQueryInformation logicalQueryInformation;
 
 
     public List<ProposedRoutingPlan> getRoutingPlans() {

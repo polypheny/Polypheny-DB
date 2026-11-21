@@ -23,6 +23,7 @@ import java.text.DecimalFormatSymbols;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.PlanKey;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationAction;
 import org.polypheny.db.information.InformationGraph;
@@ -39,7 +40,7 @@ public class QueryPlanCache {
 
     public static final QueryPlanCache INSTANCE = new QueryPlanCache();
 
-    private final Cache<String, AlgNode> planCache;
+    private final Cache<PlanKey, AlgNode> planCache;
 
     private final AtomicLong hitsCounter = new AtomicLong(); // Number of requests for which the cache contained the value
     private final AtomicLong missesCounter = new AtomicLong(); // Number of requests for which the cache hasn't contained the value
@@ -55,8 +56,8 @@ public class QueryPlanCache {
     }
 
 
-    public AlgNode getIfPresent( AlgNode parameterizedNode ) {
-        AlgNode node = planCache.getIfPresent( parameterizedNode.algCompareString() );
+    public AlgNode getIfPresent( PlanKey key ) {
+        AlgNode node = planCache.getIfPresent( key );
         if ( node == null ) {
             missesCounter.incrementAndGet();
         } else {
@@ -66,8 +67,8 @@ public class QueryPlanCache {
     }
 
 
-    public void put( AlgNode parameterizedNode, AlgNode optimalNode ) {
-        planCache.put( parameterizedNode.algCompareString(), optimalNode );
+    public void put( PlanKey key, AlgNode optimalNode ) {
+        planCache.put( key, optimalNode );
     }
 
 
@@ -157,6 +158,11 @@ public class QueryPlanCache {
 
     public long getSize() {
         return planCache.size();
+    }
+
+
+    long getHitCount() {
+        return hitsCounter.get();
     }
 
 }

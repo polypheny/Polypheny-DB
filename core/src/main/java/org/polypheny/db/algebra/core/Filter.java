@@ -154,14 +154,6 @@ public abstract class Filter extends SingleAlg {
 
 
     @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                input.algCompareString() + "$" +
-                (condition != null ? condition.hashCode() : "") + "&";
-    }
-
-
-    @Override
     public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
         return args.put( 0, new RexArg( condition ) );
