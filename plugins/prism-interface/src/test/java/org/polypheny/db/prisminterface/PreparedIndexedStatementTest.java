@@ -80,6 +80,10 @@ public class PreparedIndexedStatementTest {
 
     @AfterEach
     public void stop() throws SQLException {
+        if ( client != null ) {
+            client.rollbackCurrentTransaction( null );
+        }
+
         try ( JdbcConnection conn = new JdbcConnection( true ) ) {
             try ( Statement stmt = conn.getConnection().createStatement() ) {
                 stmt.execute( "DROP TABLE IF EXISTS " + TABLE );

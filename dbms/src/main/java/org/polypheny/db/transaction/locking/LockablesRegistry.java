@@ -24,6 +24,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 public class LockablesRegistry {
 
     public static final GlobalLockable GLOBAL_SCHEMA_LOCKABLE = new GlobalLockable();
+    public static final GlobalLockable CATALOG_WRITE_LOCKABLE = new GlobalLockable();
     public static final LockablesRegistry INSTANCE = new LockablesRegistry();
 
     private final ConcurrentHashMap<LockableObject, Lockable> lockables = new ConcurrentHashMap<>();

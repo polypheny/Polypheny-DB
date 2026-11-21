@@ -125,12 +125,16 @@ public class StorageManagerImpl implements StorageManager {
         }
 
         String relNsName = getNamespaceName( REL_PREFIX );
-        relNamespace = ddlManager.createNamespace(
-                relNsName, DataModel.RELATIONAL, true, false, true, null );
-        registeredNamespaces.put( relNamespace, relNsName );
-
         String docNsName = getNamespaceName( DOC_PREFIX );
-        docNamespace = ddlManager.createNamespace( docNsName, DataModel.DOCUMENT, true, false, true, null );
+        Pair<Long, Long> namespaces = transactionManager.runCatalogWrite( ORIGIN + "-CreateCheckpointNamespaces", transaction -> {
+            Statement statement = transaction.createStatement();
+            long relational = ddlManager.createNamespace( relNsName, DataModel.RELATIONAL, true, false, true, statement );
+            long document = ddlManager.createNamespace( docNsName, DataModel.DOCUMENT, true, false, true, statement );
+            return Pair.of( relational, document );
+        } );
+        relNamespace = namespaces.left;
+        docNamespace = namespaces.right;
+        registeredNamespaces.put( relNamespace, relNsName );
         registeredNamespaces.put( docNamespace, docNsName );
     }
 
@@ -190,22 +194,28 @@ public class StorageManagerImpl implements StorageManager {
     public static void clearAll( TransactionManager transactionManager ) {
         DdlManager ddlManager = DdlManager.getInstance();
         for ( LogicalNamespace ns : Catalog.snapshot().getNamespaces( null ) ) {
+            String name = ns.getName();
+            boolean relational = name.startsWith( REL_PREFIX ) && name.length() == REL_PREFIX.length() + 32;
+            boolean document = name.startsWith( DOC_PREFIX ) && name.length() == DOC_PREFIX.length() + 32;
+            boolean graph = name.startsWith( LPG_PREFIX ) && name.length() == LPG_PREFIX.length() + 2 * 32 + 3; // assumes single-digit outport indexes
+            if ( !relational && !document && !graph ) {
+                continue;
+            }
             Transaction transaction = QueryUtils.startTransaction( transactionManager, Catalog.defaultNamespaceId, "ClearAllCheckpoints" );
             try {
                 acquireSchemaLock( transaction, ns.id );
-                String name = ns.getName();
-                if ( name.startsWith( REL_PREFIX ) && name.length() == REL_PREFIX.length() + 32 ) {
+                transaction.acquireCatalogWriteLock();
+                if ( relational ) {
                     for ( LogicalTable table : transaction.getSnapshot().rel().getTablesFromNamespace( ns.id ) ) {
                         ddlManager.dropTable( table, transaction.createStatement() );
                     }
                     ddlManager.dropNamespace( name, false, transaction.createStatement() );
-                } else if ( name.startsWith( DOC_PREFIX ) && name.length() == DOC_PREFIX.length() + 32 ) {
+                } else if ( document ) {
                     for ( LogicalCollection collection : transaction.getSnapshot().doc().getCollections( ns.id, null ) ) {
                         ddlManager.dropCollection( collection, transaction.createStatement() );
                     }
                     ddlManager.dropNamespace( name, false, transaction.createStatement() );
-
-                } else if ( name.startsWith( LPG_PREFIX ) && name.length() == LPG_PREFIX.length() + 2 * 32 + 3 ) { // assumes no activity doesn't have outport with idx > 9
+                } else {
                     ddlManager.dropGraph( ns.id, false, transaction.createStatement() );
                 }
                 transaction.commit();
@@ -312,6 +322,7 @@ public class StorageManagerImpl implements StorageManager {
 
         try {
             acquireSchemaLock( transaction, relNamespace );
+            transaction.acquireCatalogWriteLock();
             ddlManager.createTable(
                     relNamespace,
                     tableName,
@@ -346,6 +357,7 @@ public class StorageManagerImpl implements StorageManager {
         Transaction transaction = QueryUtils.startTransaction( transactionManager, docNamespace, "DocCreate" );
         try {
             acquireSchemaLock( transaction, docNamespace );
+            transaction.acquireCatalogWriteLock();
             ddlManager.createCollection(
                     docNamespace,
                     collectionName,
@@ -375,10 +387,11 @@ public class StorageManagerImpl implements StorageManager {
         }
         String graphName = getGraphName( activityId, outputIdx );
         Transaction transaction = QueryUtils.startTransaction( transactionManager, Catalog.defaultNamespaceId, "LpgCreate" );
-        // no lock required since we create a new namespace
-        DataStore<?> store = getStore( storeName );
+        DataStore<?> store;
         long graphId;
         try {
+            transaction.acquireCatalogWriteLock();
+            store = getStore( storeName );
             graphId = ddlManager.createGraph(
                     graphName,
                     true,
@@ -568,42 +581,58 @@ public class StorageManagerImpl implements StorageManager {
 
     private void dropEntity( LogicalEntity entity ) {
         Transaction transaction = QueryUtils.startTransaction( transactionManager, entity.getNamespaceId(), "DropCheckpoint" );
-        Statement statement = transaction.createStatement();
-        acquireSchemaLock( transaction, entity.getNamespaceId() );
-        switch ( entity.dataModel ) {
-            case RELATIONAL -> ddlManager.dropTable( (LogicalTable) entity, statement );
-            case DOCUMENT -> ddlManager.dropCollection( (LogicalCollection) entity, statement );
-            case GRAPH -> ddlManager.dropGraph( entity.getId(), true, statement );
+        try {
+            acquireSchemaLock( transaction, entity.getNamespaceId() );
+            transaction.acquireCatalogWriteLock();
+            Statement statement = transaction.createStatement();
+            switch ( entity.dataModel ) {
+                case RELATIONAL -> ddlManager.dropTable( (LogicalTable) entity, statement );
+                case DOCUMENT -> ddlManager.dropCollection( (LogicalCollection) entity, statement );
+                case GRAPH -> ddlManager.dropGraph( entity.getId(), true, statement );
+            }
+            transaction.commit();
+        } finally {
+            if ( transaction.isActive() ) {
+                transaction.rollback( null );
+            }
         }
-        transaction.commit();
     }
 
 
     private void dropNamespaces() {
         Transaction transaction = QueryUtils.startTransaction( transactionManager, relNamespace, "DropNamespaces" );
-        for ( Entry<Long, String> entry : registeredNamespaces.entrySet() ) {
-            acquireSchemaLock( transaction, entry.getKey() );
-            ddlManager.dropNamespace( entry.getValue(), true, transaction.createStatement() );
+        try {
+            for ( long namespaceId : registeredNamespaces.keySet() ) {
+                acquireSchemaLock( transaction, namespaceId );
+            }
+            transaction.acquireCatalogWriteLock();
+            for ( String namespace : registeredNamespaces.values() ) {
+                ddlManager.dropNamespace( namespace, true, transaction.createStatement() );
+            }
+            transaction.commit();
+        } finally {
+            if ( transaction.isActive() ) {
+                transaction.rollback( null );
+            }
         }
-        transaction.commit();
         registeredNamespaces.clear();
     }
 
 
     private void addDefaultCheckpointAdapterIfMissing() {
-        if ( Catalog.getInstance().getAdapters().values().stream().anyMatch( a -> a.uniqueName.equals( DEFAULT_CHECKPOINT_ADAPTER ) ) ) {
-            STARTED_ADAPTER.set( true );
-            return;
-        }
-        if ( STARTED_ADAPTER.compareAndSet( false, true ) ) {
-            log.info( "Adding default workflow checkpoint adapter: " + DEFAULT_CHECKPOINT_ADAPTER );
-            AdapterTemplate storeTemplate = AdapterManager.getAdapterTemplate( "HSQLDB", AdapterType.STORE );
-            Map<String, String> settings = new HashMap<>( storeTemplate.getDefaultSettings() );
-            settings.put( "trxControlMode", "locks" );
-            settings.put( "type", "File" );
-            settings.put( "tableType", "Cached" );
-            ddlManager.createStore( DEFAULT_CHECKPOINT_ADAPTER, storeTemplate.getAdapterName(), AdapterType.STORE, settings, storeTemplate.getDefaultMode() );
-        }
+        transactionManager.runCatalogWrite( ORIGIN + "-CreateCheckpointAdapter", transaction -> {
+            if ( Catalog.getInstance().getAdapters().values().stream().noneMatch( a -> a.uniqueName.equals( DEFAULT_CHECKPOINT_ADAPTER ) ) ) {
+                log.info( "Adding default workflow checkpoint adapter: " + DEFAULT_CHECKPOINT_ADAPTER );
+                AdapterTemplate storeTemplate = AdapterManager.getAdapterTemplate( "HSQLDB", AdapterType.STORE );
+                Map<String, String> settings = new HashMap<>( storeTemplate.getDefaultSettings() );
+                settings.put( "trxControlMode", "locks" );
+                settings.put( "type", "File" );
+                settings.put( "tableType", "Cached" );
+                ddlManager.createStore( DEFAULT_CHECKPOINT_ADAPTER, storeTemplate.getAdapterName(), AdapterType.STORE, settings, storeTemplate.getDefaultMode() );
+            }
+            return null;
+        } );
+        STARTED_ADAPTER.set( true );
     }
 
 

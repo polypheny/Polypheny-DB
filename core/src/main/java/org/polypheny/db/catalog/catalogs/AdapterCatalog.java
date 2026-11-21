@@ -42,6 +42,7 @@ import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.impl.AdapterRestore;
+import org.polypheny.db.catalog.impl.CatalogRollback;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.util.Pair;
 
@@ -124,6 +125,21 @@ public abstract class AdapterCatalog {
             return null;
         }
         return entities.stream().map( physicals::get ).toList();
+    }
+
+
+    public synchronized void captureRollback( CatalogRollback state ) {
+        CatalogRollback adapterState = new CatalogRollback();
+        adapterState.capture( namespaces );
+        adapterState.capture( physicals );
+        adapterState.capture( allocations );
+        adapterState.capture( allocToPhysicals, TreeSet::new );
+        adapterState.capture( fields );
+        state.add( () -> {
+            synchronized ( this ) {
+                adapterState.restore();
+            }
+        } );
     }
 
 

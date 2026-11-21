@@ -31,6 +31,7 @@ import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.impl.CatalogRollback;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.util.CatalogEvent;
 import org.polypheny.db.type.PolySerializable;
@@ -118,6 +119,12 @@ public class DocumentCatalog implements PolySerializable, LogicalDocumentCatalog
     @Override
     public LogicalCatalog withLogicalNamespace( LogicalNamespace namespace ) {
         return toBuilder().logicalNamespace( namespace ).build();
+    }
+
+
+    @Override
+    public void captureRollback( CatalogRollback state ) {
+        state.capture( collections );
     }
 
 }

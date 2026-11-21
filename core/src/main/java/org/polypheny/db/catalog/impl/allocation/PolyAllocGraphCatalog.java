@@ -31,6 +31,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationPartition;
 import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.impl.CatalogRollback;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.PlacementType;
@@ -137,5 +138,13 @@ public class PolyAllocGraphCatalog implements PolySerializable, AllocationGraphC
         return PolySerializable.deserialize( serialize(), PolyAllocGraphCatalog.class );
     }
 
+
+
+    @Override
+    public void captureRollback( CatalogRollback state ) {
+        state.capture( graphs );
+        state.capture( placements );
+        state.capture( partitions );
+    }
 
 }

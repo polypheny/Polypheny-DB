@@ -51,9 +51,10 @@ import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.transaction.TransactionManagerImpl;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockablesRegistry;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
@@ -262,9 +263,10 @@ public class FrequencyMapImpl extends FrequencyMap {
 
         Map<DataStore<?>, List<Long>> partitionsToRemoveFromStore = new HashMap<>();
 
-        Transaction transaction = null;
+        Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, null, "FrequencyMap" );
         try {
-            transaction = transactionManager.startTransaction( Catalog.defaultUserId, null, "FrequencyMap" );
+            transaction.acquireLockable( LockablesRegistry.INSTANCE.getOrCreateLockable( table ), LockType.EXCLUSIVE );
+            transaction.acquireCatalogWriteLock();
 
             Statement statement = transaction.createStatement();
             DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
@@ -313,7 +315,7 @@ public class FrequencyMapImpl extends FrequencyMap {
             }
 
             transaction.commit();
-        } catch ( TransactionException e ) {
+        } catch ( RuntimeException e ) {
             transaction.rollback( "Error while reassigning new location for temperature-based partitions. " + e.getMessage() );
             throw new GenericRuntimeException( e );
         }

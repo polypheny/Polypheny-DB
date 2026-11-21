@@ -36,6 +36,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationPartitionGroup;
 import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.impl.CatalogRollback;
 import org.polypheny.db.catalog.logistic.DataPlacementRole;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.logistic.PlacementType;
@@ -261,5 +262,16 @@ public class PolyAllocRelCatalog implements AllocationRelationalCatalog, PolySer
         change();
     }
 
+
+
+    @Override
+    public void captureRollback( CatalogRollback state ) {
+        state.capture( tables );
+        state.capture( columns );
+        state.capture( properties );
+        state.capture( partitionGroups );
+        state.capture( partitions );
+        state.capture( placements );
+    }
 
 }

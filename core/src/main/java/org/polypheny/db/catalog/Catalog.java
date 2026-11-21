@@ -112,6 +112,12 @@ public abstract class Catalog implements ExtensionPoint {
 
     public abstract void rollback();
 
+    /**
+     * Captures live catalog state while the transaction owns the catalog write lock.
+     */
+    public abstract Runnable captureRollback();
+
+
 
     public abstract LogicalRelationalCatalog getLogicalRel( long namespaceId );
 

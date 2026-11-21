@@ -66,6 +66,7 @@ public abstract class Processor {
             Map<Lockable, LockType> requiredLockables = node.deriveLockables( statement.getPrepareContext(), context );
             Transaction transaction = statement.getTransaction();
             requiredLockables.forEach( transaction::acquireLockable );
+            transaction.acquireCatalogWriteLock();
             return getImplementation( statement, node, context );
         } catch ( DeadlockException e ) {
             throw new DeadlockException( " Exception while acquiring global schema lock", e );

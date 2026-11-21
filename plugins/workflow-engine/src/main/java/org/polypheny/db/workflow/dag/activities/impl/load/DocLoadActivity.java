@@ -144,32 +144,41 @@ public class DocLoadActivity implements Activity, Pipeable {
                 throw new InvalidSettingException( "Specified collection does not exist", COLL_KEY );
             }
             LogicalNamespace namespace = setting.getLogicalNamespace();
-            if ( namespace == null ) {
-                logInfo.accept( "Creating namespace '" + setting.getNamespace() + "'" );
-                try {
-                    long namespaceId = ddlManager.createNamespace( setting.getNamespace(), DataModel.DOCUMENT, false, false, false, null );
-                    namespace = Catalog.snapshot().getNamespace( namespaceId ).orElse( null );
-                } catch ( Exception e ) {
-                    throw new InvalidSettingException( "Specified namespace cannot be created: " + e.getMessage(), COLL_KEY );
-                }
-            }
-            logInfo.accept( "Creating collection '" + setting.getName() + "'" );
-            assert namespace != null;
-            // Unfortunately, we have to create the table outside our activity transaction context.
-            Transaction transaction = QueryUtils.startTransaction( txSupplier.get().getTransactionManager(), namespace.id, "DocLoadCreate" );
+            // Create the destination separately from the activity's data transaction.
+            Transaction transaction = QueryUtils.startTransaction( txSupplier.get().getTransactionManager(),
+                    namespace == null ? Catalog.defaultNamespaceId : namespace.id, "DocLoadCreate" );
             try {
-                transaction.acquireLockable( LockablesRegistry.INSTANCE.getOrCreateLockable( namespace ), LockType.SHARED ); // SHARED lock is workaround to be able to create entity while other txs are reading
+                if ( namespace != null ) {
+                    transaction.acquireLockable( LockablesRegistry.INSTANCE.getOrCreateLockable( namespace ), LockType.SHARED );
+                }
+                transaction.acquireCatalogWriteLock();
+                Statement statement = transaction.createStatement();
+                LogicalNamespace targetNamespace = setting.getLogicalNamespace();
+                long namespaceId;
+                if ( targetNamespace == null ) {
+                    logInfo.accept( "Creating namespace '" + setting.getNamespace() + "'" );
+                    try {
+                        namespaceId = ddlManager.createNamespace( setting.getNamespace(), DataModel.DOCUMENT, true, false, false, statement );
+                    } catch ( Exception e ) {
+                        throw new InvalidSettingException( "Specified namespace cannot be created: " + e.getMessage(), COLL_KEY );
+                    }
+                } else {
+                    namespaceId = targetNamespace.id;
+                }
+                if ( transaction.getSnapshot().getNamespace( namespaceId ).filter( ns -> ns.dataModel == DataModel.DOCUMENT ).isEmpty() ) {
+                    throw new InvalidSettingException( "Specified namespace is not a document namespace", COLL_KEY );
+                }
+                logInfo.accept( "Creating collection '" + setting.getName() + "'" );
                 ddlManager.createCollection(
-                        namespace.getId(),
+                        namespaceId,
                         setting.getName(),
                         false,
                         List.of( adapterManager.getStore( adapter ).orElseThrow( () ->
                                 new InvalidSettingException( "Adapter does not exist: " + adapter, "adapter" ) ) ),
                         PlacementType.AUTOMATIC,
-                        transaction.createStatement()
-                );
+                        statement );
                 transaction.commit();
-                return Catalog.snapshot().doc().getCollection( namespace.id, setting.getName() ).orElseThrow();
+                return Catalog.snapshot().doc().getCollection( namespaceId, setting.getName() ).orElseThrow();
             } finally {
                 if ( transaction.isActive() ) {
                     logInfo.accept( "Unable to create collection. Rolling back transaction." );

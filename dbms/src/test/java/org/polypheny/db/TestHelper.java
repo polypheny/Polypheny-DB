@@ -1373,7 +1373,8 @@ public class TestHelper {
 
         private boolean testConnection() {
             try {
-                int readyExitCode = container.execute( List.of( "pg_isready", "-U", username, "-d", database ) );
+                // The image's temporary initialization server accepts only Unix socket connections.
+                int readyExitCode = container.execute( List.of( "pg_isready", "-h", "127.0.0.1", "-U", username, "-d", database ) );
                 if ( readyExitCode != 0 ) {
                     return false;
                 }

@@ -535,35 +535,19 @@ public class PolyphenyDb {
     private void restore( Authenticator authenticator, Catalog catalog ) {
         PolyPluginManager.startUp( transactionManager, authenticator );
 
-        Transaction trx = transactionManager.startTransaction(
-                Catalog.defaultUserId,
-                Catalog.defaultNamespaceId,
-                null,
-                "Catalog Startup" );
-        if ( !resetCatalog && !memoryCatalog && mode != RunMode.TEST ) {
-            Catalog.getInstance().restore( trx );
-        }
-        Catalog.getInstance().updateSnapshot();
+        transactionManager.runCatalogWrite( "Catalog Startup", transaction -> {
+            if ( !resetCatalog && !memoryCatalog && mode != RunMode.TEST ) {
+                catalog.restore( transaction );
+            }
+            catalog.updateSnapshot();
 
-        Catalog.defaultStore = AdapterTemplate.fromString( defaultStoreName, AdapterType.STORE );
-        Catalog.defaultSource = AdapterTemplate.fromString( defaultSourceName, AdapterType.SOURCE );
-        restoreDefaults( trx, catalog, mode );
+            Catalog.defaultStore = AdapterTemplate.fromString( defaultStoreName, AdapterType.STORE );
+            Catalog.defaultSource = AdapterTemplate.fromString( defaultSourceName, AdapterType.SOURCE );
+            restoreDefaults( transaction, catalog, mode );
+            return null;
+        } );
 
         QueryInterfaceManager.getInstance().restoreInterfaces( catalog.getSnapshot() );
-
-        commitRestore( trx );
-    }
-
-
-    /**
-     * Tries to commit the restored catalog.
-     */
-    private void commitRestore( Transaction trx ) {
-        try {
-            trx.commit();
-        } catch ( TransactionException e ) {
-            trx.rollback( "Something went wrong while restoring stores from the catalog. " + e.getMessage() );
-        }
     }
 
 

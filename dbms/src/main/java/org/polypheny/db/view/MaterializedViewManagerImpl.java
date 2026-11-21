@@ -18,7 +18,6 @@ package org.polypheny.db.view;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -64,12 +63,10 @@ import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
 import org.polypheny.db.transaction.locking.LockablesRegistry;
-import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
@@ -128,16 +125,16 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
 
 
     /**
-     * Updates the materializedInfo and the CatalogMaterialized with the time of the last update
+     * Records the last refresh time in the catalog.
      *
      * @param materializedId id from materialized view
      */
     @Override
-    public synchronized void updateMaterializedTime( long materializedId ) {
-        if ( materializedInfo.containsKey( materializedId ) ) {
-            materializedInfo.get( materializedId ).setLastUpdate( new Timestamp( System.currentTimeMillis() ) );
-            Catalog.getInstance().getLogicalRel( 0 ).updateMaterializedViewRefreshTime( materializedId );
-        }
+    public void updateMaterializedTime( Transaction transaction, long materializedId ) {
+        transaction.acquireCatalogWriteLock();
+        transaction.getSnapshot().rel().getTable( materializedId )
+                .flatMap( table -> table.unwrap( LogicalMaterializedView.class ) )
+                .ifPresent( view -> Catalog.getInstance().getLogicalRel( view.namespaceId ).updateMaterializedViewRefreshTime( materializedId ) );
     }
 
 
@@ -161,7 +158,7 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
      */
     @Override
     public synchronized void addMaterializedInfo( long materializedId, MaterializedCriteria matViewCriteria ) {
-        materializedInfo.put( materializedId, matViewCriteria );
+        materializedInfo.putIfAbsent( materializedId, matViewCriteria.copy() );
     }
 
 
@@ -257,21 +254,21 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
         for ( Entry<Long, MaterializedCriteria> entry : materializedViewInfo.entrySet() ) {
             Long k = entry.getKey();
             MaterializedCriteria v = entry.getValue();
-            if ( v.getCriteriaType() == CriteriaType.INTERVAL
-                    && v.getLastUpdate().getTime() + v.getTimeInMillis() < System.currentTimeMillis()
+            Optional<LogicalMaterializedView> view = Catalog.snapshot().rel().getTable( k ).flatMap( table -> table.unwrap( LogicalMaterializedView.class ) );
+            if ( view.isPresent() && v.getCriteriaType() == CriteriaType.INTERVAL
+                    && view.get().getMaterializedCriteria().getLastUpdate().getTime() + v.getTimeInMillis() < System.currentTimeMillis()
                     && !isDroppingMaterialized
                     && !isCreatingMaterialized
                     && !isUpdatingMaterialized ) {
 
                 prepareToUpdate( k );
-                updateMaterializedTime( k );
             }
         }
     }
 
 
     /**
-     * Starts transition and acquires a global schema lock before the materialized view is updated
+     * Refreshes a materialized view under its entity lock and the catalog write lock.
      *
      * @param materializedId of materialized view, which is updated
      */
@@ -285,25 +282,20 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                 "Materialized View" );
 
         try {
-            Statement statement = transaction.createStatement();
-            Optional<LogicalMaterializedView> optionalEntity = entity.unwrap( LogicalMaterializedView.class );
-            if ( optionalEntity.isEmpty() ) {
-                log.warn( "Materialized view with id {} does not longer exist", materializedId );
+            Lockable lmvLockable = LockablesRegistry.INSTANCE.getOrCreateLockable( entity );
+            transaction.acquireLockable( lmvLockable, LockType.EXCLUSIVE );
+            transaction.acquireCatalogWriteLock();
+            if ( transaction.getSnapshot().rel().getTable( materializedId ).isEmpty() ) {
+                transaction.rollback( null );
                 return;
             }
-
-            Lockable lmvLockable = LockablesRegistry.INSTANCE.getOrCreateLockable( optionalEntity.get() );
-            transaction.acquireLockable( lmvLockable, LockType.EXCLUSIVE );
-
-        } catch ( DeadlockException e ) {
-            throw new GenericRuntimeException( "DeadLock while locking for materialized view update", e );
+            updateData( transaction, materializedId );
+            updateMaterializedTime( transaction, materializedId );
+            transaction.commit();
+        } catch ( RuntimeException failure ) {
+            transaction.rollback( "Materialized view refresh failed." );
+            throw failure;
         }
-
-        updateData( transaction, materializedId );
-
-        commitTransaction( transaction );
-
-        updateMaterializedTime( materializedId );
     }
 
 
@@ -384,16 +376,6 @@ public class MaterializedViewManagerImpl extends MaterializedViewManager {
                     List.of(),
                     AlgRoot.of( Catalog.snapshot().rel().getNodeInfo( materializedId ), Kind.SELECT ),
                     Catalog.snapshot().rel().getTable( materializedId ).orElseThrow().unwrapOrThrow( LogicalMaterializedView.class ) );
-        }
-    }
-
-
-    public void commitTransaction( Transaction transaction ) {
-        try {
-            // Locks are released within commit
-            transaction.commit();
-        } catch ( TransactionException e ) {
-            transaction.rollback( "Caught exception while executing a query from the console. " + e );
         }
     }
 
