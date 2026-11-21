@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.util.List;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
+import org.polypheny.db.algebra.exceptions.UniqueConstraintViolationException;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyValue;
@@ -91,6 +92,9 @@ public class FileModifier extends FileEnumerator {
                 inserted = true;
                 return true;
             }
+        } catch ( UniqueConstraintViolationException e ) {
+            // Preserve the legacy diagnostic, which included the original cause's class name.
+            throw new GenericRuntimeException( GenericRuntimeException.class.getName() + ": " + e.getMessage(), e );
         } catch ( IOException | RuntimeException e ) {
             throw new GenericRuntimeException( e );
         }
@@ -99,7 +103,7 @@ public class FileModifier extends FileEnumerator {
 
     static void write( File newFile, PolyValue value ) throws IOException {
         if ( !newFile.createNewFile() ) {
-            throw new GenericRuntimeException( "Primary key conflict! You are trying to insert a row with a primary key that already exists." );
+            throw new UniqueConstraintViolationException( "Primary key conflict! You are trying to insert a row with a primary key that already exists." );
         }
         Files.writeString( newFile.toPath(), value.toTypedJson(), FileStore.CHARSET );
     }

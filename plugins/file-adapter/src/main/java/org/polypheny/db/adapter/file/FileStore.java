@@ -46,6 +46,7 @@ import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.RelationalModifyDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.algebra.exceptions.UniqueConstraintViolationException;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
@@ -317,7 +318,7 @@ public class FileStore extends DataStore<RelAdapterCatalog> {
 
     private static void requireUnusedCommitTarget( File target ) {
         if ( target.exists() ) {
-            throw new GenericRuntimeException( "Could not commit: a row with the same primary key already exists" );
+            throw new UniqueConstraintViolationException( "Could not commit: a row with the same primary key already exists" );
         }
     }
 
