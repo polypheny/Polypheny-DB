@@ -16,7 +16,6 @@
 
 package org.polypheny.db.prisminterface.statements;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 import lombok.Getter;
@@ -27,6 +26,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
@@ -57,42 +57,38 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
 
 
     public List<Long> executeBatch( List<List<PolyValue>> valuesBatch ) {
-        List<Long> updateCounts = new ArrayList<>();
-        if ( statement == null || client.hasNoTransaction() ) {
-            statement = client.getOrCreateNewTransaction().createStatement();
-        } else {
-            statement.getDataContext().resetParameterValues();
-        }
-        List<AlgDataType> types = IntStream.range( 0, valuesBatch.size() ).mapToObj( i -> deriveType( statement.getTransaction().getTypeFactory(), parameterPolyTypes.get( i ) ) ).toList();
-        int i = 0;
-        for ( List<PolyValue> column : valuesBatch ) {
-            statement.getDataContext().addParameterValues( i, types.get( i++ ), column );
-        }
-        StatementProcessor.implement( this );
-        updateCounts.add( StatementProcessor.executeAndGetResult( this ).getScalar() );
-
-        return updateCounts;
+        List<ParsedQueryContext> preParsedQueries = StatementProcessor.parseWithOpenAutocommitResult( this );
+        return executeInTransaction( preParsedQueries != null, () -> {
+            List<AlgDataType> types = IntStream.range( 0, valuesBatch.size() )
+                    .mapToObj( i -> deriveType( statement.getTransaction().getTypeFactory(), parameterPolyTypes.get( i ) ) )
+                    .toList();
+            int index = 0;
+            for ( List<PolyValue> column : valuesBatch ) {
+                statement.getDataContext().addParameterValues( index, types.get( index ), column );
+                index++;
+            }
+            StatementProcessor.implement( this, null, preParsedQueries );
+            return List.of( StatementProcessor.executeAndGetResult( this ).getScalar() );
+        } );
     }
 
 
     @SuppressWarnings("Duplicates")
     public StatementResult execute( List<PolyValue> values, List<ParameterMeta> parameterMetas, int fetchSize ) {
-        if ( statement == null || client.hasNoTransaction() ) {
-            statement = client.getOrCreateNewTransaction().createStatement();
-        } else {
-            statement.getDataContext().resetParameterValues();
-        }
-        int index = 0;
-        for ( PolyValue value : values ) {
-            if ( value != null ) {
-                AlgDataType algDataType = parameterMetas.size() > index
-                        ? deriveType( statement.getTransaction().getTypeFactory(), parameterPolyTypes.get( index ) )
-                        : statement.getTransaction().getTypeFactory().createPolyType( value.type );
-                statement.getDataContext().addParameterValues( index++, algDataType, List.of( value ) );
+        List<ParsedQueryContext> preParsedQueries = StatementProcessor.parseWithOpenAutocommitResult( this );
+        return executeInTransaction( preParsedQueries != null, () -> {
+            int index = 0;
+            for ( PolyValue value : values ) {
+                if ( value != null ) {
+                    AlgDataType algDataType = parameterMetas.size() > index
+                            ? deriveType( statement.getTransaction().getTypeFactory(), parameterPolyTypes.get( index ) )
+                            : statement.getTransaction().getTypeFactory().createPolyType( value.type );
+                    statement.getDataContext().addParameterValues( index++, algDataType, List.of( value ) );
+                }
             }
-        }
-        StatementProcessor.implement( this );
-        return StatementProcessor.executeAndGetResult( this, fetchSize );
+            StatementProcessor.implement( this, null, preParsedQueries );
+            return StatementProcessor.executeAndGetResult( this, fetchSize );
+        } );
     }
 
 

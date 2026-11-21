@@ -17,6 +17,7 @@
 package org.polypheny.db.prisminterface.statements;
 
 import java.util.List;
+import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +26,6 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.transaction.Statement;
@@ -58,29 +58,52 @@ public abstract class PIStatement {
     }
 
 
-    public void closeResults() {
-        if ( resultCursor == null ) {
-            return;
-        }
+    protected <T> T executeInTransaction( boolean validatedOverlappingRead, Supplier<T> execution ) {
+        closeResultsAndCommitIfAuto();
+        Transaction transaction = validatedOverlappingRead && client.getStatementManager().hasOpenResult( false )
+                ? client.startIsolatedReadTransaction()
+                : client.getOrCreateNewTransaction();
         try {
-            resultCursor.iterator().close();
-            resultCursor = null;
-        } catch ( Exception e ) {
-            throw new GenericRuntimeException( "Closing of open result iterator failed" );
+            Statement previous = getStatement();
+            if ( previous == null || previous.getTransaction() != transaction ) {
+                if ( previous != null ) {
+                    previous.close();
+                }
+                setStatement( transaction.createStatement() );
+            } else {
+                previous.getDataContext().resetParameterValues();
+            }
+            return execution.get();
+        } catch ( Throwable failure ) {
+            try {
+                client.rollbackAutocommitTransaction( transaction, "Prism statement failed" );
+            } catch ( RuntimeException cleanupFailure ) {
+                failure.addSuppressed( cleanupFailure );
+            }
+            throw failure;
+        }
+    }
+
+
+    public void closeResults() {
+        ResultCursor cursor = resultCursor;
+        resultCursor = null;
+        if ( cursor != null ) {
+            cursor.iterator().close();
         }
     }
 
 
     public void closeResultsAndCommitIfAuto() {
-        boolean ownsOpenResult = resultCursor != null && getTransaction() == client.getCurrentTransaction();
+        ResultCursor cursor = resultCursor;
         closeResults();
-        if ( ownsOpenResult ) {
-            client.commitCurrentTransactionIfAuto();
+        if ( cursor != null ) {
+            client.getStatementManager().commitIfAutocommitAndNoOpenResults( cursor.transaction() );
         }
     }
 
 
-    public record ResultCursor( ResultIterator iterator, Frame.ResultCase format, List<ColumnMeta> columns ) {
+    public record ResultCursor( ResultIterator iterator, Transaction transaction, Frame.ResultCase format, List<ColumnMeta> columns ) {
 
         public ResultCursor {
             columns = List.copyOf( columns );

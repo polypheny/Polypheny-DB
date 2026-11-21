@@ -16,14 +16,19 @@
 
 package org.polypheny.db.prisminterface.statements;
 
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.prism.StatementResult;
@@ -51,10 +56,16 @@ public class PIUnparameterizedStatement extends PIStatement {
 
 
     public StatementResult execute( int fetchSize ) {
-        statement = client.getOrCreateNewTransaction().createStatement();
+        return execute( fetchSize, StatementProcessor.parseWithOpenAutocommitResult( this ) );
+    }
 
-        StatementProcessor.implement( this );
-        return StatementProcessor.executeAndGetResult( this, fetchSize );
+
+    StatementResult execute( int fetchSize, @Nullable List<ParsedQueryContext> preParsedQueries ) {
+        Node parsedStatement = language.dataModel() == DataModel.GRAPH ? StatementProcessor.parseGraphStatement( this ) : null;
+        return executeInTransaction( preParsedQueries != null, () -> {
+            StatementProcessor.implement( this, parsedStatement, preParsedQueries );
+            return StatementProcessor.executeAndGetResult( this, fetchSize );
+        } );
     }
 
 
