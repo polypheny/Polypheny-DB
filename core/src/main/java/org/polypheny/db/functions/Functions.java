@@ -26,6 +26,7 @@ import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
@@ -167,6 +168,7 @@ public class Functions {
 
     private static final JsonProvider JSON_PATH_JSON_PROVIDER = new JacksonJsonProvider( PolyValue.JSON_WRAPPER.configure( Feature.ALLOW_UNQUOTED_FIELD_NAMES, true ) );
     private static final MappingProvider JSON_PATH_MAPPING_PROVIDER = new JacksonMappingProvider( PolyValue.JSON_WRAPPER );
+    private static final Gson JSON_PATH_RESULT_SERIALIZER = new GsonBuilder().serializeNulls().create();
 
 
     private Functions() {
@@ -2746,16 +2748,14 @@ public class Functions {
                 default -> throw Static.RESOURCE.illegalJsonPathModeInPathSpec( mode.toString(), pathSpec.value ).ex();
             };
             try {
-                Object json = ctx.read( pathWff );
-                PolyValue val;
-                try {
-                    val = json == null ? null : PolyValue.fromJson( json.toString() );
-                } catch ( GenericRuntimeException e ) {
-                    // if the BsonParser cannot parse it we might try as string
-                    val = PolyValue.fromJson( "\"" + json + "\"" );
+                Object result = ctx.read( pathWff );
+                if ( result == null ) {
+                    return PathContext.withReturned( mode, null );
                 }
-
-                return PathContext.withReturned( mode, val );
+                if ( result instanceof String text ) {
+                    return PathContext.withReturned( mode, PolyString.of( text ) );
+                }
+                return PathContext.withReturned( mode, PolyValue.fromJson( JSON_PATH_RESULT_SERIALIZER.toJson( result ) ) );
             } catch ( Exception e ) {
                 return PathContext.withStrictException( e );
             }

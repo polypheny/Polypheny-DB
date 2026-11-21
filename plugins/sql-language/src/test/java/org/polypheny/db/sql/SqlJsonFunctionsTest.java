@@ -47,6 +47,7 @@ import org.polypheny.db.functions.Functions;
 import org.polypheny.db.functions.PathContext;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
@@ -112,6 +113,20 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
                 PolyDocument.of( Map.of( PolyString.of( "foo" ), PolyInteger.of( 100 ) ) ),
                 PolyString.of( "lax $.foo" ),
                 contextMatches( PathContext.withReturned( Functions.PathMode.LAX, PolyInteger.of( 100 ) ) ) );
+    }
+
+
+    @Test
+    public void testJsonApiCommonSyntaxPreservesStructuredValues() {
+        PolyString key = PolyString.of( "payload" );
+        PolyDocument payload = PolyDocument.ofDocument( Map.of(
+                PolyString.of( "missing" ), PolyNull.NULL,
+                PolyString.of( "values" ), PolyList.of( PolyString.of( "null" ), PolyInteger.of( 1 ), PolyNull.NULL ) ) );
+
+        assertJsonApiCommonSyntax(
+                PolyDocument.ofDocument( Map.of( key, payload ) ),
+                PolyString.of( "strict $.payload" ),
+                contextMatches( PathContext.withReturned( Functions.PathMode.STRICT, payload ) ) );
     }
 
 

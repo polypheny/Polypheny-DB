@@ -18,6 +18,7 @@ package org.polypheny.db.crossmodel;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.List;
 import org.junit.jupiter.api.AfterAll;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.mql.MqlTestTemplate;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.jdbc.types.PolyDocument;
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -81,6 +83,47 @@ public class RelationalOnDocumentTest extends CrossModelTestTemplate {
         executeStatements( ( s, c ) -> {
             ResultSet result = s.executeQuery( String.format( "SELECT JSON_VALUE(CAST(d AS VARCHAR(2050)), 'lax $.other') FROM %s.%s", DATABASE_NAME, COLLECTION_NAME ) );
             TestHelper.checkResultSet( result, List.of( new Object[][]{ new Object[]{ null } } ) );
+        } );
+    }
+
+
+    @Test
+    public void joinOnJsonStringTest() {
+        String joinCollection = "crossJoinProducts";
+        List<String> names = List.of( "widget", "null", "12.00", "{quoted\"\\key" );
+        MqlTestTemplate.createCollection( joinCollection, DATABASE_NAME );
+        for ( String name : names ) {
+            String document = String.format( "{\"name\":%s}", PolyString.of( name ).toQuotedJson() );
+            MqlTestTemplate.insert( document, joinCollection, DATABASE_NAME );
+        }
+
+        executeStatements( ( s, c ) -> {
+            s.executeUpdate( "CREATE TABLE crossJoinOrders (id INTEGER PRIMARY KEY, product_name VARCHAR(64) NOT NULL)" );
+            try {
+                try ( PreparedStatement insert = c.prepareStatement( "INSERT INTO crossJoinOrders VALUES (?, ?)" ) ) {
+                    for ( int i = 0; i < names.size(); i++ ) {
+                        insert.setInt( 1, i );
+                        insert.setString( 2, names.get( i ) );
+                        insert.executeUpdate();
+                    }
+                }
+
+                String query = String.format( """
+                        SELECT o.id, JSON_VALUE(p.d, 'lax $.name')
+                        FROM crossJoinOrders o
+                        JOIN %s.%s p ON o.product_name = JSON_VALUE(p.d, 'lax $.name')
+                        ORDER BY o.id
+                        """, DATABASE_NAME, joinCollection );
+                try ( ResultSet result = s.executeQuery( query ) ) {
+                    TestHelper.checkResultSet( result, List.of(
+                            new Object[]{ 0, names.get( 0 ) },
+                            new Object[]{ 1, names.get( 1 ) },
+                            new Object[]{ 2, names.get( 2 ) },
+                            new Object[]{ 3, names.get( 3 ) } ) );
+                }
+            } finally {
+                s.executeUpdate( "DROP TABLE crossJoinOrders" );
+            }
         } );
     }
 
