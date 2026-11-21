@@ -88,6 +88,22 @@ public class RelationalOnDocumentTest extends CrossModelTestTemplate {
 
 
     @Test
+    public void jsonValueConvertsBooleanStrings() {
+        executeStatements( ( s, c ) -> {
+            String query = """
+                    SELECT JSON_VALUE('{"value":"true"}', 'lax $.value' RETURNING BOOLEAN),
+                           JSON_VALUE('{"value":"false"}', 'lax $.value' RETURNING BOOLEAN),
+                           JSON_VALUE('{"value":null}', 'lax $.value' RETURNING BOOLEAN),
+                           JSON_VALUE('{"value":"true"}', 'lax $.value')
+                    """;
+            try ( ResultSet result = s.executeQuery( query ) ) {
+                TestHelper.checkResultSet( result, List.<Object[]>of( new Object[]{ Boolean.TRUE, Boolean.FALSE, null, "true" } ) );
+            }
+        } );
+    }
+
+
+    @Test
     public void jsonValuePreservesDecimalsOutsideLongRange() {
         executeStatements( ( s, c ) -> {
             String query = """

@@ -35,6 +35,7 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.functions.Functions;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 
@@ -104,6 +105,8 @@ public class PolyBoolean extends PolyValue {
             return value.asBoolean();
         } else if ( value.isNumber() ) {
             return value.asBoolean();
+        } else if ( value instanceof PolyString text ) {
+            return text.isNull() ? null : Functions.toBoolean( text );
         }
 
         throw new GenericRuntimeException( getConvertError( value, PolyBoolean.class ) );
