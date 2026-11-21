@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
-import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
 import org.polypheny.db.adapter.DataContext;
@@ -46,6 +45,8 @@ import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.PlanKey;
+import org.polypheny.db.algebra.PlanKeys;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
@@ -83,12 +84,14 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationPolyAlg.PlanType;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
 import org.polypheny.db.monitoring.events.DmlEvent;
 import org.polypheny.db.monitoring.events.MonitoringType;
+import org.polypheny.db.monitoring.events.PlanFingerprint;
 import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.plan.AlgOptCost;
@@ -98,6 +101,7 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.prepare.Prepare.PreparedResult;
 import org.polypheny.db.prepare.Prepare.PreparedResultImpl;
 import org.polypheny.db.processing.caching.ImplementationCache;
+import org.polypheny.db.processing.caching.ImplementationCache.CachedImplementation;
 import org.polypheny.db.processing.caching.QueryPlanCache;
 import org.polypheny.db.processing.caching.RoutingPlanCache;
 import org.polypheny.db.processing.shuttles.LogicalQueryInformationImpl;
@@ -123,6 +127,8 @@ import org.polypheny.db.routing.RoutingPlan;
 import org.polypheny.db.routing.UiRoutingPageUtil;
 import org.polypheny.db.routing.dto.CachedProposedRoutingPlan;
 import org.polypheny.db.routing.dto.ProposedRoutingPlanImpl;
+import org.polypheny.db.routing.routers.CachedPlanRouter;
+import org.polypheny.db.routing.routers.SimpleRouter;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.schema.trait.ModelTrait;
@@ -375,7 +381,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             //
             // Routing
-            plans = routePlans( indexLookupRoot, logicalQueryInformation, isAnalyze );
+            plans = route( indexLookupRoot, statement, logicalQueryInformation, isAnalyze ).stream()
+                    .map( proposed -> new Plan().proposedRoutingPlan( proposed ) )
+                    .toList();
 
             if ( isAnalyze ) {
                 statement.getRoutingDuration().start( "Flattener" );
@@ -409,6 +417,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
 
             plan.parameterizedRoot( parameterizedRoot );
+            if ( isQueryPlanCachingActive( statement, routedRoot ) || isImplementationCachingActive( statement, routedRoot ) ) {
+                plan.cacheKey( createCacheKey( parameterizedRoot, parameterRowType, resultConvention ) );
+            }
         }
 
         if ( isAnalyze ) {
@@ -424,11 +435,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             AlgRoot routedRoot = plan.proposedRoutingPlan().getRoutedRoot();
             if ( this.isImplementationCachingActive( statement, routedRoot ) ) {
                 AlgRoot parameterizedRoot = plan.parameterizedRoot();
-                PreparedResult<PolyValue> preparedResult = ImplementationCache.INSTANCE.getIfPresent( parameterizedRoot.alg );
-                AlgNode optimalNode = QueryPlanCache.INSTANCE.getIfPresent( parameterizedRoot.alg );
-                if ( preparedResult != null ) {
+                CachedImplementation cached = ImplementationCache.INSTANCE.getIfPresent( plan.cacheKey() );
+                if ( cached != null ) {
+                    AlgNode optimalNode = cached.optimalNode();
+                    // Expose the same routed row type as a newly compiled implementation.
                     PolyImplementation result = createPolyImplementation(
-                            preparedResult,
+                            cached.result(),
                             parameterizedRoot.kind,
                             optimalNode,
                             parameterizedRoot.alg.getTupleType(),
@@ -437,7 +449,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                             Objects.requireNonNull( optimalNode.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).dataModel(),
                             parameterizedRoot.resultKind );
                     plan.result( result );
-                    plan.generatedCodes( preparedResult.getCode() );
+                    plan.generatedCodes( cached.result().getCode() );
                     plan.optimalNode( optimalNode );
                 }
             }
@@ -449,7 +461,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         // Can we return earlier?
         if ( plans.stream().allMatch( obj -> Objects.nonNull( obj.result() ) && Objects.nonNull( obj.optimalNode() ) ) ) {
-            return new ProposedImplementations( plans.stream().filter( Plan::isValid ).toList(), logicalQueryInformation );
+            return new ProposedImplementations( plans.stream().filter( Plan::isValid ).toList() );
         }
 
         //
@@ -458,9 +470,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getProcessingDuration().start( "Plan Caching" );
         }
         for ( Plan plan : plans ) {
-            if ( this.isQueryPlanCachingActive( statement, plan.proposedRoutingPlan().getRoutedRoot() ) ) {
-                // Should always be the case
-                AlgNode cachedElem = QueryPlanCache.INSTANCE.getIfPresent( plan.parameterizedRoot().alg );
+            if ( plan.optimalNode() == null && plan.cacheKey() != null
+                    && this.isQueryPlanCachingActive( statement, plan.proposedRoutingPlan().getRoutedRoot() ) ) {
+                AlgNode cachedElem = QueryPlanCache.INSTANCE.getIfPresent( plan.cacheKey() );
                 if ( cachedElem != null ) {
                     plan.optimalNode( cachedElem );
                 }
@@ -481,8 +493,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
             plan.optimalNode( optimize( plan.parameterizedRoot(), resultConvention ) );
 
-            if ( this.isQueryPlanCachingActive( statement, plan.proposedRoutingPlan().getRoutedRoot() ) ) {
-                QueryPlanCache.INSTANCE.put( plan.parameterizedRoot().alg, plan.optimalNode() );
+            if ( plan.cacheKey() != null && this.isQueryPlanCachingActive( statement, plan.proposedRoutingPlan().getRoutedRoot() ) ) {
+                QueryPlanCache.INSTANCE.put( plan.cacheKey(), plan.optimalNode() );
             }
         }
 
@@ -507,8 +519,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
             // Cache implementation
             if ( this.isImplementationCachingActive( statement, plan.proposedRoutingPlan().getRoutedRoot() ) ) {
-                if ( optimalRoot.alg.isImplementationCacheable() ) {
-                    ImplementationCache.INSTANCE.put( plan.parameterizedRoot().alg, preparedResult );
+                if ( plan.cacheKey() != null && optimalRoot.alg.isImplementationCacheable() ) {
+                    ImplementationCache.INSTANCE.put( plan.cacheKey(), new CachedImplementation( optimalRoot.alg, preparedResult ) );
                 } else {
                     ImplementationCache.INSTANCE.countUncacheable();
                 }
@@ -537,9 +549,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
 
         // Finally, all optionals should be of certain values.
-        return new ProposedImplementations(
-                plans.stream().filter( Plan::isValid ).toList(),
-                logicalQueryInformation );
+        return new ProposedImplementations( plans.stream().filter( Plan::isValid ).toList() );
     }
 
 
@@ -557,27 +567,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 new ExecutionTimeMonitor(),
                 Objects.requireNonNull( root.alg.getTraitSet().getTrait( ModelTraitDef.INSTANCE ) ).dataModel(),
                 root.resultKind );
-    }
-
-
-    @NotNull
-    private List<Plan> routePlans( AlgRoot indexLookupRoot, LogicalQueryInformation logicalQueryInformation, boolean isAnalyze ) {
-        List<Plan> plans = null;
-        if ( RuntimeConfig.ROUTING_PLAN_CACHING.getBoolean() && !indexLookupRoot.kind.belongsTo( Kind.DML ) ) {
-            Set<Long> partitionIds = logicalQueryInformation.getAccessedPartitions().values().stream()
-                    .flatMap( List::stream )
-                    .collect( Collectors.toSet() );
-            List<CachedProposedRoutingPlan> routingPlansCached = RoutingPlanCache.INSTANCE.getIfPresent( logicalQueryInformation.getQueryHash(), partitionIds );
-            if ( !routingPlansCached.isEmpty() && routingPlansCached.stream().noneMatch( Objects::nonNull ) ) {
-                plans = routeCached( indexLookupRoot, routingPlansCached, new RoutingContext( indexLookupRoot.alg.getCluster(), statement, logicalQueryInformation ), isAnalyze );
-            }
-        }
-
-        if ( plans == null ) {
-            plans = route( indexLookupRoot, statement, logicalQueryInformation ).stream().map( p -> new Plan().proposedRoutingPlan( p ) ).toList();
-        }
-
-        return plans;
     }
 
 
@@ -907,7 +896,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private List<ProposedRoutingPlan> route( AlgRoot logicalRoot, Statement statement, LogicalQueryInformation queryInformation ) {
+    private List<ProposedRoutingPlan> route( AlgRoot logicalRoot, Statement statement, LogicalQueryInformation queryInformation, boolean isAnalyze ) {
         RoutingContext context = new RoutingContext( logicalRoot.alg.getCluster(), statement, queryInformation );
         final DmlRouter dmlRouter = RoutingManager.getInstance().getDmlRouter();
         if ( logicalRoot.getModel() == ModelTrait.GRAPH ) {
@@ -927,12 +916,29 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             AlgNode routedConstraintEnforcer = dmlRouter.handleConstraintEnforcer( logicalConstraintEnforcer, context );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedConstraintEnforcer, logicalRoot, queryInformation.getQueryHash() ) );
         } else {
+            List<Router> routers = RoutingManager.getInstance().getRouters();
+            CachedPlanRouter cachedRouter = RoutingManager.getInstance().getCachedPlanRouter();
+            Snapshot snapshot = Catalog.snapshot();
+            PlanKey routingCacheKey = null;
+            if ( RuntimeConfig.ROUTING_PLAN_CACHING.getBoolean()
+                    && statement.getTransaction().getUseCache()
+                    && routers.size() == 1 && routers.get( 0 ).getClass() == SimpleRouter.class
+                    && cachedRouter.supports( logicalRoot, snapshot ) ) {
+                routingCacheKey = RoutingPlanCache.keyFor( logicalRoot, queryInformation.getAccessedPartitions(), snapshot ).orElse( null );
+                if ( routingCacheKey != null && snapshot == Catalog.snapshot() ) {
+                    CachedProposedRoutingPlan cached = RoutingPlanCache.INSTANCE.getIfPresent( routingCacheKey );
+                    if ( cached != null ) {
+                        return List.of( routeCached( logicalRoot, cached, context, isAnalyze ) );
+                    }
+                }
+            }
+
             final List<ProposedRoutingPlan> proposedPlans = new ArrayList<>();
             if ( statement.isAnalyze() ) {
                 statement.getRoutingDuration().start( "Plan Proposing" );
             }
 
-            for ( Router router : RoutingManager.getInstance().getRouters() ) {
+            for ( Router router : routers ) {
                 try {
                     List<RoutedAlgBuilder> builders = router.route( logicalRoot, context );
                     List<ProposedRoutingPlan> plans = builders.stream()
@@ -963,6 +969,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 statement.getRoutingDuration().stop( "Remove Duplicates" );
             }
 
+            if ( routingCacheKey != null && snapshot == Catalog.snapshot() && context.getDirectScanAllocation() != null && distinctPlans.size() == 1 ) {
+                RoutingPlanCache.INSTANCE.put( routingCacheKey,
+                        new CachedProposedRoutingPlan( context.getDirectScanAllocation(), distinctPlans.get( 0 ).getPhysicalQueryClass() ) );
+            }
             return distinctPlans;
         }
     }
@@ -990,38 +1000,18 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private List<Plan> routeCached( AlgRoot logicalRoot, List<CachedProposedRoutingPlan> routingPlansCached, RoutingContext context, boolean isAnalyze ) {
-        if ( isAnalyze ) {
-            statement.getRoutingDuration().start( "Select Cached Plan" );
-        }
-
-        CachedProposedRoutingPlan selectedCachedPlan = selectCachedPlan( routingPlansCached );
-
-        if ( isAnalyze ) {
-            statement.getRoutingDuration().stop( "Select Cached Plan" );
-        }
-
+    private ProposedRoutingPlan routeCached( AlgRoot logicalRoot, CachedProposedRoutingPlan cached, RoutingContext context, boolean isAnalyze ) {
         if ( isAnalyze ) {
             statement.getRoutingDuration().start( "Route Cached Plan" );
         }
 
-        RoutedAlgBuilder builder = RoutingManager.getInstance().getCachedPlanRouter().routeCached(
-                logicalRoot,
-                selectedCachedPlan,
-                context );
-
+        RoutedAlgBuilder builder = RoutingManager.getInstance().getCachedPlanRouter().routeCached( logicalRoot, cached, context );
+        ProposedRoutingPlanImpl plan = new ProposedRoutingPlanImpl( context, builder, logicalRoot, context.getQueryInformation().getQueryHash(), SimpleRouter.class );
+        plan.setPhysicalQueryClass( cached.physicalQueryClass() );
         if ( isAnalyze ) {
             statement.getRoutingDuration().stop( "Route Cached Plan" );
-            statement.getRoutingDuration().start( "Create Plan From Cache" );
         }
-
-        ProposedRoutingPlan proposed = new ProposedRoutingPlanImpl( context, builder, logicalRoot, context.getQueryInformation().getQueryHash(), selectedCachedPlan );
-
-        if ( isAnalyze ) {
-            statement.getRoutingDuration().stop( "Create Plan From Cache" );
-        }
-
-        return List.of( new Plan().proposedRoutingPlan( proposed ) );
+        return plan;
     }
 
 
@@ -1189,6 +1179,19 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
+    private PlanKey createCacheKey( AlgRoot root, AlgDataType parameterRowType, Convention resultConvention ) {
+        Snapshot snapshot = root.alg.getCluster().getSnapshot();
+        // Routing also reads the live catalog. Skip a plan built across a catalog change.
+        if ( snapshot == null || snapshot != Catalog.snapshot() ) {
+            return null;
+        }
+        return PlanKeys.forTree( root.alg )
+                .flatMap( tree -> PlanKey.of( tree, root.kind, root.resultKind, root.validatedRowType, root.fields, root.collation,
+                        parameterRowType, resultConvention.getName(), snapshot ) )
+                .orElse( null );
+    }
+
+
     private boolean isQueryPlanCachingActive( Statement statement, AlgRoot algRoot ) {
         return RuntimeConfig.QUERY_PLAN_CACHING.getBoolean()
                 && statement.getTransaction().getUseCache()
@@ -1274,15 +1277,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     private void monitorResult( ProposedRoutingPlan selectedPlan ) {
         if ( statement.getMonitoringEvent() != null ) {
             StatementEvent eventData = statement.getMonitoringEvent();
-            eventData.setAlgCompareString( selectedPlan.getRoutedRoot().alg.algCompareString() );
             if ( selectedPlan.getPhysicalQueryClass() != null ) {
                 eventData.setPhysicalQueryClass( selectedPlan.getPhysicalQueryClass() );
                 //eventData.setRowCount( (int) selectedPlan.getRoutedRoot().alg.estimateTupleCount( selectedPlan.getRoutedRoot().alg.getCluster().getMetadataQuery() ) );
             }
 
-            if ( RoutingManager.POST_COST_AGGREGATION_ACTIVE.getBoolean() ) {
-                if ( eventData instanceof QueryEvent queryEvent ) {
-                    // aggregate post costs
+            if ( eventData instanceof QueryEvent queryEvent ) {
+                queryEvent.setPlanFingerprint( PlanFingerprint.of( selectedPlan.getRoutedRoot().alg ) );
+                if ( RoutingManager.POST_COST_AGGREGATION_ACTIVE.getBoolean() ) {
                     queryEvent.setUpdatePostCosts( true );
                 }
             }
@@ -1307,36 +1309,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private void cacheRouterPlans( List<ProposedRoutingPlan> proposedRoutingPlans, List<AlgOptCost> approximatedCosts, String queryId, Set<Long> partitionIds ) {
-        List<CachedProposedRoutingPlan> cachedPlans = new ArrayList<>();
-        for ( int i = 0; i < proposedRoutingPlans.size(); i++ ) {
-            if ( proposedRoutingPlans.get( i ).isCacheable() && !RoutingPlanCache.INSTANCE.isKeyPresent( queryId, partitionIds ) ) {
-                cachedPlans.add( new CachedProposedRoutingPlan( proposedRoutingPlans.get( i ), approximatedCosts.get( i ) ) );
-            }
-        }
-
-        if ( !cachedPlans.isEmpty() ) {
-            RoutingPlanCache.INSTANCE.put( queryId, partitionIds, cachedPlans );
-        }
-    }
-
-
     private Pair<PolyImplementation, ProposedRoutingPlan> selectPlan( ProposedImplementations proposed ) {
         List<ProposedRoutingPlan> proposedRoutingPlans = proposed.getRoutingPlans();
-        LogicalQueryInformation queryInformation = proposed.getLogicalQueryInformation();
-
-        List<AlgOptCost> approximatedCosts;
-        if ( RuntimeConfig.ROUTING_PLAN_CACHING.getBoolean() ) {
-            // Get approximated costs and cache routing plans
-            approximatedCosts = proposed.plans.stream()
-                    .map( p -> p.optimalNode().computeSelfCost( getPlanner(), p.optimalNode().getCluster().getMetadataQuery() ) )
-                    .toList();
-            this.cacheRouterPlans(
-                    proposedRoutingPlans,
-                    approximatedCosts,
-                    queryInformation.getQueryHash(),
-                    queryInformation.getAccessedPartitions().values().stream().flatMap( List::stream ).collect( Collectors.toSet() ) );
-        }
 
         if ( proposed.plans.size() == 1 ) {
             // If only one plan proposed, return this without further selection
@@ -1350,7 +1324,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             return new Pair<>( proposed.plans.get( 0 ).result(), proposed.plans.get( 0 ).proposedRoutingPlan() );
         } else {
             // Calculate costs and get selected plan from plan selector
-            approximatedCosts = proposed.plans.stream()
+            List<AlgOptCost> approximatedCosts = proposed.plans.stream()
                     .map( p -> p.optimalNode().computeSelfCost( getPlanner(), p.optimalNode().getCluster().getMetadataQuery() ) )
                     .collect( Collectors.toList() );
             RoutingPlan routingPlan = RoutingManager.getInstance().getRoutingPlanSelector().selectPlanBasedOnCosts(
@@ -1377,23 +1351,6 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         } else {
             log.error( "Generated code is null" );
         }
-    }
-
-
-    private CachedProposedRoutingPlan selectCachedPlan( List<CachedProposedRoutingPlan> routingPlansCached ) {
-        if ( routingPlansCached.size() == 1 ) {
-            return routingPlansCached.get( 0 );
-        }
-
-        List<AlgOptCost> approximatedCosts = routingPlansCached.stream()
-                .map( CachedProposedRoutingPlan::getPreCosts )
-                .collect( Collectors.toList() );
-        RoutingPlan routingPlan = RoutingManager.getInstance().getRoutingPlanSelector().selectPlanBasedOnCosts(
-                routingPlansCached,
-                approximatedCosts,
-                statement );
-
-        return (CachedProposedRoutingPlan) routingPlan;
     }
 
 

@@ -22,6 +22,7 @@ import lombok.experimental.Accessors;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.PlanKey;
 import org.polypheny.db.routing.ProposedRoutingPlan;
 
 @Getter
@@ -32,6 +33,7 @@ public class Plan {
     private ProposedRoutingPlan proposedRoutingPlan = null;
     private AlgNode optimalNode = null;
     private AlgRoot parameterizedRoot = null;
+    private PlanKey cacheKey = null;
 
     private PolyImplementation result = null;
     private String generatedCodes = null;

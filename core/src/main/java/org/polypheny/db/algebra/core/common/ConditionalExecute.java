@@ -91,16 +91,6 @@ public abstract class ConditionalExecute extends BiAlg {
     }
 
 
-    @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                getLeft().algCompareString() + "$" +
-                getRight().algCompareString() + "$" +
-                condition + "$" +
-                exceptionClass.getSimpleName() + "&";
-    }
-
-
     public enum Condition {
         GREATER_ZERO( "> 0" ),
         EQUAL_TO_ZERO( "= 0" ),

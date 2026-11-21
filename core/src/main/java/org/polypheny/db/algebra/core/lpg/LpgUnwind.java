@@ -73,15 +73,6 @@ public abstract class LpgUnwind extends SingleAlg implements LpgAlg {
 
 
     @Override
-    public String algCompareString() {
-        return getClass().getSimpleName() + "$"
-                + index + "$"
-                + (alias != null ? "$As$" + alias : "") + "$"
-                + input.algCompareString() + "&";
-    }
-
-
-    @Override
     protected AlgDataType deriveRowType() {
         List<AlgDataTypeField> fields = new ArrayList<>();
         fields.add( new AlgDataTypeFieldImpl( -1L, alias, 0, input.getTupleType().getFields().get( index ).getType().getComponentType() ) );

@@ -16,47 +16,59 @@
 
 package org.polypheny.db.routing.routers;
 
-import lombok.extern.slf4j.Slf4j;
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.Set;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
-import org.polypheny.db.algebra.core.document.DocumentScan;
+import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
-import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
-import org.polypheny.db.routing.ColumnDistribution;
+import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.routing.RoutingContext;
 import org.polypheny.db.routing.dto.CachedProposedRoutingPlan;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 
 
 /**
- * Routing of cached plan. Nothing needs to be found, everything included in the routed plan.
+ * Replays the allocation selected for a direct scan in the current statement's algebra cluster.
  */
-@Slf4j
 public class CachedPlanRouter extends BaseRouter {
 
 
-    public RoutedAlgBuilder routeCached( AlgRoot logicalRoot, CachedProposedRoutingPlan routingPlanCached, RoutingContext context ) {
-        final RoutedAlgBuilder builder = context.getRoutedAlgBuilder();
-        return buildCachedSelect( logicalRoot.alg, builder, routingPlanCached, context );
+    public boolean supports( AlgRoot logicalRoot, Snapshot snapshot ) {
+        if ( logicalRoot.getModel() != ModelTrait.RELATIONAL || !logicalRoot.kind.belongsTo( Kind.QUERY ) ) {
+            return false;
+        }
+        AlgNode node = logicalRoot.alg;
+        Set<AlgNode> visited = Collections.newSetFromMap( new IdentityHashMap<>() );
+        while ( node.getInputs().size() == 1 && !(node instanceof SetOp) ) {
+            if ( !visited.add( node ) ) {
+                return false;
+            }
+            node = node.getInput( 0 );
+        }
+        if ( node.getClass() != LogicalRelScan.class || !(node.getEntity() instanceof LogicalTable table) ) {
+            return false;
+        }
+        return snapshot.alloc().getPlacementsFromLogical( table.id ).size() == 1
+                && snapshot.alloc().getPartitionsFromLogical( table.id ).size() == 1
+                && snapshot.alloc().getFromLogical( table.id ).size() == 1;
+    }
+
+
+    public RoutedAlgBuilder routeCached( AlgRoot logicalRoot, CachedProposedRoutingPlan cachedPlan, RoutingContext context ) {
+        return buildCachedSelect( logicalRoot.alg, context.getRoutedAlgBuilder(), cachedPlan, context );
     }
 
 
     private RoutedAlgBuilder buildCachedSelect( AlgNode node, RoutedAlgBuilder builder, CachedProposedRoutingPlan cachedPlan, RoutingContext context ) {
-        for ( int i = 0; i < node.getInputs().size(); i++ ) {
-            builder = buildCachedSelect( node.getInput( i ), builder, cachedPlan, context );
+        if ( node.getInputs().isEmpty() ) {
+            return handleRelScan( builder, context.getStatement(), cachedPlan.allocation() );
         }
-
-        if ( node.unwrap( DocumentScan.class ).isPresent() ) {
-            return builder.push( super.handleDocScan( (DocumentScan<?>) node, context.getStatement(), null ) );
-        }
-
-        if ( node.unwrap( LogicalRelScan.class ).isPresent() && node.getEntity() != null ) {
-            return builder.push( super.buildJoinedScan( (ColumnDistribution) cachedPlan.fieldDistribution, context ) );
-        } else if ( node instanceof LogicalRelValues ) {
-            return super.handleValues( (LogicalRelValues) node, builder );
-        } else {
-            return super.handleGeneric( node, builder );
-        }
+        return handleGeneric( node, buildCachedSelect( node.getInput( 0 ), builder, cachedPlan, context ) );
     }
 
 }

@@ -37,7 +37,6 @@ package org.polypheny.db.algebra.core;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgDistribution;
 import org.polypheny.db.algebra.AlgDistributions;
 import org.polypheny.db.algebra.AlgNode;
@@ -110,15 +109,6 @@ public abstract class Exchange extends SingleAlg {
     @Override
     public AlgWriter explainTerms( AlgWriter pw ) {
         return super.explainTerms( pw ).item( "distribution", distribution );
-    }
-
-
-    @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                input.algCompareString() + "$" +
-                (distribution != null ? distribution.getType().name() : "") + "$" +
-                (distribution != null ? distribution.getKeys().stream().map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "&";
     }
 
 

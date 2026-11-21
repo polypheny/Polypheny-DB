@@ -39,7 +39,7 @@ public class QueryEventAnalyzer {
                 .isSubQuery( queryEvent.isSubQuery() )
                 .isCommitted( queryEvent.isCommitted() )
                 .recordedTimestamp( queryEvent.getRecordedTimestamp() )
-                .algCompareString( queryEvent.getAlgCompareString() )
+                .planFingerprint( queryEvent.getPlanFingerprint() )
                 .queryClass( queryEvent.getLogicalQueryInformation().getQueryHash() )
                 .monitoringType( queryEvent.getMonitoringType() )
                 .physicalQueryClass( queryEvent.getPhysicalQueryClass() )

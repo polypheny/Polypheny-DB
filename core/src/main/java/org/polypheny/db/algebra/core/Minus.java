@@ -35,7 +35,6 @@ package org.polypheny.db.algebra.core;
 
 
 import java.util.List;
-import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
@@ -72,14 +71,6 @@ public abstract class Minus extends SetOp {
     @Override
     public double estimateTupleCount( AlgMetadataQuery mq ) {
         return AlgMdUtil.getMinusRowCount( mq, this );
-    }
-
-
-    @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                inputs.stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) ) + "$" +
-                all + "&";
     }
 
 

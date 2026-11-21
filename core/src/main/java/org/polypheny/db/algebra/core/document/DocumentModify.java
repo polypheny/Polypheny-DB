@@ -77,19 +77,6 @@ public abstract class DocumentModify<E extends Entity> extends Modify<E> impleme
 
 
     @Override
-    public String algCompareString() {
-        return getClass().getSimpleName() + "$" +
-                entity.id + "$" +
-                entity.getLayer() + "$" +
-                operation + "$" +
-                input.algCompareString() + "$" +
-                updates.hashCode() + "$" +
-                removes.hashCode() + "$" +
-                renames.hashCode() + "&";
-    }
-
-
-    @Override
     public AlgWriter explainTerms( AlgWriter pw ) {
         return super.explainTerms( pw )
                 .item( "entity", entity.id )
