@@ -1047,7 +1047,7 @@ public class MongoFilter extends Filter implements MongoAlg {
         private void translateBinary( String op, String rop, RexCall call ) {
             OperatorName operator = call.getOperator().getOperatorName();
             if ( operator != null && OperatorName.MQL_EXPR_COMPARISONS.contains( operator ) ) {
-                translateExprComparison( Objects.requireNonNullElse( op, "$eq" ), call );
+                translateExprComparison( call );
                 return;
             }
             final RexNode left = call.operands.get( 0 );
@@ -1087,16 +1087,46 @@ public class MongoFilter extends Filter implements MongoAlg {
         }
 
 
-        private void translateExprComparison( String op, RexCall call ) {
-            BsonArray operands = new BsonArray( call.operands.stream().map( this::translateExprOperand ).toList() );
-            BsonDocument expression = new BsonDocument( op, operands );
+        private void translateExprComparison( RexCall call ) {
+            BsonDocument expression = exprComparison( call );
             // Here NOT is an aggregation expression inside $expr.
             BsonDocument condition = modifier == null ? expression : new BsonDocument( "$not", new BsonArray( List.of( expression ) ) );
             map.computeIfAbsent( "$expr", key -> new ArrayList<>() ).add( condition );
         }
 
 
+        private BsonDocument exprComparison( RexCall call ) {
+            String op = switch ( call.getKind() ) {
+                case EQUALS -> "$eq";
+                case NOT_EQUALS -> "$ne";
+                case LESS_THAN -> "$lt";
+                case LESS_THAN_OR_EQUAL -> "$lte";
+                case GREATER_THAN -> "$gt";
+                case GREATER_THAN_OR_EQUAL -> "$gte";
+                default -> throw new IllegalArgumentException( "Not an expression comparison: " + call );
+            };
+            return new BsonDocument( op, new BsonArray( call.operands.stream().map( this::translateExprOperand ).toList() ) );
+        }
+
+
         private BsonValue translateExprOperand( RexNode operand ) {
+            if ( operand instanceof RexCall call ) {
+                OperatorName operator = call.getOperator().getOperatorName();
+                if ( operator == OperatorName.MQL_EXPR_ARRAY ) {
+                    return new BsonArray( call.operands.stream().map( this::translateExprOperand ).toList() );
+                }
+                if ( operator == OperatorName.MQL_EXPR_DOCUMENT ) {
+                    PolyList<PolyValue> names = ((RexLiteral) call.operands.get( 0 )).value.asList();
+                    BsonDocument document = new BsonDocument();
+                    for ( int i = 0; i < names.size(); i++ ) {
+                        document.put( names.get( i ).asString().value, translateExprOperand( call.operands.get( i + 1 ) ) );
+                    }
+                    return document;
+                }
+                if ( operator != null && OperatorName.MQL_EXPR_COMPARISONS.contains( operator ) ) {
+                    return exprComparison( call );
+                }
+            }
             return switch ( operand.getKind() ) {
                 case INPUT_REF -> new BsonString( "$" + getPhysicalName( (RexIndexRef) operand ) );
                 case NAME_INDEX_REF -> new BsonString( "$" + MongoRules.translateDocValueAsKey( rowType, (RexNameRef) operand ) );

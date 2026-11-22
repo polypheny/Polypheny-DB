@@ -335,7 +335,7 @@ public class RexToLixTranslator {
         if ( convert == null ) {
             convert = convert( operand, typeFactory.getJavaClass( targetType ) );
         }
-        // Going from anything to CHAR(n) or VARCHAR(n), make sure value is no longer than n.
+        // Enforce the declared length of character and binary casts.
         boolean pad = false;
         boolean truncate = true;
         switch ( targetType.getPolyType() ) {
@@ -364,10 +364,10 @@ public class RexToLixTranslator {
                             // fall through
                         default:
                             if ( truncate || pad ) {
-                                convert = Expressions.call(
-                                        pad ? BuiltInMethod.TRUNCATE_OR_PAD.method : BuiltInMethod.TRUNCATE.method,
-                                        convert,
-                                        Expressions.constant( targetPrecision ) );
+                                boolean binary = PolyType.BINARY_TYPES.contains( targetType.getPolyType() );
+                                BuiltInMethod truncateMethod = binary ? BuiltInMethod.TRUNCATE_BINARY : BuiltInMethod.TRUNCATE;
+                                BuiltInMethod padMethod = binary ? BuiltInMethod.TRUNCATE_OR_PAD_BINARY : BuiltInMethod.TRUNCATE_OR_PAD;
+                                convert = Expressions.call( (pad ? padMethod : truncateMethod).method, convert, Expressions.constant( targetPrecision ) );
                             }
                     }
                 }

@@ -2038,6 +2038,14 @@ public class Functions {
     }
 
 
+    public static PolyBinary truncateOrPad( PolyBinary s, int maxLength ) {
+        if ( s == null || s.value == null ) {
+            return null;
+        }
+        return s.length() == maxLength ? s : PolyBinary.of( truncateOrPad( new ByteString( s.value ), maxLength ) );
+    }
+
+
     /**
      * SQL {@code POSITION(seek IN string)} function.
      */

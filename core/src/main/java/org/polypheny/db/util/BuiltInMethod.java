@@ -131,6 +131,7 @@ import org.polypheny.db.runtime.Utilities;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.types.QueryableEntity;
 import org.polypheny.db.schema.types.ScannableEntity;
+import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyList;
@@ -302,6 +303,8 @@ public enum BuiltInMethod {
     RAND_INTEGER_SEED( RandomFunction.class, "randIntegerSeed", PolyNumber.class, PolyNumber.class ),
     TRUNCATE( Functions.class, "truncate", PolyString.class, int.class ),
     TRUNCATE_OR_PAD( Functions.class, "truncateOrPad", PolyString.class, int.class ),
+    TRUNCATE_BINARY( Functions.class, "truncate", PolyBinary.class, int.class ),
+    TRUNCATE_OR_PAD_BINARY( Functions.class, "truncateOrPad", PolyBinary.class, int.class ),
     TRIM( Functions.class, "trim", boolean.class, boolean.class, String.class, String.class, boolean.class ),
     REPLACE( Functions.class, "replace", String.class, String.class, String.class ),
     TRANSLATE3( Functions.class, "translate3", String.class, String.class, String.class ),
@@ -496,6 +499,8 @@ public enum BuiltInMethod {
     /// MQL BUILT-IN METHODS
     MQL_EQ( MqlFunctions.class, "docEq", PolyValue.class, PolyValue.class ),
     MQL_NE( MqlFunctions.class, "docNe", PolyValue.class, PolyValue.class ),
+    MQL_EXPR_DOCUMENT( MqlFunctions.class, "docExprDocument", PolyValue.class, PolyValue[].class ),
+    MQL_EXPR_ARRAY( MqlFunctions.class, "docExprArray", PolyValue[].class ),
     MQL_EXPR_EQ( MqlFunctions.class, "docExprEq", PolyValue.class, PolyValue.class ),
     MQL_EXPR_NE( MqlFunctions.class, "docExprNe", PolyValue.class, PolyValue.class ),
     MQL_EXPR_LT( MqlFunctions.class, "docExprLt", PolyValue.class, PolyValue.class ),

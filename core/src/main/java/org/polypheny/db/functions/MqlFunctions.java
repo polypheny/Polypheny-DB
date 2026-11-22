@@ -19,6 +19,7 @@ package org.polypheny.db.functions;
 import static org.polypheny.db.functions.spatial.GeoDistanceFunctions.EARTH_RADIUS_M;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -68,6 +69,35 @@ public class MqlFunctions {
 
     private MqlFunctions() {
         // empty on purpose
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyValue docExprDocument( PolyValue fieldNames, PolyValue[] values ) {
+        PolyDocument result = new PolyDocument();
+        List<PolyString> names = fieldNames.asList();
+        for ( int i = 0; i < values.length; i++ ) {
+            PolyValue value = values[i];
+            if ( !isUnsetValue( value ) ) {
+                result.put( names.get( i ), value == null ? PolyNull.NULL : value );
+            }
+        }
+        return result;
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyValue docExprArray( PolyValue[] values ) {
+        List<PolyValue> elements = new ArrayList<>( values.length );
+        for ( PolyValue value : values ) {
+            elements.add( value == null || isUnsetValue( value ) ? PolyNull.NULL : value );
+        }
+        return PolyList.of( elements );
+    }
+
+
+    private static boolean isUnsetValue( PolyValue value ) {
+        return value instanceof PolyDocument document && document.isUnset;
     }
 
 
@@ -684,30 +714,129 @@ public class MqlFunctions {
 
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean docExprLt( PolyValue left, PolyValue right ) {
-        return compareScalarNumbers( left, right, cmp -> cmp < 0 );
+        return PolyBoolean.of( compareBsonValues( left, right ) < 0 );
     }
 
 
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean docExprLte( PolyValue left, PolyValue right ) {
-        return compareScalarNumbers( left, right, cmp -> cmp <= 0 );
+        return PolyBoolean.of( compareBsonValues( left, right ) <= 0 );
     }
 
 
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean docExprGt( PolyValue left, PolyValue right ) {
-        return compareScalarNumbers( left, right, cmp -> cmp > 0 );
+        return PolyBoolean.of( compareBsonValues( left, right ) > 0 );
     }
 
 
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean docExprGte( PolyValue left, PolyValue right ) {
-        return compareScalarNumbers( left, right, cmp -> cmp >= 0 );
+        return PolyBoolean.of( compareBsonValues( left, right ) >= 0 );
     }
 
 
-    private static PolyBoolean compareScalarNumbers( PolyValue left, PolyValue right, IntPredicate comparison ) {
-        return PolyBoolean.of( right instanceof PolyNumber bound && bound.toJava() != null && matchesNumericBound( left, bound, comparison ) );
+    private static int compareBsonValues( PolyValue left, PolyValue right ) {
+        BsonComparisonType leftType = bsonComparisonType( left );
+        BsonComparisonType rightType = bsonComparisonType( right );
+        if ( leftType != rightType ) {
+            return leftType.compareTo( rightType );
+        }
+
+        return switch ( leftType ) {
+            case MISSING, NULL -> 0;
+            case NUMBER -> compareBsonNumbers( left.asNumber(), right.asNumber() );
+            case STRING -> compareBsonStrings( left.asString().value, right.asString().value );
+            case DOCUMENT -> compareBsonDocuments( left.asDocument(), right.asDocument() );
+            case ARRAY -> compareBsonArrays( left.asList(), right.asList() );
+            case BINARY -> compareBsonBinary( left.asBinary().value, right.asBinary().value );
+            case BOOLEAN -> Boolean.compare( left.asBoolean().value, right.asBoolean().value );
+            case DATE, TIMESTAMP -> Long.compare( left.asTemporal().getMillisSinceEpoch(), right.asTemporal().getMillisSinceEpoch() );
+        };
+    }
+
+
+    private static BsonComparisonType bsonComparisonType( PolyValue value ) {
+        if ( value == null || value.isNull() ) {
+            return BsonComparisonType.NULL;
+        }
+        if ( value instanceof PolyDocument document && document.isUnset ) {
+            return BsonComparisonType.MISSING;
+        }
+        return switch ( value.getType() ) {
+            case INTEGER, TINYINT, SMALLINT, BIGINT, DECIMAL, REAL, FLOAT, DOUBLE ->
+                    value.toJava() == null ? BsonComparisonType.NULL : BsonComparisonType.NUMBER;
+            case VARCHAR -> BsonComparisonType.STRING;
+            case DOCUMENT -> BsonComparisonType.DOCUMENT;
+            case ARRAY -> value.asList().value == null ? BsonComparisonType.NULL : BsonComparisonType.ARRAY;
+            case BINARY -> value.asBinary().value == null ? BsonComparisonType.NULL : BsonComparisonType.BINARY;
+            case BOOLEAN -> BsonComparisonType.BOOLEAN;
+            case DATE -> value.asTemporal().getMillisSinceEpoch() == null ? BsonComparisonType.NULL : BsonComparisonType.DATE;
+            case TIMESTAMP -> value.asTemporal().getMillisSinceEpoch() == null ? BsonComparisonType.NULL : BsonComparisonType.TIMESTAMP;
+            default -> throw new GenericRuntimeException( "Unsupported value type in MQL expression comparison: " + value.getType() );
+        };
+    }
+
+
+    private static int compareBsonNumbers( PolyNumber left, PolyNumber right ) {
+        boolean leftNaN = isNaN( left );
+        boolean rightNaN = isNaN( right );
+        if ( leftNaN || rightNaN ) {
+            // BSON places NaN before all other numbers, including negative infinity.
+            return Boolean.compare( rightNaN, leftNaN );
+        }
+        return compareNumericValues( left, right );
+    }
+
+
+    private static int compareBsonStrings( String left, String right ) {
+        return Arrays.compareUnsigned( left.getBytes( StandardCharsets.UTF_8 ), right.getBytes( StandardCharsets.UTF_8 ) );
+    }
+
+
+    private static int compareBsonDocuments( PolyDocument left, PolyDocument right ) {
+        Iterator<Entry<PolyString, PolyValue>> leftFields = left.entrySet().iterator();
+        Iterator<Entry<PolyString, PolyValue>> rightFields = right.entrySet().iterator();
+        while ( leftFields.hasNext() && rightFields.hasNext() ) {
+            Entry<PolyString, PolyValue> leftField = leftFields.next();
+            Entry<PolyString, PolyValue> rightField = rightFields.next();
+            int cmp = bsonComparisonType( leftField.getValue() ).compareTo( bsonComparisonType( rightField.getValue() ) );
+            if ( cmp == 0 ) {
+                cmp = compareBsonStrings( leftField.getKey().value, rightField.getKey().value );
+            }
+            if ( cmp == 0 ) {
+                cmp = compareBsonValues( leftField.getValue(), rightField.getValue() );
+            }
+            if ( cmp != 0 ) {
+                return cmp;
+            }
+        }
+        return Boolean.compare( leftFields.hasNext(), rightFields.hasNext() );
+    }
+
+
+    private static int compareBsonArrays( PolyList<?> left, PolyList<?> right ) {
+        Iterator<? extends PolyValue> leftElements = left.iterator();
+        Iterator<? extends PolyValue> rightElements = right.iterator();
+        while ( leftElements.hasNext() && rightElements.hasNext() ) {
+            int cmp = compareBsonValues( leftElements.next(), rightElements.next() );
+            if ( cmp != 0 ) {
+                return cmp;
+            }
+        }
+        return Boolean.compare( leftElements.hasNext(), rightElements.hasNext() );
+    }
+
+
+    private static int compareBsonBinary( byte[] left, byte[] right ) {
+        int size = Integer.compare( left.length, right.length );
+        return size == 0 ? Arrays.compareUnsigned( left, right ) : size;
+    }
+
+
+    // Declaration order follows BSON aggregation comparison order.
+    private enum BsonComparisonType {
+        MISSING, NULL, NUMBER, STRING, DOCUMENT, ARRAY, BINARY, BOOLEAN, DATE, TIMESTAMP
     }
 
 

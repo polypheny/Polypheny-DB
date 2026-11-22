@@ -1605,6 +1605,10 @@ public enum OperatorName {
 
     MQL_NOT_EQUALS( LangFunctionOperator.class ),
 
+    MQL_EXPR_DOCUMENT( LangFunctionOperator.class ),
+
+    MQL_EXPR_ARRAY( LangFunctionOperator.class ),
+
     MQL_EXPR_EQUALS( LangFunctionOperator.class ),
 
     MQL_EXPR_NOT_EQUALS( LangFunctionOperator.class ),

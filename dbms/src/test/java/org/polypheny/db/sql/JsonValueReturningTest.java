@@ -16,6 +16,7 @@
 
 package org.polypheny.db.sql;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -26,6 +27,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Calendar;
+import java.util.HexFormat;
 import java.util.TimeZone;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -74,6 +76,34 @@ class JsonValueReturningTest extends CrossModelTestTemplate {
                 result.next();
             }
         }, decimal );
+    }
+
+
+    @ParameterizedTest
+    @CsvSource({
+            "VARBINARY(3), 01",
+            "BINARY(3), 010000"
+    })
+    void boundedBinaryReturningPreservesTypeAndLength( String type, String shortFallback ) {
+        executeStatements( ( statement, connection ) -> {
+            String query = """
+                    SELECT JSON_VALUE('{}', 'lax $.n' RETURNING %1$s),
+                           JSON_VALUE('{}', 'lax $.n' RETURNING %1$s DEFAULT X'01020304' ON EMPTY),
+                           JSON_VALUE('{"n":{}}', 'strict $.n' RETURNING %1$s DEFAULT X'01020304' ON ERROR),
+                           JSON_VALUE('{"n":"text"}', 'lax $.n' RETURNING %1$s DEFAULT X'01' ON ERROR),
+                           CAST(X'01020304' AS %1$s)
+                    """.formatted( type );
+            byte[] truncated = { 1, 2, 3 };
+            try ( ResultSet result = statement.executeQuery( query ) ) {
+                assertTrue( result.next() );
+                assertNull( result.getBytes( 1 ) );
+                assertArrayEquals( truncated, result.getBytes( 2 ) );
+                assertArrayEquals( truncated, result.getBytes( 3 ) );
+                assertArrayEquals( HexFormat.of().parseHex( shortFallback ), result.getBytes( 4 ) );
+                assertArrayEquals( truncated, result.getBytes( 5 ) );
+                assertFalse( result.next() );
+            }
+        } );
     }
 
 

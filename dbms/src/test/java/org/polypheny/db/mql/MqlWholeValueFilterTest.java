@@ -24,6 +24,7 @@ import java.util.List;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -146,6 +147,59 @@ class MqlWholeValueFilterTest {
         String[] deleteCounts = execute( collection, "deleteMany(" + shorthand + ")" ).getData();
         assertEquals( 1L, Arrays.stream( deleteCounts ).mapToLong( Long::parseLong ).sum() );
         assertIds( collection, "{}", "extra", "reordered" );
+    }
+
+
+    @Test
+    void expressionDocumentMatchesTheEntireOrderedValue() {
+        String collection = "expression_document";
+        MqlTestTemplate.createCollection( collection, NAMESPACE );
+        execute( collection, """
+                insertMany([
+                    {"_id":"exact","n":{"x":1,"d":%1$s}},
+                    {"_id":"reordered","n":{"d":%1$s,"x":1}},
+                    {"_id":"extra","n":{"x":1,"d":%1$s,"y":2}},
+                    {"_id":"scalar","n":1}
+                ])
+                """.formatted( DECIMAL ) );
+
+        String operand = "{\"x\":1,\"d\":" + DECIMAL + "}";
+        String expression = "{\"$expr\":{\"$eq\":[\"$n\"," + operand + "]}}";
+        assertIds( collection, expression, "exact" );
+        assertIds( collection, "{\"$expr\":{\"$eq\":[\"$n\",{\"$literal\":" + operand + "}]}}", "exact" );
+
+        String[] deleteCounts = execute( collection, "deleteMany(" + expression + ")" ).getData();
+        assertEquals( 1L, Arrays.stream( deleteCounts ).mapToLong( Long::parseLong ).sum() );
+        assertIds( collection, "{}", "extra", "reordered", "scalar" );
+    }
+
+
+    @Test
+    void expressionDocumentEvaluatesNestedOperands() {
+        String collection = "expression_recursive_document";
+        MqlTestTemplate.createCollection( collection, NAMESPACE );
+        execute( collection, """
+                insertMany([
+                    {"_id":"calculated","n":{"x":[1],"nested":{"result":3,"ok":true},"text":"$source"},"source":1},
+                    {"_id":"literal","n":{"x":["$source"],"nested":{"result":3,"ok":true},"text":"$source"},"source":1}
+                ])
+                """ );
+
+        String expression = """
+                {"$expr":{"$eq":["$n",{
+                    "x":["$source"],
+                    "nested":{"result":{"$add":["$source",2]},"ok":{"$gt":["$source",0]}},
+                    "text":{"$literal":"$source"}
+                }]}}
+                """;
+        assertIds( collection, expression, "calculated" );
+        assertIds( collection, """
+                {"$expr":{"$eq":["$n",{"$literal":{"x":["$source"],"nested":{"result":3,"ok":true},"text":"$source"}}]}}
+                """, "literal" );
+
+        String[] deleteCounts = execute( collection, "deleteMany(" + expression + ")" ).getData();
+        assertEquals( 1L, Arrays.stream( deleteCounts ).mapToLong( Long::parseLong ).sum() );
+        assertIds( collection, "{}", "literal" );
     }
 
 
