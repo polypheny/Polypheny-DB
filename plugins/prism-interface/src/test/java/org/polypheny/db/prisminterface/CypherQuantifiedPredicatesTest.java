@@ -32,7 +32,10 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.prisminterface.CypherTest.PrismConnection;
+import org.polypheny.prism.ExecuteUnparameterizedStatementRequest;
 import org.polypheny.prism.Frame;
+import org.polypheny.prism.Request;
+import org.polypheny.prism.Response;
 import org.polypheny.prism.Row;
 
 @Tag("adapter")
@@ -86,6 +89,53 @@ class CypherQuantifiedPredicatesTest {
                     RETURN length(p) AS hops
                     """, List.of( "hops" ) );
             assertEquals( 2, integerValue( result.getValues( 0 ) ) );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void evaluatesLabelsOfDynamicallyTypedNodesInQuantifiersAndUnwind() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            Row hops = row( connection, """
+                    MATCH p=shortestPath((:Start)-[:R*]->(:End))
+                    WHERE any(n IN ({items:nodes(p)}).items WHERE n:Relay)
+                    RETURN length(p) AS hops
+                    """, List.of( "hops" ) );
+            assertEquals( 2, integerValue( hops.getValues( 0 ) ) );
+            Row count = row( connection, """
+                    MATCH p=(:Start)-[:R*]->(:End)
+                    WITH {items:nodes(p)} AS box
+                    UNWIND box.items AS n
+                    WITH n WHERE n:Relay
+                    RETURN count(n) AS total
+                    """, List.of( "total" ) );
+            assertEquals( 1, integerValue( count.getValues( 0 ) ) );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void preservesNullAndRejectsNonNodesInDynamicLabelPredicates() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            Row missing = row( connection, """
+                    WITH {items:[null]} AS box
+                    UNWIND box.items AS n
+                    RETURN n:Relay AS labeled, (n:Relay) IS NULL AS unknown
+                    """, List.of( "labeled", "unknown" ) );
+            assertTrue( missing.getValues( 0 ).hasNull() );
+            assertTrue( missing.getValues( 1 ).getBoolean().getBoolean() );
+
+            Response invalid = connection.send( Request.newBuilder().setExecuteUnparameterizedStatementRequest(
+                    ExecuteUnparameterizedStatementRequest.newBuilder().setNamespaceName( NAMESPACE ).setLanguageName( "cypher" )
+                            .setStatement( """
+                                    WITH {items:[42]} AS box
+                                    RETURN any(n IN box.items WHERE n:Relay) AS labeled
+                                    """ ).setFetchSize( -1 ) ) );
+            assertEquals( Response.TypeCase.ERROR_RESPONSE, invalid.getTypeCase() );
+            String message = invalid.getErrorResponse().getMessage();
+            assertTrue( message.contains( "Cypher label predicates require a NODE" ), message );
             connection.checkTransactions( 0 );
         }
     }

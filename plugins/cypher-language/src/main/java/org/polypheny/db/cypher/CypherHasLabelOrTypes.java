@@ -19,6 +19,8 @@ package org.polypheny.db.cypher;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.cypher.cypher2alg.CypherSyntaxException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.expression.CypherExpression;
@@ -27,6 +29,7 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
 
@@ -47,14 +50,20 @@ public class CypherHasLabelOrTypes extends CypherExpression {
     @Override
     protected Pair<PolyString, RexNode> toRex( CypherContext context, RexType type ) {
 
-        Pair<PolyString, RexNode> namedSubject = subject.getRex( context, type );
+        RexNode value = subject.getRex( context, type ).right;
+        AlgDataType valueType = value.getType();
+        PolyType polyType = valueType.getPolyType();
+        if ( polyType != PolyType.NODE && polyType != PolyType.ANY && polyType != PolyType.NULL ) {
+            throw new CypherSyntaxException( "Cypher label predicates require a NODE, got " + polyType + "." );
+        }
 
         RexNode hasLabels;
         if ( labels.size() == 1 ) {
+            boolean nullable = valueType.isNullable() || polyType == PolyType.ANY || polyType == PolyType.NULL;
             hasLabels = context.rexBuilder.makeCall(
-                    context.booleanType,
+                    context.typeFactory.createTypeWithNullability( context.booleanType, nullable ),
                     OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_HAS_LABEL ),
-                    List.of( namedSubject.right, context.rexBuilder.makeLiteral( labels.get( 0 ).getImage() ) ) );
+                    List.of( value, context.rexBuilder.makeLiteral( labels.get( 0 ).getImage() ) ) );
         } else {
             throw new UnsupportedOperationException();
         }

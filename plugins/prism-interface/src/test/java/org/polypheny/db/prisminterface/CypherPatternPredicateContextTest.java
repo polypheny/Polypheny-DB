@@ -35,6 +35,7 @@ import org.polypheny.prism.ExecuteUnparameterizedStatementRequest;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.Request;
 import org.polypheny.prism.Response;
+import org.polypheny.prism.Row;
 
 @Tag("adapter")
 class CypherPatternPredicateContextTest {
@@ -105,10 +106,10 @@ class CypherPatternPredicateContextTest {
                     "NOT ([(a)-[:R]->()] = [false])",
                     "any(item IN [(a)-[:R]->()] WHERE item)",
                     "CASE true WHEN true THEN (a)-[:R]->() ELSE false END" ) ) {
-                assertPatternSyntaxError( connection, "MATCH (a:Seed) WHERE " + predicate + " RETURN a.id AS id" );
+                assertPatternError( connection, "MATCH (a:Seed) WHERE " + predicate + " RETURN a.id AS id", "Use exists(pattern)" );
             }
-            assertPatternSyntaxError( connection, "MATCH (a:Seed) WITH a WHERE [(a)-[:R]->()] = [true] RETURN a.id AS id" );
-            assertPatternSyntaxError( connection, "MATCH (a:Seed) RETURN (a)-[:R]->()" );
+            assertPatternError( connection, "MATCH (a:Seed) WITH a WHERE [(a)-[:R]->()] = [true] RETURN a.id AS id", "Use exists(pattern)" );
+            assertPatternError( connection, "MATCH (a:Seed) RETURN (a)-[:R]->()", "Use exists(pattern)" );
             assertEquals( 1, count( connection, """
                     MATCH (a:Seed)
                     WHERE [exists((a)-[:R]->())] = [true]
@@ -120,7 +121,62 @@ class CypherPatternPredicateContextTest {
     }
 
 
-    private static void assertPatternSyntaxError( PrismConnection connection, String query ) throws IOException {
+    @Test
+    void validatesDynamicallyTypedPatternBindings() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            assertPatternError( connection, """
+                    WITH {value:42} AS m WITH m.value AS a
+                    RETURN NOT ((a)-[:R]->()) AS present
+                    """, "MATCH requires a NODE binding" );
+            assertPatternError( connection, """
+                    WITH {value:42} AS m WITH m.value AS a
+                    RETURN exists(()-[:R]->(a)-[:R]->()) AS present
+                    """, "MATCH requires a NODE binding" );
+            assertPatternError( connection, """
+                    MATCH (a:Seed)
+                    RETURN any(x IN [42,a] WHERE (x)-[:R]->()) AS present
+                    """, "MATCH requires a NODE binding" );
+            assertPatternError( connection, """
+                    WITH {node:null, rel:42} AS m WITH m.node AS a, m.rel AS r
+                    RETURN exists((a)-[r*]->()) AS present
+                    """, "MATCH requires a relationship list binding" );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void matchesRelationshipBindingsAndPreservesNulls() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            Frame frame = connection.execute( NAMESPACE, "cypher", """
+                    MATCH (a:Seed)-[r:R]->(b:Target)
+                    WITH a, b, {edge:r, trail:[r], mixed:[r,42], missing:[null],
+                               empty:[], num:42, text:'R', nil:null} AS m
+                    WITH a, b, m.edge AS edge, m.trail AS trail, m.mixed AS mixed,
+                         m.missing AS missing, m.empty AS empty, m.num AS num, m.text AS txt, m.nil AS nil
+                    RETURN exists((a)-[edge]->(b)) AS edgeMatches,
+                           exists((a)-[trail*]->(b)) AS trailMatches,
+                           exists((a)-[empty*0]->(a)) AS emptyMatches,
+                           exists((a)-[num]->(b)) AS numericEdge,
+                           exists((a)-[txt*]->(b)) AS stringTrail,
+                           exists((a)-[mixed*]->(b)) AS mixedTrail,
+                           exists((a)-[missing*]->(b)) AS nullItemTrail,
+                           exists((nil)-[:R]->(b)) AS nullNode,
+                           exists((a)-[nil]->(b)) AS nullEdge,
+                           exists((a)-[nil*]->(b)) AS nullTrail
+                    """, -1 ).getResult().getFrame();
+            Row row = singleRow( relationalFrame( frame, true, List.of( "edgeMatches", "trailMatches", "emptyMatches", "numericEdge", "stringTrail",
+                    "mixedTrail", "nullItemTrail", "nullNode", "nullEdge", "nullTrail" ) ) );
+            for ( int i = 0; i < row.getValuesCount(); i++ ) {
+                assertTrue( row.getValues( i ).hasBoolean() );
+                assertEquals( i < 3, row.getValues( i ).getBoolean().getBoolean() );
+            }
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    private static void assertPatternError( PrismConnection connection, String query, String expectedMessage ) throws IOException {
         Request.Builder request = Request.newBuilder().setExecuteUnparameterizedStatementRequest( ExecuteUnparameterizedStatementRequest.newBuilder()
                 .setNamespaceName( NAMESPACE )
                 .setLanguageName( "cypher" )
@@ -129,7 +185,7 @@ class CypherPatternPredicateContextTest {
         Response response = connection.send( request );
         assertEquals( Response.TypeCase.ERROR_RESPONSE, response.getTypeCase(), query );
         String message = response.getErrorResponse().getMessage();
-        assertTrue( message.contains( "Use exists(pattern)" ), () -> query + " failed with: " + message );
+        assertTrue( message.contains( expectedMessage ), () -> query + " failed with: " + message );
     }
 
 

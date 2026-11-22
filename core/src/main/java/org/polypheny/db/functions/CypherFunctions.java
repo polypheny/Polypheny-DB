@@ -93,10 +93,18 @@ public class CypherFunctions {
 
     public static PolyBoolean patternExists( PolyGraph graph, PolyPath template, PolyValue bindings, PolyList<PolyValue> properties ) {
         Map<PolyValue, PolyValue> known = bindings.asMap();
+        List<PolyNode> nodes = template.getNodes();
+        for ( PolyNode node : nodes ) {
+            validateMatchNode( known.get( node.getVariableName() ), PolyBoolean.TRUE );
+        }
+        for ( PolyEdge relationship : template.getEdges() ) {
+            if ( relationship.fromTo() != null ) {
+                validateMatchRelationshipList( known.get( relationship.getVariableName() ), PolyBoolean.TRUE );
+            }
+        }
         if ( known.values().stream().anyMatch( CypherFunctions::isNull ) ) {
             return PolyBoolean.FALSE;
         }
-        List<PolyNode> nodes = template.getNodes();
         PolyValue first = known.get( nodes.get( 0 ).getVariableName() );
         PolyValue last = known.get( nodes.get( nodes.size() - 1 ).getVariableName() );
         PolyString start = first instanceof PolyNode source ? source.id : null;
@@ -298,12 +306,18 @@ public class CypherFunctions {
     /**
      * Returns if the given node has the given label.
      *
-     * @param node the target node
+     * @param value the target node or null
      * @param label the label to check
      */
     @SuppressWarnings("unused")
-    public static PolyBoolean hasLabel( PolyNode node, PolyValue label ) {
-        return node == null ? null : PolyBoolean.of( node.labels.contains( label.asString() ) );
+    public static PolyBoolean hasLabel( PolyValue value, PolyString label ) {
+        if ( isNull( value ) ) {
+            return null;
+        }
+        if ( !(value instanceof PolyNode node) ) {
+            throw new GenericRuntimeException( "Cypher label predicates require a NODE, got %s.", value.getType() );
+        }
+        return PolyBoolean.of( node.labels.contains( label ) );
     }
 
 
