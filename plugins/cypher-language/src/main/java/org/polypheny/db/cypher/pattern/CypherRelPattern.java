@@ -77,6 +77,11 @@ public class CypherRelPattern extends CypherPattern {
     }
 
 
+    public CypherRelPattern withMatchProperties( CypherVariable binding, CypherExpression properties ) {
+        return new CypherRelPattern( pos, left, right, binding, relTypes, pathLength, properties, predicate, legacyTypeSeparator );
+    }
+
+
     public Pair<PolyString, PolyEdge> getPolyEdge( PolyString leftId, PolyString rightId, @Nullable CypherContext context ) {
         boolean project = context != null && context.usesCreateExpressions();
         PolyDictionary properties = this.properties != null && !project ? (PolyDictionary) this.properties.getComparable() : new PolyDictionary();

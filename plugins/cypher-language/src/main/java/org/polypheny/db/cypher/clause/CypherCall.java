@@ -16,11 +16,14 @@
 
 package org.polypheny.db.cypher.clause;
 
+import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import org.polypheny.db.cypher.CypherCallResultItem;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.Node;
 
 
 @Getter
@@ -34,6 +37,8 @@ public class CypherCall extends CypherClause {
     private final List<CypherExpression> arguments;
     private final boolean yieldAll;
     private final List<CypherCallResultItem> items;
+    @Nullable
+    private final CypherWhere where;
 
 
     public CypherCall(
@@ -56,12 +61,26 @@ public class CypherCall extends CypherClause {
         this.arguments = arguments;
         this.yieldAll = yieldAll;
         this.items = items;
+        this.where = where;
     }
 
 
     @Override
     public CypherKind getCypherKind() {
         return CypherKind.CALL;
+    }
+
+
+    @Override
+    public List<? extends Node> getInputs() {
+        List<Node> inputs = new ArrayList<>();
+        if ( arguments != null ) {
+            inputs.addAll( arguments );
+        }
+        if ( where != null ) {
+            inputs.add( where.getExpression() );
+        }
+        return inputs;
     }
 
 }

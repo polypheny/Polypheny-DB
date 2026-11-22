@@ -69,6 +69,7 @@ import lombok.Getter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Ord;
+import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.BlockStatement;
 import org.apache.calcite.linq4j.tree.ConditionalStatement;
@@ -851,6 +852,16 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_RELATIONSHIPS ), BuiltInMethod.CYPHER_RELATIONSHIPS.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_LENGTH ), BuiltInMethod.CYPHER_LENGTH.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_SIZE ), BuiltInMethod.CYPHER_SIZE.method, NullPolicy.NONE );
+        defineImplementor( OperatorRegistry.get( cypher, OperatorName.CYPHER_SCALAR_FUNCTION ), NullPolicy.NONE,
+                ( translator, call, operands ) -> Types.castIfNecessary( translator.typeFactory.getJavaClass( call.getType() ),
+                        Expressions.call( BuiltInMethod.CYPHER_SCALAR_FUNCTION.method, operands.get( 0 ),
+                                Expressions.newArrayInit( PolyValue.class, operands.subList( 1, operands.size() ) ) ) ), false );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_RAND ), BuiltInMethod.CYPHER_RAND.method, NullPolicy.NONE );
+        defineImplementor( OperatorRegistry.get( cypher, OperatorName.CYPHER_TEMPORAL_FUNCTION ), NullPolicy.NONE,
+                ( translator, call, operands ) -> Types.castIfNecessary( translator.typeFactory.getJavaClass( call.getType() ),
+                        Expressions.call( BuiltInMethod.CYPHER_TEMPORAL_FUNCTION.method, operands.get( 0 ),
+                                Expressions.newArrayInit( PolyValue.class, operands.subList( 2, operands.size() ) ),
+                                translator.getRoot(), operands.get( 1 ) ) ), false );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_RANGE ), BuiltInMethod.CYPHER_RANGE.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_TYPE ), BuiltInMethod.CYPHER_TYPE.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_ID ), BuiltInMethod.CYPHER_ID.method, NullPolicy.NONE );
@@ -875,6 +886,8 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_ID ), BuiltInMethod.CYPHER_EXTRACT_ID.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_MATCH_ELEMENT_ID ), BuiltInMethod.CYPHER_MATCH_ELEMENT_ID.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_VALIDATE_MATCH_NODE ), BuiltInMethod.CYPHER_VALIDATE_MATCH_NODE.method, NullPolicy.NONE );
+        map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_MATCH_PROPERTIES ), RexImpTable::implementCypherMatchProperties );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_MATCH_VISIBLE_PATH ), BuiltInMethod.CYPHER_MATCH_VISIBLE_PATH.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_VALIDATE_MATCH_RELATIONSHIP_LIST ), BuiltInMethod.CYPHER_VALIDATE_MATCH_RELATIONSHIP_LIST.method, NullPolicy.NONE );
         map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_MATCH_BINDING_GUARD ), RexImpTable::implementCypherMatchBindingGuard );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_BOOLEAN_PREDICATE ), BuiltInMethod.CYPHER_BOOLEAN_PREDICATE.method, NullPolicy.NONE );
@@ -959,6 +972,18 @@ public class RexImpTable {
         onIncompatible.add( EnumUtils.ifThen( EnumUtils.not( excluded ), onRequired.toBlock() ) );
         translator.getList().add( EnumUtils.ifThen( EnumUtils.not( compatible ), onIncompatible.toBlock() ) );
         return nullAs.handle( TRUE_EXPR );
+    }
+
+
+    private static Expression implementCypherMatchProperties( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
+        List<RexNode> operands = call.getOperands();
+        Expression candidate = translator.translate( operands.get( 0 ), NullAs.NULL, PolyValue.class );
+        // A variable-length pattern tests each captured relationship, with no property evaluation for zero hops.
+        BlockBuilder block = new BlockBuilder( false, translator.getList() );
+        Expression properties = translator.setBlock( block ).translate( operands.get( 1 ), NullAs.NULL, PolyValue.class );
+        block.add( Expressions.return_( null, properties ) );
+        return nullAs.handle( Expressions.call( BuiltInMethod.CYPHER_MATCH_PROPERTIES.method, candidate,
+                Expressions.lambda( Function0.class, block.toBlock() ) ) );
     }
 
 

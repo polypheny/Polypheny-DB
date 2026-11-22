@@ -16,16 +16,19 @@
 
 package org.polypheny.db.cypher.clause;
 
+import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.cypher.query.CypherInTransactionParams;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.type.entity.PolyString;
 
 
 @Getter
 public class CypherSubQuery extends CypherClause {
 
-    private CypherQuery query;
-    private CypherInTransactionParams inTransactionsParams;
+    private final CypherQuery query;
+    private final CypherInTransactionParams inTransactionsParams;
 
 
     public CypherSubQuery( ParserPos pos, CypherQuery query, CypherInTransactionParams inTransactionsParams ) {
@@ -38,6 +41,18 @@ public class CypherSubQuery extends CypherClause {
     @Override
     public CypherKind getCypherKind() {
         return CypherKind.QUERY;
+    }
+
+
+    @Override
+    public List<? extends Node> getInputs() {
+        return List.of( query );
+    }
+
+
+    @Override
+    public List<PolyString> getUnderlyingLabels() {
+        return query.getUnderlyingLabels();
     }
 
 }

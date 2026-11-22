@@ -44,6 +44,7 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Deterministic;
 import org.apache.calcite.linq4j.function.EqualityComparer;
+import org.apache.calcite.linq4j.function.Function0;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
@@ -71,6 +72,7 @@ import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.spatial.GeometryTopologicalException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.spatial.PolyPoint;
+import org.polypheny.db.type.entity.temporal.PolyCypherTemporal;
 import org.polypheny.db.util.Pair;
 
 
@@ -292,13 +294,19 @@ public class CypherFunctions {
         if ( isNull( holder ) || isNull( key ) ) {
             return null;
         }
+        PolyCypherTemporal temporal = PolyCypherTemporal.from( holder );
+        if ( temporal != null ) {
+            return temporal.kind == PolyCypherTemporal.Kind.DURATION
+                    ? CypherDurations.component( temporal, key.value )
+                    : CypherTemporalInstants.component( temporal, key.value );
+        }
         PolyValue value;
         if ( holder instanceof GraphPropertyHolder element ) {
             value = element.getProperties().get( key );
         } else if ( holder.isMap() ) {
             value = holder.asMap().get( key );
         } else {
-            throw new GenericRuntimeException( "Property access requires a map, node, or relationship." );
+            throw new GenericRuntimeException( "Property access requires a map, node, relationship, or temporal value." );
         }
         return isNull( value ) ? null : value;
     }
@@ -322,6 +330,27 @@ public class CypherFunctions {
         }
         // Dynamic node and relationship-list bindings are checked before matching.
         return null;
+    }
+
+
+    public static PolyPath visibleMatchPath( PolyPath path, PolyList<PolyString> hiddenBindings ) {
+        return path.withoutBindings( Set.copyOf( hiddenBindings ) );
+    }
+
+
+    public static PolyBoolean matchProperties( PolyValue candidate, Function0<PolyValue> properties ) {
+        if ( candidate instanceof GraphPropertyHolder element ) {
+            return PolyBoolean.of( element.matchesProperties( properties.apply().asMap().asDictionary() ) );
+        }
+        if ( candidate instanceof PolyList<?> relationships ) {
+            for ( PolyValue relationship : relationships ) {
+                if ( !relationship.asEdge().matchesProperties( properties.apply().asMap().asDictionary() ) ) {
+                    return PolyBoolean.FALSE;
+                }
+            }
+            return PolyBoolean.TRUE;
+        }
+        return PolyBoolean.FALSE;
     }
 
 
@@ -582,13 +611,13 @@ public class CypherFunctions {
 
 
     public static void validatePropertyValue( PolyValue value ) {
-        if ( isNull( value ) || propertyScalarType( value.getType() ) != null ) {
+        if ( isNull( value ) || propertyScalarType( value ) != null ) {
             return;
         }
         if ( value instanceof PolyList<?> list ) {
-            PolyType elementType = null;
+            Object elementType = null;
             for ( PolyValue element : list ) {
-                PolyType candidate = isNull( element ) ? null : propertyScalarType( element.getType() );
+                Object candidate = isNull( element ) ? null : propertyScalarType( element );
                 if ( candidate == null || elementType != null && elementType != candidate ) {
                     throw invalidPropertyType();
                 }
@@ -600,12 +629,20 @@ public class CypherFunctions {
     }
 
 
-    private static PolyType propertyScalarType( PolyType type ) {
+    private static Object propertyScalarType( PolyValue value ) {
+        if ( value instanceof PolyCypherTemporal temporal ) {
+            return temporal.getKind();
+        }
+        PolyType type = value.getType();
         return switch ( type ) {
             case TINYINT, SMALLINT, INTEGER, BIGINT, FLOAT, REAL, DOUBLE, DECIMAL -> PolyType.DECIMAL;
             case CHAR, VARCHAR, TEXT -> PolyType.VARCHAR;
             case BINARY, VARBINARY -> PolyType.VARBINARY;
-            case BOOLEAN, DATE, TIME, TIMESTAMP, INTERVAL, GEOMETRY, FILE, IMAGE, VIDEO, AUDIO -> type;
+            case DATE -> PolyCypherTemporal.Kind.DATE;
+            case TIME -> PolyCypherTemporal.Kind.LOCAL_TIME;
+            case TIMESTAMP -> PolyCypherTemporal.Kind.LOCAL_DATE_TIME;
+            case INTERVAL -> PolyCypherTemporal.Kind.DURATION;
+            case BOOLEAN, GEOMETRY, FILE, IMAGE, VIDEO, AUDIO -> type;
             default -> null;
         };
     }
@@ -666,6 +703,11 @@ public class CypherFunctions {
     public static PolyBoolean equal( PolyValue left, PolyValue right ) {
         if ( left == null || left.isNull() || right == null || right.isNull() ) {
             return null;
+        }
+        PolyCypherTemporal leftTemporal = PolyCypherTemporal.from( left );
+        PolyCypherTemporal rightTemporal = PolyCypherTemporal.from( right );
+        if ( leftTemporal != null || rightTemporal != null ) {
+            return PolyBoolean.of( Objects.equals( leftTemporal, rightTemporal ) );
         }
         if ( left instanceof PolyNumber a && right instanceof PolyNumber b ) {
             return PolyBoolean.of( !Double.isNaN( a.doubleValue() ) && !Double.isNaN( b.doubleValue() )
@@ -901,15 +943,19 @@ public class CypherFunctions {
             return null;
         }
         OperatorName op = OperatorName.valueOf( operation.value );
-        if ( op == OperatorName.PLUS ) {
-            if ( left.isList() || right.isList() ) {
-                List<PolyValue> values = new ArrayList<>( left.isList() ? left.asList() : List.of( left ) );
-                values.addAll( right.isList() ? right.asList() : List.of( right ) );
-                return PolyList.copyOf( values );
-            }
-            if ( (left.isString() && (right.isString() || right.isNumber())) || (right.isString() && left.isNumber()) ) {
-                return PolyString.of( left.toString() + right.toString() );
-            }
+        if ( op == OperatorName.PLUS && (left.isList() || right.isList()) ) {
+            List<PolyValue> values = new ArrayList<>( left.isList() ? left.asList() : List.of( left ) );
+            values.addAll( right.isList() ? right.asList() : List.of( right ) );
+            return PolyList.copyOf( values );
+        }
+        PolyCypherTemporal leftTemporal = PolyCypherTemporal.from( left );
+        PolyCypherTemporal rightTemporal = PolyCypherTemporal.from( right );
+        if ( leftTemporal != null || rightTemporal != null ) {
+            return temporalArithmetic( op, left, right, leftTemporal, rightTemporal );
+        }
+        if ( op == OperatorName.PLUS
+                && ((left.isString() && (right.isString() || right.isNumber())) || (right.isString() && left.isNumber())) ) {
+            return PolyString.of( left.toString() + right.toString() );
         }
         if ( !left.isNumber() || !right.isNumber() ) {
             throw new GenericRuntimeException( "Cypher arithmetic requires numeric operands." );
@@ -965,6 +1011,25 @@ public class CypherFunctions {
     }
 
 
+    private static PolyCypherTemporal temporalArithmetic(
+            OperatorName operation, PolyValue left, PolyValue right, PolyCypherTemporal leftTemporal, PolyCypherTemporal rightTemporal ) {
+        if ( leftTemporal != null && rightTemporal != null ) {
+            if ( operation == OperatorName.PLUS ) {
+                return CypherDurations.add( leftTemporal, rightTemporal );
+            }
+            if ( operation == OperatorName.MINUS ) {
+                return CypherDurations.subtract( leftTemporal, rightTemporal );
+            }
+        } else if ( (operation == OperatorName.MULTIPLY || operation == OperatorName.DIVIDE)
+                && leftTemporal != null && right instanceof PolyNumber factor ) {
+            return CypherDurations.scale( leftTemporal, factor, operation == OperatorName.DIVIDE );
+        } else if ( operation == OperatorName.MULTIPLY && left instanceof PolyNumber factor && rightTemporal != null ) {
+            return CypherDurations.scale( rightTemporal, factor, false );
+        }
+        throw new GenericRuntimeException( "Invalid operands for temporal arithmetic." );
+    }
+
+
     public static PolyBoolean in( PolyValue value, PolyValue list ) {
         if ( list == null || list.isNull() ) {
             return null;
@@ -1001,8 +1066,14 @@ public class CypherFunctions {
      * with different numeric types or scales also agree as hash keys.
      */
     public static Object aggregationKey( Object value ) {
-        if ( value instanceof PolyValue poly && poly.isNull() ) {
-            return null;
+        if ( value instanceof PolyValue poly ) {
+            if ( poly.isNull() ) {
+                return null;
+            }
+            PolyCypherTemporal temporal = PolyCypherTemporal.from( poly );
+            if ( temporal != null ) {
+                return temporal;
+            }
         }
         if ( value instanceof PolyNumber number ) {
             if ( PolyType.APPROX_TYPES.contains( number.getType() ) && !Double.isFinite( number.doubleValue() ) ) {
@@ -1090,7 +1161,15 @@ public class CypherFunctions {
         if ( leftNull || rightNull ) {
             return nullsFirst ? Boolean.compare( rightNull, leftNull ) : Boolean.compare( leftNull, rightNull );
         }
-        if ( left instanceof PolyNumber a && right instanceof PolyNumber b ) {
+        PolyCypherTemporal leftTemporal = PolyCypherTemporal.from( left );
+        PolyCypherTemporal rightTemporal = PolyCypherTemporal.from( right );
+        if ( leftTemporal != null && rightTemporal != null ) {
+            if ( leftTemporal.kind == PolyCypherTemporal.Kind.DURATION && rightTemporal.kind == PolyCypherTemporal.Kind.DURATION ) {
+                return CypherDurations.compareForOrdering( leftTemporal, rightTemporal );
+            }
+            return leftTemporal.compareTo( rightTemporal );
+        }
+        if ( leftTemporal == null && rightTemporal == null && left instanceof PolyNumber a && right instanceof PolyNumber b ) {
             return compareNumbers( a, b );
         }
         int typeOrder = Integer.compare( orderingRank( left ), orderingRank( right ) );
@@ -1114,23 +1193,21 @@ public class CypherFunctions {
 
 
     private static int orderingRank( PolyValue value ) {
-        if ( value instanceof PolyNumber ) {
-            return 12;
-        }
         return switch ( value.getType() ) {
             case MAP, DOCUMENT -> 0;
             case NODE -> 1;
             case EDGE -> 2;
             case ARRAY -> 3;
             case PATH -> 4;
-            case TIMESTAMP -> 5;
-            case DATE -> 6;
-            case TIME -> 7;
-            case INTERVAL -> 8;
-            case GEOMETRY -> 9;
-            case CHAR, VARCHAR -> 10;
-            case BOOLEAN -> 11;
-            default -> 13 + value.getType().ordinal();
+            case CYPHER_TEMPORAL -> 5 + ((PolyCypherTemporal) value).kind.ordinal();
+            case TIMESTAMP -> 6;
+            case DATE -> 7;
+            case TIME -> 9;
+            case INTERVAL -> 10;
+            case GEOMETRY -> 11;
+            case CHAR, VARCHAR -> 12;
+            case BOOLEAN -> 13;
+            default -> value instanceof PolyNumber ? 14 : 15 + value.getType().ordinal();
         };
     }
 
@@ -1263,7 +1340,7 @@ public class CypherFunctions {
         if ( left == null || right == null || left.isNull() || right.isNull() ) {
             return null;
         }
-        if ( left instanceof PolyNumber a && right instanceof PolyNumber b ) {
+        if ( left instanceof PolyNumber a && right instanceof PolyNumber b && !a.isTemporal() && !b.isTemporal() ) {
             return PolyBoolean.of( !Double.isNaN( a.doubleValue() ) && !Double.isNaN( b.doubleValue() )
                     && test.test( compareNumbers( a, b ) ) );
         }
@@ -1275,6 +1352,12 @@ public class CypherFunctions {
     private static Integer compareStructuredValues( PolyValue left, PolyValue right ) {
         if ( left == null || right == null || left.isNull() || right.isNull() ) {
             return null;
+        }
+        PolyCypherTemporal leftTemporal = PolyCypherTemporal.from( left );
+        PolyCypherTemporal rightTemporal = PolyCypherTemporal.from( right );
+        if ( leftTemporal != null || rightTemporal != null ) {
+            return leftTemporal == null || rightTemporal == null || leftTemporal.kind != rightTemporal.kind
+                    || leftTemporal.kind == PolyCypherTemporal.Kind.DURATION ? null : leftTemporal.compareTo( rightTemporal );
         }
         if ( left instanceof PolyNumber a && right instanceof PolyNumber b ) {
             return Double.isNaN( a.doubleValue() ) || Double.isNaN( b.doubleValue() ) ? null : compareNumbers( a, b );

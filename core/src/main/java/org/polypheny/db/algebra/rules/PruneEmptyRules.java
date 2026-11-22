@@ -53,6 +53,7 @@ import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.common.Streamer;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgForeach;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMergeRows;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
@@ -259,6 +260,7 @@ public abstract class PruneEmptyRules {
             node = subset.getOriginal();
         }
         return node instanceof Streamer streamer && streamer.getReturningParameters() > 0
+                || node instanceof LogicalLpgForeach
                 || node instanceof LogicalLpgMergeRows
                 || node.getInputs().stream().anyMatch( PruneEmptyRules::containsReturningGraphWrite );
     }

@@ -101,6 +101,7 @@ public class PolyValueSerializer {
             case TIME -> serializeAsProtoTime( polyValue.asTime() );
             case TIMESTAMP -> serializeAsProtoTimestamp( polyValue.asTimestamp() );
             case INTERVAL -> serializeAsProtoInterval( polyValue.asInterval() );
+            case CYPHER_TEMPORAL -> serializeAsProtoString( PolyString.of( polyValue.toString() ) );
             case CHAR, VARCHAR, TEXT -> serializeAsProtoString( polyValue.asString() );
             case BINARY, VARBINARY -> serializeAsProtoBinary( polyValue.asBinary() );
             case NULL -> serializeAsProtoNull();

@@ -219,6 +219,7 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
             case DATE -> value.isDate();
             case TIME -> value.isTime();
             case TIMESTAMP -> value.isTimestamp();
+            case CYPHER_TEMPORAL -> value.getType() == PolyType.CYPHER_TEMPORAL;
             case INTERVAL ->
                 // The value of a DAY-TIME interval (whatever the start and end units, even say HOUR TO MINUTE) is in milliseconds (perhaps fractional milliseconds). The value of a YEAR-MONTH interval is in months.
                     value.isInterval();
@@ -421,6 +422,9 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
             case TIMESTAMP:
                 assert value.isTimestamp();
                 pw.print( value.asTimestamp() );
+                break;
+            case CYPHER_TEMPORAL:
+                pw.print( value );
                 break;
             case INTERVAL:
                 assert value.isInterval();

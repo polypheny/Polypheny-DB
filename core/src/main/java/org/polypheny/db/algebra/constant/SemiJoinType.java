@@ -72,12 +72,12 @@ public enum SemiJoinType {
     }
 
 
-    public JoinType toLinq4j() {
+    public org.apache.calcite.linq4j.JoinType toLinq4j() {
         return switch ( this ) {
-            case INNER -> JoinType.INNER;
-            case LEFT -> JoinType.LEFT;
-            case SEMI -> JoinType.LEFT_SEMI_JOIN;
-            case ANTI -> JoinType.COMMA;
+            case INNER -> org.apache.calcite.linq4j.JoinType.INNER;
+            case LEFT -> org.apache.calcite.linq4j.JoinType.LEFT;
+            case SEMI -> org.apache.calcite.linq4j.JoinType.SEMI;
+            case ANTI -> org.apache.calcite.linq4j.JoinType.ANTI;
         };
     }
 

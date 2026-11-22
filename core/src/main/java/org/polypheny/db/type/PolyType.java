@@ -322,6 +322,12 @@ public enum PolyType {
             true,
             Types.VARCHAR,
             PolyTypeFamily.CHARACTER
+    ),
+    CYPHER_TEMPORAL(
+            PrecScale.NO_NO,
+            true,
+            Types.OTHER,
+            PolyTypeFamily.ANY
     );
 
 

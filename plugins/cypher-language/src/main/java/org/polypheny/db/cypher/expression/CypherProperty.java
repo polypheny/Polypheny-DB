@@ -24,7 +24,6 @@ import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.functions.CypherFunctions;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexNode;
-import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
@@ -71,10 +70,10 @@ public class CypherProperty extends CypherExpression {
     @Override
     protected Pair<PolyString, RexNode> toRex( CypherContext context, RexType type ) {
         RexNode operand = subject.getRex( context, type ).right;
-        PolyType operandType = operand.getType().getPolyType();
-        if ( operandType != PolyType.MAP && operandType != PolyType.NODE && operandType != PolyType.EDGE
-                && operandType != PolyType.ANY && operandType != PolyType.NULL ) {
-            throw new CypherSyntaxException( "Property access requires a map, node, or relationship." );
+        switch ( operand.getType().getPolyType() ) {
+            case MAP, NODE, EDGE, ANY, NULL, DATE, TIME, TIMESTAMP, INTERVAL, CYPHER_TEMPORAL -> {
+            }
+            default -> throw new CypherSyntaxException( "Property access requires a map, node, relationship, or temporal value." );
         }
         if ( subject.getType() == ExpressionType.VARIABLE ) {
             return context.getPropertyExtract( getPropertyKey(), getSubjectName(), operand );

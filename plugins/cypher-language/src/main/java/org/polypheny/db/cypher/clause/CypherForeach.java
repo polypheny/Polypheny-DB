@@ -16,11 +16,14 @@
 
 package org.polypheny.db.cypher.clause;
 
+import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.Node;
+import org.polypheny.db.type.entity.PolyString;
 
 
 @Getter
@@ -42,6 +45,21 @@ public class CypherForeach extends CypherClause {
     @Override
     public CypherKind getCypherKind() {
         return CypherKind.FOR_EACH;
+    }
+
+
+    @Override
+    public List<? extends Node> getInputs() {
+        List<Node> inputs = new ArrayList<>( clauses.size() + 1 );
+        inputs.add( expression );
+        inputs.addAll( clauses );
+        return inputs;
+    }
+
+
+    @Override
+    public List<PolyString> getUnderlyingLabels() {
+        return clauses.stream().flatMap( clause -> clause.getUnderlyingLabels().stream() ).toList();
     }
 
 }

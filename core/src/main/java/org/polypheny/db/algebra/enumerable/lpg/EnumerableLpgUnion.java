@@ -50,6 +50,7 @@ import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.enumerable.JavaTupleFormat;
 import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgForeach;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMergeRows;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnion;
 import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
@@ -114,7 +115,7 @@ public class EnumerableLpgUnion extends LogicalLpgUnion implements EnumerableAlg
 
 
     private static boolean containsWrite( AlgNode node ) {
-        return node instanceof Modify<?> || node instanceof Streamer || node instanceof LogicalLpgMergeRows
+        return node instanceof Modify<?> || node instanceof Streamer || node instanceof LogicalLpgMergeRows || node instanceof LogicalLpgForeach
                 || node.getInputs().stream().anyMatch( EnumerableLpgUnion::containsWrite );
     }
 

@@ -16,6 +16,8 @@
 
 package org.polypheny.db.type.entity;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Value;
@@ -56,7 +58,8 @@ public class PolyInterval extends PolyValue {
      * @param millis millis since Epoch.
      * @param months months since Epoch.
      */
-    public PolyInterval( @NotNull Long millis, @NotNull Long months ) {
+    @JsonCreator
+    public PolyInterval( @JsonProperty("millis") @NotNull Long millis, @JsonProperty("months") @NotNull Long months ) {
         super( PolyType.INTERVAL );
         this.millis = millis;
         this.months = months;
