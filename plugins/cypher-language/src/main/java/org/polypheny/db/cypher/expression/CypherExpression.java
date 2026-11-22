@@ -28,7 +28,9 @@ import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.cypher2alg.CypherSyntaxException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
+import org.polypheny.db.cypher.pattern.CypherEveryPathPattern;
 import org.polypheny.db.cypher.pattern.CypherPattern;
+import org.polypheny.db.cypher.pattern.CypherShortestPathPattern;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexCall;
@@ -89,10 +91,18 @@ public class CypherExpression extends CypherNode {
             return Pair.of( PolyString.of( null ), func.getRexCall( context, type ) );
         }
 
+        if ( pattern instanceof CypherShortestPathPattern shortest ) {
+            return Pair.of( null, CypherShortestPathValue.toRex( shortest, context, type ) );
+        }
+        if ( this.type == ExpressionType.PATTERN && pattern instanceof CypherEveryPathPattern everyPath ) {
+            if ( type != RexType.FILTER ) {
+                throw new CypherSyntaxException( "Use exists(pattern) to evaluate a pattern as a value expression." );
+            }
+            return Pair.of( null, CypherPatternExistence.toRex( everyPath, context, type ) );
+        }
+
         OperatorName operatorName = switch ( this.type ) {
-            // EveryPathPattern
-            //return pattern.getPatternMatch( context );
-            case PATTERN, ALL -> OperatorName.CYPHER_ALL_MATCH;
+            case ALL -> OperatorName.CYPHER_ALL_MATCH;
             case ANY -> OperatorName.CYPHER_ANY_MATCH;
             case NONE -> OperatorName.CYPHER_NONE_MATCH;
             case SINGLE -> OperatorName.CYPHER_SINGLE_MATCH;

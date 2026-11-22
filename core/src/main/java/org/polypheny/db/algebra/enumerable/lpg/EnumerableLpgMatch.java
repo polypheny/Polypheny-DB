@@ -112,8 +112,13 @@ public class EnumerableLpgMatch extends LpgMatch implements EnumerableAlg {
                     extract = true;
                     yield BuiltInMethod.CYPHER_NODE_EXTRACT.method;
                 }
+                case CYPHER_GRAPH_VALUE -> {
+                    extract = true;
+                    yield BuiltInMethod.CYPHER_GRAPH_VALUE.method;
+                }
                 case CYPHER_NODE_MATCH -> BuiltInMethod.CYPHER_NODE_MATCH.method;
                 case CYPHER_PATH_MATCH -> BuiltInMethod.CYPHER_PATH_MATCH.method;
+                case CYPHER_SHORTEST_PATH_MATCH -> BuiltInMethod.CYPHER_SHORTEST_PATH_MATCH.method;
                 default -> throw new GenericRuntimeException( "could not translate graph match" );
             };
 

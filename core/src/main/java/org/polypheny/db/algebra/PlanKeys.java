@@ -49,6 +49,7 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgJoin;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgShortestPathJoin;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
@@ -127,6 +128,7 @@ public final class PlanKeys {
             attributes( LogicalLpgScan.class, node -> List.of( entity( node.entity ) ) ),
             attributes( LogicalLpgMatch.class, node -> List.of( node.getNames(), node.getMatches(), node.isEnumerableOnly() ) ),
             attributes( LogicalLpgJoin.class, node -> List.of( node.getCondition(), node.getVariablesSet(), node.getJoinType() ) ),
+            attributes( LogicalLpgShortestPathJoin.class, node -> List.of( node.getCondition(), node.isOptional(), node.getPathColumns(), node.getGroupColumns() ) ),
             attributes( LogicalLpgFilter.class, node -> List.of( node.getCondition() ) ),
             attributes( LogicalLpgProject.class, node -> List.of( node.getNames(), node.getProjects() ) ),
             attributes( LogicalLpgAggregate.class, node -> List.of( node.groups, laxAggregates( node.aggCalls ), node.isWriteCount() ) ),

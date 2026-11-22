@@ -85,6 +85,45 @@ public class CypherFunctions {
     }
 
 
+    public static Enumerable<PolyGraph> graphValue( PolyGraph graph ) {
+        return Linq4j.singletonEnumerable( graph );
+    }
+
+
+    public static PolyBoolean patternExists( PolyGraph graph, PolyPath template, PolyValue bindings, PolyList<PolyValue> properties ) {
+        Map<PolyValue, PolyValue> known = bindings.asMap();
+        if ( known.values().stream().anyMatch( CypherFunctions::isNull ) ) {
+            return PolyBoolean.FALSE;
+        }
+        List<PolyNode> nodes = template.getNodes();
+        PolyValue first = known.get( nodes.get( 0 ).getVariableName() );
+        PolyValue last = known.get( nodes.get( nodes.size() - 1 ).getVariableName() );
+        PolyString start = first instanceof PolyNode source ? source.id : null;
+        PolyString end = last instanceof PolyNode target ? target.id : null;
+        for ( PolyPath match : graph.matchPaths( template, start, end ) ) {
+            boolean sameBindings = known.entrySet().stream().allMatch(
+                    binding -> PolyBoolean.TRUE.equals( equal( match.getBinding( binding.getKey().asString() ), binding.getValue() ) ) );
+            if ( sameBindings && matchesExistenceProperties( match, properties ) ) {
+                return PolyBoolean.TRUE;
+            }
+        }
+        return PolyBoolean.FALSE;
+    }
+
+
+    private static boolean matchesExistenceProperties( PolyPath match, PolyList<PolyValue> properties ) {
+        for ( int i = 0; i < properties.size(); i += 2 ) {
+            // Preserve the property checks for each occurrence of a repeated node variable.
+            PolyValue candidate = match.getBinding( properties.get( i ).asString() );
+            PolyValue expected = properties.get( i + 1 );
+            if ( !matchProperties( candidate, () -> expected ).value ) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+
     /**
      * Matches all suitable paths for the given graph.
      *
@@ -94,6 +133,11 @@ public class CypherFunctions {
     @SuppressWarnings("unused")
     public static Enumerable<PolyPath> pathMatch( PolyGraph graph, PolyPath comp ) {
         return Linq4j.asEnumerable( graph.matchPaths( comp ) );
+    }
+
+
+    public static Enumerable<PolyPath> shortestPathMatch( PolyGraph graph, PolyPath pattern ) {
+        return Linq4j.asEnumerable( graph.matchShortestPaths( pattern ) );
     }
 
 
@@ -309,6 +353,17 @@ public class CypherFunctions {
             throw new GenericRuntimeException( "Property access requires a map, node, relationship, or temporal value." );
         }
         return isNull( value ) ? null : value;
+    }
+
+
+    public static PolyBoolean propertyExists( PolyValue holder, PolyString key ) {
+        if ( isNull( holder ) ) {
+            return PolyBoolean.FALSE;
+        }
+        if ( !(holder instanceof GraphPropertyHolder) && !holder.isMap() ) {
+            throw new GenericRuntimeException( "exists() requires a property of a map, node, or relationship." );
+        }
+        return PolyBoolean.of( !isNull( extractProperty( holder, key ) ) );
     }
 
 
@@ -837,6 +892,56 @@ public class CypherFunctions {
 
     public static PolyList<PolyEdge> relationships( PolyValue value ) {
         return isNull( value ) ? null : requirePath( value ).getEdges();
+    }
+
+
+    public static PolyPath shortestPathValue( PolyGraph graph, PolyPath template, PolyValue start, PolyValue end, PolyValue relationship,
+            PolyValue startProperties, PolyValue relationshipProperties, PolyValue endProperties ) {
+        if ( isNull( start ) || isNull( end ) ) {
+            return null;
+        }
+        if ( !(start instanceof PolyNode source) || !(end instanceof PolyNode target) ) {
+            throw new GenericRuntimeException( "shortestPath() requires node values for both endpoints." );
+        }
+        PolyNode left = template.getNodes().get( 0 );
+        PolyNode right = template.getNodes().get( 1 );
+        PolyEdge edge = template.getEdges().get( 0 );
+        PolyString name = edge.getVariableName();
+        boolean boundRelationship = name != null && !name.isNull();
+        if ( boundRelationship ) {
+            if ( isNull( relationship ) ) {
+                return null;
+            }
+            boolean compatible = edge.fromTo() == null ? relationship instanceof PolyEdge
+                    : relationship instanceof PolyList<?> edges && edges.stream().allMatch( PolyEdge.class::isInstance );
+            if ( !compatible ) {
+                throw new GenericRuntimeException( "shortestPath() requires a relationship or relationship-list binding matching the pattern." );
+            }
+        }
+        PolyPath pattern = template;
+        if ( !isNull( startProperties ) || !isNull( relationshipProperties ) || !isNull( endProperties ) ) {
+            PolyNode leftPattern = new PolyNode( left.id, shortestProperties( startProperties ), left.labels, left.getVariableName() );
+            PolyNode rightPattern = new PolyNode( right.id, shortestProperties( endProperties ), right.labels, right.getVariableName() );
+            PolyEdge edgePattern = new PolyEdge( edge.id, shortestProperties( relationshipProperties ), edge.labels, edge.left, edge.right,
+                    edge.direction, name );
+            edgePattern.fromTo( edge.fromTo() );
+            pattern = PolyPath.create( List.of( Pair.of( left.getVariableName(), leftPattern ), Pair.of( right.getVariableName(), rightPattern ) ),
+                    List.of( Pair.of( name, edgePattern ) ) );
+        }
+        return graph.shortestPath( pattern, source, target, boundRelationship
+                ? path -> PolyBoolean.TRUE.equals( equal( path.getBinding( name ), relationship ) )
+                : null );
+    }
+
+
+    private static PolyDictionary shortestProperties( PolyValue value ) {
+        if ( isNull( value ) ) {
+            return new PolyDictionary();
+        }
+        if ( !value.isMap() ) {
+            throw new GenericRuntimeException( "shortestPath() pattern properties require a map." );
+        }
+        return value.asMap().asDictionary();
     }
 
 

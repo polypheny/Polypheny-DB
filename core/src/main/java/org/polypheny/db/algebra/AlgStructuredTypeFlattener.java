@@ -81,6 +81,7 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgMergeRows;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgShortestPathJoin;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgTransformer;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnion;
@@ -215,6 +216,7 @@ public class AlgStructuredTypeFlattener implements AlgConsumingVisitor {
                 put( LogicalLpgCall.class, a -> rewriteGeneric( a ) );
                 put( LogicalLpgForeach.class, a -> rewriteGeneric( a ) );
                 put( LogicalLpgJoin.class, a -> rewriteGeneric( a ) );
+                put( LogicalLpgShortestPathJoin.class, a -> rewriteGeneric( a ) );
                 put( LogicalLpgMergeRows.class, a -> rewriteGeneric( a ) );
                 put( LogicalLpgFilter.class, a -> rewriteAlg( (LogicalLpgFilter) a ) );
                 put( LogicalLpgSort.class, a -> rewriteAlg( (LogicalLpgSort) a ) );

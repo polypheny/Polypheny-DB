@@ -850,6 +850,7 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_SLICE ), BuiltInMethod.CYPHER_SLICE.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_NODES ), BuiltInMethod.CYPHER_NODES.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_RELATIONSHIPS ), BuiltInMethod.CYPHER_RELATIONSHIPS.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_SHORTEST_PATH_VALUE ), BuiltInMethod.CYPHER_SHORTEST_PATH_VALUE.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_LENGTH ), BuiltInMethod.CYPHER_LENGTH.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_SIZE ), BuiltInMethod.CYPHER_SIZE.method, NullPolicy.NONE );
         defineImplementor( OperatorRegistry.get( cypher, OperatorName.CYPHER_SCALAR_FUNCTION ), NullPolicy.NONE,
@@ -881,6 +882,8 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_NODE_MATCH ), BuiltInMethod.CYPHER_NODE_MATCH.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_HAS_LABEL ), BuiltInMethod.CYPHER_HAS_LABEL.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_HAS_PROPERTY ), BuiltInMethod.CYPHER_HAS_PROPERTY.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_PROPERTY_EXISTS ), BuiltInMethod.CYPHER_PROPERTY_EXISTS.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_PATTERN_EXISTS ), BuiltInMethod.CYPHER_PATTERN_EXISTS.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_PROPERTY ), BuiltInMethod.CYPHER_EXTRACT_PROPERTY.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_PROPERTIES ), BuiltInMethod.CYPHER_EXTRACT_PROPERTIES.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_ID ), BuiltInMethod.CYPHER_EXTRACT_ID.method, NullPolicy.NONE );

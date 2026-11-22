@@ -17,6 +17,7 @@
 package org.polypheny.db.cypher.pattern;
 
 import lombok.Getter;
+import org.polypheny.db.cypher.cypher2alg.CypherSyntaxException;
 import org.polypheny.db.languages.ParserPos;
 
 @Getter
@@ -30,6 +31,17 @@ public class CypherShortestPathPattern extends CypherPattern {
         super( pos );
         this.pathPattern = pathPattern;
         this.all = all;
+    }
+
+
+    public CypherEveryPathPattern getSingleSegment() {
+        if ( all ) {
+            throw new CypherSyntaxException( "allShortestPaths() is not supported." );
+        }
+        if ( !(pathPattern instanceof CypherEveryPathPattern path) || path.getEdges().size() != 1 ) {
+            throw new CypherSyntaxException( "shortestPath() requires exactly one relationship pattern." );
+        }
+        return path;
     }
 
 
