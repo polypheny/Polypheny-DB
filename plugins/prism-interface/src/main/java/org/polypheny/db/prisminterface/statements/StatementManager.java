@@ -58,7 +58,7 @@ public class StatementManager {
         Optional<LogicalNamespace> optionalNamespace = Catalog.snapshot().getNamespace( namespaceName );
 
         if ( optionalNamespace.isEmpty() ) {
-            throw new PIServiceException( "Getting namespace " + namespaceName + " failed." );
+            throw new PIServiceException( "Getting namespace " + namespaceName + " failed.", "3F000" );
         }
         return optionalNamespace.get();
     }
@@ -67,7 +67,7 @@ public class StatementManager {
     public PIUnparameterizedStatement createUnparameterizedStatement( ExecuteUnparameterizedStatementRequest request ) throws PIServiceException {
         String languageName = request.getLanguageName();
         if ( !isSupportedLanguage( languageName ) ) {
-            throw new PIServiceException( "Language " + languageName + " not supported." );
+            throw new PIServiceException( "Language " + languageName + " not supported.", "0A000" );
         }
         int statementId = statementIdGenerator.getAndIncrement();
         LogicalNamespace namespace = client.getNamespace();
@@ -107,11 +107,11 @@ public class StatementManager {
     public PIPreparedIndexedStatement createIndexedPreparedInterfaceStatement( PrepareStatementRequest request ) throws PIServiceException {
         String languageName = request.getLanguageName();
         if ( !isSupportedLanguage( languageName ) ) {
-            throw new PIServiceException( "Language " + languageName + " not supported." );
+            throw new PIServiceException( "Language " + languageName + " not supported.", "0A000" );
         }
         QueryLanguage language = QueryLanguage.from( languageName );
         if ( language.dataModel() == DataModel.GRAPH ) {
-            throw new PIServiceException( "Indexed prepared Cypher statements are not supported by Prism. Use named parameters." );
+            throw new PIServiceException( "Indexed prepared Cypher statements are not supported by Prism. Use named parameters.", "0A000" );
         }
         int statementId = statementIdGenerator.getAndIncrement();
         LogicalNamespace namespace = client.getNamespace();
@@ -137,7 +137,7 @@ public class StatementManager {
     public PIPreparedNamedStatement createNamedPreparedInterfaceStatement( PrepareStatementRequest request ) throws PIServiceException {
         String languageName = request.getLanguageName();
         if ( !isSupportedLanguage( languageName ) ) {
-            throw new PIServiceException( "Language " + languageName + " not supported." );
+            throw new PIServiceException( "Language " + languageName + " not supported.", "0A000" );
         }
         final int statementId = statementIdGenerator.getAndIncrement();
         LogicalNamespace namespace = client.getNamespace();
@@ -201,11 +201,11 @@ public class StatementManager {
 
     public PIStatement getStatement( int statementId ) {
         if ( statementId == 0 ) {
-            throw new PIServiceException( "Invalid statement id: 0 (possibly uninitialized prism protocol field)" );
+            throw new PIServiceException( "Invalid statement id: 0 (possibly uninitialized prism protocol field)", "26000" );
         }
         PIStatement statement = openStatements.get( statementId );
         if ( statement == null ) {
-            throw new PIServiceException( "A statement with id " + statementId + " does not exist for that client" );
+            throw new PIServiceException( "A statement with id " + statementId + " does not exist for that client", "26000" );
         }
         return statement;
     }
@@ -216,7 +216,7 @@ public class StatementManager {
         if ( client.isAutoCommit() && hasOpenResult( (statement, cursor) -> graphStatement
                 || statement.getLanguage().dataModel() == DataModel.GRAPH
                 || Kind.DML.contains( cursor.iterator().getImplementation().getKind() ) ) ) {
-            throw new PIServiceException( "Close or finish the open result before executing another statement in autocommit mode" );
+            throw new PIServiceException( "Close or finish the open result before executing another statement in autocommit mode", "25001" );
         }
     }
 
@@ -244,7 +244,7 @@ public class StatementManager {
     public PIPreparedNamedStatement getNamedPreparedStatement( int statementId ) throws PIServiceException {
         PIStatement statement = getStatement( statementId );
         if ( !(statement instanceof PIPreparedNamedStatement prepared) ) {
-            throw new PIServiceException( "A named prepared statement with id " + statementId + " does not exist for that client" );
+            throw new PIServiceException( "A named prepared statement with id " + statementId + " does not exist for that client", "26000" );
         }
         return prepared;
     }
@@ -253,7 +253,7 @@ public class StatementManager {
     public PIPreparedIndexedStatement getIndexedPreparedStatement( int statementId ) throws PIServiceException {
         PIStatement statement = getStatement( statementId );
         if ( !(statement instanceof PIPreparedIndexedStatement prepared) ) {
-            throw new PIServiceException( "A prepared indexed statement with id " + statementId + " does not exist for that client" );
+            throw new PIServiceException( "A prepared indexed statement with id " + statementId + " does not exist for that client", "26000" );
         }
         return prepared;
     }

@@ -39,6 +39,7 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.runtime.InvalidNumericFormatException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
@@ -120,7 +121,11 @@ public class PolyBigDecimal extends PolyNumber {
         } else if ( value.isTemporal() ) {
             return PolyBigDecimal.of( value.asTemporal().getMillisSinceEpoch() );
         } else if ( value.isString() ) {
-            return PolyBigDecimal.of( value.asString().value );
+            try {
+                return PolyBigDecimal.of( value.asString().value );
+            } catch ( NumberFormatException e ) {
+                throw new InvalidNumericFormatException( e );
+            }
         }
         throw new GenericRuntimeException( getConvertError( value, PolyBigDecimal.class ) );
     }

@@ -130,7 +130,7 @@ class ClientManager {
         }
         Optional<LogicalNamespace> optionalNamespace = Catalog.snapshot().getNamespace( namespaceName );
         if ( optionalNamespace.isEmpty() ) {
-            throw new PIServiceException( "Getting namespace " + namespaceName + " failed." );
+            throw new PIServiceException( "Getting namespace " + namespaceName + " failed.", "3F000" );
         }
 
         return optionalNamespace.get();

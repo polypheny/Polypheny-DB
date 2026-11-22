@@ -47,9 +47,11 @@ import org.polypheny.db.config.RuntimeConfig;
  * @see PolyphenyDbContextException
  */
 @Slf4j
-public class PolyphenyDbException extends GenericRuntimeException {
+public class PolyphenyDbException extends GenericRuntimeException implements SqlStateProvider {
 
     private static final long serialVersionUID = -1314522633397794178L;
+
+    private final String sqlState;
 
 
     /**
@@ -59,7 +61,13 @@ public class PolyphenyDbException extends GenericRuntimeException {
      * @param cause underlying cause
      */
     public PolyphenyDbException( String message, Throwable cause ) {
+        this( message, cause, null );
+    }
+
+
+    public PolyphenyDbException( String message, Throwable cause, String sqlState ) {
         super( message, cause );
+        this.sqlState = sqlState;
 
         // TODO: Force the caller to pass in a Logger as a trace argument for better context.  Need to extend ResGen for this.
         log.trace( "PolyphenyDbException", this );
@@ -76,12 +84,19 @@ public class PolyphenyDbException extends GenericRuntimeException {
      */
     public PolyphenyDbException( String message ) {
         super( message );
+        this.sqlState = null;
 
         // TODO: Force the caller to pass in a Logger as a trace argument for better context.  Need to extend ResGen for this.
         log.trace( "PolyphenyDbException", this );
         if ( RuntimeConfig.DEBUG.getBoolean() ) {
             log.error( toString() );
         }
+    }
+
+
+    @Override
+    public String getSqlState() {
+        return sqlState;
     }
 
 }

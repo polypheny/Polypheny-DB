@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.BiConsumer;
+import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +44,8 @@ import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.core.common.ConditionalExecute.Condition;
 import org.polypheny.db.algebra.core.relational.RelModify;
 import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
+import org.polypheny.db.algebra.exceptions.ForeignKeyConstraintViolationException;
+import org.polypheny.db.algebra.exceptions.UniqueConstraintViolationException;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer.EnforcementInformation;
@@ -63,8 +67,8 @@ import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.Config;
-import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rex.RexBuilder;
@@ -80,8 +84,9 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockablesRegistry;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.util.Pair;
 
 @Slf4j
 public class ConstraintEnforceAttacher {
@@ -131,9 +136,15 @@ public class ConstraintEnforceAttacher {
 
 
     public static List<EnforcementInformation> getConstraintAlg( Set<LogicalTable> tables, Statement statement, EnforcementTime enforcementTime ) {
+        return getConstraintAlg( tables, statement, enforcementTime,
+                RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean(), RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() );
+    }
+
+
+    private static List<EnforcementInformation> getConstraintAlg( Set<LogicalTable> tables, Statement statement, EnforcementTime enforcementTime, boolean checkUnique, boolean checkForeignKeys ) {
         return tables
                 .stream()
-                .map( t -> LogicalConstraintEnforcer.getControl( t, statement, enforcementTime ) )
+                .map( t -> LogicalConstraintEnforcer.getControl( t, statement, enforcementTime, checkUnique, checkForeignKeys ) )
                 .filter( i -> i.control() != null )
                 .toList();
     }
@@ -240,7 +251,7 @@ public class ConstraintEnforceAttacher {
                 final AlgNode join = builder.join( JoinAlgType.INNER, joinCondition ).build();
                 final AlgNode check = LogicalRelFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), rexBuilder.makeInputRef( join, join.getTupleType().getFieldCount() - 1 ) ) );
                 final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO,
-                        ConstraintViolationException.class,
+                        UniqueConstraintViolationException.class,
                         String.format( "Insert violates unique constraint `%s`.`%s`", table.name, constraint.name ) );
                 lce.setCheckDescription( String.format( "Enforcement of unique constraint `%s`.`%s`", table.name, constraint.name ) );
                 lceRoot = lce;
@@ -270,7 +281,7 @@ public class ConstraintEnforceAttacher {
                             }
                         }
                         if ( uniqueSet.size() != parameterValues.size() ) {
-                            throw new ConstraintViolationException( String.format( "Insert violates unique constraint `%s`.`%s`", table.name, constraint.name ) );
+                            throw new UniqueConstraintViolationException( String.format( "Insert violates unique constraint `%s`.`%s`", table.name, constraint.name ) );
                         }
                     } else {
                         // no need to check, only one tuple in set
@@ -293,7 +304,7 @@ public class ConstraintEnforceAttacher {
                         uniqueSet.add( projection );
                     }
                     if ( uniqueSet.size() != tuples.size() ) {
-                        throw new ConstraintViolationException( String.format( "Insert violates unique constraint `%s`.`%s`", table.name, constraint.name ) );
+                        throw new UniqueConstraintViolationException( String.format( "Insert violates unique constraint `%s`.`%s`", table.name, constraint.name ) );
                     }
                 } else {
                     builder.clear();
@@ -301,7 +312,7 @@ public class ConstraintEnforceAttacher {
                     builder.aggregate( builder.groupKey( constraint.key.getFieldNames().stream().map( builder::field ).toList() ), builder.aggregateCall( OperatorRegistry.getAgg( OperatorName.COUNT ) ).as( "count" ) );
                     builder.filter( builder.call( OperatorRegistry.get( OperatorName.GREATER_THAN ), builder.field( "count" ), builder.literal( 1 ) ) );
                     final AlgNode innerCheck = builder.build();
-                    final LogicalConditionalExecute ilce = LogicalConditionalExecute.create( innerCheck, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
+                    final LogicalConditionalExecute ilce = LogicalConditionalExecute.create( innerCheck, lceRoot, Condition.EQUAL_TO_ZERO, UniqueConstraintViolationException.class,
                             String.format( "Insert violates unique constraint `%s`.`%s`", table.name, constraint.name ) );
                     ilce.setCheckDescription( String.format( "Source-internal enforcement of unique constraint `%s`.`%s`", table.name, constraint.name ) );
                     lceRoot = ilce;
@@ -338,7 +349,7 @@ public class ConstraintEnforceAttacher {
 
                 final AlgNode join = builder.join( JoinAlgType.LEFT, joinCondition ).build();
                 final AlgNode check = LogicalRelFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, join.getTupleType().getFieldCount() - 1 ) ) );
-                final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
+                final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, ForeignKeyConstraintViolationException.class,
                         String.format( "Insert violates foreign key constraint `%s`.`%s`", table.name, foreignKey.name ) );
                 lce.setCheckDescription( String.format( "Enforcement of foreign key `%s`.`%s`", table.name, foreignKey.name ) );
                 lceRoot = lce;
@@ -428,7 +439,7 @@ public class ConstraintEnforceAttacher {
                 condition = RexUtil.flatten( rexBuilder, condition );
                 AlgNode check = builder.build();
                 check = new LogicalRelFilter( check.getCluster(), check.getTraitSet(), check, condition, ImmutableSet.of() );
-                final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
+                final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, UniqueConstraintViolationException.class,
                         String.format( "Update violates unique constraint `%s`.`%s`", table.name, constraint.name ) );
                 lce.setCheckDescription( String.format( "Enforcement of unique constraint `%s`.`%s`", table.name, constraint.name ) );
                 lceRoot = lce;
@@ -452,7 +463,7 @@ public class ConstraintEnforceAttacher {
                 );
                 builder.filter( builder.call( OperatorRegistry.get( OperatorName.GREATER_THAN ), builder.field( "count" ), builder.literal( 1 ) ) );
                 final AlgNode innerCheck = builder.build();
-                final LogicalConditionalExecute ilce = LogicalConditionalExecute.create( innerCheck, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
+                final LogicalConditionalExecute ilce = LogicalConditionalExecute.create( innerCheck, lceRoot, Condition.EQUAL_TO_ZERO, UniqueConstraintViolationException.class,
                         String.format( "Update violates unique constraint `%s`.`%s`", table.name, constraint.name ) );
                 ilce.setCheckDescription( String.format( "Source-internal enforcement of unique constraint `%s`.`%s`", table.name, constraint.name ) );
                 lceRoot = ilce;
@@ -511,7 +522,7 @@ public class ConstraintEnforceAttacher {
                 }
                 final AlgNode join = builder.join( JoinAlgType.LEFT, condition ).build();
                 final AlgNode check = LogicalRelFilter.create( join, rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NULL ), rexBuilder.makeInputRef( join, projects.size() * 2 - 1 ) ) );
-                final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
+                final LogicalConditionalExecute lce = LogicalConditionalExecute.create( check, lceRoot, Condition.EQUAL_TO_ZERO, ForeignKeyConstraintViolationException.class,
                         String.format( "Update violates foreign key constraint `%s` (`%s` %s -> `%s` %s, %s)",
                                 foreignKey.name, table.name, foreignKey.getFieldNames(), foreignTable.name, foreignKey.getReferencedKeyFieldNames(), constraintRule ) );
                 lce.setCheckDescription( String.format( "Enforcement of foreign key `%s`.`%s`", table.name, foreignKey.name ) );
@@ -568,7 +579,7 @@ public class ConstraintEnforceAttacher {
                     );
                 }
                 final AlgNode join = builder.join( JoinAlgType.INNER, condition ).build();
-                final LogicalConditionalExecute lce = LogicalConditionalExecute.create( join, lceRoot, Condition.EQUAL_TO_ZERO, ConstraintViolationException.class,
+                final LogicalConditionalExecute lce = LogicalConditionalExecute.create( join, lceRoot, Condition.EQUAL_TO_ZERO, ForeignKeyConstraintViolationException.class,
                         String.format( "%s violates foreign key constraint `%s` (`%s` %s -> `%s` %s, %s)",
                                 root.isUpdate() ? "Update" : "Delete",
                                 foreignKey.name, foreignTable.name, foreignKey.getFieldNames(), table.name, foreignKey.getReferencedKeyFieldNames(), constraintRule ) );
@@ -598,7 +609,9 @@ public class ConstraintEnforceAttacher {
      * This is used to ensure constraint enforcement during runtime and allows to for example to disable the enforcement before INSERT
      * and later toggle it back on with automatic re-evaluation of the constraint entities.
      */
-    static public class ConstraintTracker implements ConfigListener {
+    public static class ConstraintTracker {
+
+        private static final ThreadLocal<Transaction> CONFIG_TRANSACTION = new ThreadLocal<>();
 
         private final TransactionManager manager;
 
@@ -608,77 +621,110 @@ public class ConstraintEnforceAttacher {
         }
 
 
-        @Override
-        public void onConfigChange( Config c ) {
-            Pair<Boolean, String> validError = testConstraintsValid();
-            if ( !validError.getKey() ) {
-                c.setBoolean( !c.getBoolean() );
-                throw new GenericRuntimeException( "Could not change the constraints. \n" + validError.getValue() );
-            }
+        public void registerConfigHandlers() {
+            RuntimeConfig unique = RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT;
+            RuntimeConfig foreignKeys = RuntimeConfig.FOREIGN_KEY_ENFORCEMENT;
+            unique.setBooleanUpdateHandler( constraintUpdate( () -> true, foreignKeys::getBoolean ) );
+            foreignKeys.setBooleanUpdateHandler( constraintUpdate( unique::getBoolean, () -> true ) );
         }
 
 
-        @Override
-        public void restart( Config c ) {
-            Pair<Boolean, String> validError = testConstraintsValid();
-            if ( !validError.getKey() ) {
-                c.setBoolean( !c.getBoolean() );
-                throw new GenericRuntimeException( "After restart the constraints where not longer enforceable. \n" + validError.getValue() );
-            }
+        BiConsumer<Boolean, Runnable> constraintUpdate( BooleanSupplier checkUnique, BooleanSupplier checkForeignKeys ) {
+            return ( enabled, publish ) -> updateConstraint( enabled, publish, checkUnique, checkForeignKeys );
         }
 
 
-        private Pair<Boolean, @Nullable String> testConstraintsValid() {
-            if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() || RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() ) {
-                try {
-                    List<LogicalTable> tables = Catalog
-                            .getInstance()
-                            .getSnapshot()
-                            .getNamespaces( null )
-                            .stream()
-                            .flatMap( n -> Catalog.snapshot().rel().getTables( n.id, null ).stream() )
-                            .filter( t -> t.entityType == EntityType.ENTITY && t.getDataModel() == DataModel.RELATIONAL )
-                            .toList();
-                    Transaction transaction = this.manager.startTransaction( Catalog.defaultUserId, null, "ConstraintEnforcement" );
-                    Statement statement = transaction.createStatement();
-                    QueryProcessor processor = statement.getQueryProcessor();
-                    List<EnforcementInformation> infos = ConstraintEnforceAttacher
-                            .getConstraintAlg( new TreeSet<>( tables ), statement, EnforcementTime.ON_QUERY );
-                    List<PolyImplementation> results = infos
-                            .stream()
-                            .map( s -> processor.prepareQuery( AlgRoot.of( s.control(), Kind.SELECT ), false ) )
-                            .toList();
-                    List<List<List<PolyValue>>> rows = results.stream()
-                            .map( r -> r.execute( statement, -1 ).getAllRowsAndClose() )
-                            .filter( r -> !r.isEmpty() )
-                            .toList();
-
-                    if ( !rows.isEmpty() ) {
-                        int index = rows.get( 0 ).get( 0 ).get( 1 ).asNumber().intValue();
-                        String error = infos.get( 0 ).errorMessages().get( index ) + "\nThere are violated constraints, the transaction was rolled back!";
-                        if ( statement.getTransaction() != null ) {
-                            statement.getTransaction().rollback( error );
-                        }
-
-                        throw new TransactionException( error );
-                    }
-                    try {
-                        statement.getTransaction().commit();
-                    } catch ( TransactionException e ) {
-                        String error = "Error while committing constraint enforcement check, the transaction was rolled back!" + e.getMessage();
-                        if ( statement.getTransaction() != null ) {
-                            statement.getTransaction().rollback( error );
-                        }
-
-                        throw new GenericRuntimeException( error );
-                    }
-
-
-                } catch ( TransactionException e ) {
-                    return Pair.of( false, e.getMessage() );
+        public static void setConfigValue( Config config, String value, Transaction transaction ) {
+            // ALTER CONFIG holds the exclusive global schema lock during validation.
+            Transaction previous = CONFIG_TRANSACTION.get();
+            CONFIG_TRANSACTION.set( transaction );
+            try {
+                config.parseStringAndSetValue( value );
+            } finally {
+                if ( previous == null ) {
+                    CONFIG_TRANSACTION.remove();
+                } else {
+                    CONFIG_TRANSACTION.set( previous );
                 }
             }
-            return Pair.of( true, null );
+        }
+
+
+        private void updateConstraint( boolean enabled, Runnable publish, BooleanSupplier checkUnique, BooleanSupplier checkForeignKeys ) {
+            if ( !enabled ) {
+                publish.run();
+                return;
+            }
+
+            TransactionException failure = testConstraintsValid( publish, checkUnique, checkForeignKeys );
+            if ( failure != null ) {
+                throw new GenericRuntimeException( "Could not change the constraints. \n" + failure.getMessage(), failure );
+            }
+        }
+
+
+        private @Nullable TransactionException testConstraintsValid( Runnable publish, BooleanSupplier checkUnique, BooleanSupplier checkForeignKeys ) {
+            Transaction configTransaction = CONFIG_TRANSACTION.get();
+            boolean ownsTransaction = configTransaction == null;
+            Transaction transaction = ownsTransaction
+                    ? manager.startTransaction( Catalog.defaultUserId, null, "ConstraintEnforcement" )
+                    : configTransaction;
+            try {
+                if ( ownsTransaction ) {
+                    transaction.acquireLockable( LockablesRegistry.GLOBAL_SCHEMA_LOCKABLE, LockType.EXCLUSIVE );
+                }
+                Snapshot snapshot = transaction.getSnapshot();
+                List<LogicalTable> tables = snapshot.getNamespaces( null ).stream()
+                        .flatMap( namespace -> snapshot.rel().getTables( namespace.id, null ).stream() )
+                        .filter( table -> table.entityType == EntityType.ENTITY && table.getDataModel() == DataModel.RELATIONAL )
+                        .toList();
+                Statement statement = transaction.createStatement();
+                QueryProcessor processor = statement.getQueryProcessor();
+                List<EnforcementInformation> infos = getConstraintAlg(
+                        new TreeSet<>( tables ), statement, EnforcementTime.ON_QUERY, checkUnique.getAsBoolean(), checkForeignKeys.getAsBoolean() );
+                List<PolyImplementation> results = infos.stream()
+                        .map( info -> processor.prepareQuery( AlgRoot.of( info.control(), Kind.SELECT ), false ) )
+                        .toList();
+                List<List<List<PolyValue>>> resultRows = results.stream()
+                        .map( result -> result.execute( statement, -1 ).getAllRowsAndClose() )
+                        .toList();
+
+                for ( int i = 0; i < resultRows.size(); i++ ) {
+                    List<List<PolyValue>> rows = resultRows.get( i );
+                    if ( !rows.isEmpty() ) {
+                        int index = rows.get( 0 ).get( 1 ).asNumber().intValue();
+                        EnforcementInformation info = infos.get( i );
+                        String error = info.errorMessages().get( index ) + "\nThere are violated constraints, the transaction was rolled back!";
+                        if ( ownsTransaction ) {
+                            transaction.rollback( error );
+                        }
+                        return new TransactionException( error, ConstraintViolationException.sqlStateFor( info.errorClasses().get( index ) ) );
+                    }
+                }
+
+                if ( ownsTransaction ) {
+                    try {
+                        transaction.commit( publish );
+                    } catch ( TransactionException e ) {
+                        throw new GenericRuntimeException( "Error while committing constraint enforcement check, the transaction was rolled back!" + e.getMessage(), e );
+                    }
+                } else {
+                    publish.run();
+                }
+                return null;
+            } catch ( RuntimeException | Error failure ) {
+                if ( ownsTransaction && transaction.isActive() ) {
+                    try {
+                        transaction.rollback( failure.getMessage() );
+                    } catch ( RuntimeException | Error cleanupFailure ) {
+                        failure.addSuppressed( cleanupFailure );
+                    }
+                }
+                if ( failure instanceof TransactionException transactionFailure ) {
+                    return transactionFailure;
+                }
+                throw failure;
+            }
         }
 
     }

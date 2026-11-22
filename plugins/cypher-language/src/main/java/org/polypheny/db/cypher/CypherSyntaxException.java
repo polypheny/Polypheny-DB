@@ -18,8 +18,9 @@ package org.polypheny.db.cypher;
 
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.parser.ParseException;
+import org.polypheny.db.runtime.SqlStateProvider;
 
-public class CypherSyntaxException extends GenericRuntimeException {
+public class CypherSyntaxException extends GenericRuntimeException implements SqlStateProvider {
 
     public CypherSyntaxException( ParseException e, int beginOffset, int beginLine, int beginColumn ) {
         super( e.getMessage() );
@@ -28,6 +29,12 @@ public class CypherSyntaxException extends GenericRuntimeException {
 
     public static String relationshipPatternNotAllowed( ConstraintType constraintType ) {
         return "Used relationship pattern is not allowed: " + constraintType.name() + ".";
+    }
+
+
+    @Override
+    public String getSqlState() {
+        return "42601";
     }
 
 }

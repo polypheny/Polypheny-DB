@@ -4347,7 +4347,8 @@ public class DdlManagerImpl extends DdlManager {
             // no primary was set for now, we attach condition to check on commit
             statement.getTransaction().attachCommitConstraint(
                     () -> logical.primaryKey != null && catalog.getSnapshot().rel().getPrimaryKey( logical.primaryKey ).isPresent(),
-                    "No primary key defined for table: " + name );
+                    "No primary key defined for table: " + name,
+                    "42P16" );
         }
 
         // addATable

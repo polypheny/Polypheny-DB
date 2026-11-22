@@ -18,6 +18,7 @@ package org.polypheny.db.transaction;
 
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
@@ -50,7 +51,22 @@ public interface Transaction {
 
     void attachCommitConstraint( Supplier<Boolean> constraintChecker, String description );
 
+    default void attachCommitConstraint( Supplier<Boolean> constraintChecker, String description, String sqlState ) {
+        attachCommitConstraint( constraintChecker, description );
+    }
+
     void commit() throws TransactionException;
+
+    /**
+     * Commits the transaction and publishes an in-memory change through a non-throwing callback.
+     * The DBMS implementation invokes the callback after closing statements and before releasing transaction locks.
+     * This default implementation invokes it after {@link #commit()} returns.
+     */
+    default void commit( Runnable onCommit ) throws TransactionException {
+        Objects.requireNonNull( onCommit );
+        commit();
+        onCommit.run();
+    }
 
     /**
      * Rolls back the transaction

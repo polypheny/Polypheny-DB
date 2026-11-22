@@ -44,7 +44,6 @@ import org.polypheny.db.prisminterface.utils.PrismValueDeserializer;
 import org.polypheny.db.prisminterface.utils.PropertyUtils;
 import org.polypheny.db.prisminterface.utils.VersionUtils;
 import org.polypheny.db.sql.language.SqlJdbcFunctionCall;
-import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.RunMode;
@@ -133,11 +132,14 @@ class PIService {
     }
 
 
-    private Response createErrorResponse( long id, String message ) {
+    static Response createErrorResponse( long id, Throwable failure ) {
+        String message = Objects.requireNonNullElse( failure.getMessage(), failure.getClass().getSimpleName() );
         return Response.newBuilder()
                 .setId( id )
                 .setLast( true )
-                .setErrorResponse( ErrorResponse.newBuilder().setMessage( message ) )
+                .setErrorResponse( ErrorResponse.newBuilder()
+                        .setMessage( message )
+                        .setDetails( PrismErrorClassifier.details( failure, message ) ) )
                 .build();
     }
 
@@ -150,7 +152,7 @@ class PIService {
             if ( Catalog.mode == RunMode.BENCHMARK ) {
                 log.error( "Request failed: First message must be a connection request" );
             }
-            sendOneMessage( createErrorResponse( firstReq.getId(), "First message must be a connection request" ) );
+            sendOneMessage( createErrorResponse( firstReq.getId(), new PIServiceException( "First message must be a connection request", "08P01" ) ) );
             return false;
         }
 
@@ -158,11 +160,11 @@ class PIService {
         try {
             r = connect( firstReq.getConnectionRequest(), new ResponseMaker<>( firstReq, "connection_response" ) );
             success = true;
-        } catch ( TransactionException | AuthenticationException e ) {
+        } catch ( Throwable e ) {
             if ( Catalog.mode == RunMode.BENCHMARK ) {
                 log.error( "Request failed: ", e );
             }
-            r = createErrorResponse( firstReq.getId(), e.getMessage() );
+            r = createErrorResponse( firstReq.getId(), e );
         }
         sendOneMessage( r );
         return success;
@@ -177,7 +179,7 @@ class PIService {
             if ( Catalog.mode == RunMode.BENCHMARK && !(t instanceof DeadlockException) ) {
                 log.error( "Request failed: ", t );
             }
-            r = createErrorResponse( req.getId(), Objects.requireNonNullElse( t.getMessage(), t.getClass().getSimpleName() ) );
+            r = createErrorResponse( req.getId(), t );
         }
         sendOneMessage( r );
         return r;
@@ -215,7 +217,7 @@ class PIService {
         try {
             handleMessages();
         } catch ( Throwable e ) {
-            if ( !(e instanceof EOFException) && !e.getMessage().equals( "Broken pipe" ) ) {
+            if ( !(e instanceof EOFException) && !"Broken pipe".equals( e.getMessage() ) ) {
                 throw new GenericRuntimeException( e );
             }
             reason = e.getMessage();
@@ -250,7 +252,7 @@ class PIService {
     private Response handleMessage( Request req ) throws IOException {
         PIClient client = uuid == null ? null : clientManager.getClient( uuid );
         if ( client == null ) {
-            throw new IllegalStateException( "Clients must be authenticated before sending any messages" );
+            throw new PIServiceException( "Clients must be authenticated before sending any messages", "28000" );
         }
         checkAutocommitExecution( req, client );
 
@@ -268,7 +270,7 @@ class PIService {
             case SQL_TIME_DATE_FUNCTIONS_REQUEST -> getSqlTimeDateFunctions( req.getSqlTimeDateFunctionsRequest(), new ResponseMaker<>( req, "sql_time_date_functions_response" ) );
             case SQL_NUMERIC_FUNCTIONS_REQUEST -> getSqlNumericFunctions( req.getSqlNumericFunctionsRequest(), new ResponseMaker<>( req, "sql_numeric_functions_response" ) );
             case SQL_KEYWORDS_REQUEST -> getSqlKeywords( req.getSqlKeywordsRequest(), new ResponseMaker<>( req, "sql_keywords_response" ) );
-            case CONNECTION_REQUEST -> throw new GenericRuntimeException( "ConnectionRequest only allowed as first message" );
+            case CONNECTION_REQUEST -> throw new PIServiceException( "ConnectionRequest only allowed as first message", "08P01" );
             case CONNECTION_CHECK_REQUEST -> checkConnection( req.getConnectionCheckRequest(), new ResponseMaker<>( req, "connection_check_response" ) );
             case DISCONNECT_REQUEST -> disconnect( req.getDisconnectRequest(), new ResponseMaker<>( req, "disconnect_response" ) );
             case CLIENT_INFO_PROPERTIES_REQUEST -> getClientInfoProperties( req.getClientInfoPropertiesRequest(), new ResponseMaker<>( req, "client_info_properties_response" ) );
@@ -323,9 +325,9 @@ class PIService {
     }
 
 
-    private Response connect( ConnectionRequest request, ResponseMaker<ConnectionResponse> responseObserver ) throws TransactionException, AuthenticationException {
+    private Response connect( ConnectionRequest request, ResponseMaker<ConnectionResponse> responseObserver ) throws AuthenticationException {
         if ( uuid != null ) {
-            throw new PIServiceException( "Can only connect once per session" );
+            throw new PIServiceException( "Can only connect once per session", "08P01" );
         }
         Builder responseBuilder = ConnectionResponse.newBuilder()
                 .setMajorApiVersion( VersionUtils.getMAJOR_API_VERSION() )
@@ -430,8 +432,18 @@ class PIService {
 
 
     private Response searchFunctions( FunctionsRequest request, ResponseMaker<FunctionsResponse> responseObserver ) {
-        QueryLanguage queryLanguage = QueryLanguage.from( request.getQueryLanguage() );
-        FunctionCategory functionCategory = FunctionCategory.valueOf( request.getFunctionCategory() );
+        QueryLanguage queryLanguage;
+        try {
+            queryLanguage = QueryLanguage.from( request.getQueryLanguage() );
+        } catch ( GenericRuntimeException e ) {
+            throw new PIServiceException( e.getMessage(), "0A000", e );
+        }
+        FunctionCategory functionCategory;
+        try {
+            functionCategory = FunctionCategory.valueOf( request.getFunctionCategory() );
+        } catch ( IllegalArgumentException e ) {
+            throw new PIServiceException( e.getMessage(), "22023", e );
+        }
         return responseObserver.makeResponse( DbMetaRetriever.getFunctions( queryLanguage, functionCategory ) );
     }
 
@@ -561,10 +573,10 @@ class PIService {
         ConnectionProperties properties = request.getConnectionProperties();
         boolean changesAutocommit = properties.hasIsAutoCommit() && properties.getIsAutoCommit() != client.isAutoCommit();
         if ( changesAutocommit && client.getStatementManager().hasOpenResult( true ) ) {
-            throw new PIServiceException( "Close or finish the open Cypher result before changing autocommit mode" );
+            throw new PIServiceException( "Close or finish the open Cypher result before changing autocommit mode", "25001" );
         }
         if ( changesAutocommit && client.hasActiveIsolatedReadTransactions() ) {
-            throw new PIServiceException( "Close or finish the open results before changing autocommit mode" );
+            throw new PIServiceException( "Close or finish the open results before changing autocommit mode", "25001" );
         }
         if ( properties.hasIsAutoCommit() ) {
             client.setAutoCommit( properties.getIsAutoCommit() );
@@ -573,7 +585,7 @@ class PIService {
             String namespaceName = properties.getNamespaceName();
             Optional<LogicalNamespace> optionalNamespace = Catalog.snapshot().getNamespace( namespaceName );
             if ( optionalNamespace.isEmpty() ) {
-                throw new PIServiceException( "Getting namespace " + namespaceName + " failed." );
+                throw new PIServiceException( "Getting namespace " + namespaceName + " failed.", "3F000" );
             }
             client.setNamespace( optionalNamespace.get() );
         }
@@ -595,10 +607,10 @@ class PIService {
         String format = properties.getPropertiesMap().get( PIClientInfoProperties.CYPHER_RESULT_FORMAT );
         if ( format != null && !PIClientInfoProperties.AUTO_FORMAT.equals( format ) ) {
             if ( !PIClientInfoProperties.RELATIONAL_FORMAT.equals( format ) ) {
-                throw new PIServiceException( "CypherResultFormat must be 'auto' or 'relational'" );
+                throw new PIServiceException( "CypherResultFormat must be 'auto' or 'relational'", "22023" );
             }
             if ( !client.supportsGraphValues() ) {
-                throw new PIServiceException( "Relational Cypher results require Prism 2.3 or later" );
+                throw new PIServiceException( "Relational Cypher results require Prism 2.3 or later", "0A000" );
             }
         }
         client.getPIClientInfoProperties().putAll( properties.getPropertiesMap() );
@@ -608,7 +620,7 @@ class PIService {
 
     private PIClient getClient() throws PIServiceException {
         if ( uuid == null ) {
-            throw new PIServiceException( "Must authenticate first" );
+            throw new PIServiceException( "Must authenticate first", "28000" );
         }
         return clientManager.getClient( uuid );
     }

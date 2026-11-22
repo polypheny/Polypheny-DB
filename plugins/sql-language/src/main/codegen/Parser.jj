@@ -182,6 +182,7 @@ import org.polypheny.db.util.temporal.DateTimeUtils;
 import org.polypheny.db.util.temporal.TimeUnit;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
+import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.algebra.json.JsonConstructorNullClause;
 import org.polypheny.db.algebra.json.JsonEncoding;
 import org.polypheny.db.algebra.json.JsonExistsErrorBehavior;
@@ -546,8 +547,11 @@ JAVACODE NodeParseException convertException(Throwable ex)
         ex = ece.getCause();
     }
 
+    boolean syntaxError = ex instanceof ParseException
+        || (ex instanceof TokenMgrError && ((TokenMgrError) ex).errorCode == TokenMgrError.LEXICAL_ERROR)
+        || (ex instanceof PolyphenyDbException && ex.getCause() == null);
     return new NodeParseException(
-        ex.getMessage(), pos, expectedTokenSequences, tokenImage, ex);
+        ex.getMessage(), pos, expectedTokenSequences, tokenImage, ex, syntaxError);
 }
 
 /**

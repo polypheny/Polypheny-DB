@@ -33,18 +33,19 @@ public class CypherParseException extends NodeParseException {
      * @param parserException Parser exception
      */
     public CypherParseException( String message, ParserPos pos, int[][] expectedTokenSequences, String[] tokenImages, Throwable parserException ) {
-        super( message, pos, expectedTokenSequences, tokenImages, parserException );
+        super( message, pos, expectedTokenSequences, tokenImages, parserException,
+                parserException == null || parserException instanceof ParseException );
     }
 
 
     public CypherParseException( ParseException e, Token t ) {
         // fix
-        super( e.getMessage(), null, e.expectedTokenSequences, e.tokenImage, e );
+        super( e.getMessage(), null, e.expectedTokenSequences, e.tokenImage, e, true );
     }
 
 
     public CypherParseException( String image, int[][] expectedTokenSequences, String[] tokenImage, ParseException e, int i, int endLine, int i1 ) {
-        super( image, new ParserPos( i, endLine ), expectedTokenSequences, tokenImage, e );
+        super( image, new ParserPos( i, endLine ), expectedTokenSequences, tokenImage, e, true );
     }
 
 }

@@ -18,11 +18,40 @@ package org.polypheny.db.algebra.exceptions;
 
 
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.runtime.SqlStateProvider;
 
-public class ConstraintViolationException extends GenericRuntimeException {
+public class ConstraintViolationException extends GenericRuntimeException implements SqlStateProvider {
+
+    public static final String INTEGRITY_CONSTRAINT_VIOLATION = "23000";
+
+    private final String sqlState;
+
 
     public ConstraintViolationException( final String message ) {
+        this( message, INTEGRITY_CONSTRAINT_VIOLATION );
+    }
+
+
+    public ConstraintViolationException( String message, String sqlState ) {
         super( message );
+        this.sqlState = sqlState;
+    }
+
+
+    @Override
+    public String getSqlState() {
+        return sqlState;
+    }
+
+
+    public static String sqlStateFor( Class<? extends Exception> exceptionClass ) {
+        if ( exceptionClass == UniqueConstraintViolationException.class ) {
+            return UniqueConstraintViolationException.SQL_STATE;
+        }
+        if ( exceptionClass == ForeignKeyConstraintViolationException.class ) {
+            return ForeignKeyConstraintViolationException.SQL_STATE;
+        }
+        return INTEGRITY_CONSTRAINT_VIOLATION;
     }
 
 }

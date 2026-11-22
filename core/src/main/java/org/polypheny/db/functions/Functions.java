@@ -101,6 +101,8 @@ import org.polypheny.db.functions.util.ProductPolyListEnumerator;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.runtime.ComparableList;
 import org.polypheny.db.runtime.Like;
+import org.polypheny.db.runtime.SqlStateException;
+import org.polypheny.db.runtime.SqlStateProvider;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyBinary;
@@ -541,10 +543,11 @@ public class Functions {
                 results.add( object );
             }
         } catch ( Exception e ) {
-            throw new ConstraintViolationException( Joiner.on( "\n" ).join( msgs ) );
+            // Keep the diagnostic without classifying an unexpected execution failure as a violation.
+            throw new GenericRuntimeException( Joiner.on( "\n" ).join( msgs ), e );
         }
 
-        List<PolyNumber> validationIndexes = new ArrayList<>();
+        List<Integer> validationIndexes = new ArrayList<>();
 
         // constraint is not parameterized atm, as it would require asymmetric parameterization
         Map<Long, AlgDataType> backupTypes = context.getParameterTypes();
@@ -552,14 +555,17 @@ public class Functions {
         context.resetParameterValues();
 
         for ( PolyValue[] object : control.apply() ) {
-            validationIndexes.add( object[1].asNumber() );
+            validationIndexes.add( object[1].asNumber().intValue() );
         }
         if ( validationIndexes.isEmpty() ) {
             return Linq4j.asEnumerable( results );
         } else {
             // force rollback
-            throw new ConstraintViolationException( Joiner.on( "\n" )
-                    .join( validationIndexes.stream().map( ( PolyNumber index ) -> msgs.get( index.intValue() ) ).toList() ) );
+            String message = Joiner.on( "\n" ).join( validationIndexes.stream().map( msgs::get ).toList() );
+            String firstState = ConstraintViolationException.sqlStateFor( exceptions.get( validationIndexes.get( 0 ) ) );
+            String sqlState = validationIndexes.stream().allMatch( index -> firstState.equals( ConstraintViolationException.sqlStateFor( exceptions.get( index ) ) ) )
+                    ? firstState : ConstraintViolationException.INTEGRITY_CONSTRAINT_VIOLATION;
+            throw new ConstraintViolationException( message, sqlState );
         }
     }
 
@@ -1321,9 +1327,17 @@ public class Functions {
 
 
     public static PolyNumber divide( PolyNumber b0, PolyNumber b1 ) {
-        return (b0 == null || b1 == null)
-                ? null
-                : b0.divide( b1 );
+        if ( b0 == null || b1 == null ) {
+            return null;
+        }
+        try {
+            return b0.divide( b1 );
+        } catch ( ArithmeticException e ) {
+            if ( b1.bigDecimalValue().signum() == 0 ) {
+                throw new SqlStateException( e.getMessage(), "22012", e );
+            }
+            throw e;
+        }
     }
 
 
@@ -1443,8 +1457,16 @@ public class Functions {
      * SQL <code>MOD</code> operator applied to byte values.
      */
     public static PolyNumber mod( PolyNumber b0, PolyNumber b1 ) {
-        final BigDecimal[] bigDecimals = b0.bigDecimalValue().divideAndRemainder( b1.bigDecimalValue() );
-        return PolyBigDecimal.of( bigDecimals[1] );
+        BigDecimal dividend = b0.bigDecimalValue();
+        BigDecimal divisor = b1.bigDecimalValue();
+        try {
+            return PolyBigDecimal.of( dividend.divideAndRemainder( divisor )[1] );
+        } catch ( ArithmeticException e ) {
+            if ( divisor.signum() == 0 ) {
+                throw new DivisionByZeroException( e );
+            }
+            throw e;
+        }
     }
 
     // MOD
@@ -1460,6 +1482,29 @@ public class Functions {
         }
 
         throw notArithmetic( "mod", b0, b1 );
+    }
+
+
+    private static final class DivisionByZeroException extends ArithmeticException implements SqlStateProvider {
+
+        private DivisionByZeroException( ArithmeticException cause ) {
+            super( cause.getMessage() );
+            initCause( cause );
+        }
+
+
+        @Override
+        public String getSqlState() {
+            return "22012";
+        }
+
+
+        @Override
+        public String toString() {
+            // Cause-only wrappers include this rendering in the legacy diagnostic.
+            return getCause().toString();
+        }
+
     }
 
 

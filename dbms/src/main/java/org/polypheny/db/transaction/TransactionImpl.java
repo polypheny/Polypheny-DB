@@ -38,7 +38,6 @@ import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.Adapter;
@@ -46,6 +45,7 @@ import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer.EnforcementInformation;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
@@ -68,9 +68,8 @@ import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.transaction.QueryAnalyzer.TransactionAnalyzer;
 import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.transaction.locking.LockablesRegistry;
-import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.DeadlockException;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.view.MaterializedViewManager;
 
 
@@ -187,18 +186,20 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     }
 
 
-    private Pair<@NotNull Boolean, @Nullable String> checkIntegrity() {
-        // check constraints e.g. primary key constraints
-        List<Pair<Boolean, String>> fails = commitConstraints
-                .stream()
-                .map( c -> Pair.of( c.condition().get(), c.errorMessage() ) )
-                .filter( c -> !c.left )
+    private void checkDdlConstraints() {
+        List<ConstraintCondition> failures = commitConstraints.stream()
+                .filter( constraint -> !constraint.condition().get() )
                 .toList();
 
-        if ( !fails.isEmpty() ) {
-            return Pair.of( false, "DDL constraints not met: \n" + fails.stream().map( f -> f.right ).collect( Collectors.joining( ",\n " ) ) + "." );
+        if ( !failures.isEmpty() ) {
+            String message = "DDL constraints not met: \n"
+                    + failures.stream().map( ConstraintCondition::errorMessage ).collect( Collectors.joining( ",\n " ) )
+                    + ".\nThere are violated constraints, the transaction was rolled back!";
+            String firstState = failures.get( 0 ).sqlState();
+            String sqlState = failures.stream().allMatch( constraint -> firstState.equals( constraint.sqlState() ) )
+                    ? firstState : "42000";
+            throw new TransactionException( message, sqlState );
         }
-        return Pair.of( true, null );
     }
 
 
@@ -215,13 +216,30 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
 
     @Override
+    public void attachCommitConstraint( Supplier<Boolean> constraintChecker, String description, String sqlState ) {
+        commitConstraints.add( new ConstraintCondition( constraintChecker, description, sqlState ) );
+    }
+
+
+    @Override
     public void commit() throws TransactionException {
+        commitWithCallback( null );
+    }
+
+
+    @Override
+    public void commit( Runnable onCommit ) throws TransactionException {
+        commitWithCallback( Objects.requireNonNull( onCommit ) );
+    }
+
+
+    private void commitWithCallback( @Nullable Runnable onCommit ) {
         if ( !isActive() ) {
             log.trace( "This transaction has already been finished!" );
             return;
         }
         try {
-            commitChanges();
+            commitChanges( onCommit );
         } catch ( RuntimeException | Error failure ) {
             if ( isActive() ) {
                 try {
@@ -235,11 +253,8 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     }
 
 
-    private void commitChanges() {
-        Pair<Boolean, String> isValid = checkIntegrity();
-        if ( !isValid.left ) {
-            throw new TransactionException( isValid.right + "\nThere are violated constraints, the transaction was rolled back!" );
-        }
+    private void commitChanges( @Nullable Runnable onCommit ) {
+        checkDdlConstraints();
 
         // physical changes
         commitActions.forEach( Runnable::run );
@@ -263,11 +278,15 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             List<PolyImplementation> results = infos
                     .stream()
                     .map( s -> processor.prepareQuery( AlgRoot.of( s.control(), Kind.SELECT ), s.control().getCluster().getTypeFactory().builder().build(), false, true, false ) ).toList();
-            List<List<?>> rows = results.stream().map( r -> r.execute( statement, -1 ).getAllRowsAndClose() ).filter( r -> !r.isEmpty() ).collect( Collectors.toList() );
-            if ( !rows.isEmpty() ) {
-                int index = ((List<PolyNumber>) rows.get( 0 ).get( 0 )).get( 1 ).intValue();
-                String error = infos.get( 0 ).errorMessages().get( index ) + "\nThere are violated constraints, the transaction was rolled back!";
-                throw new TransactionException( error );
+            List<List<List<PolyValue>>> resultRows = results.stream().map( result -> result.execute( statement, -1 ).getAllRowsAndClose() ).toList();
+            for ( int i = 0; i < resultRows.size(); i++ ) {
+                List<List<PolyValue>> rows = resultRows.get( i );
+                if ( !rows.isEmpty() ) {
+                    int index = rows.get( 0 ).get( 1 ).asNumber().intValue();
+                    EnforcementInformation info = infos.get( i );
+                    String error = info.errorMessages().get( index ) + "\nThere are violated constraints, the transaction was rolled back!";
+                    throw new TransactionException( error, ConstraintViolationException.sqlStateFor( info.errorClasses().get( index ) ) );
+                }
             }
         }
 
@@ -299,6 +318,9 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
         try {
             statements.forEach( Statement::close );
+            if ( onCommit != null ) {
+                onCommit.run();
+            }
         } finally {
             finishTransaction();
         }
