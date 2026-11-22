@@ -469,9 +469,11 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
             return new RexDynamicParam( call.type, i );
         } else {
             List<RexNode> newOperands = new ArrayList<>();
-            for ( RexNode operand : call.operands ) {
-                if ( operand instanceof RexLiteral && ((RexLiteral) operand).getPolyType() == PolyType.SYMBOL ) {
-                    // Do not replace with dynamic param
+            for ( int i = 0; i < call.operands.size(); i++ ) {
+                RexNode operand = call.operands.get( i );
+                if ( (i == 0 && call.op.getOperatorName() == OperatorName.MQL_EXPR_DOCUMENT)
+                        || (operand instanceof RexLiteral literal && literal.getPolyType() == PolyType.SYMBOL) ) {
+                    // Keep document field names and symbols as metadata.
                     newOperands.add( operand );
                 } else {
                     newOperands.add( operand.accept( this ) );

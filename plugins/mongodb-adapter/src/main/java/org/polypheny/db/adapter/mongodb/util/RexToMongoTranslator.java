@@ -24,10 +24,12 @@ import java.util.stream.Collectors;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
+import org.bson.BsonValue;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.mongodb.MongoAlg.Implementor;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.adapter.mongodb.bson.BsonKeyValue;
+import org.polypheny.db.adapter.mongodb.bson.MongoDocumentSerializer;
 import org.polypheny.db.adapter.mongodb.rules.MongoRules;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -44,6 +46,7 @@ import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
 
 /**
  * Translator from {@link RexNode} to strings in MongoDB's expression language.
@@ -112,6 +115,9 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
         if ( literal.getValue() == null ) {
             return "null";
         }
+        if ( model == DataModel.DOCUMENT ) {
+            return "{$literal: " + MongoDocumentSerializer.toExtendedJson( literal.value ) + "}";
+        }
         return "{$literal: " + (literal.value.isString() ? literal.value.asString().toQuotedJson() : literal.value.toJson()) + "}";
     }
 
@@ -140,6 +146,13 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
 
     @Override
     public String visitCall( RexCall call ) {
+        if ( call.getOperator().getOperatorName() == OperatorName.MQL_EXPR_QUERY_VALUE ) {
+            RexNameRef field = (RexNameRef) call.operands.get( 0 );
+            BsonValue reference = MongoRules.translateExprFieldReference( implementor.getTupleType(), field );
+            return reference.isDocument()
+                    ? reference.asDocument().toJson()
+                    : PolyString.of( reference.asString().getValue() ).toQuotedJson();
+        }
         String name = MongoRules.isItem( call );
         if ( name != null ) {
             return "'$" + name + "'";

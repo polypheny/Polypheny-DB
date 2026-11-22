@@ -19,6 +19,8 @@ package org.polypheny.db.type.entity.temporal;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonToken;
+import com.google.common.math.DoubleMath;
+import java.math.RoundingMode;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.DateFormat;
@@ -35,7 +37,9 @@ import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
 import org.polypheny.db.util.TimestampString;
 
@@ -150,12 +154,20 @@ public class PolyTimestamp extends PolyTemporal {
 
 
     public static PolyTimestamp convert( @Nullable PolyValue value ) {
+        if ( value instanceof PolyString text ) {
+            value = parseEpochString( text );
+        }
         if ( value == null ) {
             return null;
         }
 
         if ( value.isNumber() ) {
-            return PolyTimestamp.of( value.asNumber().longValue() );
+            PolyNumber number = value.asNumber();
+            return PolyTimestamp.of( switch ( number.getType() ) {
+                case DECIMAL -> number.asBigDecimal().integerPart().longValueExact();
+                case FLOAT, REAL, DOUBLE -> DoubleMath.roundToLong( number.doubleValue(), RoundingMode.DOWN );
+                default -> number.longValue();
+            } );
         } else if ( value.isTemporal() ) {
             return PolyTimestamp.of( value.asTemporal().getMillisSinceEpoch() );
         }

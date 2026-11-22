@@ -47,11 +47,17 @@ import org.polypheny.db.functions.Functions;
 import org.polypheny.db.functions.PathContext;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.relational.PolyMap;
+import org.polypheny.db.type.entity.temporal.PolyDate;
+import org.polypheny.db.type.entity.temporal.PolyTime;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 
 
 /**
@@ -112,6 +118,77 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
                 PolyDocument.of( Map.of( PolyString.of( "foo" ), PolyInteger.of( 100 ) ) ),
                 PolyString.of( "lax $.foo" ),
                 contextMatches( PathContext.withReturned( Functions.PathMode.LAX, PolyInteger.of( 100 ) ) ) );
+    }
+
+
+    @Test
+    public void testJsonApiCommonSyntaxPreservesStructuredValues() {
+        PolyString key = PolyString.of( "payload" );
+        PolyString preciseKey = PolyString.of( "precise" );
+        PolyString approximateKey = PolyString.of( "approximate" );
+        PolyString valuesKey = PolyString.of( "values" );
+        PolyBigDecimal precise = PolyBigDecimal.of( "9223372036854775807.9" );
+        PolyBigDecimal nestedDecimal = PolyBigDecimal.of( "1.00000000000000000000000000000100" );
+        PolyDocument payload = PolyDocument.ofDocument( Map.of(
+                PolyString.of( "missing" ), PolyNull.NULL,
+                valuesKey, PolyList.of( PolyString.of( "null" ), PolyNull.NULL, nestedDecimal, PolyDouble.of( -0.0 ) ),
+                preciseKey, precise,
+                approximateKey, PolyDouble.of( 1e30 ) ) );
+
+        PolyDocument stored = PolyDocument.ofDocument( Map.of( key, payload ) );
+        PolyValue restored = PolyValue.fromTypedJson( stored.toTypedJson(), PolyValue.class );
+        PolyValue input = (PolyValue) Functions.jsonValueExpression( restored );
+        PathContext result = Functions.jsonApiCommonSyntax( input, PolyString.of( "strict $.payload" ) );
+        assertThat( result, contextMatches( PathContext.withReturned( Functions.PathMode.STRICT, payload ) ) );
+        PolyDocument actual = result.pathReturned.asDocument();
+        assertThat( actual.get( preciseKey ).asBigDecimal().value, is( precise.value ) );
+        assertThat( actual.get( approximateKey ).asDouble().value, is( 1e30 ) );
+        assertThat( actual.get( valuesKey ).asList().get( 2 ).asBigDecimal().value, is( nestedDecimal.value ) );
+        assertThat( actual.get( valuesKey ).asList().get( 3 ).asDouble().value, is( -0.0 ) );
+    }
+
+
+    @Test
+    public void testJsonPathDistinguishesTemporalNullsFromText() {
+        PolyDocument document = PolyDocument.ofDocument( Map.of(
+                PolyString.of( "date" ), PolyDate.of( (Long) null ),
+                PolyString.of( "time" ), PolyTime.of( (Integer) null ),
+                PolyString.of( "timestamp" ), PolyTimestamp.of( (Long) null ),
+                PolyString.of( "text" ), PolyString.of( "null" ) ) );
+
+        for ( String key : List.of( "date", "time", "timestamp" ) ) {
+            assertJsonApiCommonSyntax( document, PolyString.of( "lax $." + key ),
+                    contextMatches( PathContext.withReturned( Functions.PathMode.LAX, null ) ) );
+        }
+        assertJsonApiCommonSyntax( document, PolyString.of( "lax $.text" ),
+                contextMatches( PathContext.withReturned( Functions.PathMode.LAX, PolyString.of( "null" ) ) ) );
+    }
+
+
+    @Test
+    public void testJsonPathPreservesDecimalOutsideLongRange() {
+        PolyBigDecimal decimal = PolyBigDecimal.of( "9223372036854775808" );
+        PolyDocument document = PolyDocument.ofDocument( Map.of( PolyString.of( "n" ), decimal ) );
+
+        PathContext result = Functions.jsonApiCommonSyntax( document, PolyString.of( "strict $.n" ) );
+        assertThat( result, contextMatches( PathContext.withReturned( Functions.PathMode.STRICT, decimal ) ) );
+        assertThat( result.pathReturned.asBigDecimal().value, is( decimal.value ) );
+        assertJsonExists( result, JsonExistsErrorBehavior.ERROR, is( true ) );
+    }
+
+
+    @Test
+    public void testJsonPathPreservesNonFiniteAggregateResults() {
+        PolyDouble sample = PolyDouble.of( 1e308 );
+        PolyDocument document = PolyDocument.ofDocument( Map.of( PolyString.of( "samples" ), PolyList.of( sample, sample ) ) );
+        Map<String, Double> aggregates = Map.of( "sum()", Double.POSITIVE_INFINITY, "avg()", Double.POSITIVE_INFINITY, "stddev()", Double.NaN );
+
+        for ( Map.Entry<String, Double> aggregate : aggregates.entrySet() ) {
+            PolyString path = PolyString.of( "lax $.samples." + aggregate.getKey() );
+            PathContext result = Functions.jsonApiCommonSyntax( document, path );
+            assertThat( path.value, result, contextMatches( PathContext.withReturned( Functions.PathMode.LAX, PolyDouble.of( aggregate.getValue() ) ) ) );
+            assertJsonExists( result, JsonExistsErrorBehavior.ERROR, is( true ) );
+        }
     }
 
 

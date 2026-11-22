@@ -70,6 +70,7 @@ import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.function.Function0;
+import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.BlockStatement;
 import org.apache.calcite.linq4j.tree.ConditionalStatement;
@@ -313,6 +314,7 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( OperatorName.JSON_STRUCTURED_VALUE_EXPRESSION ), BuiltInMethod.JSON_STRUCTURED_VALUE_EXPRESSION.method, NullPolicy.STRICT );
         defineMethod( OperatorRegistry.get( OperatorName.JSON_API_COMMON_SYNTAX ), BuiltInMethod.JSON_API_COMMON_SYNTAX.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( OperatorName.JSON_EXISTS ), BuiltInMethod.JSON_EXISTS.method, NullPolicy.NONE );
+        map.put( OperatorRegistry.get( OperatorName.JSON_VALUE ), new JsonValueImplementor() );
         defineMethod( OperatorRegistry.get( OperatorName.JSON_VALUE_ANY ), BuiltInMethod.JSON_VALUE_ANY.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( OperatorName.JSON_QUERY ), BuiltInMethod.JSON_QUERY.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( OperatorName.JSON_OBJECT ), BuiltInMethod.JSON_OBJECT.method, NullPolicy.NONE );
@@ -991,6 +993,19 @@ public class RexImpTable {
         QueryLanguage mongo = QueryLanguage.from( "mongo" );
         defineBinary( OperatorRegistry.get( mongo, OperatorName.MQL_ITEM ), ExpressionType.Parameter, NullPolicy.STRICT, "docItem" );
         defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_EQUALS ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_EQ.method ), false );
+        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_NOT_EQUALS ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_NE.method ), false );
+        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_EXPR_QUERY_VALUE ), BuiltInMethod.MQL_EXPR_QUERY_VALUE.method, NullPolicy.NONE );
+        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_EXPR_DOCUMENT ), NullPolicy.NONE,
+                ( translator, call, operands ) -> Expressions.call( BuiltInMethod.MQL_EXPR_DOCUMENT.method,
+                        operands.get( 0 ), Expressions.newArrayInit( PolyValue.class, operands.subList( 1, operands.size() ) ) ), false );
+        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_EXPR_ARRAY ), NullPolicy.NONE,
+                ( translator, call, operands ) -> Expressions.call( BuiltInMethod.MQL_EXPR_ARRAY.method, Expressions.newArrayInit( PolyValue.class, operands ) ), false );
+        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_EXPR_EQUALS ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_EXPR_EQ.method ), false );
+        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_EXPR_NOT_EQUALS ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_EXPR_NE.method ), false );
+        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_EXPR_LT ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_EXPR_LT.method ), false );
+        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_EXPR_LTE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_EXPR_LTE.method ), false );
+        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_EXPR_GT ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_EXPR_GT.method ), false );
+        defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_EXPR_GTE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_EXPR_GTE.method ), false );
         defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_GT ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_GT.method ), false );
         defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_GTE ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_GTE.method ), false );
         defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_LT ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_LT.method ), false );
@@ -2466,6 +2481,26 @@ public class RexImpTable {
                         translator.translate( operands.get( 0 ), nullAs ),
                         implementRecurse( translator, Util.skip( operands ), nullAs ) );
             }
+        }
+
+    }
+
+
+    /**
+     * Implements a scalar JSON lookup with its RETURNING conversion inside ON ERROR handling.
+     */
+    private static class JsonValueImplementor implements CallImplementor {
+
+        @Override
+        public Expression implement( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
+            List<Expression> operands = translator.translateList( call.getOperands().subList( 0, 5 ) );
+            ParameterExpression scalar = Expressions.parameter( PolyValue.class, "scalar" );
+            AlgDataType sourceType = translator.typeFactory.createTypeWithNullability( translator.typeFactory.createPolyType( PolyType.ANY ), true );
+            Expression cast = translator.translateCast( sourceType, call.getType(), scalar );
+            Expression nullSafeCast = EnumUtils.condition( PolyValue.isNullExpression( scalar ), Expressions.constant( null, cast.getType() ), cast );
+            operands.add( Expressions.lambda( Function1.class, nullSafeCast, scalar ) );
+            Expression result = Expressions.call( BuiltInMethod.JSON_VALUE_TYPED.method, operands );
+            return translator.handleNull( Expressions.convert_( result, cast.getType() ), nullAs );
         }
 
     }

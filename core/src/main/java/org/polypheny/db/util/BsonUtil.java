@@ -21,7 +21,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -534,7 +534,7 @@ public class BsonUtil {
             case STRING:
                 return PolyString.of( input.asString().getValue() );
             case DOCUMENT:
-                Map<PolyString, PolyValue> document = new HashMap<>();
+                Map<PolyString, PolyValue> document = new LinkedHashMap<>();
 
                 for ( Entry<String, BsonValue> entry : input.asDocument().entrySet() ) {
                     document.put( PolyString.of( entry.getKey() ), toPolyValue( entry.getValue() ) );

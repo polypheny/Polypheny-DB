@@ -47,12 +47,16 @@ import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.adapter.mongodb.bson.BsonFunctionHelper;
 import org.polypheny.db.adapter.mongodb.bson.BsonKeyValue;
+import org.polypheny.db.adapter.mongodb.bson.MongoDocumentSerializer;
+import org.polypheny.db.adapter.mongodb.util.RexToMongoTranslator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -67,9 +71,11 @@ import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.language.fun.SqlItemOperator;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.spatial.PolyLinearRing;
@@ -214,7 +220,11 @@ public class MongoFilter extends Filter implements MongoAlg {
                     return removeUnnecessaryGate( document.get( document.getFirstKey() ).asArray().get( 0 ) );
                 } else {
                     BsonDocument newDoc = new BsonDocument();
-                    document.forEach( ( k, v ) -> newDoc.append( k, removeUnnecessaryGate( v ) ) );
+                    document.forEach( ( key, operand ) -> newDoc.append( key, switch ( key ) {
+                        // Comparison operands and expression literals can contain ordinary fields named $and or $or.
+                        case "$eq", "$ne", "$lt", "$lte", "$gt", "$gte", "$literal" -> operand;
+                        default -> removeUnnecessaryGate( operand );
+                    } ) );
                     value = newDoc;
                 }
 
@@ -1035,6 +1045,11 @@ public class MongoFilter extends Filter implements MongoAlg {
          * Translates a call to a binary operator, reversing arguments if necessary.
          */
         private void translateBinary( String op, String rop, RexCall call ) {
+            OperatorName operator = call.getOperator().getOperatorName();
+            if ( operator != null && OperatorName.MQL_EXPR_COMPARISONS.contains( operator ) ) {
+                translateExprComparison( call );
+                return;
+            }
             final RexNode left = call.operands.get( 0 );
             final RexNode right = call.operands.get( 1 );
             boolean b = translateBinary2( op, left, right );
@@ -1069,6 +1084,59 @@ public class MongoFilter extends Filter implements MongoAlg {
             }
 
             throw new AssertionError( "cannot translate op " + op + " call " + call );
+        }
+
+
+        private void translateExprComparison( RexCall call ) {
+            BsonDocument expression = exprComparison( call );
+            // Here NOT is an aggregation expression inside $expr.
+            BsonDocument condition = modifier == null ? expression : new BsonDocument( "$not", new BsonArray( List.of( expression ) ) );
+            map.computeIfAbsent( "$expr", key -> new ArrayList<>() ).add( condition );
+        }
+
+
+        private BsonDocument exprComparison( RexCall call ) {
+            String op = switch ( call.getKind() ) {
+                case EQUALS -> "$eq";
+                case NOT_EQUALS -> "$ne";
+                case LESS_THAN -> "$lt";
+                case LESS_THAN_OR_EQUAL -> "$lte";
+                case GREATER_THAN -> "$gt";
+                case GREATER_THAN_OR_EQUAL -> "$gte";
+                default -> throw new IllegalArgumentException( "Not an expression comparison: " + call );
+            };
+            return new BsonDocument( op, new BsonArray( call.operands.stream().map( this::translateExprOperand ).toList() ) );
+        }
+
+
+        private BsonValue translateExprOperand( RexNode operand ) {
+            if ( operand instanceof RexCall call ) {
+                OperatorName operator = call.getOperator().getOperatorName();
+                if ( operator == OperatorName.MQL_EXPR_QUERY_VALUE ) {
+                    return MongoRules.translateExprFieldReference( rowType, (RexNameRef) call.operands.get( 0 ) );
+                }
+                if ( operator == OperatorName.MQL_EXPR_ARRAY ) {
+                    return new BsonArray( call.operands.stream().map( this::translateExprOperand ).toList() );
+                }
+                if ( operator == OperatorName.MQL_EXPR_DOCUMENT ) {
+                    PolyList<PolyValue> names = ((RexLiteral) call.operands.get( 0 )).value.asList();
+                    BsonDocument document = new BsonDocument();
+                    for ( int i = 0; i < names.size(); i++ ) {
+                        document.put( names.get( i ).asString().value, translateExprOperand( call.operands.get( i + 1 ) ) );
+                    }
+                    return document;
+                }
+                if ( operator != null && OperatorName.MQL_EXPR_COMPARISONS.contains( operator ) ) {
+                    return exprComparison( call );
+                }
+            }
+            return switch ( operand.getKind() ) {
+                case INPUT_REF -> new BsonString( "$" + getPhysicalName( (RexIndexRef) operand ) );
+                case NAME_INDEX_REF -> new BsonString( "$" + MongoRules.translateDocValueAsKey( rowType, (RexNameRef) operand ) );
+                case LITERAL -> new BsonDocument( "$literal", MongoDocumentSerializer.serializeValue( ((RexLiteral) operand).value ) );
+                case DYNAMIC_PARAM -> new BsonDocument( "$literal", new BsonDynamic( (RexDynamicParam) operand ) );
+                default -> BsonDocument.parse( operand.accept( new RexToMongoTranslator( fieldNames, implementor, DataModel.DOCUMENT ) ) );
+            };
         }
 
 
@@ -1388,12 +1456,16 @@ public class MongoFilter extends Filter implements MongoAlg {
          * @return if the translation was successful
          */
         private boolean translateDocValue( String op, RexNameRef left, RexNode right ) {
-            BsonValue item = getItem( right );
+            BsonValue item = right instanceof RexLiteral literal
+                    && (literal.value instanceof PolyDocument || literal.value instanceof PolyList<?>)
+                    ? MongoDocumentSerializer.serializeValue( literal.value )
+                    : getItem( right );
             if ( item == null ) {
                 return false;
             }
 
-            attachCondition( op, MongoRules.translateDocValueAsKey( rowType, left ), item );
+            // Keep literal document fields from being interpreted as selector operators after binding.
+            attachCondition( Objects.requireNonNullElse( op, "$eq" ), MongoRules.translateDocValueAsKey( rowType, left ), item );
             return true;
         }
 

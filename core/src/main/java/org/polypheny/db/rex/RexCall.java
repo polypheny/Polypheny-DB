@@ -51,6 +51,7 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Litmus;
 
 
@@ -107,8 +108,21 @@ public class RexCall extends RexNode {
                 sb.append( ", " );
             }
             RexNode operand = operands.get( i );
-            if ( !(operand instanceof RexLiteral) ) {
+            if ( op.getOperatorName() == OperatorName.MQL_EXPR_QUERY_VALUE && operand instanceof RexNameRef field ) {
+                // Keep field path components distinct from the surrounding call syntax.
+                sb.append( field.names.stream()
+                        .map( name -> PolyString.of( name ).toQuotedJson() )
+                        .collect( Collectors.joining( ", ", "[", "]" ) ) );
+                field.getIndex().ifPresent( index -> sb.append( '@' ).append( index ) );
+                continue;
+            }
+            if ( !(operand instanceof RexLiteral literal) ) {
                 sb.append( operand );
+                continue;
+            }
+            if ( i == 0 && op.getOperatorName() == OperatorName.MQL_EXPR_DOCUMENT ) {
+                // Quote each ordered field name so separators inside a name cannot merge distinct digests.
+                sb.append( literal.value.toJson() );
                 continue;
             }
             // Type information might be omitted in certain cases to improve readability
@@ -124,7 +138,7 @@ public class RexCall extends RexNode {
                     includeType = RexDigestIncludeType.NO_TYPE;
                 }
             }
-            sb.append( ((RexLiteral) operand).computeDigest( includeType ) );
+            sb.append( literal.computeDigest( includeType ) );
         }
         return sb;
     }

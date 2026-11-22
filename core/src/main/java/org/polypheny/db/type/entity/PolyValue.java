@@ -22,13 +22,17 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.util.TokenBuffer;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -38,6 +42,7 @@ import io.activej.serializer.SerializerFactory;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeClass;
 import io.activej.serializer.def.SimpleSerializerDef;
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.sql.Timestamp;
 import java.util.Calendar;
@@ -341,6 +346,20 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
         } catch ( JsonProcessingException e ) {
             log.warn( "Error on deserialize typed JSON." );
             return null;
+        }
+    }
+
+
+    @Nullable
+    protected static PolyValue readTypedJsonValue( JsonParser parser, DeserializationContext context ) throws IOException {
+        if ( parser.hasToken( JsonToken.VALUE_NULL ) ) {
+            return null;
+        }
+
+        // Retain the numeric token until the subtype deserializer can read it.
+        try ( TokenBuffer value = context.bufferAsCopyOfValue( parser );
+                JsonParser valueParser = value.asParserOnFirstToken() ) {
+            return context.readValue( valueParser, PolyValue.class );
         }
     }
 

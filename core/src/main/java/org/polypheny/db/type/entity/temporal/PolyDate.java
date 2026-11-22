@@ -19,6 +19,8 @@ package org.polypheny.db.type.entity.temporal;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonToken;
+import com.google.common.math.DoubleMath;
+import java.math.RoundingMode;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -32,6 +34,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.functions.TemporalFunctions;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
@@ -115,6 +118,9 @@ public class PolyDate extends PolyTemporal {
 
 
     public static PolyDate convert( @Nullable PolyValue value ) {
+        if ( value instanceof PolyString text ) {
+            value = parseEpochString( text );
+        }
         if ( value == null ) {
             return null;
         }
@@ -122,7 +128,12 @@ public class PolyDate extends PolyTemporal {
         if ( value.isDate() ) {
             return value.asDate();
         } else if ( value.isNumber() ) {
-            return ofDays( value.asNumber().intValue() );
+            PolyNumber number = value.asNumber();
+            return ofDays( switch ( number.getType() ) {
+                case DECIMAL -> number.asBigDecimal().integerPart().intValueExact();
+                case FLOAT, REAL, DOUBLE -> DoubleMath.roundToInt( number.doubleValue(), RoundingMode.DOWN );
+                default -> number.intValue();
+            } );
         }
 
         throw new GenericRuntimeException( getConvertError( value, PolyDate.class ) );

@@ -25,7 +25,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -33,7 +32,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.jsontype.TypeDeserializer;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.Lists;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
@@ -299,25 +297,47 @@ public class PolyList<E extends PolyValue> extends PolyValue implements List<E> 
 
         @Override
         public PolyList<PolyValue> deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
-            JsonNode node = p.getCodec().readTree( p );
-            JsonNode nField = node.get( "isNull" );
-            boolean isNull = nField.booleanValue();
+            Boolean isNull = null;
+            List<PolyValue> values = List.of();
+            JsonToken token = p.hasToken( JsonToken.START_OBJECT ) ? p.nextToken() : p.currentToken();
+            while ( token == JsonToken.FIELD_NAME ) {
+                String field = p.currentName();
+                p.nextToken();
+                switch ( field ) {
+                    case "isNull" -> {
+                        isNull = p.hasToken( JsonToken.VALUE_TRUE );
+                        p.skipChildren();
+                    }
+                    case "_es" -> values = readElements( p, ctxt );
+                    default -> p.skipChildren();
+                }
+                token = p.nextToken();
+            }
+            if ( token != JsonToken.END_OBJECT ) {
+                ctxt.reportWrongTokenException( PolyList.class, JsonToken.END_OBJECT, "Expected a typed list object" );
+            }
+            if ( isNull == null ) {
+                return ctxt.reportInputMismatch( PolyList.class, "Missing list field 'isNull'" );
+            }
             if ( isNull ) {
                 return new PolyList<>( (List<PolyValue>) null );
-            }
-
-            List<PolyValue> values = new ArrayList<>();
-            ArrayNode elements = node.withArray( "_es" );
-            for ( JsonNode element : elements ) {
-                PolyValue el = deserializeElement( ctxt, element );
-                values.add( el );
             }
             return PolyList.of( values );
         }
 
 
-        private PolyValue deserializeElement( DeserializationContext ctxt, JsonNode element ) throws IOException {
-            return ctxt.readTreeAsValue( element, PolyValue.class );
+        private List<PolyValue> readElements( JsonParser p, DeserializationContext ctxt ) throws IOException {
+            if ( !p.hasToken( JsonToken.START_ARRAY ) ) {
+                ctxt.reportWrongTokenException( PolyList.class, JsonToken.START_ARRAY, "Expected an array of list elements" );
+            }
+            List<PolyValue> values = new ArrayList<>();
+            while ( p.nextToken() != JsonToken.END_ARRAY ) {
+                if ( p.currentToken() == null ) {
+                    return ctxt.reportInputMismatch( PolyList.class, "Incomplete list element array" );
+                }
+                values.add( readTypedJsonValue( p, ctxt ) );
+            }
+            return values;
         }
 
     }

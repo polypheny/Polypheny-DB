@@ -25,6 +25,9 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import javax.annotation.Nullable;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -33,6 +36,8 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import org.polypheny.db.TestHelper;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.workflow.WorkflowUtils;
@@ -43,6 +48,7 @@ import org.polypheny.db.workflow.dag.edges.ControlEdge;
 import org.polypheny.db.workflow.engine.storage.StorageManager;
 import org.polypheny.db.workflow.engine.storage.StorageManagerImpl;
 import org.polypheny.db.workflow.engine.storage.StorageUtils;
+import org.polypheny.db.workflow.engine.storage.writer.CheckpointWriter;
 import org.polypheny.db.workflow.models.EdgeModel;
 
 class GlobalSchedulerTest {
@@ -358,19 +364,39 @@ class GlobalSchedulerTest {
     @Test
     void concurrentWorkflowExecutionTest() throws Exception {
         int nWorkflows = 10;
-        int delay = 500;
+        CountDownLatch concurrentWorkers = new CountDownLatch( 2 );
+        CountDownLatch releaseWorkers = new CountDownLatch( 1 );
 
         List<Workflow> workflows = new ArrayList<>();
         List<StorageManager> workflowStorage = new ArrayList<>();
-        for ( int i = 0; i < nWorkflows; i++ ) {
-            StorageManager storageManager = createStorageManager( UUID.randomUUID() );
-            Workflow workflow = WorkflowUtils.getLongRunningPipe( delay );
-            workflows.add( workflow );
-            workflowStorage.add( storageManager );
-            scheduler.startExecution( workflow, storageManager, null );
+        try {
+            for ( int i = 0; i < nWorkflows; i++ ) {
+                StorageManager storageManager = new StorageManagerImpl( testHelper.getTransactionManager(), UUID.randomUUID(), StorageUtils.getDefaultStoreMap( "locks" ) ) {
+                    @Override
+                    public CheckpointWriter createCheckpoint( UUID activityId, int outputIdx, AlgDataType type, @Nullable String storeName, DataModel model ) {
+                        // Hold the workflow worker before it takes any checkpoint locks.
+                        concurrentWorkers.countDown();
+                        try {
+                            releaseWorkers.await();
+                        } catch ( InterruptedException e ) {
+                            Thread.currentThread().interrupt();
+                            throw new IllegalStateException( "Workflow worker interrupted at checkpoint gate", e );
+                        }
+                        return super.createCheckpoint( activityId, outputIdx, type, storeName, model );
+                    }
+                };
+                storageManagers.add( storageManager );
+                Workflow workflow = WorkflowUtils.getSimplePipe();
+                workflows.add( workflow );
+                workflowStorage.add( storageManager );
+                scheduler.startExecution( workflow, storageManager, null );
+            }
+            assertTrue( concurrentWorkers.await( 30, TimeUnit.SECONDS ), "Two workflows did not reach checkpoint creation concurrently" );
+        } finally {
+            releaseWorkers.countDown();
         }
-        scheduler.awaitResultProcessor( nWorkflows * delay * 4 / 5 ); // not enough time if not executed concurrently
 
+        scheduler.awaitResultProcessor( TimeUnit.SECONDS.toMillis( 30 ) );
         for ( Pair<Workflow, StorageManager> entry : Pair.zip( workflows, workflowStorage ) ) {
             List<UUID> ids = WorkflowUtils.getTopologicalActivityIds( entry.left );
             UUID last = ids.get( ids.size() - 1 );

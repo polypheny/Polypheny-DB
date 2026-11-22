@@ -131,6 +131,7 @@ import org.polypheny.db.runtime.Utilities;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.types.QueryableEntity;
 import org.polypheny.db.schema.types.ScannableEntity;
+import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyList;
@@ -272,6 +273,7 @@ public enum BuiltInMethod {
     JSON_API_COMMON_SYNTAX( Functions.class, "jsonApiCommonSyntax", PolyValue.class, PolyString.class ),
     JSON_EXISTS( Functions.class, "jsonExists", PolyValue.class ),
     JSON_VALUE_ANY( Functions.class, "jsonValueAny", PolyValue.class, JsonValueEmptyOrErrorBehavior.class, PolyValue.class, JsonValueEmptyOrErrorBehavior.class, PolyValue.class ),
+    JSON_VALUE_TYPED( Functions.class, "jsonValueAny", PolyValue.class, JsonValueEmptyOrErrorBehavior.class, PolyValue.class, JsonValueEmptyOrErrorBehavior.class, PolyValue.class, Function1.class ),
     JSON_QUERY( Functions.class, "jsonQuery", PolyValue.class, JsonQueryWrapperBehavior.class, JsonQueryEmptyOrErrorBehavior.class, JsonQueryEmptyOrErrorBehavior.class ),
     JSON_OBJECT( Functions.class, "jsonObject", JsonConstructorNullClause.class ),
     JSON_OBJECTAGG_ADD( Functions.class, "jsonObjectAggAdd", Map.class, String.class, PolyValue.class, JsonConstructorNullClause.class ),
@@ -301,6 +303,8 @@ public enum BuiltInMethod {
     RAND_INTEGER_SEED( RandomFunction.class, "randIntegerSeed", PolyNumber.class, PolyNumber.class ),
     TRUNCATE( Functions.class, "truncate", PolyString.class, int.class ),
     TRUNCATE_OR_PAD( Functions.class, "truncateOrPad", PolyString.class, int.class ),
+    TRUNCATE_BINARY( Functions.class, "truncate", PolyBinary.class, int.class ),
+    TRUNCATE_OR_PAD_BINARY( Functions.class, "truncateOrPad", PolyBinary.class, int.class ),
     TRIM( Functions.class, "trim", boolean.class, boolean.class, String.class, String.class, boolean.class ),
     REPLACE( Functions.class, "replace", PolyString.class, PolyString.class, PolyString.class ),
     TRANSLATE3( Functions.class, "translate3", String.class, String.class, String.class ),
@@ -494,6 +498,16 @@ public enum BuiltInMethod {
     ST_GEOMETRYN( GeoFunctions.class, "stGeometryN", PolyGeometry.class, PolyInteger.class ),
     /// MQL BUILT-IN METHODS
     MQL_EQ( MqlFunctions.class, "docEq", PolyValue.class, PolyValue.class ),
+    MQL_NE( MqlFunctions.class, "docNe", PolyValue.class, PolyValue.class ),
+    MQL_EXPR_QUERY_VALUE( MqlFunctions.class, "docExprQueryValue", PolyValue.class, List.class ),
+    MQL_EXPR_DOCUMENT( MqlFunctions.class, "docExprDocument", PolyValue.class, PolyValue[].class ),
+    MQL_EXPR_ARRAY( MqlFunctions.class, "docExprArray", PolyValue[].class ),
+    MQL_EXPR_EQ( MqlFunctions.class, "docExprEq", PolyValue.class, PolyValue.class ),
+    MQL_EXPR_NE( MqlFunctions.class, "docExprNe", PolyValue.class, PolyValue.class ),
+    MQL_EXPR_LT( MqlFunctions.class, "docExprLt", PolyValue.class, PolyValue.class ),
+    MQL_EXPR_LTE( MqlFunctions.class, "docExprLte", PolyValue.class, PolyValue.class ),
+    MQL_EXPR_GT( MqlFunctions.class, "docExprGt", PolyValue.class, PolyValue.class ),
+    MQL_EXPR_GTE( MqlFunctions.class, "docExprGte", PolyValue.class, PolyValue.class ),
     MQL_GT( MqlFunctions.class, "docGt", PolyValue.class, PolyValue.class ),
     MQL_GTE( MqlFunctions.class, "docGte", PolyValue.class, PolyValue.class ),
     MQL_LT( MqlFunctions.class, "docLt", PolyValue.class, PolyValue.class ),

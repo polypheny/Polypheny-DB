@@ -112,7 +112,6 @@ import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
@@ -137,7 +136,7 @@ public class MqlToAlgConverter {
         put( "$lte", OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_LTE ) );
         put( "$gte", OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_GTE ) );
         put( "$eq", OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EQUALS ) );
-        put( "$ne", OperatorRegistry.get( OperatorName.NOT_EQUALS ) );
+        put( "$ne", OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_NOT_EQUALS ) );
         put( "$in", OperatorRegistry.get( OperatorName.IN ) );
         put( "$nin", OperatorRegistry.get( OperatorName.NOT_IN ) );
         put( "$exists", OperatorRegistry.get( OperatorName.EXISTS ) );
@@ -269,21 +268,12 @@ public class MqlToAlgConverter {
         switch ( value.getBsonType() ) {
             case DOUBLE:
                 return PolyDouble.of( value.asDouble().getValue() );
+            case DECIMAL128:
+                return BsonUtil.toPolyValue( value );
             case STRING:
                 return PolyString.of( value.asString().getValue() );
-            case DOCUMENT:
-                Map<PolyString, PolyValue> map = new HashMap<>();
-                for ( Entry<String, BsonValue> entry : value.asDocument().entrySet() ) {
-                    map.put( PolyString.of( entry.getKey() ), getPolyValue( entry.getValue() ) );
-                }
-
-                return PolyDocument.ofDocument( map );
-            case ARRAY:
-                List<PolyValue> list = new ArrayList<>();
-                for ( BsonValue bson : value.asArray() ) {
-                    list.add( getPolyValue( bson ) );
-                }
-                return PolyList.of( list );
+            case DOCUMENT, ARRAY:
+                return BsonUtil.toPolyValue( value );
             case BOOLEAN:
                 return new PolyBoolean( value.asBoolean().getValue() );
             case INT32:
@@ -663,7 +653,7 @@ public class MqlToAlgConverter {
         Map<String, RexNode> updates = new HashMap<>();
         for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
             RexNode id = getIdentifier( entry.getKey(), rowType, true );
-            RexLiteral literal = builder.makeBigintLiteral( entry.getValue().asNumber().decimal128Value().bigDecimalValue() );
+            RexNode literal = convertUpdateNumber( entry.getValue() );
             updates.put( entry.getKey(), new RexCall( any, operator, Arrays.asList( id, literal ) ) );
         }
         return updates;
@@ -678,10 +668,17 @@ public class MqlToAlgConverter {
         Map<String, RexNode> updates = new HashMap<>();
         for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
             RexNode id = getIdentifier( entry.getKey(), rowType, true );
-            RexLiteral literal = builder.makeBigintLiteral( entry.getValue().asNumber().decimal128Value().bigDecimalValue() );
+            RexNode literal = convertUpdateNumber( entry.getValue() );
             updates.put( entry.getKey(), builder.makeCall( DocumentType.ofDoc(), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.PLUS ), id, literal ) );
         }
         return updates;
+    }
+
+
+    private RexNode convertUpdateNumber( BsonValue value ) {
+        RexLiteral literal = new RexLiteral( BsonUtil.toPolyValue( value.asNumber() ), new DocumentType(), PolyType.DOCUMENT );
+        // Enumerable updates use decimal arithmetic. The MongoDB translator unwraps the cast and uses the BSON type.
+        return value.isDecimal128() ? literal : builder.makeAbstractCast( cluster.getTypeFactory().createPolyType( PolyType.DECIMAL ), literal );
     }
 
 
@@ -1581,7 +1578,7 @@ public class MqlToAlgConverter {
                         // we lose context to the parent and have to "drop it" as we move into $subtract or $eq
                         id = getIdentifier( parentKey, rowType );
                     }
-                    RexNode node = convertMath( key, null, bsonValue, rowType, false );
+                    RexNode node = convertMath( key, null, bsonValue, rowType );
                     if ( losesContext && id != null ) {
                         AlgDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
                         return new RexCall( type, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EQUALS ), Arrays.asList( id, node ) );
@@ -1592,7 +1589,7 @@ public class MqlToAlgConverter {
                     return switch ( key ) {
                         case "$exists" -> convertExists( bsonValue, parentKey, rowType );
                         case "$type" -> convertType( bsonValue, parentKey, rowType );
-                        case "$expr" -> convertExpr( bsonValue, parentKey, rowType );
+                        case "$expr" -> convertExpr( bsonValue, rowType );
                         case "$jsonSchema" ->
                             // jsonSchema is a general match
                                 convertJsonSchema( bsonValue, rowType );
@@ -1705,25 +1702,16 @@ public class MqlToAlgConverter {
     }
 
 
-    private RexNode convertMath( String key, String parentKey, BsonValue bsonValue, AlgDataType rowType, boolean isExpr ) {
+    private RexNode convertMath( String key, String parentKey, BsonValue bsonValue, AlgDataType rowType ) {
         if ( key.equals( "$literal" ) ) {
             return convertLiteral( bsonValue );
         }
-        Operator op;
-        if ( !isExpr ) {
-            op = mathOperators.get( key );
-        } else {
-            op = mappings.get( key );
-        }
-
         String errorMsg = "After a " + String.join( ",", mathOperators.keySet() ) + " a list of literals or documents is needed.";
-        if ( bsonValue.isArray() ) {
-            List<RexNode> nodes = convertArray( parentKey, bsonValue.asArray(), true, rowType, errorMsg );
-
-            return getFixedCall( nodes, op, isExpr ? PolyType.BOOLEAN : PolyType.ANY );
-        } else {
+        if ( !bsonValue.isArray() ) {
             throw new GenericRuntimeException( errorMsg );
         }
+        List<RexNode> nodes = convertArray( parentKey, bsonValue.asArray(), true, rowType, errorMsg );
+        return getFixedCall( nodes, mathOperators.get( key ), PolyType.ANY );
     }
 
 
@@ -1852,29 +1840,19 @@ public class MqlToAlgConverter {
 
 
     private RexNode convertField( String parentKey, BsonValue bsonValue, AlgDataType rowType ) {
-
-        if ( bsonValue.isDocument() ) {
-            // we have a document where the sub-keys are either logical like "$eq, $or"
-            // we don't attach the id yet as we maybe have sub-documents
-            return translateDocument( bsonValue.asDocument(), rowType, parentKey );
-        } else {
-            // we have a simple assignment to a value, can attach and translate the value
-            List<RexNode> nodes = new ArrayList<>();
-            nodes.add( getIdentifier( parentKey, rowType ) );
-
-            if ( bsonValue.isArray() ) {
-                List<RexNode> arr = convertArray( parentKey, bsonValue.asArray(), true, rowType, "" );
-                nodes.add( DocumentUtil.getArray(
-                        arr,
-                        cluster.getTypeFactory().createArrayType( nullableAny, arr.size() ) ) );
-            } else if ( bsonValue.isRegularExpression() ) {
-                return convertRegex( bsonValue, parentKey, rowType );
-            } else {
-                nodes.add( convertLiteral( bsonValue ) );
-            }
-
-            return getFixedCall( nodes, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EQUALS ), PolyType.BOOLEAN );
+        if ( bsonValue instanceof BsonDocument document && !document.isEmpty() && document.getFirstKey().startsWith( "$" ) ) {
+            return translateDocument( document, rowType, parentKey );
         }
+        if ( bsonValue.isRegularExpression() ) {
+            return convertRegex( bsonValue, parentKey, rowType );
+        }
+
+        // A literal document or array is an equality operand, including its field order.
+        AlgDataType type = cluster.getTypeFactory().createTypeWithNullability( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), true );
+        return new RexCall(
+                type,
+                OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EQUALS ),
+                List.of( getIdentifier( parentKey, rowType ), convertLiteral( bsonValue ) ) );
     }
 
 
@@ -1977,9 +1955,8 @@ public class MqlToAlgConverter {
 
 
     private RexNode translateLogical( String key, String parentKey, BsonValue bsonValue, AlgDataType rowType ) {
-        Operator op;
         List<RexNode> nodes = new ArrayList<>();
-        op = mappings.get( key );
+        Operator op = mappings.get( key );
         switch ( op.getKind() ) {
             case IN:
             case NOT_IN:
@@ -2375,14 +2352,119 @@ public class MqlToAlgConverter {
     }
 
 
-    private RexNode convertExpr( BsonValue bsonValue, String parentKey, AlgDataType rowType ) {
-        if ( bsonValue.isDocument() && bsonValue.asDocument().size() == 1 ) {
-            BsonDocument doc = bsonValue.asDocument();
-            return convertMath( doc.getFirstKey(), parentKey, doc.get( doc.getFirstKey() ), rowType, true );
-
-        } else {
-            throw new GenericRuntimeException( "After $expr there needs to be a document with a single entry" );
+    private RexNode convertExpressionReference( String reference ) {
+        String path = reference.substring( 1 );
+        if ( reference.startsWith( "$$" ) ) {
+            int separator = reference.indexOf( '.', 2 );
+            String variable = separator < 0 ? reference : reference.substring( 0, separator );
+            if ( !variable.equals( "$$ROOT" ) && !variable.equals( "$$CURRENT" ) ) {
+                throw new GenericRuntimeException( "Unsupported MQL expression variable " + variable );
+            }
+            if ( separator < 0 ) {
+                return expressionFieldReference( List.of() );
+            }
+            path = reference.substring( separator + 1 );
         }
+
+        List<String> fields = List.of( path.split( "\\.", -1 ) );
+        if ( fields.contains( "" ) ) {
+            throw new GenericRuntimeException( "Empty field name in MQL expression reference " + reference );
+        }
+        return expressionFieldReference( fields );
+    }
+
+
+    private RexNode convertExpr( BsonValue bsonValue, AlgDataType rowType ) {
+        if ( bsonValue instanceof BsonDocument document && document.size() == 1 && document.getFirstKey().startsWith( "$" ) ) {
+            return convertExpressionCall( document, rowType );
+        }
+        throw new GenericRuntimeException( "After $expr there needs to be an operator document with a single entry" );
+    }
+
+
+    private RexNode expressionFieldReference( List<String> path ) {
+        if ( !usesDocumentModel ) {
+            throw new GenericRuntimeException( "The used identifier is not part of the table." );
+        }
+        if ( subElement.isPresent() ) {
+            return subElement.get();
+        }
+        AlgDataType type = DocumentType.ofDoc();
+        return new RexCall( type, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EXPR_QUERY_VALUE ),
+                new RexNameRef( path, null, type ) );
+    }
+
+
+    private RexNode convertExpressionValue( BsonValue value, AlgDataType rowType ) {
+        if ( value.isString() && value.asString().getValue().startsWith( "$" ) ) {
+            return convertExpressionReference( value.asString().getValue() );
+        }
+        if ( value instanceof BsonDocument document ) {
+            if ( !document.isEmpty() && document.getFirstKey().startsWith( "$" ) ) {
+                return convertExpressionCall( document, rowType );
+            }
+            List<RexNode> operands = new ArrayList<>();
+            // Field names are metadata. Values may themselves be expressions.
+            BsonArray names = new BsonArray( document.keySet().stream().map( key -> (BsonValue) new BsonString( key ) ).toList() );
+            operands.add( convertLiteral( names ) );
+            document.values().forEach( field -> operands.add( convertExpressionValue( field, rowType ) ) );
+            return new RexCall( DocumentType.ofDoc(), OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EXPR_DOCUMENT ), operands );
+        }
+        if ( value instanceof BsonArray array ) {
+            List<RexNode> elements = array.stream().map( element -> convertExpressionValue( element, rowType ) ).toList();
+            AlgDataType type = cluster.getTypeFactory().createArrayType( nullableAny, elements.size() );
+            return new RexCall( type, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EXPR_ARRAY ), elements );
+        }
+        return convertExpressionLiteral( value );
+    }
+
+
+    private RexNode convertExpressionCall( BsonDocument expression, AlgDataType rowType ) {
+        if ( expression.size() != 1 ) {
+            throw new GenericRuntimeException( "An expression operator document must have exactly one entry" );
+        }
+        String key = expression.getFirstKey();
+        BsonValue value = expression.get( key );
+        if ( key.equals( "$literal" ) ) {
+            return convertExpressionLiteral( value );
+        }
+
+        OperatorName comparison = switch ( key ) {
+            case "$eq" -> OperatorName.MQL_EXPR_EQUALS;
+            case "$ne" -> OperatorName.MQL_EXPR_NOT_EQUALS;
+            case "$lt" -> OperatorName.MQL_EXPR_LT;
+            case "$lte" -> OperatorName.MQL_EXPR_LTE;
+            case "$gt" -> OperatorName.MQL_EXPR_GT;
+            case "$gte" -> OperatorName.MQL_EXPR_GTE;
+            default -> null;
+        };
+        if ( comparison != null ) {
+            if ( !(value instanceof BsonArray operands) || operands.size() != 2 ) {
+                throw new GenericRuntimeException( key + " requires exactly two expression operands" );
+            }
+            List<RexNode> nodes = operands.stream().map( operand -> convertExpressionValue( operand, rowType ) ).toList();
+            AlgDataType type = cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN );
+            return new RexCall( type, OperatorRegistry.get( QueryLanguage.from( MONGO ), comparison ), nodes );
+        }
+        if ( mathOperators.containsKey( key ) && value instanceof BsonArray operands ) {
+            List<RexNode> nodes = operands.stream().map( operand -> convertExpressionValue( operand, rowType ) ).collect( Collectors.toCollection( ArrayList::new ) );
+            return getFixedCall( nodes, mathOperators.get( key ), PolyType.ANY );
+        }
+        if ( singleMathOperators.containsKey( key ) ) {
+            return new RexCall( any, singleMathOperators.get( key ), List.of( convertExpressionValue( value, rowType ) ) );
+        }
+        throw new GenericRuntimeException( "Unsupported expression operator or operands: " + key );
+    }
+
+
+    private RexNode convertExpressionLiteral( BsonValue value ) {
+        if ( value.isNull() ) {
+            return builder.constantNull();
+        }
+        if ( value.isInt64() ) {
+            return new RexLiteral( BsonUtil.toPolyValue( value ), DocumentType.ofDoc(), PolyType.DOCUMENT );
+        }
+        return convertLiteral( value );
     }
 
 
@@ -2619,6 +2701,7 @@ public class MqlToAlgConverter {
         List<RexNode> operands = new ArrayList<>();
         boolean isIn = op.getOperatorName() == OperatorName.IN;
         op = isIn ? OperatorRegistry.get( OperatorName.OR ) : OperatorRegistry.get( OperatorName.AND );
+        Operator comparison = OperatorRegistry.get( QueryLanguage.from( MONGO ), isIn ? OperatorName.MQL_EQUALS : OperatorName.MQL_NOT_EQUALS );
         RexNode id = getIdentifier( key, rowType );
 
         for ( BsonValue literal : bsonValue.asArray() ) {
@@ -2632,7 +2715,7 @@ public class MqlToAlgConverter {
                 }
                 operands.add( filter );
             } else {
-                operands.add( new RexCall( type, isIn ? OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EQUALS ) : OperatorRegistry.get( OperatorName.NOT_EQUALS ), Arrays.asList( id, convertLiteral( literal ) ) ) );
+                operands.add( new RexCall( type, comparison, Arrays.asList( id, convertLiteral( literal ) ) ) );
             }
         }
 
@@ -2755,7 +2838,7 @@ public class MqlToAlgConverter {
             } else if ( value.isDocument() && value.asDocument().size() == 1 && value.asDocument().getFirstKey().startsWith( "$" ) ) {
                 String func = value.asDocument().getFirstKey();
                 if ( mathOperators.containsKey( func ) ) {
-                    includes.put( entry.getKey(), convertMath( func, entry.getKey(), value.asDocument().get( func ), rowType, false ) );
+                    includes.put( entry.getKey(), convertMath( func, entry.getKey(), value.asDocument().get( func ), rowType ) );
                 } else if ( func.equals( "$arrayElemAt" ) ) {
                     includes.put( entry.getKey(), convertArrayAt( entry.getKey(), value.asDocument().get( func ), rowType ) );
                 } else if ( func.equals( "$slice" ) ) {
