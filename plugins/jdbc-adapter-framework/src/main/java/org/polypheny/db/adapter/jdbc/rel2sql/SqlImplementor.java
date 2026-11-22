@@ -715,7 +715,7 @@ public abstract class SqlImplementor {
                     if ( op instanceof LangFunctionOperator ) {
                         return toSql( program, call.operands.get( 0 ) );
                     }
-                    return (SqlNode) op.createCall( new SqlNodeList( nodes, POS ) );
+                    return dialect.rewriteRexCall( call, (SqlCall) op.createCall( new SqlNodeList( nodes, POS ) ) );
             }
         }
 

@@ -38,6 +38,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.algebra.core.Aggregate;
@@ -52,6 +53,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystemImpl;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.TimeUnitRange;
+import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.sql.language.dialect.JethroDataSqlDialect;
 import org.polypheny.db.sql.language.dialect.JethroDataSqlDialect.JethroInfo;
 import org.polypheny.db.sql.language.util.SqlBuilder;
@@ -528,6 +530,22 @@ public class SqlDialect {
      */
     public SqlNode getParameterCastSpec( AlgDataType type ) {
         return getCastSpec( type );
+    }
+
+
+    /**
+     * Returns whether this dialect can evaluate the call in a pushed-down JDBC plan.
+     */
+    public boolean supportsRexCall( AlgNode alg, RexCall rexCall ) {
+        return true;
+    }
+
+
+    /**
+     * Rewrites a generated SQL call using the logical operand types available in its Rex call.
+     */
+    public SqlCall rewriteRexCall( RexCall rexCall, SqlCall sqlCall ) {
+        return sqlCall;
     }
 
 

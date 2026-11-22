@@ -872,6 +872,11 @@ public class TestHelper {
     }
 
 
+    public static DockerMysql startMariaDbDocker( String database, String username, String password ) throws Exception {
+        return DockerMysql.start( database, username, password, true );
+    }
+
+
     public static DockerMongo startMongoDocker( String database ) throws Exception {
         return DockerMongo.start( database );
     }
@@ -1402,25 +1407,32 @@ public class TestHelper {
         private final String database;
         private final String username;
         private final String password;
+        private final boolean mariaDb;
 
 
-        private DockerMysql( DockerContainer container, String host, int port, String database, String username, String password ) {
+        private DockerMysql( DockerContainer container, String host, int port, String database, String username, String password, boolean mariaDb ) {
             this.container = container;
             this.host = host;
             this.port = port;
             this.database = database;
             this.username = username;
             this.password = password;
+            this.mariaDb = mariaDb;
         }
 
 
         public static DockerMysql start( String database, String username, String password ) throws Exception {
+            return start( database, username, password, false );
+        }
+
+
+        private static DockerMysql start( String database, String username, String password, boolean mariaDb ) throws Exception {
             String containerName = "polypheny-refresh-mysql-test-" + UUID.randomUUID().toString().replace( "-", "" ).substring( 0, 8 );
             DockerInstance instance = DockerManager.getInstance()
                     .getInstanceById( 0 )
                     .orElseThrow( () -> new IllegalStateException( "No docker instance with id 0" ) );
 
-            DockerContainer container = instance.newBuilder( "mysql:8.4", containerName )
+            DockerContainer container = instance.newBuilder( mariaDb ? "mariadb:11.8" : "mysql:8.4", containerName )
                     .withEnvironmentVariable( "MYSQL_DATABASE", database )
                     .withEnvironmentVariable( "MYSQL_USER", username )
                     .withEnvironmentVariable( "MYSQL_PASSWORD", password )
@@ -1431,7 +1443,7 @@ public class TestHelper {
                 HostAndPort connection = container.connectToContainer( MYSQL_PORT );
                 String host = connection.host();
                 int port = connection.port();
-                DockerMysql mysql = new DockerMysql( container, host, port, database, username, password );
+                DockerMysql mysql = new DockerMysql( container, host, port, database, username, password, mariaDb );
                 if ( !container.waitTillStarted( mysql::testConnection, STARTUP_TIMEOUT_MS ) ) {
                     throw new IllegalStateException( "MySQL container did not become ready in time" );
                 }
@@ -1444,7 +1456,7 @@ public class TestHelper {
 
 
         public void execute( String sql ) throws Exception {
-            int exitCode = container.execute( List.of( "mysql", "-u", username, "-p" + password, database, "-e", sql ) );
+            int exitCode = container.execute( List.of( mariaDb ? "mariadb" : "mysql", "-u", username, "-p" + password, database, "-e", sql ) );
             if ( exitCode != 0 ) {
                 throw new IllegalStateException( "MySQL command failed with exit code " + exitCode + ": " + sql );
             }
@@ -1464,7 +1476,7 @@ public class TestHelper {
         private boolean testConnection() {
             try {
                 int pingExitCode = container.execute( List.of(
-                        "mysqladmin",
+                        mariaDb ? "mariadb-admin" : "mysqladmin",
                         "ping",
                         "-h",
                         "127.0.0.1",
@@ -1476,7 +1488,7 @@ public class TestHelper {
                     return false;
                 }
                 return container.execute( List.of(
-                        "mysql",
+                        mariaDb ? "mariadb" : "mysql",
                         "-u",
                         username,
                         "-p" + password,

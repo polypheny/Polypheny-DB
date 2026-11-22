@@ -17,21 +17,39 @@
 package org.polypheny.db.sql.language.dialect;
 
 
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
+import org.polypheny.db.algebra.core.Aggregate;
+import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.metadata.AlgColumnOrigin;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.TimeUnitRange;
+import org.polypheny.db.plan.AlgOptUtil.InputFinder;
+import org.polypheny.db.plan.volcano.AlgSubset;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexUtil.SubQueryFinder;
 import org.polypheny.db.sql.language.SqlBasicCall;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
 import org.polypheny.db.sql.language.SqlDialect;
+import org.polypheny.db.sql.language.SqlDynamicParam;
 import org.polypheny.db.sql.language.SqlFunction;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlIntervalQualifier;
@@ -44,6 +62,7 @@ import org.polypheny.db.sql.language.fun.SqlCase;
 import org.polypheny.db.type.checker.OperandTypes;
 import org.polypheny.db.type.inference.InferTypes;
 import org.polypheny.db.type.inference.ReturnTypes;
+import org.polypheny.db.util.UnsupportedRexCallVisitor;
 import org.polypheny.db.util.temporal.TimeUnit;
 
 
@@ -119,9 +138,101 @@ public class MysqlSqlDialect extends SqlDialect {
                 return new SqlDataTypeSpec( new SqlIdentifier( "CHAR", ParserPos.ZERO ), type.getPrecision(), -1, null, null, ParserPos.ZERO );
             case INTEGER:
             case BIGINT:
-                return new SqlDataTypeSpec( new SqlIdentifier( "_SIGNED", ParserPos.ZERO ), type.getPrecision(), -1, null, null, ParserPos.ZERO );
+                return new SqlDataTypeSpec( new SqlIdentifier( "_SIGNED", ParserPos.ZERO ), -1, -1, null, null, ParserPos.ZERO );
         }
         return super.getCastSpec( type );
+    }
+
+
+    @Override
+    public boolean supportsRexCall( AlgNode alg, RexCall rexCall ) {
+        if ( rexCall.getOperator().getOperatorName() != OperatorName.REPLACE ) {
+            return true;
+        }
+
+        // The guard repeats nullable operands. JDBC may substitute a derived expression for a field reference when merging SELECTs.
+        return rexCall.getOperands().stream()
+                .filter( MysqlSqlDialect::needsReplaceNullGuard )
+                .allMatch( operand -> SubQueryFinder.find( operand ) == null
+                        && !UnsupportedRexCallVisitor.containsUnsupportedCall( operand,
+                                List.of( call -> !call.getOperator().isDeterministic() || call.getOperator().isDynamicFunction() ) )
+                        && InputFinder.bits( operand ).asList().stream().allMatch( index -> hasDirectOrigin( alg, index ) ) );
+    }
+
+
+    private static boolean hasDirectOrigin( AlgNode alg, int ordinal ) {
+        for ( AlgNode input : alg.getInputs() ) {
+            int fields = input.getTupleType().getFieldCount();
+            if ( ordinal < fields ) {
+                return isDirectColumn( input, ordinal );
+            }
+            ordinal -= fields;
+        }
+        return false;
+    }
+
+
+    private static boolean isDirectColumn( AlgNode input, int ordinal ) {
+        // Unwrap the planner's placeholders and operators that pass the field through unchanged.
+        Set<AlgNode> visited = Collections.newSetFromMap( new IdentityHashMap<>() );
+        while ( input != null && visited.add( input ) ) {
+            if ( input instanceof AlgSubset subset ) {
+                input = subset.getOriginal();
+            } else if ( input instanceof Filter || input instanceof Sort ) {
+                input = input.getInput( 0 );
+            } else if ( input instanceof Project project && project.getProjects().get( ordinal ) instanceof RexIndexRef ref ) {
+                input = project.getInput();
+                ordinal = ref.getIndex();
+            } else if ( input instanceof Aggregate aggregate ) {
+                if ( ordinal >= aggregate.getGroupCount() ) {
+                    return false;
+                }
+                input = aggregate.getInput();
+                ordinal = aggregate.getGroupSet().nth( ordinal );
+            } else {
+                Set<AlgColumnOrigin> origins = input.getCluster().getMetadataQuery().getColumnOrigins( input, ordinal );
+                return origins != null && !origins.isEmpty() && origins.stream().noneMatch( AlgColumnOrigin::isDerived );
+            }
+        }
+        return false;
+    }
+
+
+    private static boolean needsReplaceNullGuard( RexNode operand ) {
+        return operand.getType().isNullable()
+                || operand instanceof RexDynamicParam
+                || (operand instanceof RexCall cast && cast.getKind() == Kind.CAST && needsReplaceNullGuard( cast.getOperands().get( 0 ) ));
+    }
+
+
+    private static boolean isParameterCast( SqlNode operand ) {
+        return operand instanceof SqlDynamicParam
+                || (operand instanceof SqlCall cast && cast.getKind() == Kind.CAST && isParameterCast( cast.operand( 0 ) ));
+    }
+
+
+    @Override
+    public SqlCall rewriteRexCall( RexCall rexCall, SqlCall sqlCall ) {
+        if ( rexCall.getOperator().getOperatorName() != OperatorName.REPLACE ) {
+            return sqlCall;
+        }
+
+        // MariaDB can return the source before evaluating a null replacement.
+        SqlNode nullCondition = null;
+        for ( int i = 0; i < rexCall.getOperands().size(); i++ ) {
+            SqlNode operand = sqlCall.operand( i );
+            // A typed JDBC parameter can be bound to NULL even when its inferred type is nonnullable.
+            if ( needsReplaceNullGuard( rexCall.getOperands().get( i ) ) || isParameterCast( operand ) ) {
+                SqlNode isNull = (SqlNode) OperatorRegistry.get( OperatorName.IS_NULL ).createCall( ParserPos.ZERO, operand );
+                nullCondition = nullCondition == null
+                        ? isNull
+                        : (SqlNode) OperatorRegistry.get( OperatorName.OR ).createCall( ParserPos.ZERO, nullCondition, isNull );
+            }
+        }
+        if ( nullCondition == null ) {
+            return sqlCall;
+        }
+        return new SqlCase( ParserPos.ZERO, null, SqlNodeList.of( nullCondition ), SqlNodeList.of( SqlLiteral.createNull( ParserPos.ZERO ) ), sqlCall );
     }
 
 

@@ -2132,7 +2132,11 @@ public class Functions {
     /**
      * SQL {@code REPLACE(string, search, replacement)} function.
      */
-    public static PolyString replace( PolyString s, PolyString search, PolyString replacement ) {
+    @Nullable
+    public static PolyString replace( @Nullable PolyString s, @Nullable PolyString search, @Nullable PolyString replacement ) {
+        if ( s == null || s.isNull() || search == null || search.isNull() || replacement == null || replacement.isNull() ) {
+            return null;
+        }
         return search.value.isEmpty() ? s : PolyString.of( s.value.replace( search.value, replacement.value ), s.charset );
     }
 
