@@ -66,6 +66,12 @@ class MqlDecimal128Test {
         assertMatch( first, "first" );
         assertMatch( second, "second" );
         assertMatch( "1.0", "double" );
+        assertEquals( 1, execute( """
+                find({"_id":"second","n":{"$ne":%s}})
+                """.formatted( first ) ).getData().length );
+        assertEquals( 0, execute( """
+                find({"_id":"first","n":{"$nin":[%s]}})
+                """.formatted( first ) ).getData().length );
 
         assertArrayEquals( new String[]{ "1" }, execute( """
                 updateOne({"n":%s},{"$set":{"n":%s}})
@@ -77,6 +83,38 @@ class MqlDecimal128Test {
         assertArrayEquals( new String[]{ "1" }, execute( "deleteOne({\"n\":" + replacement + "})" ).getData() );
         assertEquals( 0, find( replacement ).length );
         assertMatch( second, "second" );
+    }
+
+
+    @Test
+    void incrementPreservesBsonNumericTypes() {
+        String precise = decimal( "1.00000000000000000000000000000004" );
+        String amount = decimal( "0.00000000000000000000000000000001" );
+        String incremented = decimal( "1.00000000000000000000000000000005" );
+        execute( """
+                insertMany([
+                    {"_id":"incDouble","n":0.1},
+                    {"_id":"incInt","n":1},
+                    {"_id":"incLong","n":1},
+                    {"_id":"incDecimal","n":%s}
+                ])
+                """.formatted( precise ) );
+
+        assertIncrement( "incDouble", "0.5", "0.6", "double" );
+        assertIncrement( "incInt", "2", "3", "int" );
+        assertIncrement( "incLong", "{\"$numberLong\":\"3\"}", "4", "long" );
+        assertIncrement( "incDecimal", amount, incremented, "decimal" );
+    }
+
+
+    private static void assertIncrement( String id, String operand, String result, String bsonType ) {
+        assertArrayEquals( new String[]{ "1" }, execute( """
+                updateOne({"_id":"%s"},{"$inc":{"n":%s}})
+                """.formatted( id, operand ) ).getData() );
+        assertMatch( result, id );
+        assertEquals( 1, execute( """
+                find({"_id":"%s","n":{"$type":"%s"}})
+                """.formatted( id, bsonType ) ).getData().length );
     }
 
 

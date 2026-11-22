@@ -148,6 +148,25 @@ public class RelationalOnDocumentTest extends CrossModelTestTemplate {
 
 
     @ParameterizedTest
+    @ValueSource(strings = { "1e-2147483647", "-1e-2147483647" })
+    public void jsonValueTruncatesVerySmallEpochStrings( String epoch ) {
+        executeStatements( ( s, c ) -> {
+            String query = """
+                    SELECT JSON_VALUE('{"n":"%1$s"}', 'lax $.n' RETURNING DATE),
+                           JSON_VALUE('{"n":"%1$s"}', 'lax $.n' RETURNING TIMESTAMP)
+                    """.formatted( epoch );
+            Calendar utc = Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) );
+            try ( ResultSet result = s.executeQuery( query ) ) {
+                assertTrue( result.next() );
+                assertEquals( 0L, result.getDate( 1, utc ).getTime() );
+                assertEquals( 0L, result.getTimestamp( 2, utc ).getTime() );
+                assertFalse( result.next() );
+            }
+        } );
+    }
+
+
+    @ParameterizedTest
     @CsvSource({
             "DATE, 2147483648, -2147483649",
             "TIMESTAMP, 9223372036854775808, -9223372036854775809"

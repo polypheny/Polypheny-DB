@@ -160,7 +160,12 @@ public class PolyBigDecimal extends PolyNumber {
 
 
     public BigDecimal integerPart() {
-        return value.setScale( Math.min( value.scale(), 0 ), RoundingMode.DOWN );
+        int scale = value.scale();
+        if ( value.precision() <= scale ) {
+            // Magnitudes below one truncate to zero without rescaling.
+            return BigDecimal.ZERO;
+        }
+        return value.setScale( Math.min( scale, 0 ), RoundingMode.DOWN );
     }
 
 

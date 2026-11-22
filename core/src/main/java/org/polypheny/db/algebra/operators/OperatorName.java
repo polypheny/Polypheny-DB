@@ -1602,6 +1602,8 @@ public enum OperatorName {
 
     MQL_EQUALS( LangFunctionOperator.class ),
 
+    MQL_NOT_EQUALS( LangFunctionOperator.class ),
+
     MQL_SIZE_MATCH( LangFunctionOperator.class ),
 
     MQL_JSON_MATCH( LangFunctionOperator.class ),
@@ -1802,6 +1804,7 @@ public enum OperatorName {
 
     final public static List<OperatorName> MQL_OPERATORS = Arrays.asList(
             MQL_EQUALS,
+            MQL_NOT_EQUALS,
             MQL_GT,
             MQL_GTE,
             MQL_LT,

@@ -23,6 +23,7 @@ import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.relational.PolyMap;
 
 public final class MongoDocumentSerializer {
@@ -48,6 +49,9 @@ public final class MongoDocumentSerializer {
         if ( value instanceof PolyBigDecimal decimal && !decimal.isNull() ) {
             // A bare JSON number would be parsed as a double or a signed 64-bit integer.
             return "{\"$numberDecimal\":\"" + decimal.value + "\"}";
+        }
+        if ( value instanceof PolyLong number && number.value != null ) {
+            return "{\"$numberLong\":\"" + number.value + "\"}";
         }
         if ( value instanceof PolyMap<?, ?> map && map.map != null ) {
             return map.entrySet().stream().map( entry -> {

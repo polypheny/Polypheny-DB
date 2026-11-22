@@ -665,7 +665,7 @@ public class MqlToAlgConverter {
         Map<String, RexNode> updates = new HashMap<>();
         for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
             RexNode id = getIdentifier( entry.getKey(), rowType, true );
-            RexLiteral literal = builder.makeBigintLiteral( entry.getValue().asNumber().decimal128Value().bigDecimalValue() );
+            RexNode literal = convertUpdateNumber( entry.getValue() );
             updates.put( entry.getKey(), new RexCall( any, operator, Arrays.asList( id, literal ) ) );
         }
         return updates;
@@ -680,10 +680,17 @@ public class MqlToAlgConverter {
         Map<String, RexNode> updates = new HashMap<>();
         for ( Entry<String, BsonValue> entry : doc.entrySet() ) {
             RexNode id = getIdentifier( entry.getKey(), rowType, true );
-            RexLiteral literal = builder.makeBigintLiteral( entry.getValue().asNumber().decimal128Value().bigDecimalValue() );
+            RexNode literal = convertUpdateNumber( entry.getValue() );
             updates.put( entry.getKey(), builder.makeCall( DocumentType.ofDoc(), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.PLUS ), id, literal ) );
         }
         return updates;
+    }
+
+
+    private RexNode convertUpdateNumber( BsonValue value ) {
+        RexLiteral literal = new RexLiteral( BsonUtil.toPolyValue( value.asNumber() ), new DocumentType(), PolyType.DOCUMENT );
+        // Enumerable updates use decimal arithmetic. The MongoDB translator unwraps the cast and uses the BSON type.
+        return value.isDecimal128() ? literal : builder.makeAbstractCast( cluster.getTypeFactory().createPolyType( PolyType.DECIMAL ), literal );
     }
 
 
@@ -1992,7 +1999,7 @@ public class MqlToAlgConverter {
                     nodes.add( id );
                 }
                 nodes.add( convertLiteral( bsonValue ) );
-                return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), op, nodes );
+                return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), comparisonOperator( op, bsonValue ), nodes );
         }
     }
 
@@ -2621,6 +2628,7 @@ public class MqlToAlgConverter {
         List<RexNode> operands = new ArrayList<>();
         boolean isIn = op.getOperatorName() == OperatorName.IN;
         op = isIn ? OperatorRegistry.get( OperatorName.OR ) : OperatorRegistry.get( OperatorName.AND );
+        Operator comparison = isIn ? OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EQUALS ) : OperatorRegistry.get( OperatorName.NOT_EQUALS );
         RexNode id = getIdentifier( key, rowType );
 
         for ( BsonValue literal : bsonValue.asArray() ) {
@@ -2634,11 +2642,29 @@ public class MqlToAlgConverter {
                 }
                 operands.add( filter );
             } else {
-                operands.add( new RexCall( type, isIn ? OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EQUALS ) : OperatorRegistry.get( OperatorName.NOT_EQUALS ), Arrays.asList( id, convertLiteral( literal ) ) ) );
+                operands.add( new RexCall( type, comparisonOperator( comparison, literal ), Arrays.asList( id, convertLiteral( literal ) ) ) );
             }
         }
 
         return getFixedCall( operands, op, PolyType.BOOLEAN );
+    }
+
+
+    private static Operator comparisonOperator( Operator operator, BsonValue literal ) {
+        if ( operator.getOperatorName() == OperatorName.NOT_EQUALS && containsDecimal128( literal ) ) {
+            return OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_NOT_EQUALS );
+        }
+        return operator;
+    }
+
+
+    private static boolean containsDecimal128( BsonValue value ) {
+        return switch ( value.getBsonType() ) {
+            case DECIMAL128 -> true;
+            case ARRAY -> value.asArray().stream().anyMatch( MqlToAlgConverter::containsDecimal128 );
+            case DOCUMENT -> value.asDocument().values().stream().anyMatch( MqlToAlgConverter::containsDecimal128 );
+            default -> false;
+        };
     }
 
 
