@@ -47,6 +47,7 @@ import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.adapter.mongodb.bson.BsonFunctionHelper;
 import org.polypheny.db.adapter.mongodb.bson.BsonKeyValue;
+import org.polypheny.db.adapter.mongodb.bson.MongoDocumentSerializer;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Filter;
@@ -67,9 +68,11 @@ import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.sql.language.fun.SqlItemOperator;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.spatial.PolyLinearRing;
@@ -1388,7 +1391,10 @@ public class MongoFilter extends Filter implements MongoAlg {
          * @return if the translation was successful
          */
         private boolean translateDocValue( String op, RexNameRef left, RexNode right ) {
-            BsonValue item = getItem( right );
+            BsonValue item = right instanceof RexLiteral literal
+                    && (literal.value instanceof PolyDocument || literal.value instanceof PolyList<?>)
+                    ? MongoDocumentSerializer.serializeValue( literal.value )
+                    : getItem( right );
             if ( item == null ) {
                 return false;
             }

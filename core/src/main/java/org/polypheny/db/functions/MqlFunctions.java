@@ -523,14 +523,14 @@ public class MqlFunctions {
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean docEq( PolyValue b0, PolyValue b1 ) {
         if ( b0 instanceof PolyList<?> list && !(b1 instanceof PolyList<?>) ) {
-            return PolyBoolean.of( list.stream().anyMatch( element -> requiresExactDecimalEquality( element, b1 )
+            return PolyBoolean.of( list.stream().anyMatch( element -> requiresExactEquality( element, b1 )
                     ? exactDocumentEquals( element, b1 )
                     : Objects.equals( b1, element ) ) );
         }
         if ( b0 == null || b1 == null ) {
             return PolyBoolean.of( b0 == b1 );
         }
-        return PolyBoolean.of( requiresExactDecimalEquality( b0, b1 )
+        return PolyBoolean.of( requiresExactEquality( b0, b1 )
                 ? exactDocumentEquals( b0, b1 )
                 : b0.compareTo( b1 ) == 0 );
     }
@@ -542,24 +542,30 @@ public class MqlFunctions {
     }
 
 
-    private static boolean requiresExactDecimalEquality( PolyValue left, PolyValue right ) {
+    private static boolean requiresExactEquality( PolyValue left, PolyValue right ) {
         if ( left instanceof PolyNumber l && right instanceof PolyNumber r ) {
             return isDecimalComparison( l, r );
         }
+        if ( left instanceof PolyDocument && right instanceof PolyDocument ) {
+            return true;
+        }
         boolean matchingContainers = left instanceof PolyList<?> && right instanceof PolyList<?>
                 || left instanceof PolyMap<?, ?> && right instanceof PolyMap<?, ?>;
-        return matchingContainers && (containsDecimal( left ) || containsDecimal( right ));
+        return matchingContainers && (containsDocumentOrDecimal( left ) || containsDocumentOrDecimal( right ));
     }
 
 
-    private static boolean containsDecimal( PolyValue value ) {
+    private static boolean containsDocumentOrDecimal( PolyValue value ) {
+        if ( value instanceof PolyDocument || value instanceof PolyBigDecimal ) {
+            return true;
+        }
         if ( value instanceof PolyList<?> list ) {
-            return list.value != null && list.stream().anyMatch( MqlFunctions::containsDecimal );
+            return list.value != null && list.stream().anyMatch( MqlFunctions::containsDocumentOrDecimal );
         }
         if ( value instanceof PolyMap<?, ?> map ) {
-            return map.values().stream().anyMatch( MqlFunctions::containsDecimal );
+            return map.values().stream().anyMatch( MqlFunctions::containsDocumentOrDecimal );
         }
-        return value instanceof PolyBigDecimal;
+        return false;
     }
 
 
@@ -581,6 +587,20 @@ public class MqlFunctions {
             }
             return l.size() == r.size()
                     && Pair.zip( l.value, r.value ).stream().allMatch( pair -> exactDocumentEquals( pair.left, pair.right ) );
+        }
+        if ( left instanceof PolyDocument l && right instanceof PolyDocument r ) {
+            if ( l.isUnset != r.isUnset || l.size() != r.size() ) {
+                return false;
+            }
+            Iterator<Entry<PolyString, PolyValue>> rightEntries = r.entrySet().iterator();
+            for ( Entry<PolyString, PolyValue> leftEntry : l.entrySet() ) {
+                Entry<PolyString, PolyValue> rightEntry = rightEntries.next();
+                if ( !Objects.equals( leftEntry.getKey(), rightEntry.getKey() )
+                        || !exactDocumentEquals( leftEntry.getValue(), rightEntry.getValue() ) ) {
+                    return false;
+                }
+            }
+            return true;
         }
         if ( left instanceof PolyMap<?, ?> l && right instanceof PolyMap<?, ?> r && left.isSameType( right ) ) {
             return l.keySet().equals( r.keySet() )

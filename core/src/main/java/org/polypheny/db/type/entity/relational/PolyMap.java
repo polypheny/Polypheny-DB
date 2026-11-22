@@ -164,7 +164,12 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
 
     @Override
     public Expression asExpression() {
-        return Expressions.call( PolyMap.class, "of", Expressions.call(
+        return Expressions.call( PolyMap.class, "of", mapExpression() );
+    }
+
+
+    protected Expression mapExpression() {
+        return Expressions.call(
                 BuiltInMethod.MAP_OF_ENTRIES.method,
                 EnumUtils.expressionList(
                         entrySet()
@@ -172,7 +177,7 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
                                 .map( p -> Expressions.call(
                                         BuiltInMethod.PAIR_OF.method,
                                         p.getKey().asExpression(),
-                                        p.getValue().asExpression() ) ).collect( Collectors.toList() ) ) ) );
+                                        p.getValue().asExpression() ) ).collect( Collectors.toList() ) ) );
     }
 
 

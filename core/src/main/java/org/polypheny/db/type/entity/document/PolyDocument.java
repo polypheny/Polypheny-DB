@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.jsontype.TypeDeserializer;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
+import com.google.common.collect.ImmutableMap;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -38,8 +39,9 @@ import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.def.SimpleSerializerDef;
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
@@ -71,7 +73,7 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
 
     public PolyDocument( @JsonProperty("map") @Deserialize("map") Map<PolyString, PolyValue> value, @JsonProperty("isUnset") @Deserialize("isUnset") boolean isUnset ) {
-        super( value, PolyType.DOCUMENT, MapType.DOCUMENT );
+        super( value, PolyType.DOCUMENT, MapType.DOCUMENT, true );
         this.isUnset = isUnset;
     }
 
@@ -81,20 +83,13 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
     }
 
 
-    private PolyDocument( LinkedHashMap<PolyString, PolyValue> orderedValues ) {
-        super( orderedValues, PolyType.DOCUMENT, MapType.DOCUMENT, true );
-    }
-
-
     public PolyDocument( PolyString key, PolyValue value ) {
-        this( new HashMap<>() {{
-            put( key, value );
-        }} );
+        this( Collections.singletonMap( key, value ) );
     }
 
 
     public static PolyDocument ofUnset() {
-        return new PolyDocument( new HashMap<>(), true );
+        return new PolyDocument( Map.of(), true );
     }
 
 
@@ -105,7 +100,7 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
     @SafeVarargs
     public PolyDocument( Pair<PolyString, PolyValue>... value ) {
-        this( Map.ofEntries( value ) );
+        this( ImmutableMap.copyOf( List.of( value ) ) );
     }
 
 
@@ -124,7 +119,7 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
     @Override
     public Expression asExpression() {
-        return Expressions.new_( PolyDocument.class, super.asExpression(), Expressions.constant( isUnset ) );
+        return Expressions.new_( PolyDocument.class, mapExpression(), Expressions.constant( isUnset ) );
     }
 
 
@@ -167,10 +162,10 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
                 @Override
                 public PolyDocument decode( BinaryInput in ) throws CorruptedDataException {
-                    Map<PolyString, PolyValue> map = new HashMap<>();
                     if ( in.readBoolean() ) {
                         return PolyDocument.ofUnset();
                     }
+                    Map<PolyString, PolyValue> map = new LinkedHashMap<>();
                     long size = in.readLong();
                     for ( long i = 0; i < size; i++ ) {
                         map.put(
@@ -260,7 +255,6 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
             if ( values == null ) {
                 return ctxt.reportInputMismatch( PolyDocument.class, "Missing document entries field '%s'", KEY_VALUE_KEY );
             }
-            // Graph property storage checks the serialized form, including field order.
             return new PolyDocument( values );
         }
 

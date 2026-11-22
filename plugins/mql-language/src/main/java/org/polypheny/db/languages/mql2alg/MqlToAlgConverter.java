@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -137,7 +138,7 @@ public class MqlToAlgConverter {
         put( "$lte", OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_LTE ) );
         put( "$gte", OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_GTE ) );
         put( "$eq", OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EQUALS ) );
-        put( "$ne", OperatorRegistry.get( OperatorName.NOT_EQUALS ) );
+        put( "$ne", OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_NOT_EQUALS ) );
         put( "$in", OperatorRegistry.get( OperatorName.IN ) );
         put( "$nin", OperatorRegistry.get( OperatorName.NOT_IN ) );
         put( "$exists", OperatorRegistry.get( OperatorName.EXISTS ) );
@@ -274,7 +275,7 @@ public class MqlToAlgConverter {
             case STRING:
                 return PolyString.of( value.asString().getValue() );
             case DOCUMENT:
-                Map<PolyString, PolyValue> map = new HashMap<>();
+                Map<PolyString, PolyValue> map = new LinkedHashMap<>();
                 for ( Entry<String, BsonValue> entry : value.asDocument().entrySet() ) {
                     map.put( PolyString.of( entry.getKey() ), getPolyValue( entry.getValue() ) );
                 }
@@ -1986,9 +1987,8 @@ public class MqlToAlgConverter {
 
 
     private RexNode translateLogical( String key, String parentKey, BsonValue bsonValue, AlgDataType rowType ) {
-        Operator op;
         List<RexNode> nodes = new ArrayList<>();
-        op = mappings.get( key );
+        Operator op = mappings.get( key );
         switch ( op.getKind() ) {
             case IN:
             case NOT_IN:
@@ -1999,7 +1999,7 @@ public class MqlToAlgConverter {
                     nodes.add( id );
                 }
                 nodes.add( convertLiteral( bsonValue ) );
-                return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), comparisonOperator( op, bsonValue ), nodes );
+                return new RexCall( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), op, nodes );
         }
     }
 
@@ -2628,7 +2628,7 @@ public class MqlToAlgConverter {
         List<RexNode> operands = new ArrayList<>();
         boolean isIn = op.getOperatorName() == OperatorName.IN;
         op = isIn ? OperatorRegistry.get( OperatorName.OR ) : OperatorRegistry.get( OperatorName.AND );
-        Operator comparison = isIn ? OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EQUALS ) : OperatorRegistry.get( OperatorName.NOT_EQUALS );
+        Operator comparison = OperatorRegistry.get( QueryLanguage.from( MONGO ), isIn ? OperatorName.MQL_EQUALS : OperatorName.MQL_NOT_EQUALS );
         RexNode id = getIdentifier( key, rowType );
 
         for ( BsonValue literal : bsonValue.asArray() ) {
@@ -2642,29 +2642,11 @@ public class MqlToAlgConverter {
                 }
                 operands.add( filter );
             } else {
-                operands.add( new RexCall( type, comparisonOperator( comparison, literal ), Arrays.asList( id, convertLiteral( literal ) ) ) );
+                operands.add( new RexCall( type, comparison, Arrays.asList( id, convertLiteral( literal ) ) ) );
             }
         }
 
         return getFixedCall( operands, op, PolyType.BOOLEAN );
-    }
-
-
-    private static Operator comparisonOperator( Operator operator, BsonValue literal ) {
-        if ( operator.getOperatorName() == OperatorName.NOT_EQUALS && containsDecimal128( literal ) ) {
-            return OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_NOT_EQUALS );
-        }
-        return operator;
-    }
-
-
-    private static boolean containsDecimal128( BsonValue value ) {
-        return switch ( value.getBsonType() ) {
-            case DECIMAL128 -> true;
-            case ARRAY -> value.asArray().stream().anyMatch( MqlToAlgConverter::containsDecimal128 );
-            case DOCUMENT -> value.asDocument().values().stream().anyMatch( MqlToAlgConverter::containsDecimal128 );
-            default -> false;
-        };
     }
 
 
