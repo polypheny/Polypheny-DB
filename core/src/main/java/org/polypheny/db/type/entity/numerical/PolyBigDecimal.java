@@ -30,6 +30,7 @@ import io.activej.serializer.annotations.SerializeNullable;
 import io.activej.serializer.def.SimpleSerializerDef;
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.math.RoundingMode;
 import java.util.Objects;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -153,6 +154,11 @@ public class PolyBigDecimal extends PolyNumber {
     @Override
     public BigDecimal bigDecimalValue() {
         return value;
+    }
+
+
+    public BigDecimal integerPart() {
+        return value.setScale( Math.min( value.scale(), 0 ), RoundingMode.DOWN );
     }
 
 

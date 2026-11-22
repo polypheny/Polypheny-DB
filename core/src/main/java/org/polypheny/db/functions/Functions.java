@@ -56,6 +56,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -2655,6 +2656,9 @@ public class Functions {
 
     @SuppressWarnings("unused")
     public static Object jsonValueExpression( PolyValue input ) {
+        if ( input instanceof PolyMap<?, ?> || input instanceof PolyList<?> || input instanceof PolyBigDecimal ) {
+            return input;
+        }
         return jsonValueExpression( PolyString.of( input.toJson() ) );
     }
 
@@ -2729,24 +2733,17 @@ public class Functions {
             }
             PathMode mode = PathMode.valueOf( matcher.group( 1 ).toUpperCase( Locale.ROOT ) );
             String pathWff = matcher.group( 2 );
-            DocumentContext ctx = switch ( mode ) {
-                case STRICT -> JsonPath.parse(
-                        input.toJson(),
-                        Configuration
-                                .builder()
-                                .jsonProvider( JSON_PATH_JSON_PROVIDER )
-                                .mappingProvider( JSON_PATH_MAPPING_PROVIDER )
-                                .build() );
-                case LAX -> JsonPath.parse(
-                        input.toJson(),
-                        Configuration
-                                .builder()
-                                .options( Option.SUPPRESS_EXCEPTIONS )
-                                .jsonProvider( JSON_PATH_JSON_PROVIDER )
-                                .mappingProvider( JSON_PATH_MAPPING_PROVIDER )
-                                .build() );
-                default -> throw Static.RESOURCE.illegalJsonPathModeInPathSpec( mode.toString(), pathSpec.value ).ex();
-            };
+            Configuration.ConfigurationBuilder builder = Configuration.builder()
+                    .jsonProvider( JSON_PATH_JSON_PROVIDER )
+                    .mappingProvider( JSON_PATH_MAPPING_PROVIDER );
+            if ( mode == PathMode.LAX ) {
+                builder.options( Option.SUPPRESS_EXCEPTIONS );
+            }
+            Configuration configuration = builder.build();
+            Object document = input instanceof PolyMap<?, ?> || input instanceof PolyList<?> || input instanceof PolyBigDecimal
+                    ? jsonPathInput( input )
+                    : null;
+            DocumentContext ctx = document == null ? JsonPath.parse( input.toJson(), configuration ) : JsonPath.parse( document, configuration );
             try {
                 Object result = ctx.read( pathWff );
                 return PathContext.withReturned( mode, result == null ? null : jsonPathResultToPolyValue( result ) );
@@ -2756,6 +2753,43 @@ public class Functions {
         } catch ( Exception e ) {
             return PathContext.withUnknownException( e );
         }
+    }
+
+
+    private static Object jsonPathInput( PolyValue value ) {
+        if ( value == null || value.isNull() ) {
+            return null;
+        }
+        if ( value instanceof PolyMap<?, ?> map ) {
+            if ( map.map == null ) {
+                return null;
+            }
+            Map<String, Object> document = new LinkedHashMap<>();
+            map.forEach( ( key, element ) -> {
+                String field = key.isString() ? String.valueOf( key.asString().value ) : key.toJson();
+                document.put( field, jsonPathInput( element ) );
+            } );
+            return document;
+        }
+        if ( value instanceof PolyList<?> list ) {
+            return list.value == null ? null : list.stream().map( Functions::jsonPathInput ).collect( Collectors.toCollection( ArrayList::new ) );
+        }
+        return switch ( value.getType() ) {
+            case CHAR, VARCHAR, TEXT, BOOLEAN, TINYINT, SMALLINT, INTEGER, DECIMAL -> value.toJava();
+            case BIGINT -> {
+                Long number = value.asLong().value;
+                if ( number != null && number == number.intValue() ) {
+                    yield number.intValue();
+                }
+                yield number;
+            }
+            case DOUBLE -> {
+                Double number = value.asDouble().value;
+                yield number == null || Double.isFinite( number ) ? number : JSON_PATH_JSON_PROVIDER.parse( value.toJson() );
+            }
+            case DATE, TIME, TIMESTAMP -> value.toJson();
+            default -> JSON_PATH_JSON_PROVIDER.parse( value.toJson() );
+        };
     }
 
 

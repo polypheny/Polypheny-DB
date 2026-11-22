@@ -17,18 +17,25 @@
 package org.polypheny.db.crossmodel;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Timestamp;
+import java.util.Calendar;
 import java.util.List;
+import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.mql.MqlTestTemplate;
@@ -100,12 +107,21 @@ public class RelationalOnDocumentTest extends CrossModelTestTemplate {
                     SELECT JSON_VALUE('{"value":"true"}', 'lax $.value' RETURNING BOOLEAN),
                            JSON_VALUE('{"value":"false"}', 'lax $.value' RETURNING BOOLEAN),
                            JSON_VALUE('{"value":null}', 'lax $.value' RETURNING BOOLEAN),
-                           JSON_VALUE('{"value":"true"}', 'lax $.value')
+                           JSON_VALUE('{"value":"true"}', 'lax $.value'),
+                           JSON_VALUE('{"value":0}', 'lax $.value' RETURNING BOOLEAN),
+                           JSON_VALUE('{"value":1}', 'lax $.value' RETURNING BOOLEAN)
                     """;
             try ( ResultSet result = s.executeQuery( query ) ) {
-                TestHelper.checkResultSet( result, List.<Object[]>of( new Object[]{ Boolean.TRUE, Boolean.FALSE, null, "true" } ) );
+                TestHelper.checkResultSet( result, List.<Object[]>of( new Object[]{ Boolean.TRUE, Boolean.FALSE, null, "true", Boolean.FALSE, Boolean.TRUE } ) );
             }
         } );
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(strings = { "18446744073709551616", "18446744073709551617", "-18446744073709551616" })
+    public void jsonValueRejectsOversizedDecimalAsBoolean( String decimal ) {
+        executeStatements( ( s, c ) -> assertJsonDecimalCastFails( s, decimal, "BOOLEAN" ) );
     }
 
 
@@ -138,22 +154,50 @@ public class RelationalOnDocumentTest extends CrossModelTestTemplate {
     }
 
 
-    @ParameterizedTest
-    @ValueSource(strings = { "DATE", "TIMESTAMP" })
-    public void jsonValueRejectsTemporalOverflow( String type ) {
+    @Test
+    public void jsonValueTruncatesFractionalTemporalValuesAtBounds() {
         executeStatements( ( s, c ) -> {
-            // A cast must reject ±2^64, including Decimal128 values with a fractional part.
-            for ( String decimal : List.of( "18446744073709551616", "-18446744073709551616", "18446744073709551616.5", "-18446744073709551616.5" ) ) {
-                String overflowQuery = """
-                        SELECT JSON_VALUE('{"n":{"$numberDecimal":"%s"}}', 'lax $.n' RETURNING %s)
-                        """.formatted( decimal, type );
-                assertThrows( SQLException.class, () -> {
-                    try ( ResultSet result = s.executeQuery( overflowQuery ) ) {
-                        result.next();
-                    }
-                }, decimal );
+            String query = """
+                    SELECT JSON_VALUE('{"n":{"$numberDecimal":"2147483647.9999999999"}}', 'lax $.n' RETURNING DATE),
+                           JSON_VALUE('{"n":{"$numberDecimal":"9223372036854775807.9"}}', 'lax $.n' RETURNING TIMESTAMP),
+                           JSON_VALUE('{"n":{"$numberDecimal":"-9223372036854775808.0"}}', 'lax $.n' RETURNING TIMESTAMP)
+                    """;
+            Calendar utc = Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) );
+            try ( ResultSet result = s.executeQuery( query ) ) {
+                assertTrue( result.next() );
+                assertEquals( TimeUnit.DAYS.toMillis( Integer.MAX_VALUE ), result.getDate( 1, utc ).getTime() );
+                assertEquals( Long.MAX_VALUE, result.getTimestamp( 2, utc ).getTime() );
+                assertEquals( Long.MIN_VALUE, result.getTimestamp( 3, utc ).getTime() );
+                assertFalse( result.next() );
             }
         } );
+    }
+
+
+    @ParameterizedTest
+    @CsvSource({
+            "DATE, 2147483648.0, -2147483649.0",
+            "TIMESTAMP, 9223372036854775808.0, -9223372036854775809.0"
+    })
+    public void jsonValueRejectsTemporalOverflow( String type, String aboveMaximum, String belowMinimum ) {
+        executeStatements( ( s, c ) -> {
+            for ( String decimal : List.of( aboveMaximum, belowMinimum,
+                    "18446744073709551616", "-18446744073709551616", "18446744073709551616.5", "-18446744073709551616.5" ) ) {
+                assertJsonDecimalCastFails( s, decimal, type );
+            }
+        } );
+    }
+
+
+    private static void assertJsonDecimalCastFails( Statement statement, String decimal, String type ) {
+        String query = """
+                SELECT JSON_VALUE('{"n":{"$numberDecimal":"%s"}}', 'lax $.n' RETURNING %s)
+                """.formatted( decimal, type );
+        assertThrows( SQLException.class, () -> {
+            try ( ResultSet result = statement.executeQuery( query ) ) {
+                result.next();
+            }
+        }, decimal );
     }
 
 

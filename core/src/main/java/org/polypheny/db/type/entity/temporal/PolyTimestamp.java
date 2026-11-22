@@ -20,7 +20,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonToken;
 import com.google.common.math.DoubleMath;
-import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -161,10 +160,7 @@ public class PolyTimestamp extends PolyTemporal {
         if ( value.isNumber() ) {
             PolyNumber number = value.asNumber();
             return PolyTimestamp.of( switch ( number.getType() ) {
-                case DECIMAL -> {
-                    BigDecimal decimal = number.bigDecimalValue();
-                    yield decimal.setScale( Math.min( decimal.scale(), 0 ), RoundingMode.DOWN ).longValueExact();
-                }
+                case DECIMAL -> number.asBigDecimal().integerPart().longValueExact();
                 case FLOAT, REAL, DOUBLE -> DoubleMath.roundToLong( number.doubleValue(), RoundingMode.DOWN );
                 default -> number.longValue();
             } );

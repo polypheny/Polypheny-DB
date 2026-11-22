@@ -121,14 +121,21 @@ public class SqlJsonFunctionsTest extends SqlLanguageDependent {
     @Test
     public void testJsonApiCommonSyntaxPreservesStructuredValues() {
         PolyString key = PolyString.of( "payload" );
+        PolyString preciseKey = PolyString.of( "precise" );
+        PolyString approximateKey = PolyString.of( "approximate" );
+        PolyBigDecimal precise = PolyBigDecimal.of( "9223372036854775807.9" );
         PolyDocument payload = PolyDocument.ofDocument( Map.of(
                 PolyString.of( "missing" ), PolyNull.NULL,
-                PolyString.of( "values" ), PolyList.of( PolyString.of( "null" ), PolyInteger.of( 1 ), PolyNull.NULL ) ) );
+                PolyString.of( "values" ), PolyList.of( PolyString.of( "null" ), PolyInteger.of( 1 ), PolyNull.NULL ),
+                preciseKey, precise,
+                approximateKey, PolyDouble.of( 1e30 ) ) );
 
-        assertJsonApiCommonSyntax(
-                PolyDocument.ofDocument( Map.of( key, payload ) ),
-                PolyString.of( "strict $.payload" ),
-                contextMatches( PathContext.withReturned( Functions.PathMode.STRICT, payload ) ) );
+        PolyValue input = (PolyValue) Functions.jsonValueExpression( PolyDocument.ofDocument( Map.of( key, payload ) ) );
+        PathContext result = Functions.jsonApiCommonSyntax( input, PolyString.of( "strict $.payload" ) );
+        assertThat( result, contextMatches( PathContext.withReturned( Functions.PathMode.STRICT, payload ) ) );
+        PolyDocument actual = result.pathReturned.asDocument();
+        assertThat( actual.get( preciseKey ).asBigDecimal().value, is( precise.value ) );
+        assertThat( actual.get( approximateKey ).asDouble().value, is( 1e30 ) );
     }
 
 
