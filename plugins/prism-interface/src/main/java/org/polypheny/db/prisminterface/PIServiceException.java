@@ -28,12 +28,14 @@ public class PIServiceException extends GenericRuntimeException {
     private String state;
     @Getter
     private int errorCode;
+    private boolean hasErrorCode;
 
 
     public PIServiceException( String reason, String state, int errorCode ) {
         super( reason );
         this.state = state;
         this.errorCode = errorCode;
+        this.hasErrorCode = true;
     }
 
 
@@ -47,6 +49,7 @@ public class PIServiceException extends GenericRuntimeException {
         super( sqlException.getMessage(), sqlException );
         this.state = sqlException.getSQLState();
         this.errorCode = sqlException.getErrorCode();
+        this.hasErrorCode = true;
     }
 
 
@@ -75,19 +78,23 @@ public class PIServiceException extends GenericRuntimeException {
         super( reason, cause );
         this.state = state;
         this.errorCode = errorCode;
+        this.hasErrorCode = true;
     }
 
 
     public PIServiceException( ErrorDetails errorDetails ) {
         super( errorDetails.hasMessage() ? errorDetails.getMessage() : null );
         this.state = errorDetails.hasState() ? errorDetails.getState() : null;
-        this.errorCode = errorDetails.hasErrorCode() ? errorDetails.getErrorCode() : 0;
+        this.errorCode = errorDetails.getErrorCode();
+        this.hasErrorCode = errorDetails.hasErrorCode();
     }
 
 
     public ErrorDetails getPrismErrorDetails() {
         ErrorDetails.Builder errorDetailsBuilder = ErrorDetails.newBuilder();
-        errorDetailsBuilder.setErrorCode( getErrorCode() );
+        if ( hasErrorCode ) {
+            errorDetailsBuilder.setErrorCode( getErrorCode() );
+        }
         Optional.ofNullable( getState() ).ifPresent( errorDetailsBuilder::setState );
         Optional.ofNullable( getMessage() ).ifPresent( errorDetailsBuilder::setMessage );
         return errorDetailsBuilder.build();

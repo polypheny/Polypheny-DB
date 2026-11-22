@@ -58,4 +58,9 @@ public class MqlParseException extends NodeParseException implements PolyphenyDb
         super( message, pos, expectedTokenSequences, tokenImages, parserException );
     }
 
+
+    public MqlParseException( String message, ParserPos pos, int[][] expectedTokenSequences, String[] tokenImages, Throwable parserException, boolean syntaxError ) {
+        super( message, pos, expectedTokenSequences, tokenImages, parserException, syntaxError );
+    }
+
 }

@@ -23,10 +23,10 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
+import org.polypheny.db.runtime.SqlStateException;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 
@@ -66,15 +66,10 @@ public class ParameterValueValidator extends AlgShuttleImpl {
     }
 
 
-    static class InvalidParameterValueException extends GenericRuntimeException {
+    static class InvalidParameterValueException extends SqlStateException {
 
-        public InvalidParameterValueException( String message ) {
-            super( message );
-        }
-
-
-        public InvalidParameterValueException( String message, Throwable cause ) {
-            super( message, cause );
+        public InvalidParameterValueException( String message, String sqlState ) {
+            super( message, sqlState );
         }
 
     }
@@ -100,7 +95,7 @@ public class ParameterValueValidator extends AlgShuttleImpl {
                         break;
                     } else {
                         valid = false;
-                        throw new InvalidParameterValueException( "Null in not nullable column" );
+                        throw new InvalidParameterValueException( "Null in not nullable column", "23502" );
                     }
                 }
                 switch ( polyType.getFamily() ) {
@@ -111,7 +106,7 @@ public class ParameterValueValidator extends AlgShuttleImpl {
                         if ( valid && !dynamicParam.getType().getComponentType().isNullable() ) {
                             for ( PolyValue element : o.asList().value ) {
                                 if ( element == null || element.isNull() ) {
-                                    throw new InvalidParameterValueException( "Null element in non-nullable array column" );
+                                    throw new InvalidParameterValueException( "Null element in non-nullable array column", "23502" );
                                 }
                             }
                         }
@@ -142,7 +137,7 @@ public class ParameterValueValidator extends AlgShuttleImpl {
                 }
             }
             if ( !valid ) {
-                throw new InvalidParameterValueException( String.format( "Parameter value '%s' of type %s does not match the PolyType %s", o.toString(), o.getClass().getSimpleName(), polyType ) );
+                throw new InvalidParameterValueException( String.format( "Parameter value '%s' of type %s does not match the PolyType %s", o.toString(), o.getClass().getSimpleName(), polyType ), "42804" );
             }
             return super.visitDynamicParam( dynamicParam );
         }

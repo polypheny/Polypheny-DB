@@ -428,10 +428,7 @@ public class PolyphenyDb {
 
         restore( authenticator, catalog );
 
-        // Add tracker, which rechecks constraints after enabling
-        ConstraintTracker tracker = new ConstraintTracker( transactionManager );
-        RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.addObserver( tracker );
-        RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.addObserver( tracker );
+        new ConstraintTracker( transactionManager ).registerConfigHandlers();
 
         log.info( "****************************************************************************************************" );
         log.info( "                Polypheny-DB successfully started and ready to process your queries!" );

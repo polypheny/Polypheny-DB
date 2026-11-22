@@ -306,7 +306,7 @@ public enum BuiltInMethod {
     TRUNCATE_BINARY( Functions.class, "truncate", PolyBinary.class, int.class ),
     TRUNCATE_OR_PAD_BINARY( Functions.class, "truncateOrPad", PolyBinary.class, int.class ),
     TRIM( Functions.class, "trim", boolean.class, boolean.class, String.class, String.class, boolean.class ),
-    REPLACE( Functions.class, "replace", String.class, String.class, String.class ),
+    REPLACE( Functions.class, "replace", PolyString.class, PolyString.class, PolyString.class ),
     TRANSLATE3( Functions.class, "translate3", String.class, String.class, String.class ),
     LTRIM( Functions.class, "ltrim", String.class ),
     RTRIM( Functions.class, "rtrim", String.class ),

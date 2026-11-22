@@ -19,14 +19,16 @@ package org.polypheny.db.config;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
+import java.util.function.BiConsumer;
 import org.polypheny.db.config.exception.ConfigRuntimeException;
 
 
 public class ConfigBoolean extends ConfigScalar {
 
-    private boolean value;
+    private volatile boolean value;
     private Boolean oldValue;
     private boolean defaultValue;
+    private transient BiConsumer<Boolean, Runnable> updateHandler;
 
 
     public ConfigBoolean( final String key, final boolean value ) {
@@ -91,15 +93,10 @@ public class ConfigBoolean extends ConfigScalar {
     @Override
     public boolean setBoolean( final boolean b ) {
         if ( validate( value ) ) {
-            if ( requiresRestart() ) {
-                if ( this.oldValue == null ) {
-                    this.oldValue = this.value;
-                }
-            }
-
-            this.value = b;
-            if ( this.oldValue != null && this.oldValue.equals( value ) ) {
-                this.oldValue = null;
+            if ( updateHandler == null ) {
+                publishValue( b );
+            } else {
+                updateHandler.accept( b, () -> publishValue( b ) );
             }
             notifyConfigListeners();
             return true;
@@ -107,6 +104,26 @@ public class ConfigBoolean extends ConfigScalar {
             return false;
         }
 
+    }
+
+
+    /**
+     * Lets a runtime setting publish its new value inside the scope that validates it.
+     * The handler must invoke the publication callback synchronously on success.
+     */
+    public void setUpdateHandler( BiConsumer<Boolean, Runnable> updateHandler ) {
+        this.updateHandler = updateHandler;
+    }
+
+
+    private void publishValue( boolean newValue ) {
+        if ( requiresRestart() && oldValue == null ) {
+            oldValue = value;
+        }
+        value = newValue;
+        if ( oldValue != null && oldValue.equals( newValue ) ) {
+            oldValue = null;
+        }
     }
 
 

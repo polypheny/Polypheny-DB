@@ -86,6 +86,16 @@ public class HsqldbSqlDialect extends SqlDialect {
 
 
     @Override
+    public SqlNode getParameterCastSpec( AlgDataType type ) {
+        if ( type.getPrecision() == 0 && (type.getPolyType() == PolyType.CHAR || type.getPolyType() == PolyType.VARCHAR) ) {
+            // HSQLDB rejects length zero and CHAR(1) pads an empty string.
+            return new SqlDataTypeSpec( new SqlIdentifier( PolyType.VARCHAR.name(), ParserPos.ZERO ), 1, -1, null, null, ParserPos.ZERO );
+        }
+        return super.getParameterCastSpec( type );
+    }
+
+
+    @Override
     public SqlNode getCastSpec( AlgDataType type ) {
         String castSpec;
         switch ( type.getPolyType() ) {

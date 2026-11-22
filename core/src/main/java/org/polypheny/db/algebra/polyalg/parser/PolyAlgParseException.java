@@ -31,7 +31,9 @@ public class PolyAlgParseException extends NodeParseException {
      * @param parserException Parser exception
      */
     public PolyAlgParseException( String message, ParserPos pos, int[][] expectedTokenSequences, String[] tokenImages, Throwable parserException ) {
-        super( message, pos, expectedTokenSequences, tokenImages, parserException );
+        super( message, pos, expectedTokenSequences, tokenImages, parserException, parserException == null
+                || parserException instanceof ParseException
+                || (parserException instanceof TokenMgrError lexicalError && lexicalError.errorCode == TokenMgrError.LEXICAL_ERROR) );
     }
 
 }

@@ -153,9 +153,11 @@ public interface PolyphenyDbResource {
     ExInst<ValidatorException> unknownDatatypeName( String a0 );
 
     @BaseMessage("Values passed to {0} operator must have compatible types")
+    @Property(name = "SQLSTATE", value = "42804")
     ExInst<ValidatorException> incompatibleValueType( String a0 );
 
     @BaseMessage("Values in expression list must have compatible types")
+    @Property(name = "SQLSTATE", value = "42804")
     ExInst<ValidatorException> incompatibleTypesInList();
 
     @BaseMessage("Cannot apply {0} to the two different charsets {1} and {2}")
@@ -165,12 +167,15 @@ public interface PolyphenyDbResource {
     ExInst<ValidatorException> invalidOrderByPos();
 
     @BaseMessage("Unknown identifier ''{0}''")
+    @Property(name = "SQLSTATE", value = "42703")
     ExInst<ValidatorException> unknownIdentifier( String a0 );
 
     @BaseMessage("Unknown field ''{0}''")
+    @Property(name = "SQLSTATE", value = "42703")
     ExInst<ValidatorException> unknownField( String a0 );
 
     @BaseMessage("Unknown target column ''{0}''")
+    @Property(name = "SQLSTATE", value = "42703")
     ExInst<ValidatorException> unknownTargetColumn( String a0 );
 
     @BaseMessage("Target column ''{0}'' is assigned more than once")
@@ -180,9 +185,11 @@ public interface PolyphenyDbResource {
     ExInst<ValidatorException> unmatchInsertColumn( int a0, int a1 );
 
     @BaseMessage("Column ''{0}'' has no default value and does not allow NULLs")
+    @Property(name = "SQLSTATE", value = "23502")
     ExInst<ValidatorException> columnNotNullable( String a0 );
 
     @BaseMessage("Cannot assign to target field ''{0}'' of type {1} from source field ''{2}'' of type {3}")
+    @Property(name = "SQLSTATE", value = "42804")
     ExInst<ValidatorException> typeNotAssignable( String a0, String a1, String a2, String a3 );
 
     @BaseMessage("Array in column ''{0}'' with cardinality {1,number} exceeds max-cardinality of {2,number}")
@@ -195,9 +202,11 @@ public interface PolyphenyDbResource {
     ExInst<ValidatorException> databaseNotFound( String a0 );
 
     @BaseMessage("Entity ''{0}'' not found")
+    @Property(name = "SQLSTATE", value = "42P01")
     ExInst<ValidatorException> entityNameNotFound( String a0 );
 
     @BaseMessage("Entity ''{0}'' not found; did you mean ''{1}''?")
+    @Property(name = "SQLSTATE", value = "42P01")
     ExInst<ValidatorException> entityNameNotFoundDidYouMean( String a0, String a1 );
 
     @BaseMessage("Value ''{0}'' is not valid JSON; {1}")
@@ -207,6 +216,7 @@ public interface PolyphenyDbResource {
      * Same message as {@link #entityNameNotFound(String)} but a different kind of exception, so it can be used in {@code AlgBuilder}.
      */
     @BaseMessage("Entity ''{0}'' not found")
+    @Property(name = "SQLSTATE", value = "42P01")
     ExInst<PolyphenyDbException> entityNotFound( String tableName );
 
     @BaseMessage("Object ''{0}'' not found")
@@ -225,15 +235,19 @@ public interface PolyphenyDbResource {
     ExInst<ValidatorException> notASequence( String a0 );
 
     @BaseMessage("Field ''{0}'' not found in any entity")
+    @Property(name = "SQLSTATE", value = "42703")
     ExInst<ValidatorException> fieldNotFound( String a0 );
 
     @BaseMessage("Field ''{0}'' not found in any entity; did you mean ''{1}''?")
+    @Property(name = "SQLSTATE", value = "42703")
     ExInst<ValidatorException> fieldNotFoundDidYouMean( String a0, String a1 );
 
     @BaseMessage("Field ''{0}'' not found in entity ''{1}''")
+    @Property(name = "SQLSTATE", value = "42703")
     ExInst<ValidatorException> fieldNotFoundInEntity( String a0, String a1 );
 
     @BaseMessage("Field ''{0}'' not found in entity ''{1}''; did you mean ''{2}''?")
+    @Property(name = "SQLSTATE", value = "42703")
     ExInst<ValidatorException> fieldNotFoundInEntityDidYouMean( String a0, String a1, String a2 );
 
     @BaseMessage("Field ''{0}'' is ambiguous")
@@ -294,6 +308,7 @@ public interface PolyphenyDbResource {
     ExInst<ValidatorException> typeNotComparableEachOther( String a0 );
 
     @BaseMessage("Numeric literal ''{0}'' out of range")
+    @Property(name = "SQLSTATE", value = "22003")
     ExInst<ValidatorException> numberLiteralOutOfRange( String a0 );
 
     @BaseMessage("Date literal ''{0}'' out of range")
@@ -561,6 +576,7 @@ public interface PolyphenyDbResource {
     ExInst<PolyphenyDbException> illegalArgumentForTableFunctionCall( String a0, String a1, String a2 );
 
     @BaseMessage("''{0}'' is not a valid datetime format")
+    @Property(name = "SQLSTATE", value = "22007")
     ExInst<PolyphenyDbException> invalidDatetimeFormat( String a0 );
 
     @BaseMessage("Cannot INSERT into generated column ''{0}''")
@@ -771,6 +787,7 @@ public interface PolyphenyDbResource {
     ExInst<ValidatorException> columnExists( String name );
 
     @BaseMessage("Field ''{0}'' is defined NOT NULL and has no default value assigned")
+    @Property(name = "SQLSTATE", value = "23502")
     ExInst<ValidatorException> notNullAndNoDefaultValue( String name );
 
     @BaseMessage("Invalid namespace type ''{0}''; valid values: {1}")
@@ -791,6 +808,7 @@ public interface PolyphenyDbResource {
     ExInst<ValidatorException> viewExists( String name );
 
     @BaseMessage("Namespace ''{0}'' not found")
+    @Property(name = "SQLSTATE", value = "3F000")
     ExInst<ValidatorException> schemaNotFound( String name );
 
     @BaseMessage("User ''{0}'' not found")
@@ -803,6 +821,7 @@ public interface PolyphenyDbResource {
     ExInst<ValidatorException> typeNotFound( String name );
 
     @BaseMessage("Dialect does not support feature: ''{0}''")
+    @Property(name = "SQLSTATE", value = "0A000")
     ExInst<ValidatorException> dialectDoesNotSupportFeature( String featureName );
 
     @BaseMessage("Substring error: negative substring length not allowed")
@@ -821,6 +840,7 @@ public interface PolyphenyDbResource {
     ExInst<PolyphenyDbException> cannotConvert( String o, String toType );
 
     @BaseMessage("Invalid character for cast: {0}")
+    @Property(name = "SQLSTATE", value = "22018")
     ExInst<PolyphenyDbException> invalidCharacterForCast( String s );
 
     @BaseMessage("More than one value in list: {0}")

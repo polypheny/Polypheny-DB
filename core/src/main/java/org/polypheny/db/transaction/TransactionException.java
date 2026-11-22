@@ -17,17 +17,34 @@
 package org.polypheny.db.transaction;
 
 
+import javax.annotation.Nullable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.runtime.SqlStateProvider;
 
-public class TransactionException extends GenericRuntimeException {
+public class TransactionException extends GenericRuntimeException implements SqlStateProvider {
+
+    private final String sqlState;
 
     public TransactionException( Exception e ) {
         super( e );
+        this.sqlState = null;
     }
 
 
-    public TransactionException( String s ) {
-        super( s );
+    public TransactionException( String message ) {
+        this( message, null );
+    }
+
+
+    public TransactionException( String message, @Nullable String sqlState ) {
+        super( message );
+        this.sqlState = sqlState;
+    }
+
+
+    @Override
+    public String getSqlState() {
+        return sqlState;
     }
 
 }

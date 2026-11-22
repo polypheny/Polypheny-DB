@@ -33,6 +33,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.experimental.Delegate;
@@ -68,6 +69,7 @@ import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
@@ -309,16 +311,35 @@ public class FileStore extends DataStore<RelAdapterCatalog> {
                 throw new GenericRuntimeException( "Could not read staged files in " + folder );
             }
             for ( File file : staged ) {
-                requireUnusedCommitTarget( new File( folder, file.getName().substring( insertPrefix.length() ) ) );
+                requireUnusedCommitTarget( file, new File( folder, file.getName().substring( insertPrefix.length() ) ), this::getPrimaryKeyFolders );
             }
         }
     }
 
 
-    private static void requireUnusedCommitTarget( File target ) {
+    static void requireUnusedCommitTarget( File staged, File target, Function<File, List<File>> primaryKeyFolders ) {
         if ( target.exists() ) {
-            throw new GenericRuntimeException( "Could not commit: a row with the same primary key already exists" );
+            List<File> keyFolders = primaryKeyFolders.apply( target.getParentFile() );
+            throw FilePrimaryKey.conflict( "Could not commit: a row with the same primary key already exists", keyFolders, target.getName(),
+                    i -> FilePrimaryKey.readValue( keyFolders.get( i ), staged.getName() ) );
         }
+    }
+
+
+    private List<File> getPrimaryKeyFolders( File columnFolder ) {
+        // During WAL recovery there may be no catalog metadata available to verify the key.
+        for ( PhysicalEntity physical : adapterCatalog.physicals.values() ) {
+            if ( physical instanceof FileTranslatableEntity table && table.getColumnNamesIds().containsKey( columnFolder.getName() ) ) {
+                for ( long id : table.getPkIds() ) {
+                    PolyType type = table.getColumnTypeMap().get( id );
+                    if ( type == null || type.getFamily() == PolyTypeFamily.MULTIMEDIA ) {
+                        return List.of();
+                    }
+                }
+                return table.getPkIds().stream().map( id -> getColumnFolder( id, table.allocationId ) ).toList();
+            }
+        }
+        return List.of();
     }
 
 
@@ -431,7 +452,7 @@ public class FileStore extends DataStore<RelAdapterCatalog> {
                         String hash = data.getName().substring( 70 );// 3 + 3 + 64 (three underlines + "ins" + xid hash)
                         target = new File( columnFolder, hash );
                         if ( commit ) {
-                            requireUnusedCommitTarget( target );
+                            requireUnusedCommitTarget( data, target, this::getPrimaryKeyFolders );
                             Files.move( data.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING );
                         } else {
                             Files.move( data.toPath(), target.toPath() );

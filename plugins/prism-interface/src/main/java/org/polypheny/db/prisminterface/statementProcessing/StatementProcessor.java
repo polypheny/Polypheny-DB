@@ -61,12 +61,12 @@ public class StatementProcessor {
         } else {
             List<? extends Node> statements = processor.parse( piStatement.getQuery() );
             if ( statements.size() != 1 ) {
-                throw new PIServiceException( "An update batch requires exactly one statement per member" );
+                throw new PIServiceException( "An update batch requires exactly one statement per member", "42601" );
             }
             parsed = statements.get( 0 );
         }
         if ( !processor.isUpdateOnly( parsed ) ) {
-            throw new PIServiceException( "Update batch statements must update data without returning rows" );
+            throw new PIServiceException( "Update batch statements must update data without returning rows", "0A000" );
         }
         return parsed;
     }
@@ -75,7 +75,7 @@ public class StatementProcessor {
     private static Node parseGraphStatement( PIStatement piStatement, Processor processor ) {
         List<? extends Node> statements = processor.parse( piStatement.getQuery() );
         if ( statements.size() != 1 ) {
-            throw new PIServiceException( "Prism requires exactly one Cypher statement per request." );
+            throw new PIServiceException( "Prism requires exactly one Cypher statement per request.", "42601" );
         }
         return statements.get( 0 );
     }
@@ -94,10 +94,10 @@ public class StatementProcessor {
         // The registered MQL parser may also generate DDL for a missing collection.
         List<ParsedQueryContext> parsed = piStatement.getLanguage().parser().apply( context );
         if ( parsed.isEmpty() ) {
-            throw new PIServiceException( "The " + piStatement.getLanguage().serializedName() + " query is empty" );
+            throw new PIServiceException( "The " + piStatement.getLanguage().serializedName() + " query is empty", "42601" );
         }
         if ( parsed.stream().anyMatch( query -> query.getQueryNode().filter( StatementProcessor::isReadOnly ).isEmpty() ) ) {
-            throw new PIServiceException( "Close or finish the open result before executing a write or command in autocommit mode" );
+            throw new PIServiceException( "Close or finish the open result before executing a write or command in autocommit mode", "25001" );
         }
         return parsed;
     }
@@ -179,7 +179,7 @@ public class StatementProcessor {
     public static void prepare( PIPreparedStatement piStatement ) {
         QueryLanguage queryLanguage = piStatement.getLanguage();
         if ( queryLanguage.dataModel() == DataModel.GRAPH ) {
-            throw new PIServiceException( "Indexed prepared Cypher statements are not supported by Prism. Use named parameters." );
+            throw new PIServiceException( "Indexed prepared Cypher statements are not supported by Prism. Use named parameters.", "0A000" );
         }
         Transaction transaction = piStatement.getClient().getOrCreateNewTransaction();
         String query = piStatement.getQuery();
