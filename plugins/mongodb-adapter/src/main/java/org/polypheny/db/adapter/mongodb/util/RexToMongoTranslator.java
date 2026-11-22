@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
+import org.bson.BsonValue;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.mongodb.MongoAlg.Implementor;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
@@ -147,7 +148,10 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
     public String visitCall( RexCall call ) {
         if ( call.getOperator().getOperatorName() == OperatorName.MQL_EXPR_QUERY_VALUE ) {
             RexNameRef field = (RexNameRef) call.operands.get( 0 );
-            return PolyString.of( MongoRules.translateExprFieldReference( implementor.getTupleType(), field ) ).toQuotedJson();
+            BsonValue reference = MongoRules.translateExprFieldReference( implementor.getTupleType(), field );
+            return reference.isDocument()
+                    ? reference.asDocument().toJson()
+                    : PolyString.of( reference.asString().getValue() ).toQuotedJson();
         }
         String name = MongoRules.isItem( call );
         if ( name != null ) {

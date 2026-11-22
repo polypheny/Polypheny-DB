@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 import lombok.Getter;
+import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
@@ -207,8 +208,13 @@ public class MongoRules {
     }
 
 
-    public static String translateExprFieldReference( AlgDataType rowType, RexNameRef ref ) {
-        return ref.names.isEmpty() ? "$$ROOT" : "$" + translateDocValueAsKey( rowType, ref );
+    public static BsonValue translateExprFieldReference( AlgDataType rowType, RexNameRef ref ) {
+        if ( ref.names.isEmpty() ) {
+            // MongoDB 4.4 cannot optimize a comparison with a bare root field path.
+            BsonDocument variables = new BsonDocument( "root", new BsonString( "$$ROOT" ) );
+            return new BsonDocument( "$let", new BsonDocument( "vars", variables ).append( "in", new BsonString( "$$root" ) ) );
+        }
+        return new BsonString( "$" + translateDocValueAsKey( rowType, ref ) );
     }
 
 
