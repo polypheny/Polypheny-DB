@@ -629,14 +629,14 @@ public abstract class SqlImplementor {
                                     sqlDynamicParam,
                                     SqlLiteral.createInterval( PolyInterval.of( 1L, intervalQualifier ), intervalQualifier, POS ) );
                         } else if ( dialect.getIntervalParameterStrategy() == IntervalParameterStrategy.CAST ) {
-                            return (SqlNode) OperatorRegistry.get( OperatorName.CAST ).createCall( POS, sqlDynamicParam, dialect.getCastSpec( caseParam.getType() ) );
+                            return (SqlNode) OperatorRegistry.get( OperatorName.CAST ).createCall( POS, sqlDynamicParam, dialect.getParameterCastSpec( caseParam.getType() ) );
                         } else if ( dialect.getIntervalParameterStrategy() == IntervalParameterStrategy.NONE ) {
                             return sqlDynamicParam;
                         } else {
                             throw new GenericRuntimeException( "Unknown IntervalParameterStrategy: " + dialect.getIntervalParameterStrategy().name() );
                         }
                     } else {
-                        return (SqlNode) OperatorRegistry.get( OperatorName.CAST ).createCall( POS, sqlDynamicParam, dialect.getCastSpec( caseParam.getType() ) );
+                        return (SqlNode) OperatorRegistry.get( OperatorName.CAST ).createCall( POS, sqlDynamicParam, dialect.getParameterCastSpec( caseParam.getType() ) );
                     }
                 case IN:
                     if ( rex instanceof RexSubQuery ) {

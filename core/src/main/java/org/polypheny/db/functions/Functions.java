@@ -2132,8 +2132,8 @@ public class Functions {
     /**
      * SQL {@code REPLACE(string, search, replacement)} function.
      */
-    public static String replace( String s, String search, String replacement ) {
-        return s.replace( search, replacement );
+    public static PolyString replace( PolyString s, PolyString search, PolyString replacement ) {
+        return search.value.isEmpty() ? s : PolyString.of( s.value.replace( search.value, replacement.value ), s.charset );
     }
 
 

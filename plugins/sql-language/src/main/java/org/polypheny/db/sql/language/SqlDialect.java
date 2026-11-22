@@ -524,6 +524,14 @@ public class SqlDialect {
 
 
     /**
+     * Returns the cast type for a bound parameter in generated SQL.
+     */
+    public SqlNode getParameterCastSpec( AlgDataType type ) {
+        return getCastSpec( type );
+    }
+
+
+    /**
      * Rewrite SINGLE_VALUE into expression based on database variants
      * E.g. HSQLDB, MYSQL, ORACLE, etc
      */
