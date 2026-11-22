@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -728,6 +729,11 @@ public enum RuntimeConfig {
 
     public void addObserver( final ConfigListener listener ) {
         configManager.getConfig( key ).addObserver( listener );
+    }
+
+
+    public void setBooleanUpdateHandler( final BiConsumer<Boolean, Runnable> updateHandler ) {
+        ((ConfigBoolean) configManager.getConfig( key )).setUpdateHandler( updateHandler );
     }
 
 

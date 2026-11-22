@@ -219,12 +219,23 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     @Override
     public void commit() throws TransactionException {
+        commitWithCallback( null );
+    }
+
+
+    @Override
+    public void commit( Runnable onCommit ) throws TransactionException {
+        commitWithCallback( Objects.requireNonNull( onCommit ) );
+    }
+
+
+    private void commitWithCallback( @Nullable Runnable onCommit ) {
         if ( !isActive() ) {
             log.trace( "This transaction has already been finished!" );
             return;
         }
         try {
-            commitChanges();
+            commitChanges( onCommit );
         } catch ( RuntimeException | Error failure ) {
             if ( isActive() ) {
                 try {
@@ -238,7 +249,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
     }
 
 
-    private void commitChanges() {
+    private void commitChanges( @Nullable Runnable onCommit ) {
         checkDdlConstraints();
 
         // physical changes
@@ -303,6 +314,9 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
         try {
             statements.forEach( Statement::close );
+            if ( onCommit != null ) {
+                onCommit.run();
+            }
         } finally {
             finishTransaction();
         }

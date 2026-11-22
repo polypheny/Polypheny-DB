@@ -222,6 +222,12 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
 
 
     public static EnforcementInformation getControl( LogicalTable table, Statement statement, EnforcementTime enforcementTime ) {
+        return getControl( table, statement, enforcementTime,
+                RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean(), RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() );
+    }
+
+
+    public static EnforcementInformation getControl( LogicalTable table, Statement statement, EnforcementTime enforcementTime, boolean checkUnique, boolean checkForeignKeys ) {
 
         AlgBuilder builder = AlgBuilder.create( statement );
         final RexBuilder rexBuilder = builder.getRexBuilder();
@@ -260,7 +266,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         int pos = 0;
         List<String> errorMessages = new ArrayList<>();
         List<Class<? extends Exception>> errorClasses = new ArrayList<>();
-        if ( RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() ) {
+        if ( checkUnique ) {
             //builder.relScan( table.getNamespaceName(), table.name );
             for ( LogicalConstraint constraint : constraints ) {
                 builder.clear();
@@ -290,7 +296,7 @@ public class LogicalConstraintEnforcer extends ConstraintEnforcer {
         //
         //  Enforce FOREIGN KEY constraints in INSERT operations
         //
-        if ( RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() ) {
+        if ( checkForeignKeys ) {
             for ( final LogicalForeignKey foreignKey : Stream.concat( foreignKeys.stream(), exportedKeys.stream() ).toList() ) {
                 builder.clear();
 

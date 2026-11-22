@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.BiConsumer;
+import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
@@ -67,7 +69,6 @@ import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.Config;
-import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rex.RexBuilder;
@@ -83,6 +84,8 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockablesRegistry;
 import org.polypheny.db.type.entity.PolyValue;
 
 @Slf4j
@@ -133,9 +136,15 @@ public class ConstraintEnforceAttacher {
 
 
     public static List<EnforcementInformation> getConstraintAlg( Set<LogicalTable> tables, Statement statement, EnforcementTime enforcementTime ) {
+        return getConstraintAlg( tables, statement, enforcementTime,
+                RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean(), RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean() );
+    }
+
+
+    private static List<EnforcementInformation> getConstraintAlg( Set<LogicalTable> tables, Statement statement, EnforcementTime enforcementTime, boolean checkUnique, boolean checkForeignKeys ) {
         return tables
                 .stream()
-                .map( t -> LogicalConstraintEnforcer.getControl( t, statement, enforcementTime ) )
+                .map( t -> LogicalConstraintEnforcer.getControl( t, statement, enforcementTime, checkUnique, checkForeignKeys ) )
                 .filter( i -> i.control() != null )
                 .toList();
     }
@@ -600,7 +609,7 @@ public class ConstraintEnforceAttacher {
      * This is used to ensure constraint enforcement during runtime and allows to for example to disable the enforcement before INSERT
      * and later toggle it back on with automatic re-evaluation of the constraint entities.
      */
-    static public class ConstraintTracker implements ConfigListener {
+    public static class ConstraintTracker {
 
         private static final ThreadLocal<Transaction> CONFIG_TRANSACTION = new ThreadLocal<>();
 
@@ -612,8 +621,21 @@ public class ConstraintEnforceAttacher {
         }
 
 
+        public void registerConfigHandlers() {
+            RuntimeConfig unique = RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT;
+            RuntimeConfig foreignKeys = RuntimeConfig.FOREIGN_KEY_ENFORCEMENT;
+            unique.setBooleanUpdateHandler( constraintUpdate( () -> true, foreignKeys::getBoolean ) );
+            foreignKeys.setBooleanUpdateHandler( constraintUpdate( unique::getBoolean, () -> true ) );
+        }
+
+
+        BiConsumer<Boolean, Runnable> constraintUpdate( BooleanSupplier checkUnique, BooleanSupplier checkForeignKeys ) {
+            return ( enabled, publish ) -> updateConstraint( enabled, publish, checkUnique, checkForeignKeys );
+        }
+
+
         public static void setConfigValue( Config config, String value, Transaction transaction ) {
-            // ALTER CONFIG holds the exclusive global schema lock during synchronous observer callbacks.
+            // ALTER CONFIG holds the exclusive global schema lock during validation.
             Transaction previous = CONFIG_TRANSACTION.get();
             CONFIG_TRANSACTION.set( transaction );
             try {
@@ -628,46 +650,29 @@ public class ConstraintEnforceAttacher {
         }
 
 
-        @Override
-        public void onConfigChange( Config c ) {
-            validateChange( c, "Could not change the constraints. \n" );
-        }
-
-
-        @Override
-        public void restart( Config c ) {
-            validateChange( c, "After restart the constraints where not longer enforceable. \n" );
-        }
-
-
-        private void validateChange( Config config, String message ) {
-            if ( !config.getBoolean() ) {
+        private void updateConstraint( boolean enabled, Runnable publish, BooleanSupplier checkUnique, BooleanSupplier checkForeignKeys ) {
+            if ( !enabled ) {
+                publish.run();
                 return;
             }
 
-            try {
-                TransactionException failure = testConstraintsValid();
-                if ( failure != null ) {
-                    throw new GenericRuntimeException( message + failure.getMessage(), failure );
-                }
-            } catch ( RuntimeException | Error failure ) {
-                try {
-                    config.setBoolean( false );
-                } catch ( RuntimeException | Error restoreFailure ) {
-                    failure.addSuppressed( restoreFailure );
-                }
-                throw failure;
+            TransactionException failure = testConstraintsValid( publish, checkUnique, checkForeignKeys );
+            if ( failure != null ) {
+                throw new GenericRuntimeException( "Could not change the constraints. \n" + failure.getMessage(), failure );
             }
         }
 
 
-        private @Nullable TransactionException testConstraintsValid() {
+        private @Nullable TransactionException testConstraintsValid( Runnable publish, BooleanSupplier checkUnique, BooleanSupplier checkForeignKeys ) {
             Transaction configTransaction = CONFIG_TRANSACTION.get();
             boolean ownsTransaction = configTransaction == null;
             Transaction transaction = ownsTransaction
                     ? manager.startTransaction( Catalog.defaultUserId, null, "ConstraintEnforcement" )
                     : configTransaction;
             try {
+                if ( ownsTransaction ) {
+                    transaction.acquireLockable( LockablesRegistry.GLOBAL_SCHEMA_LOCKABLE, LockType.EXCLUSIVE );
+                }
                 Snapshot snapshot = transaction.getSnapshot();
                 List<LogicalTable> tables = snapshot.getNamespaces( null ).stream()
                         .flatMap( namespace -> snapshot.rel().getTables( namespace.id, null ).stream() )
@@ -675,7 +680,8 @@ public class ConstraintEnforceAttacher {
                         .toList();
                 Statement statement = transaction.createStatement();
                 QueryProcessor processor = statement.getQueryProcessor();
-                List<EnforcementInformation> infos = getConstraintAlg( new TreeSet<>( tables ), statement, EnforcementTime.ON_QUERY );
+                List<EnforcementInformation> infos = getConstraintAlg(
+                        new TreeSet<>( tables ), statement, EnforcementTime.ON_QUERY, checkUnique.getAsBoolean(), checkForeignKeys.getAsBoolean() );
                 List<PolyImplementation> results = infos.stream()
                         .map( info -> processor.prepareQuery( AlgRoot.of( info.control(), Kind.SELECT ), false ) )
                         .toList();
@@ -698,10 +704,12 @@ public class ConstraintEnforceAttacher {
 
                 if ( ownsTransaction ) {
                     try {
-                        transaction.commit();
+                        transaction.commit( publish );
                     } catch ( TransactionException e ) {
                         throw new GenericRuntimeException( "Error while committing constraint enforcement check, the transaction was rolled back!" + e.getMessage(), e );
                     }
+                } else {
+                    publish.run();
                 }
                 return null;
             } catch ( RuntimeException | Error failure ) {
