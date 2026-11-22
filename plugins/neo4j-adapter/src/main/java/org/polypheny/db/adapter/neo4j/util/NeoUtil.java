@@ -704,6 +704,10 @@ public interface NeoUtil {
 
         @Override
         public Void visitCall( RexCall call ) {
+            if ( !graph && requiresRelationalEvaluation( call ) ) {
+                supports = false;
+                return null;
+            }
             if ( graph && readsEscapedGraphKey( call ) ) {
                 // Decode user keys from both legacy and escaped Neo4j records in the Enumerable engine.
                 supports = false;
@@ -732,6 +736,18 @@ public interface NeoUtil {
                 }
             }
             return super.visitCall( call );
+        }
+
+
+        private static boolean requiresRelationalEvaluation( RexCall call ) {
+            return switch ( call.op.getOperatorName() ) {
+                // The Cypher translation elides these casts. SQL conversion must still run.
+                case CAST -> PolyType.CHAR_TYPES.contains( call.operands.get( 0 ).getType().getPolyType() )
+                        && PolyType.NUMERIC_TYPES.contains( call.type.getPolyType() );
+                // Cypher division has different numeric and failure semantics from SQL division.
+                case DIVIDE, DIVIDE_INTEGER -> true;
+                default -> false;
+            };
         }
 
 
