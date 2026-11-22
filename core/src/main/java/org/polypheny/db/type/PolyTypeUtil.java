@@ -71,6 +71,31 @@ import org.polypheny.db.util.mapping.Mappings;
 public abstract class PolyTypeUtil {
 
     /**
+     * Infers the type of a value selected from alternatives without coercing any of the alternatives.
+     */
+    public static AlgDataType commonDynamicType( AlgDataTypeFactory factory, List<AlgDataType> types ) {
+        List<AlgDataType> known = types.stream().filter( type -> type.getPolyType() != PolyType.NULL ).toList();
+        if ( known.isEmpty() ) {
+            return factory.createTypeWithNullability( factory.createPolyType( PolyType.NULL ), true );
+        }
+        AlgDataType first = known.get( 0 );
+        AlgDataType result = null;
+        if ( known.stream().allMatch( type -> equalSansNullability( factory, first, type ) ) ) {
+            result = first;
+        } else if ( known.stream().allMatch( type -> type.getPolyType() == PolyType.ARRAY ) ) {
+            List<AlgDataType> elements = known.stream().map( AlgDataType::getComponentType ).toList();
+            result = factory.createArrayType( commonDynamicType( factory, elements ), -1 );
+        } else if ( known.stream().allMatch( type -> type.getPolyType() == first.getPolyType() ) ) {
+            result = factory.leastRestrictive( known );
+        }
+        if ( result == null ) {
+            result = factory.createPolyType( PolyType.ANY );
+        }
+        return factory.createTypeWithNullability( result, types.size() != known.size() || known.stream().anyMatch( AlgDataType::isNullable ) );
+    }
+
+
+    /**
      * Returns the identity list [0, ..., count - 1].
      *
      * @see Mappings#isIdentity(List, int)

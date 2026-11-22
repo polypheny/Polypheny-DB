@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.CypherResource.ResourceType;
@@ -71,6 +72,7 @@ import org.polypheny.db.cypher.clause.CypherUseClause;
 import org.polypheny.db.cypher.clause.CypherWaitClause;
 import org.polypheny.db.cypher.clause.CypherWhere;
 import org.polypheny.db.cypher.clause.CypherWith;
+import org.polypheny.db.cypher.cypher2alg.CypherSyntaxException;
 import org.polypheny.db.cypher.ddl.CypherAddPlacement;
 import org.polypheny.db.cypher.ddl.CypherAlterUser;
 import org.polypheny.db.cypher.ddl.CypherCreateIndex;
@@ -480,6 +482,19 @@ public interface CypherFactory {
     }
 
     static CypherExpression functionInvocation( ParserPos beforePos, ParserPos namePos, List<String> namespace, String image, boolean distinct, List<CypherExpression> arguments ) {
+        if ( namespace.isEmpty() ) {
+            OperatorName deviation = switch ( image.toLowerCase( Locale.ROOT ) ) {
+                case "stdev" -> OperatorName.STDDEV_SAMP;
+                case "stdevp" -> OperatorName.STDDEV_POP;
+                default -> null;
+            };
+            if ( deviation != null ) {
+                if ( arguments.size() != 1 ) {
+                    throw new CypherSyntaxException( image + "() requires exactly one argument." );
+                }
+                return new CypherAggregate( beforePos, deviation, arguments.get( 0 ), distinct );
+            }
+        }
         return new CypherFunctionInvocation( beforePos, namePos, namespace, image, distinct, arguments );
     }
 

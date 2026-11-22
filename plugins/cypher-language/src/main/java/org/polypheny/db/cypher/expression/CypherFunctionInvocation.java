@@ -40,6 +40,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -211,6 +212,20 @@ public class CypherFunctionInvocation extends CypherExpression {
             }
             case CYPHER_NODES, CYPHER_RELATIONSHIPS, CYPHER_LENGTH:
                 return getPathFunctionRex( context, type );
+            case CYPHER_SIZE:
+                return unaryFunction( context, type, List.of( PolyType.ARRAY, PolyType.CHAR, PolyType.VARCHAR, PolyType.TEXT ),
+                        context.typeFactory.createPolyType( PolyType.BIGINT ), "a list or string" );
+            case CYPHER_RANGE:
+                return rangeFunction( context, type );
+            case CYPHER_TYPE:
+                return unaryFunction( context, type, List.of( PolyType.EDGE ),
+                        context.typeFactory.createPolyType( PolyType.VARCHAR ), "a relationship" );
+            case CYPHER_ID:
+                return unaryFunction( context, type, List.of( PolyType.NODE, PolyType.EDGE ),
+                        context.typeFactory.createPolyType( PolyType.VARCHAR ), "a node or relationship" );
+            case CYPHER_LABELS:
+                return unaryFunction( context, type, List.of( PolyType.NODE ),
+                        context.typeFactory.createArrayType( context.typeFactory.createPolyType( PolyType.VARCHAR ), -1, 1 ), "a node" );
             default:
                 throw new NotImplementedException( "Cypher Function to alg conversion missing: " + getOperatorName() );
         }
@@ -233,6 +248,46 @@ public class CypherFunctionInvocation extends CypherExpression {
                         op == OperatorName.CYPHER_NODES ? PolyType.NODE : PolyType.EDGE ), -1, 1 );
         return context.rexBuilder.makeCall( context.typeFactory.createTypeWithNullability( result, true ),
                 OperatorRegistry.get( QueryLanguage.from( "cypher" ), op ), List.of( path ) );
+    }
+
+
+    private RexNode unaryFunction( CypherContext context, RexType type, List<PolyType> inputTypes, AlgDataType result, String expected ) {
+        String function = op.name().substring( "CYPHER_".length() ).toLowerCase( Locale.ROOT ) + "()";
+        if ( arguments.size() != 1 ) {
+            throw new CypherSyntaxException( function + " requires exactly one argument." );
+        }
+        RexNode operand = arguments.get( 0 ).getRex( context, type ).right;
+        requireOperand( operand, inputTypes, function + " requires " + expected + "." );
+        return nullableCall( context, result, List.of( operand ) );
+    }
+
+
+    private RexNode rangeFunction( CypherContext context, RexType type ) {
+        if ( arguments.size() < 2 || arguments.size() > 3 ) {
+            throw new CypherSyntaxException( "range() requires two or three arguments." );
+        }
+        List<RexNode> operands = new ArrayList<>( 3 );
+        for ( CypherExpression argument : arguments ) {
+            operands.add( argument.getRex( context, type ).right );
+        }
+        if ( operands.size() == 2 ) {
+            operands.add( context.rexBuilder.makeLiteral( PolyInteger.of( 1 ) ) );
+        }
+        return nullableCall( context, context.typeFactory.createArrayType( context.typeFactory.createPolyType( PolyType.BIGINT ), -1, 1 ), operands );
+    }
+
+
+    private void requireOperand( RexNode operand, List<PolyType> allowed, String message ) {
+        PolyType type = operand.getType().getPolyType();
+        if ( type != PolyType.ANY && type != PolyType.NULL && !allowed.contains( type ) ) {
+            throw new CypherSyntaxException( message );
+        }
+    }
+
+
+    private RexNode nullableCall( CypherContext context, AlgDataType result, List<RexNode> operands ) {
+        return context.rexBuilder.makeCall( context.typeFactory.createTypeWithNullability( result, true ),
+                OperatorRegistry.get( QueryLanguage.from( "cypher" ), op ), operands );
     }
 
 }

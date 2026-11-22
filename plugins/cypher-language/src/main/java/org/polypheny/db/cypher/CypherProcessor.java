@@ -124,7 +124,7 @@ public class CypherProcessor extends Processor {
             if ( value == null ) {
                 throw new GenericRuntimeException( "Missing Cypher parameter: $" + name );
             }
-            bindings.put( name, normalizeParameter( name, value, false ) );
+            bindings.put( name, normalizeParameter( name, value ) );
         }
         Set<String> expectedNames = Set.copyOf( names );
         values.keySet().stream().filter( name -> !expectedNames.contains( name ) ).sorted().findFirst().ifPresent( name -> {
@@ -138,7 +138,7 @@ public class CypherProcessor extends Processor {
     }
 
 
-    private static PolyValue normalizeParameter( String name, PolyValue value, boolean nested ) {
+    private static PolyValue normalizeParameter( String name, PolyValue value ) {
         if ( value == null ) {
             return PolyNull.NULL;
         }
@@ -149,12 +149,12 @@ public class CypherProcessor extends Processor {
                 if ( !(key instanceof PolyString field) || field.isNull() ) {
                     throw new GenericRuntimeException( "Cypher map parameter $" + name + " must have string keys" );
                 }
-                entries.put( field, normalizeParameter( name, entry, true ) );
+                entries.put( field, normalizeParameter( name, entry ) );
             } );
             return new PolyDictionary( entries );
         }
-        if ( nested && value instanceof PolyList<?> list ) {
-            return PolyList.copyOf( list.stream().map( element -> normalizeParameter( name, element, true ) ).toList() );
+        if ( value instanceof PolyList<?> list ) {
+            return PolyList.copyOf( list.stream().map( element -> normalizeParameter( name, element ) ).toList() );
         }
         if ( !isScalarParameter( value ) ) {
             throw new GenericRuntimeException( "Unsupported Cypher parameter type for $" + name + ": " + value.getType() );

@@ -112,7 +112,7 @@ public class CypherSingleQuery extends CypherQuery implements ExecutableStatemen
 
     private static boolean isWriteClause( CypherClause clause ) {
         return switch ( clause.getCypherKind() ) {
-            case CREATE, SET, DELETE, REMOVE -> true;
+            case CREATE, MERGE, SET, DELETE, REMOVE -> true;
             default -> false;
         };
     }

@@ -131,8 +131,8 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
     @Override
     public <T extends AlgNode & LpgAlg> AlgNode routeGraph( RoutedAlgBuilder builder, T alg, Statement statement ) {
-        if ( alg instanceof LogicalLpgJoin ) {
-            for ( int i = 0; i < 2; i++ ) {
+        if ( alg instanceof LogicalLpgJoin || alg.getNodeType() == NodeType.UNION ) {
+            for ( int i = 0; i < alg.getInputs().size(); i++ ) {
                 AlgNode input = routeGraph( builder, (AlgNode & LpgAlg) alg.getInput( i ), statement );
                 alg.replaceInput( i, builder.stackSize() > 0 ? builder.build() : input );
             }

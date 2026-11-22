@@ -22,9 +22,11 @@ import static org.polypheny.db.type.entity.spatial.PolyGeometry.WGS_84;
 import static org.polypheny.db.type.entity.spatial.PolyGeometry.WGS_84_3D;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.math.MathContext;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -801,6 +803,91 @@ public class CypherFunctions {
     }
 
 
+    public static PolyLong size( PolyValue value ) {
+        if ( isNull( value ) ) {
+            return null;
+        }
+        if ( value.isList() ) {
+            return PolyLong.of( value.asList().size() );
+        }
+        if ( value.isString() ) {
+            String string = value.asString().value;
+            return PolyLong.of( string.codePointCount( 0, string.length() ) );
+        }
+        throw new GenericRuntimeException( "size() requires a list or string." );
+    }
+
+
+    public static PolyList<PolyLong> range( PolyValue start, PolyValue end, PolyValue increment ) {
+        if ( isNull( start ) || isNull( end ) || isNull( increment ) ) {
+            return null;
+        }
+        if ( !PolyType.INT_TYPES.contains( start.getType() )
+                || !PolyType.INT_TYPES.contains( end.getType() )
+                || !PolyType.INT_TYPES.contains( increment.getType() ) ) {
+            throw new GenericRuntimeException( "range() requires integer arguments." );
+        }
+        long first = start.asNumber().longValue();
+        long last = end.asNumber().longValue();
+        long step = increment.asNumber().longValue();
+        if ( step == 0 ) {
+            throw new GenericRuntimeException( "range() requires a non-zero step." );
+        }
+        PolyList<PolyLong> values = new PolyList<>();
+        if ( (step > 0 && first > last) || (step < 0 && first < last) ) {
+            return values;
+        }
+        // Either subtracting the endpoints or taking the absolute step may overflow a long.
+        BigInteger count = BigInteger.valueOf( last ).subtract( BigInteger.valueOf( first ) )
+                .divide( BigInteger.valueOf( step ) ).add( BigInteger.ONE );
+        if ( count.compareTo( BigInteger.valueOf( Integer.MAX_VALUE - 8L ) ) > 0 ) {
+            throw new GenericRuntimeException( "range() result is too large to represent as a list." );
+        }
+        int length = count.intValue();
+        long next = first;
+        for ( int i = 1; i < length; i++ ) {
+            values.add( PolyLong.of( next ) );
+            next += step;
+        }
+        values.add( PolyLong.of( next ) );
+        return values;
+    }
+
+
+    public static PolyString relationshipType( PolyValue value ) {
+        if ( isNull( value ) ) {
+            return null;
+        }
+        if ( value instanceof PolyEdge edge ) {
+            return edge.getLabels().isEmpty() ? null : edge.getLabels().get( 0 );
+        }
+        throw new GenericRuntimeException( "type() requires a relationship." );
+    }
+
+
+    /** Returns the persisted graph identity also used in graph values exposed by Prism. */
+    public static PolyString entityId( PolyValue value ) {
+        if ( isNull( value ) ) {
+            return null;
+        }
+        if ( value instanceof GraphPropertyHolder entity ) {
+            return entity.getId();
+        }
+        throw new GenericRuntimeException( "id() requires a node or relationship." );
+    }
+
+
+    public static PolyList<PolyString> nodeLabels( PolyValue value ) {
+        if ( isNull( value ) ) {
+            return null;
+        }
+        if ( value instanceof PolyNode node ) {
+            return node.getLabels();
+        }
+        throw new GenericRuntimeException( "labels() requires a node." );
+    }
+
+
     private static PolyPath requirePath( PolyValue value ) {
         if ( value instanceof PolyPath path ) {
             return path;
@@ -964,6 +1051,23 @@ public class CypherFunctions {
     }
 
 
+    public static Enumerable<PolyValue[]> distinctRows( Enumerable<PolyValue[]> rows ) {
+        EqualityComparer<Object> comparer = groupingComparer( true );
+        return rows.distinct( new EqualityComparer<>() {
+            @Override
+            public boolean equal( PolyValue[] left, PolyValue[] right ) {
+                return comparer.equal( Arrays.asList( left ), Arrays.asList( right ) );
+            }
+
+
+            @Override
+            public int hashCode( PolyValue[] row ) {
+                return comparer.hashCode( Arrays.asList( row ) );
+            }
+        } );
+    }
+
+
     public static PolyValue aggregateExtremum( PolyValue current, PolyValue candidate, boolean minimum ) {
         if ( current == null ) {
             return candidate;
@@ -1071,6 +1175,59 @@ public class CypherFunctions {
                 return null;
             }
             return PolyDouble.of( approximate ? approximateSum / count : exactSum.divide( BigDecimal.valueOf( count ), MathContext.DECIMAL128 ).doubleValue() );
+        }
+
+    }
+
+
+    public static final class StandardDeviation {
+
+        private final Set<Object> distinctValues;
+        private BigDecimal sum = BigDecimal.ZERO;
+        private BigDecimal sumOfSquares = BigDecimal.ZERO;
+        private boolean nonFinite;
+        private long count;
+
+
+        public StandardDeviation( boolean distinct ) {
+            distinctValues = distinct ? new HashSet<>() : null;
+        }
+
+
+        public void add( PolyValue value ) {
+            if ( isNull( value ) ) {
+                return;
+            }
+            if ( !(value instanceof PolyNumber number) ) {
+                throw new GenericRuntimeException( "Standard deviation requires a number." );
+            }
+            if ( distinctValues != null && !distinctValues.add( aggregationKey( number ) ) ) {
+                return;
+            }
+            count++;
+            if ( PolyType.APPROX_TYPES.contains( number.getType() ) && !Double.isFinite( number.doubleValue() ) ) {
+                nonFinite = true;
+            } else {
+                BigDecimal decimal = number.bigDecimalValue();
+                sum = sum.add( decimal );
+                sumOfSquares = sumOfSquares.add( decimal.multiply( decimal ) );
+            }
+        }
+
+
+        public PolyDouble deviation( boolean sample ) {
+            if ( count < 2 ) {
+                return PolyDouble.of( 0 );
+            }
+            if ( nonFinite ) {
+                return PolyDouble.of( Double.NaN );
+            }
+            // Keep the subtraction exact so close values at large magnitudes still differ.
+            BigDecimal size = BigDecimal.valueOf( count );
+            BigDecimal divisor = size.multiply( BigDecimal.valueOf( sample ? count - 1 : count ) );
+            BigDecimal variance = sumOfSquares.multiply( size ).subtract( sum.multiply( sum ) )
+                    .divide( divisor, MathContext.DECIMAL128 );
+            return PolyDouble.of( variance.sqrt( MathContext.DECIMAL128 ).doubleValue() );
         }
 
     }
