@@ -4615,6 +4615,86 @@ class CypherTest {
     }
 
 
+    @Test
+    void evaluatesPatternPredicatesInBooleanExpressions() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            Frame frame = connection.cypher( """
+                    MATCH (n:Person)
+                    RETURN n.name AS name,
+                           CASE WHEN (n)-[:KNOWS]->() THEN 1 ELSE 2 END AS branch,
+                           NOT (n)-[:KNOWS]->() AS missing,
+                           ((n)-[:KNOWS]->()) AND true AS conjunction,
+                           false OR (n)-[:KNOWS]->() AS disjunction,
+                           ((n)-[:KNOWS]->()) XOR true AS exclusive,
+                           ((n)-[:KNOWS]->()) XOR null AS unknown
+                    ORDER BY name
+                    """, -1 ).getResult().getFrame();
+            RelationalFrame people = relationalFrame( frame, true,
+                    List.of( "name", "branch", "missing", "conjunction", "disjunction", "exclusive", "unknown" ) );
+            assertEquals( List.of( "Alice", "Bob", "Charlie" ), projectedNames( people ) );
+            for ( int i = 0; i < 3; i++ ) {
+                Row row = people.getRows( i );
+                boolean hasRelationship = i < 2;
+                assertEquals( hasRelationship ? 1 : 2, integerValue( row.getValues( 1 ) ) );
+                assertEquals( PolyValueSerializer.serialize( PolyBoolean.of( !hasRelationship ) ), row.getValues( 2 ) );
+                assertEquals( PolyValueSerializer.serialize( PolyBoolean.of( hasRelationship ) ), row.getValues( 3 ) );
+                assertEquals( PolyValueSerializer.serialize( PolyBoolean.of( hasRelationship ) ), row.getValues( 4 ) );
+                assertEquals( PolyValueSerializer.serialize( PolyBoolean.of( !hasRelationship ) ), row.getValues( 5 ) );
+                assertTrue( row.getValues( 6 ).hasNull() );
+            }
+        }
+    }
+
+
+    @Test
+    void evaluatesPatternExistsInCorrelatedCallProjection() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            Frame frame = connection.cypher( """
+                    MATCH (n:Person)
+                    CALL {
+                        WITH n
+                        RETURN exists((n)-[:KNOWS]->()) AS reaches
+                    }
+                    RETURN n.name AS name, reaches ORDER BY name
+                    """, -1 ).getResult().getFrame();
+            RelationalFrame people = relationalFrame( frame, true, List.of( "name", "reaches" ) );
+            assertEquals( List.of( "Alice", "Bob", "Charlie" ), projectedNames( people ) );
+            assertEquals( List.of( true, true, false ).stream().map( value -> PolyValueSerializer.serialize( PolyBoolean.of( value ) ) ).toList(),
+                    people.getRowsList().stream().map( row -> row.getValues( 1 ) ).toList() );
+        }
+    }
+
+
+    @Test
+    void graphExpressionsSeeEarlierAssignmentsInTheSameSet() throws IOException {
+        String namespace = "cyphersetgraphvisibility";
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            connection.execute( Catalog.DEFAULT_NAMESPACE_NAME, "sql", "CREATE GRAPH NAMESPACE " + namespace, 1 );
+            try {
+                connection.execute( namespace, "cypher", "CREATE (:Start)-[:ROAD]->(:End)", -1 );
+                Frame updated = connection.execute( namespace, "cypher", """
+                        MATCH (a:Start)-[r:ROAD]->(b:End)
+                        SET b.ready = true, r.weight = 2,
+                            b.reachable = exists((a)-[:ROAD {weight:2}]->(b {ready:true})),
+                            b.hops = length(shortestPath((a)-[:ROAD* {weight:2}]->(b {ready:true})))
+                        RETURN b.reachable AS reachable, b.hops AS hops
+                        """, -1 ).getResult().getFrame();
+                Frame persisted = connection.execute( namespace, "cypher", """
+                        MATCH (:Start)-[:ROAD {weight:2}]->(b:End {ready:true})
+                        RETURN b.reachable AS reachable, b.hops AS hops
+                        """, -1 ).getResult().getFrame();
+                for ( Frame result : List.of( updated, persisted ) ) {
+                    Row row = singleRow( relationalFrame( result, true, List.of( "reachable", "hops" ) ) );
+                    assertEquals( PolyValueSerializer.serialize( PolyBoolean.of( true ) ), row.getValues( 0 ) );
+                    assertEquals( 1, integerValue( row.getValues( 1 ) ) );
+                }
+            } finally {
+                connection.execute( Catalog.DEFAULT_NAMESPACE_NAME, "sql", "DROP NAMESPACE " + namespace, 1 );
+            }
+        }
+    }
+
+
     static RelationalFrame relationalFrame( Frame frame, boolean isLast, List<String> labels ) {
         assertTrue( frame.hasRelationalFrame(), () -> "Expected a relational frame but got " + frame.getResultCase() );
         assertEquals( isLast, frame.getIsLast() );

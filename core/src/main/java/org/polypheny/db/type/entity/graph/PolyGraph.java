@@ -28,6 +28,7 @@ import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.def.SimpleSerializerDef;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
@@ -507,8 +508,10 @@ public class PolyGraph extends GraphObject {
             elements.add( matchedEdges.get( i ) );
             elements.add( matchedNodes.get( i + 1 ) );
         }
-        return new PolyPath( matchedNodes, matchedEdges, Collections.nCopies( elements.size(), null ), elements, null )
-                .withBindings( bindings );
+        List<Integer> matchNodeOffsets = nodePositions.length > 2
+                ? Arrays.stream( nodePositions, 1, nodePositions.length - 1 ).boxed().toList()
+                : List.of();
+        return new PolyPath( matchedNodes, matchedEdges, Collections.nCopies( elements.size(), null ), elements, bindings, matchNodeOffsets );
     }
 
     private static int[] previousBindings( List<? extends GraphPropertyHolder> elements ) {

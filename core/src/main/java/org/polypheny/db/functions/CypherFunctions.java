@@ -45,6 +45,7 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Deterministic;
 import org.apache.calcite.linq4j.function.EqualityComparer;
 import org.apache.calcite.linq4j.function.Function0;
+import org.apache.calcite.linq4j.function.Function1;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
@@ -417,6 +418,52 @@ public class CypherFunctions {
             return predicate;
         }
         throw new GenericRuntimeException( "Cypher predicates require a BOOLEAN, got %s.", value.getType() );
+    }
+
+
+    public static PolyBoolean quantify( OperatorName operator, PolyValue value, Function1<PolyValue, PolyBoolean> predicate ) {
+        if ( isNull( value ) ) {
+            return null;
+        }
+        if ( !(value instanceof PolyList<?> items) ) {
+            throw new GenericRuntimeException( "Cypher quantified predicates require a list, got %s.", value.getType() );
+        }
+        boolean unknown = false;
+        int matches = 0;
+        for ( PolyValue item : items ) {
+            PolyBoolean accepted = predicate.apply( isNull( item ) ? null : item );
+            if ( isNull( accepted ) ) {
+                unknown = true;
+            } else if ( accepted.value ) {
+                switch ( operator ) {
+                    case CYPHER_ANY_MATCH -> {
+                        return PolyBoolean.TRUE;
+                    }
+                    case CYPHER_NONE_MATCH -> {
+                        return PolyBoolean.FALSE;
+                    }
+                    case CYPHER_SINGLE_MATCH -> {
+                        if ( ++matches > 1 ) {
+                            return PolyBoolean.FALSE;
+                        }
+                    }
+                    default -> {
+                        // ALL continues until an item fails its predicate.
+                    }
+                }
+            } else if ( operator == OperatorName.CYPHER_ALL_MATCH ) {
+                return PolyBoolean.FALSE;
+            }
+        }
+        if ( unknown ) {
+            return null;
+        }
+        return switch ( operator ) {
+            case CYPHER_ALL_MATCH, CYPHER_NONE_MATCH -> PolyBoolean.TRUE;
+            case CYPHER_ANY_MATCH -> PolyBoolean.FALSE;
+            case CYPHER_SINGLE_MATCH -> PolyBoolean.of( matches == 1 );
+            default -> throw new IllegalArgumentException( "Unsupported Cypher quantifier " + operator );
+        };
     }
 
 

@@ -49,13 +49,15 @@ public class LogicalLpgWriteRow extends SingleAlg implements LpgAlg {
         public AlgNode convert( AlgNode node ) {
             LogicalLpgWriteRow row = (LogicalLpgWriteRow) node;
             AlgNode input = convert( row.getInput(), row.getInput().getTraitSet().replace( EnumerableConvention.INSTANCE ) );
-            return new EnumerableWriteRow( row.getTraitSet().replace( EnumerableConvention.INSTANCE ), input, row.name );
+            return new EnumerableWriteRow( row.getTraitSet().replace( EnumerableConvention.INSTANCE ), input, row.name, row.withGraph );
         }
     };
 
     @Getter
     @Nullable
     private final String name;
+    @Getter
+    private final boolean withGraph;
 
 
     public LogicalLpgWriteRow( AlgNode input ) {
@@ -64,13 +66,19 @@ public class LogicalLpgWriteRow extends SingleAlg implements LpgAlg {
 
 
     public LogicalLpgWriteRow( AlgNode input, @Nullable String name ) {
-        this( input.getTraitSet(), input, name );
+        this( input.getTraitSet(), input, name, false );
     }
 
 
-    protected LogicalLpgWriteRow( AlgTraitSet traits, AlgNode input, @Nullable String name ) {
+    public static LogicalLpgWriteRow withGraph( AlgNode input ) {
+        return new LogicalLpgWriteRow( input.getTraitSet(), input, null, true );
+    }
+
+
+    protected LogicalLpgWriteRow( AlgTraitSet traits, AlgNode input, @Nullable String name, boolean withGraph ) {
         super( input.getCluster(), traits, input );
         this.name = name;
+        this.withGraph = withGraph;
     }
 
 
@@ -94,7 +102,7 @@ public class LogicalLpgWriteRow extends SingleAlg implements LpgAlg {
 
     @Override
     public AlgNode copy( AlgTraitSet traits, List<AlgNode> inputs ) {
-        return new LogicalLpgWriteRow( traits, inputs.get( 0 ), name );
+        return new LogicalLpgWriteRow( traits, inputs.get( 0 ), name, withGraph );
     }
 
 
@@ -104,15 +112,15 @@ public class LogicalLpgWriteRow extends SingleAlg implements LpgAlg {
         private final String idName;
 
 
-        private EnumerableWriteRow( AlgTraitSet traits, AlgNode input, @Nullable String name ) {
-            super( traits, input, name );
+        private EnumerableWriteRow( AlgTraitSet traits, AlgNode input, @Nullable String name, boolean withGraph ) {
+            super( traits, input, name, withGraph );
             this.idName = name;
         }
 
 
         @Override
         public AlgNode copy( AlgTraitSet traits, List<AlgNode> inputs ) {
-            return new EnumerableWriteRow( traits, inputs.get( 0 ), idName );
+            return new EnumerableWriteRow( traits, inputs.get( 0 ), idName, isWithGraph() );
         }
 
 
@@ -122,7 +130,7 @@ public class LogicalLpgWriteRow extends SingleAlg implements LpgAlg {
             BlockBuilder builder = new BlockBuilder();
             Expression rows = builder.append( "rows", child.block() );
             if ( idName == null ) {
-                builder.add( Expressions.return_( null, Expressions.call( BuiltInMethod.MATERIALIZE_GRAPH_ROWS.method, rows ) ) );
+                builder.add( Expressions.return_( null, Expressions.call( BuiltInMethod.MATERIALIZE_GRAPH_ROWS.method, rows, Expressions.constant( isWithGraph() ) ) ) );
                 return implementor.result( child.physType(), builder.toBlock() );
             }
             builder.add( Expressions.return_( null, Expressions.call( BuiltInMethod.APPEND_GRAPH_ROW_ID.method, rows ) ) );

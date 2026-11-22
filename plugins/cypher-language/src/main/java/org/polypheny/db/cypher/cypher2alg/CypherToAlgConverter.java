@@ -1693,6 +1693,8 @@ public class CypherToAlgConverter {
         private final Map<PolyString, PolyNode> nodes = new HashMap<>();
         // Paths still represented by a single match column. The value says whether the path itself has a user alias.
         private final Map<String, Boolean> implicitPathBindings = new HashMap<>();
+        private final Map<String, RexNameRef> quantifiedBindings = new HashMap<>();
+        private int quantifiedDepth;
         private Function<String, RexNode> scopedVariables;
         private Function<CypherExpression, RexNode> scopedExpressions;
         public CypherNode active;
@@ -1759,6 +1761,10 @@ public class CypherToAlgConverter {
 
         @Nullable
         public RexNode scopedVariable( String name ) {
+            RexNameRef quantified = quantifiedBindings.get( name );
+            if ( quantified != null ) {
+                return quantified;
+            }
             if ( scopedVariables == null ) {
                 return null;
             }
@@ -1772,7 +1778,23 @@ public class CypherToAlgConverter {
 
         @Nullable
         public RexNode projectedExpression( CypherExpression expression ) {
-            return scopedExpressions == null ? null : scopedExpressions.apply( expression );
+            return scopedExpressions == null || !quantifiedBindings.isEmpty() ? null : scopedExpressions.apply( expression );
+        }
+
+
+        public Pair<RexNameRef, RexNode> quantifiedPredicate( String variable, AlgDataType component, CypherExpression predicate ) {
+            RexNameRef element = RexNameRef.scoped( "$cypherListItem" + quantifiedDepth++, typeFactory.createTypeWithNullability( component, true ) );
+            RexNameRef previous = quantifiedBindings.put( variable, element );
+            try {
+                return Pair.of( element, booleanPredicate( predicate.getRex( this, RexType.FILTER ).right ) );
+            } finally {
+                quantifiedDepth--;
+                if ( previous == null ) {
+                    quantifiedBindings.remove( variable );
+                } else {
+                    quantifiedBindings.put( variable, previous );
+                }
+            }
         }
 
 

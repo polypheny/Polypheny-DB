@@ -18,10 +18,12 @@ package org.polypheny.db.cypher.expression;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import java.util.Locale;
 import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.cypher.CypherNode;
@@ -33,8 +35,9 @@ import org.polypheny.db.cypher.pattern.CypherPattern;
 import org.polypheny.db.cypher.pattern.CypherShortestPathPattern;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
@@ -109,20 +112,20 @@ public class CypherExpression extends CypherNode {
             default -> throw new UnsupportedOperationException();
         };
 
-        //  ANY ( Variable IN Expression(list) Where? )
-        //  MATCH p = (a)-[*1..3]->(b)
-        //  WHERE
-        //  a.name = 'Alice'
-        //  AND b.name = 'Daniel'
-        //  AND all(x IN nodes(p) WHERE x.age > 30)
-        //  RETURN p
-
-        String var = variable.getName();
-
-        return Pair.of( PolyString.of( var ), new RexCall(
-                context.booleanType,
-                OperatorRegistry.get( operatorName ),
-                List.of( context.rexBuilder.makeInputRef( context.graphType, 0 ), where.getRex( context, type ).right ) ) );
+        String quantifier = this.type.name().toLowerCase( Locale.ROOT );
+        if ( where == null ) {
+            throw new CypherSyntaxException( quantifier + "() requires a WHERE predicate." );
+        }
+        RexNode list = expression.getRex( context, RexType.PROJECT ).right;
+        requireListOperand( list, quantifier + "() requires a list." );
+        AlgDataType component = list.getType().getComponentType();
+        if ( component == null ) {
+            component = context.typeFactory.createPolyType( PolyType.ANY );
+        }
+        Pair<RexNameRef, RexNode> predicate = context.quantifiedPredicate( variable.getName(), component, where );
+        AlgDataType result = context.typeFactory.createTypeWithNullability( context.booleanType, true );
+        return Pair.of( null, context.rexBuilder.makeCall( result, OperatorRegistry.get( QueryLanguage.from( "cypher" ), operatorName ),
+                List.of( list, predicate.left, predicate.right ) ) );
     }
 
 

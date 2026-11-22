@@ -89,9 +89,9 @@ public final class CypherShortestPathRows {
         for ( int index : groupColumns ) {
             PolyValue value = row[index];
             if ( value instanceof PolyPath path ) {
-                // The identity of a matched path is its ordered nodes and relationships.
+                // An ordinary pattern can match the same physical path at different segment boundaries.
                 List<PolyString> identity = path.getPath().stream().map( element -> element.id ).toList();
-                key.add( identity );
+                key.add( List.of( identity, path.getMatchNodeOffsets() ) );
             } else if ( value instanceof GraphPropertyHolder element ) {
                 key.add( element.id );
             } else {

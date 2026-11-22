@@ -77,6 +77,10 @@ public class PolyPath extends GraphObject {
     @Getter(AccessLevel.NONE)
     private final Map<PolyString, PolyValue> bindings;
 
+    // Positions of the intermediate pattern nodes in the matched path.
+    @JsonIgnore
+    private final List<Integer> matchNodeOffsets;
+
 
     public PolyPath( List<PolyNode> nodes, List<PolyEdge> edges, List<PolyString> names, List<GraphPropertyHolder> path, PolyString variableName ) {
         this( PolyString.of( UUID.randomUUID().toString() ), nodes, edges, names, path, variableName );
@@ -91,6 +95,18 @@ public class PolyPath extends GraphObject {
             @JsonProperty("names") List<PolyString> names,
             @JsonProperty("path") List<GraphPropertyHolder> path,
             @JsonProperty("variableName") PolyString variableName ) {
+        this( id, nodes, edges, names, path, variableName, Map.of(), List.of() );
+    }
+
+
+    PolyPath( List<PolyNode> nodes, List<PolyEdge> edges, List<PolyString> names, List<GraphPropertyHolder> path,
+            Map<PolyString, PolyValue> bindings, List<Integer> matchNodeOffsets ) {
+        this( PolyString.of( UUID.randomUUID().toString() ), nodes, edges, names, path, null, bindings, matchNodeOffsets );
+    }
+
+
+    private PolyPath( PolyString id, List<PolyNode> nodes, List<PolyEdge> edges, List<PolyString> names,
+            List<GraphPropertyHolder> path, PolyString variableName, Map<PolyString, PolyValue> bindings, List<Integer> matchNodeOffsets ) {
         super( id, PolyType.PATH, variableName );
         assert nodes.size() == edges.size() + 1;
         assert nodes.size() + edges.size() == names.size();
@@ -107,7 +123,8 @@ public class PolyPath extends GraphObject {
             i++;
         }
         this.segments = new PolyList<>( segments );
-        this.bindings = Map.of();
+        this.bindings = Map.copyOf( bindings );
+        this.matchNodeOffsets = List.copyOf( matchNodeOffsets );
     }
 
 
@@ -119,6 +136,7 @@ public class PolyPath extends GraphObject {
         this.path = path.path;
         this.segments = path.segments;
         this.bindings = Map.copyOf( bindings );
+        this.matchNodeOffsets = path.matchNodeOffsets;
     }
 
 
@@ -135,7 +153,7 @@ public class PolyPath extends GraphObject {
         List<GraphPropertyHolder> reboundPath = path.stream().map( element -> (GraphPropertyHolder) rebind.apply( element ) ).toList();
         Map<PolyString, PolyValue> reboundBindings = new HashMap<>();
         bindings.forEach( ( name, value ) -> reboundBindings.put( name, rebind.apply( value ) ) );
-        return new PolyPath( id, reboundNodes, reboundEdges, names, reboundPath, variableName ).withBindings( reboundBindings );
+        return new PolyPath( id, reboundNodes, reboundEdges, names, reboundPath, variableName, reboundBindings, matchNodeOffsets );
     }
 
 
@@ -157,7 +175,7 @@ public class PolyPath extends GraphObject {
         visiblePath.add( visibleNodes.get( visibleEdges.size() ) );
         Map<PolyString, PolyValue> visibleBindings = new HashMap<>( bindings );
         hidden.forEach( visibleBindings::remove );
-        return new PolyPath( id, visibleNodes, visibleEdges, visibleNames, visiblePath, variableName ).withBindings( visibleBindings );
+        return new PolyPath( id, visibleNodes, visibleEdges, visibleNames, visiblePath, variableName, visibleBindings, matchNodeOffsets );
     }
 
 

@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 import org.apache.calcite.linq4j.function.Function0;
-import org.apache.calcite.linq4j.function.Function1;
+import org.apache.calcite.linq4j.function.Function2;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -40,6 +40,9 @@ import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.enumerable.RexToLixTranslator;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
+import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.functions.CypherMergeRows;
 import org.polypheny.db.functions.CypherMergeRows.Pattern;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -49,6 +52,7 @@ import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.graph.PolyGraph;
 
 
 /** A graph MERGE clause and its per-row expressions. Routing attaches the placement-specific write plans. */
@@ -150,9 +154,14 @@ public class LogicalLpgMergeRows extends AbstractAlgNode implements LpgAlg {
 
     @Override
     public AlgNode accept( RexShuttle shuttle ) {
-        List<RexNode> newProperties = shuttle.apply( properties );
-        List<Action> newOnCreate = onCreate.stream().map( action -> new Action( action.target, action.update.accept( shuttle ) ) ).toList();
-        List<Action> newOnMatch = onMatch.stream().map( action -> new Action( action.target, action.update.accept( shuttle ) ) ).toList();
+        return rewriteExpressions( shuttle, shuttle );
+    }
+
+
+    public AlgNode rewriteExpressions( RexShuttle propertyShuttle, RexShuttle actionShuttle ) {
+        List<RexNode> newProperties = propertyShuttle.apply( properties );
+        List<Action> newOnCreate = onCreate.stream().map( action -> new Action( action.target, action.update.accept( actionShuttle ) ) ).toList();
+        List<Action> newOnMatch = onMatch.stream().map( action -> new Action( action.target, action.update.accept( actionShuttle ) ) ).toList();
         if ( newProperties.equals( properties ) && newOnCreate.equals( onCreate ) && newOnMatch.equals( onMatch ) ) {
             return this;
         }
@@ -217,38 +226,49 @@ public class LogicalLpgMergeRows extends AbstractAlgNode implements LpgAlg {
 
         private Expression propertiesFunction( EnumerableAlgImplementor implementor, PhysType inputType ) {
             ParameterExpression row = Expressions.parameter( PolyValue[].class, "input" );
+            ParameterExpression graph = Expressions.parameter( PolyGraph.class, "graph" );
             BlockBuilder builder = new BlockBuilder();
-            List<Expression> expressions = translate( implementor, inputType, row, properties, builder );
+            List<Expression> expressions = translate( implementor, inputType, row, graph, properties, builder );
             builder.add( Expressions.return_( null, Expressions.newArrayInit( PolyValue.class, expressions ) ) );
-            return Expressions.lambda( Function1.class, builder.toBlock(), row );
+            return Expressions.lambda( Function2.class, builder.toBlock(), row, graph );
         }
 
 
         private Expression actionFunction( EnumerableAlgImplementor implementor, PhysType inputType, List<Action> actions ) {
             ParameterExpression row = Expressions.parameter( PolyValue[].class, "bindings" );
+            ParameterExpression graph = Expressions.parameter( PolyGraph.class, "graph" );
             BlockBuilder builder = new BlockBuilder();
             Expression updates = builder.append( "updates", Expressions.newArrayBounds( PolyValue.class, 1,
                     Expressions.constant( updateTargets.size() ) ), false );
             for ( Action action : actions ) {
                 // Each SET item observes the graph values after all preceding items.
                 BlockBuilder item = new BlockBuilder( false );
-                Expression value = translate( implementor, inputType, row, List.of( action.update ), item ).get( 0 );
+                Expression value = translate( implementor, inputType, row, graph, List.of( action.update ), item ).get( 0 );
                 item.add( Expressions.statement( Expressions.assign(
                         Expressions.arrayIndex( updates, Expressions.constant( updateTargets.indexOf( action.target ) ) ), value ) ) );
                 builder.add( item.toBlock() );
             }
             builder.add( Expressions.return_( null, updates ) );
-            return Expressions.lambda( Function1.class, builder.toBlock(), row );
+            return Expressions.lambda( Function2.class, builder.toBlock(), row, graph );
         }
 
 
         private List<Expression> translate( EnumerableAlgImplementor implementor, PhysType inputType, ParameterExpression row,
-                List<RexNode> expressions, BlockBuilder builder ) {
+                ParameterExpression graph, List<RexNode> expressions, BlockBuilder builder ) {
             List<String> names = IntStream.range( 0, expressions.size() ).mapToObj( i -> "merge" + i ).toList();
-            RexProgram program = RexProgram.create( inputType.getTupleType(), expressions, null, names, getCluster().getRexBuilder() );
+            AlgDataType inputRow = inputType.getTupleType();
+            int graphIndex = inputRow.getFieldCount();
+            // The final Rex input is the current graph and is passed separately from the bindings array.
+            AlgDataType graphType = implementor.getTypeFactory().createPolyType( PolyType.GRAPH );
+            List<AlgDataTypeField> fields = new ArrayList<>( inputRow.getFields() );
+            fields.add( new AlgDataTypeFieldImpl( -1L, "$graph", graphIndex, graphType ) );
+            AlgDataType expressionRow = new AlgRecordType( inputRow.getStructKind(), fields );
+            RexProgram program = RexProgram.create( expressionRow, expressions, null, names, getCluster().getRexBuilder() );
             PhysType output = PhysTypeImpl.of( implementor.getTypeFactory(), program.getOutputRowType(), JavaTupleFormat.ARRAY, false );
+            RexToLixTranslator.InputGetter bindings = new RexToLixTranslator.InputGetterImpl( row, inputType );
+            RexToLixTranslator.InputGetter inputs = (block, index, storageType) -> index == graphIndex ? graph : bindings.field( block, index, storageType );
             return RexToLixTranslator.translateProjects( program, implementor.getTypeFactory(), implementor.getConformance(), builder,
-                    output, DataContext.ROOT, new RexToLixTranslator.InputGetterImpl( row, inputType ), null );
+                    output, DataContext.ROOT, inputs, null );
         }
 
     }

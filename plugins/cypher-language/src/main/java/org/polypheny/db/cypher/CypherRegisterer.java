@@ -17,6 +17,7 @@
 package org.polypheny.db.cypher;
 
 import com.google.common.annotations.VisibleForTesting;
+import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -120,6 +121,9 @@ public class CypherRegisterer {
         register( OperatorName.CYPHER_VALIDATE_MATCH_RELATIONSHIP_LIST, new LangFunctionOperator( OperatorName.CYPHER_VALIDATE_MATCH_RELATIONSHIP_LIST.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
         register( OperatorName.CYPHER_MATCH_BINDING_GUARD, new LangFunctionOperator( OperatorName.CYPHER_MATCH_BINDING_GUARD.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
         register( OperatorName.CYPHER_CASE, new LangFunctionOperator( OperatorName.CYPHER_CASE.name(), Kind.CYPHER_FUNCTION, PolyType.ANY ) );
+        for ( OperatorName quantifier : List.of( OperatorName.CYPHER_ALL_MATCH, OperatorName.CYPHER_ANY_MATCH, OperatorName.CYPHER_NONE_MATCH, OperatorName.CYPHER_SINGLE_MATCH ) ) {
+            register( quantifier, new LangFunctionOperator( quantifier.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
+        }
         register( OperatorName.CYPHER_BOOLEAN_PREDICATE, new LangFunctionOperator( OperatorName.CYPHER_BOOLEAN_PREDICATE.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
         register( OperatorName.CYPHER_MATCH_WITH_WHERE, new LangFunctionOperator( OperatorName.CYPHER_MATCH_WITH_WHERE.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
 

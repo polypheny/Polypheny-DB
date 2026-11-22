@@ -16,6 +16,7 @@
 
 package org.polypheny.db.cypher.cypher2alg;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 import org.polypheny.db.algebra.AlgNode;
@@ -25,9 +26,12 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgCall;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgJoin;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgMergeRows;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgShortestPathJoin;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgWriteRow;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.GraphType;
@@ -80,7 +84,9 @@ final class CypherGraphInputs extends AlgShuttleImpl {
         GraphReference ref = new GraphReference( input.getTupleType().getFieldCount() );
         List<RexNode> values = project.getProjects().stream().map( value -> value.accept( ref ) ).toList();
         if ( ref.used ) {
-            input = withGraph( input );
+            input = input instanceof LogicalLpgWriteRow write && write.getName() == null
+                    ? LogicalLpgWriteRow.withGraph( withGraph( write.getInput() ) )
+                    : withGraph( input );
         }
         return input == project.getInput() ? project : new LogicalLpgProject( cluster, project.getTraitSet(), input, values, project.getNames() );
     }
@@ -104,6 +110,9 @@ final class CypherGraphInputs extends AlgShuttleImpl {
         if ( other instanceof LogicalLpgShortestPathJoin shortest ) {
             return resolveShortestJoin( shortest );
         }
+        if ( other instanceof LogicalLpgMergeRows merge ) {
+            return resolveMerge( merge );
+        }
         if ( !(other instanceof LogicalLpgJoin join) ) {
             return super.visit( other );
         }
@@ -116,6 +125,17 @@ final class CypherGraphInputs extends AlgShuttleImpl {
         }
         return left == join.getLeft() && right == join.getRight()
                 ? join : join.copy( join.getTraitSet(), condition, left, right, join.getJoinType(), join.isSemiJoinDone() );
+    }
+
+
+    private AlgNode resolveMerge( LogicalLpgMergeRows merge ) {
+        LogicalLpgMergeRows resolved = visitChildren( merge );
+        GraphReference properties = new GraphReference( resolved.getInput( 0 ).getTupleType().getFieldCount() );
+        GraphReference actions = new GraphReference( resolved.getTupleType().getFieldCount() );
+        // MERGE evaluates both scopes against its own mutable graph instead of opening another scan.
+        AlgNode result = resolved.rewriteExpressions( properties, actions );
+        usesGraphInput |= properties.used || actions.used;
+        return result;
     }
 
 
@@ -140,10 +160,26 @@ final class CypherGraphInputs extends AlgShuttleImpl {
                 OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_GRAPH_VALUE ),
                 List.of( rexBuilder.makeInputRef( graphType, 0 ) ) );
         AlgNode value = new LogicalLpgMatch( cluster, cluster.traitSet(), scan, List.of( extract ), List.of( PolyString.of( "$graph" ) ), true );
+        if ( isUnitRow( input ) ) {
+            return value;
+        }
+        if ( input instanceof LogicalLpgProject project && isUnitRow( project.getInput() ) ) {
+            // Keep correlated imports in a projection over the graph instead of a separate join input.
+            List<RexNode> columns = new ArrayList<>( project.getProjects() );
+            List<PolyString> names = new ArrayList<>( project.getNames() );
+            columns.add( rexBuilder.makeInputRef( value, 0 ) );
+            names.add( PolyString.of( "$graph" ) );
+            return LogicalLpgProject.create( value, columns, names );
+        }
         // Finish each writing input row before reading the graph.
         return containsWrites( input )
                 ? new LogicalLpgCall( input, value, cluster.createCorrel(), ImmutableBitSet.of() )
                 : LogicalLpgJoin.create( input, value, rexBuilder.makeLiteral( true ), JoinAlgType.INNER );
+    }
+
+
+    private static boolean isUnitRow( AlgNode input ) {
+        return input instanceof LogicalLpgValues values && values.getValues().size() == 1 && values.getValues().get( 0 ).isEmpty();
     }
 
 

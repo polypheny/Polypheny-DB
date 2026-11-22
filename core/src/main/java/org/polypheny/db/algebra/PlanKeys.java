@@ -139,7 +139,7 @@ public final class PlanKeys {
                     node.getReturningParameters(), node.isDetachDelete() ) ),
             attributes( LogicalLpgUnion.class, PlanKeys::setOperation ),
             attributes( LogicalLpgTransformer.class, node -> Arrays.asList( node.operationOrder, node.operation, node.detachDelete ) ),
-            attributes( LogicalLpgWriteRow.class, node -> Arrays.asList( node.getName() ) ),
+            attributes( LogicalLpgWriteRow.class, node -> Arrays.asList( node.getName(), node.isWithGraph() ) ),
 
             attributes( LogicalTransformer.class, PlanKeys::transform ),
             attributes( LogicalConditionalExecute.class, PlanKeys::conditional ),

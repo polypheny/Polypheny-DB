@@ -112,6 +112,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
+import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
@@ -380,6 +381,12 @@ public class Functions {
 
     @SuppressWarnings({ "unused", "unchecked" })
     public static <T> Enumerable<T> materializeGraphRows( Enumerable<T> source ) {
+        return materializeGraphRows( source, false );
+    }
+
+
+    @SuppressWarnings({ "unused", "unchecked" })
+    public static <T> Enumerable<T> materializeGraphRows( Enumerable<T> source, boolean withGraph ) {
         List<T> rows = new ArrayList<>();
         Map<Pair<PolyType, PolyString>, GraphPropertyHolder> bindings = new HashMap<>();
         try ( Enumerator<T> input = source.enumerator() ) {
@@ -394,6 +401,18 @@ public class Functions {
                 } else {
                     rows.add( (T) bindGraphValue( row, bindings ) );
                 }
+            }
+        }
+        if ( withGraph && !rows.isEmpty() ) {
+            // SET expressions mutate the canonical row bindings before writing them to the store.
+            Object[] last = (Object[]) rows.get( rows.size() - 1 );
+            int graphIndex = last.length - 1;
+            PolyGraph snapshot = (PolyGraph) last[graphIndex];
+            PolyGraph graph = new PolyGraph( snapshot.id, PolyMap.of( snapshot.getNodes() ), PolyMap.of( snapshot.getEdges() ) );
+            graph.getNodes().replaceAll( ( id, node ) -> bindings.getOrDefault( Pair.of( PolyType.NODE, id ), node ).asNode() );
+            graph.getEdges().replaceAll( ( id, edge ) -> bindings.getOrDefault( Pair.of( PolyType.EDGE, id ), edge ).asEdge() );
+            for ( T row : rows ) {
+                ((Object[]) row)[graphIndex] = graph;
             }
         }
         return Linq4j.asEnumerable( rows );
