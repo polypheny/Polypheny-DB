@@ -20,6 +20,7 @@ package org.polypheny.db.adapter.file;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.List;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.file.FileAlg.FileImplementor.Operation;
@@ -31,6 +32,8 @@ import org.polypheny.db.type.entity.numerical.PolyLong;
 
 
 public class FileModifier extends FileEnumerator {
+
+    private static final String INSERT_CONFLICT = "Primary key conflict! You are trying to insert a row with a primary key that already exists.";
 
     private final List<List<PolyValue>> insertValues;
     private boolean inserted = false;
@@ -69,13 +72,15 @@ public class FileModifier extends FileEnumerator {
                 for ( insertPosition = 0; insertPosition < insertValues.size(); insertPosition++ ) {
                     List<PolyValue> currentRow = insertValues.get( insertPosition );
                     int hash = hashRow( currentRow );
+                    String fileName = getNewFileName( Operation.INSERT, String.valueOf( hash ) );
+                    requireUnusedStagedTarget( columnFolders, pkMapping, fileName, currentRow );
                     for ( int i = 0; i < currentRow.size(); i++ ) {
                         PolyValue value = currentRow.get( i );
                         if ( value == null ) {
                             value = PolyNull.NULL;
                         }
 
-                        File newFile = new File( columnFolders.get( i ), getNewFileName( Operation.INSERT, String.valueOf( hash ) ) );
+                        File newFile = new File( columnFolders.get( i ), fileName );
                         if ( !value.isNull() && value.isBlob() && value.asBlob().isHandle() ) {
                             if ( newFile.exists() ) {
                                 if ( !newFile.delete() ) {
@@ -101,9 +106,17 @@ public class FileModifier extends FileEnumerator {
     }
 
 
+    static void requireUnusedStagedTarget( List<File> columnFolders, Integer[] primaryKeyColumns, String fileName, List<PolyValue> row ) {
+        if ( primaryKeyColumns.length > 0 && new File( columnFolders.get( primaryKeyColumns[0] ), fileName ).exists() ) {
+            List<File> keyFolders = Arrays.stream( primaryKeyColumns ).map( columnFolders::get ).toList();
+            throw FilePrimaryKey.conflict( INSERT_CONFLICT, keyFolders, fileName, i -> row.get( primaryKeyColumns[i] ) );
+        }
+    }
+
+
     static void write( File newFile, PolyValue value ) throws IOException {
         if ( !newFile.createNewFile() ) {
-            throw new UniqueConstraintViolationException( "Primary key conflict! You are trying to insert a row with a primary key that already exists." );
+            throw new GenericRuntimeException( INSERT_CONFLICT );
         }
         Files.writeString( newFile.toPath(), value.toTypedJson(), FileStore.CHARSET );
     }

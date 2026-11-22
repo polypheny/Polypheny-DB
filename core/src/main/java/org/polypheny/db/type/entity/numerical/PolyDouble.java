@@ -37,7 +37,7 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.runtime.SqlStateException;
+import org.polypheny.db.runtime.InvalidNumericFormatException;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
@@ -106,7 +106,7 @@ public class PolyDouble extends PolyNumber {
             try {
                 return PolyDouble.of( Double.parseDouble( value.asString().value ) );
             } catch ( NumberFormatException e ) {
-                throw new SqlStateException( e.getMessage(), "22018", e );
+                throw new InvalidNumericFormatException( e );
             }
         }
 

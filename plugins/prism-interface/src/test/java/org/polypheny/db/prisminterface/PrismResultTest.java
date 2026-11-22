@@ -19,6 +19,7 @@ package org.polypheny.db.prisminterface;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.polypheny.db.prisminterface.CypherTest.relationalFrame;
 import static org.polypheny.db.prisminterface.CypherTest.singleRow;
 
@@ -37,11 +38,17 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.prisminterface.CypherTest.PrismConnection;
 import org.polypheny.db.prisminterface.utils.PrismValueDeserializer;
+import org.polypheny.prism.CommitRequest;
+import org.polypheny.prism.ErrorResponse;
+import org.polypheny.prism.ExecuteUnparameterizedStatementRequest;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.ProtoDocument;
 import org.polypheny.prism.ProtoPolyType;
 import org.polypheny.prism.ProtoValue;
 import org.polypheny.prism.RelationalFrame;
+import org.polypheny.prism.Request;
+import org.polypheny.prism.Response;
+import org.polypheny.prism.RollbackRequest;
 import org.polypheny.prism.StatementResponse;
 import org.polypheny.prism.StatementResult;
 
@@ -146,6 +153,66 @@ class PrismResultTest {
                 assertEquals( 7, integerValue( singleDocument( document, true ).getEntriesOrThrow( "id" ) ) );
             }
         }
+    }
+
+
+    @Test
+    void sqlDdlErrorsPreserveLegacyMessagesAndAllowRollback() throws IOException {
+        String namespace = Catalog.DEFAULT_NAMESPACE_NAME;
+        try ( Closeable cleanup = () -> {
+            dropFixture( "DROP TABLE IF EXISTS prismresultddlcopy" );
+            dropFixture( "DROP TABLE IF EXISTS prismresultddlerrors" );
+        }; PrismConnection connection = new PrismConnection( false, 4 ) ) {
+            connection.execute( namespace, "sql", "CREATE TABLE prismresultddlerrors (id INTEGER PRIMARY KEY)", 1 );
+
+            assertSqlError( connection, "DROP TABLE prismresultmissing", "42P01",
+                    "There exists no entity with the name prismresultmissing and 'IF EXISTS' was not specified" );
+            assertSqlError( connection, "ALTER TABLE prismresultmissing ADD COLUMN v INTEGER", "42P01",
+                    "Could not find relational entity with name: prismresultmissing" );
+            assertSqlError( connection, "CREATE TABLE prismresultddlcopy AS SELECT * FROM prismresultddlerrors", "0A000", "Not yet supported" );
+
+            connection.execute( namespace, "sql", "DROP TABLE IF EXISTS prismresultmissing", 1 );
+            Frame frame = connection.execute( namespace, "sql", "SELECT id FROM prismresultddlerrors", -1 ).getResult().getFrame();
+            assertEquals( 0, relationalFrame( frame, true, List.of( "id" ) ).getRowsCount() );
+        }
+    }
+
+
+    @Test
+    void nativeModByZeroPreservesLegacyMessageAndAllowsRollback() throws IOException {
+        assumeTrue( "file".equalsIgnoreCase( System.getProperty( "store.default" ) ) );
+        String namespace = Catalog.DEFAULT_NAMESPACE_NAME;
+        try ( Closeable cleanup = () -> dropFixture( "DROP TABLE IF EXISTS prismresultzerodivisor" );
+                PrismConnection connection = new PrismConnection( false, 4 ) ) {
+            connection.execute( namespace, "sql", "CREATE TABLE prismresultzerodivisor (id INTEGER PRIMARY KEY)", 1 );
+            connection.execute( namespace, "sql", "INSERT INTO prismresultzerodivisor VALUES (1)", 1 );
+            Response commit = connection.send( Request.newBuilder().setCommitRequest( CommitRequest.getDefaultInstance() ) );
+            assertEquals( Response.TypeCase.COMMIT_RESPONSE, commit.getTypeCase() );
+
+            assertSqlError( connection, "SELECT MOD(id, 0) FROM prismresultzerodivisor", "22012", "java.lang.ArithmeticException: Division by zero" );
+
+            Frame frame = connection.execute( namespace, "sql", "SELECT id FROM prismresultzerodivisor", -1 ).getResult().getFrame();
+            assertEquals( 1, integerValue( singleRow( relationalFrame( frame, true, List.of( "id" ) ) ).getValues( 0 ) ) );
+        }
+    }
+
+
+    private static void assertSqlError( PrismConnection connection, String sql, String sqlState, String legacyMessage ) throws IOException {
+        Response response = connection.send( Request.newBuilder().setExecuteUnparameterizedStatementRequest( ExecuteUnparameterizedStatementRequest.newBuilder()
+                .setNamespaceName( Catalog.DEFAULT_NAMESPACE_NAME )
+                .setLanguageName( "sql" )
+                .setStatement( sql )
+                .setFetchSize( -1 ) ) );
+        assertTrue( response.getLast() );
+        assertEquals( Response.TypeCase.ERROR_RESPONSE, response.getTypeCase() );
+        ErrorResponse error = response.getErrorResponse();
+        assertEquals( legacyMessage, error.getMessage() );
+        assertTrue( error.hasDetails() );
+        assertEquals( sqlState, error.getDetails().getState() );
+        assertEquals( legacyMessage, error.getDetails().getMessage() );
+
+        Response rollback = connection.send( Request.newBuilder().setRollbackRequest( RollbackRequest.getDefaultInstance() ) );
+        assertEquals( Response.TypeCase.ROLLBACK_RESPONSE, rollback.getTypeCase() );
     }
 
 

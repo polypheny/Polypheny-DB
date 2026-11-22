@@ -18,7 +18,9 @@ package org.polypheny.db.prisminterface;
 
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.util.ArrayDeque;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.IdentityHashMap;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -45,18 +47,35 @@ final class PrismErrorClassifier {
         ErrorDetails.Builder details = ErrorDetails.newBuilder().setMessage( message );
         String fallbackState = null;
         Set<Throwable> visited = Collections.newSetFromMap( new IdentityHashMap<>() );
-        for ( Throwable cause = failure; cause != null && visited.add( cause ); cause = cause.getCause() ) {
+        Deque<Throwable> pending = new ArrayDeque<>();
+        pending.add( failure );
+        while ( !pending.isEmpty() ) {
+            Throwable cause = pending.removeFirst();
+            if ( !visited.add( cause ) ) {
+                continue;
+            }
             if ( cause instanceof PIServiceException prism && isSqlState( prism.getState() ) ) {
                 return prism.getPrismErrorDetails().toBuilder().setMessage( message ).build();
             }
-            if ( cause instanceof SQLException sql && isSqlState( sql.getSQLState() ) ) {
-                return details.setState( sql.getSQLState() ).setErrorCode( sql.getErrorCode() ).build();
+            if ( cause instanceof SQLException sql ) {
+                if ( isSqlState( sql.getSQLState() ) ) {
+                    return details.setState( sql.getSQLState() ).setErrorCode( sql.getErrorCode() ).build();
+                }
+                SQLException next = sql.getNextException();
+                if ( next != null ) {
+                    pending.addLast( next );
+                }
             }
             if ( cause instanceof SqlStateProvider typed && isSqlState( typed.getSqlState() ) ) {
                 return details.setState( typed.getSqlState() ).build();
             }
             if ( fallbackState == null ) {
                 fallbackState = stateForType( cause );
+            }
+            // Keep the original cause chain ahead of JDBC's additional exception links.
+            Throwable nested = cause.getCause();
+            if ( nested != null ) {
+                pending.addFirst( nested );
             }
         }
         return details.setState( fallbackState == null ? "XX000" : fallbackState ).build();

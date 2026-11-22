@@ -17,9 +17,12 @@
 package org.polypheny.db.prisminterface;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.sql.BatchUpdateException;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.util.List;
 import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.Test;
@@ -47,6 +50,37 @@ class PrismErrorResponseTest {
     @Test
     void jdbcStateAndCode() {
         assertError( new SQLException( "Division by zero", "22012", 310 ), "22012", 310, "Division by zero" );
+    }
+
+
+    @Test
+    void jdbcNextExceptionPreservesStateAndCode() {
+        BatchUpdateException batch = new BatchUpdateException( "Batch failed", null, 0, new int[0] );
+        batch.setNextException( new SQLException( "No usable state", "23", 1 ) );
+        batch.setNextException( new SQLException( "Duplicate key", "23505", 27 ) );
+        assertError( new RuntimeException( "While executing batch", batch ), "23505", 27, "While executing batch" );
+    }
+
+
+    @Test
+    void jdbcExplicitAndCauseStatesTakePrecedenceOverNextException() {
+        SQLException duplicate = new SQLException( "Duplicate key", "23505", 27 );
+        SQLException explicit = new SQLException( "Cannot connect", "08001", 19 );
+        explicit.setNextException( duplicate );
+        assertError( explicit, "08001", 19, "Cannot connect" );
+
+        SQLException wrapped = new SQLException( "Batch failed", new SQLException( "Division by zero", "22012", 310 ) );
+        wrapped.setNextException( duplicate );
+        assertError( wrapped, "22012", 310, "Batch failed" );
+    }
+
+
+    @Test
+    void jdbcExceptionLinksCanBeCyclic() {
+        SQLException first = new SQLException( "Batch failed" );
+        SQLException second = new SQLException( "Additional failure", first );
+        first.setNextException( second );
+        assertTimeoutPreemptively( Duration.ofSeconds( 2 ), () -> assertError( first, "XX000", null, "Batch failed" ) );
     }
 
 

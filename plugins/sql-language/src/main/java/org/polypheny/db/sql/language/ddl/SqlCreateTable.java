@@ -210,7 +210,7 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
         if ( query != null ) {
-            throw new GenericRuntimeException( "Not yet supported" );
+            throw ddlError( "0A000", "Not yet supported" );
         }
 
         String tableName;
