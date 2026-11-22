@@ -108,6 +108,8 @@ import org.polypheny.db.algebra.metadata.Metadata;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.functions.CrossModelFunctions;
 import org.polypheny.db.functions.CypherFunctions;
+import org.polypheny.db.functions.CypherScalarFunction;
+import org.polypheny.db.functions.CypherTemporalFunction;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.functions.Functions.FlatProductInputType;
 import org.polypheny.db.functions.GeoFunctions;
@@ -544,6 +546,14 @@ public enum BuiltInMethod {
     CYPHER_NODES( CypherFunctions.class, "nodes", PolyValue.class ),
     CYPHER_RELATIONSHIPS( CypherFunctions.class, "relationships", PolyValue.class ),
     CYPHER_LENGTH( CypherFunctions.class, "pathLength", PolyValue.class ),
+    CYPHER_SIZE( CypherFunctions.class, "size", PolyValue.class ),
+    CYPHER_SCALAR_FUNCTION( CypherScalarFunction.class, "evaluate", PolyString.class, PolyValue[].class ),
+    CYPHER_RAND( CypherScalarFunction.class, "random", PolyString.class ),
+    CYPHER_TEMPORAL_FUNCTION( CypherTemporalFunction.class, "evaluate", PolyString.class, PolyValue[].class, DataContext.class, PolyString.class ),
+    CYPHER_RANGE( CypherFunctions.class, "range", PolyValue.class, PolyValue.class, PolyValue.class ),
+    CYPHER_TYPE( CypherFunctions.class, "relationshipType", PolyValue.class ),
+    CYPHER_ID( CypherFunctions.class, "entityId", PolyValue.class ),
+    CYPHER_LABELS( CypherFunctions.class, "nodeLabels", PolyValue.class ),
     CYPHER_ARITHMETIC( CypherFunctions.class, "arithmetic", PolyString.class, PolyValue.class, PolyValue.class ),
     CYPHER_LESS_THAN( CypherFunctions.class, "lessThan", PolyValue.class, PolyValue.class ),
     CYPHER_LESS_THAN_OR_EQUAL( CypherFunctions.class, "lessThanOrEqual", PolyValue.class, PolyValue.class ),
@@ -565,6 +575,8 @@ public enum BuiltInMethod {
     CYPHER_EXTRACT_ID( CypherFunctions.class, "extractId", GraphPropertyHolder.class ),
     CYPHER_MATCH_ELEMENT_ID( CypherFunctions.class, "matchElementId", PolyValue.class, PolyString.class ),
     CYPHER_VALIDATE_MATCH_NODE( CypherFunctions.class, "validateMatchNode", PolyValue.class, PolyBoolean.class ),
+    CYPHER_MATCH_PROPERTIES( CypherFunctions.class, "matchProperties", PolyValue.class, Function0.class ),
+    CYPHER_MATCH_VISIBLE_PATH( CypherFunctions.class, "visibleMatchPath", PolyPath.class, PolyList.class ),
     CYPHER_BOOLEAN_PREDICATE( CypherFunctions.class, "booleanPredicate", PolyValue.class ),
     CYPHER_MATCH_WITH_WHERE( CypherFunctions.class, "matchWithWhere", PolyBoolean.class, PolyBoolean.class ),
     CYPHER_VALIDATE_MATCH_RELATIONSHIP_LIST( CypherFunctions.class, "validateMatchRelationshipList", PolyValue.class, PolyBoolean.class ),

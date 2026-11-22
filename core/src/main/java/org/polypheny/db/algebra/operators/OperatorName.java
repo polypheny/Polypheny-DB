@@ -1738,10 +1738,13 @@ public enum OperatorName {
     CYPHER_EXTRACT_ID( LangFunctionOperator.class ),
 
     CYPHER_MATCH_ELEMENT_ID( LangFunctionOperator.class ),
+    CYPHER_MATCH_PROPERTIES( LangFunctionOperator.class ),
+    CYPHER_MATCH_VISIBLE_PATH( LangFunctionOperator.class ),
     CYPHER_VALIDATE_MATCH_NODE( LangFunctionOperator.class ),
     CYPHER_VALIDATE_MATCH_RELATIONSHIP_LIST( LangFunctionOperator.class ),
     CYPHER_MATCH_BINDING_GUARD( LangFunctionOperator.class ),
     CYPHER_BOOLEAN_PREDICATE( LangFunctionOperator.class ),
+    CYPHER_CASE( LangFunctionOperator.class ),
     CYPHER_MATCH_WITH_WHERE( LangFunctionOperator.class ),
 
     CYPHER_EXTRACT_PROPERTIES( LangFunctionOperator.class ),
@@ -1763,6 +1766,14 @@ public enum OperatorName {
     CYPHER_NODES( LangFunctionOperator.class ),
     CYPHER_RELATIONSHIPS( LangFunctionOperator.class ),
     CYPHER_LENGTH( LangFunctionOperator.class ),
+    CYPHER_SIZE( LangFunctionOperator.class ),
+    CYPHER_SCALAR_FUNCTION( LangFunctionOperator.class ),
+    CYPHER_RAND( LangFunctionOperator.class ),
+    CYPHER_TEMPORAL_FUNCTION( LangFunctionOperator.class ),
+    CYPHER_RANGE( LangFunctionOperator.class ),
+    CYPHER_TYPE( LangFunctionOperator.class ),
+    CYPHER_ID( LangFunctionOperator.class ),
+    CYPHER_LABELS( LangFunctionOperator.class ),
     CYPHER_ARITHMETIC( LangFunctionOperator.class ),
 
     CYPHER_ADJUST_EDGE( LangFunctionOperator.class ),

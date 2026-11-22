@@ -80,6 +80,9 @@ public class RelationalMetaRetriever {
 
 
     private static ProtoPolyType getFromPolyType( PolyType polyType ) {
+        if ( polyType == PolyType.CYPHER_TEMPORAL ) {
+            return ProtoPolyType.VARCHAR;
+        }
         return ProtoPolyType.valueOf( polyType.getName() );
     }
 

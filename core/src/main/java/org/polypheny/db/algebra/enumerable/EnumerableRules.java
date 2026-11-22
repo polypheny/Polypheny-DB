@@ -48,6 +48,7 @@ import org.polypheny.db.algebra.enumerable.document.EnumerableDocumentValuesRule
 import org.polypheny.db.algebra.enumerable.lpg.EnumerableLpgMatchRule;
 import org.polypheny.db.algebra.enumerable.lpg.EnumerableLpgTransformerRule;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgJoin;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnion;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.slf4j.Logger;
@@ -103,6 +104,8 @@ public class EnumerableRules {
     public static final EnumerableLimitRule ENUMERABLE_LIMIT_RULE = new EnumerableLimitRule();
 
     public static final EnumerableUnionRule ENUMERABLE_UNION_RULE = new EnumerableUnionRule();
+
+    public static final EnumerableUnionRule ENUMERABLE_LPG_UNION_RULE = new EnumerableUnionRule( LogicalLpgUnion.class, "EnumerableLpgUnionRule" );
 
     public static final EnumerableModifyCollectRule ENUMERABLE_MODIFY_COLLECT_RULE = new EnumerableModifyCollectRule();
 

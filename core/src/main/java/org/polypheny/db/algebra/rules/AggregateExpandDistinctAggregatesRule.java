@@ -112,10 +112,13 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
         if ( !aggregate.containsDistinctCall() ) {
             return;
         }
-        // The graph accumulator deduplicates in input order and keeps Cypher's array type.
-        // Relational DISTINCT expansion can reorder the input and infer a SQL multiset.
+        // These graph accumulators apply Cypher equality, including between numeric subtypes.
+        // The relational rewrite can also reorder collect() and infer a SQL multiset.
         if ( aggregate.getTraitSet().contains( ModelTrait.GRAPH ) && aggregate.getAggCallList().stream()
-                .anyMatch( agg -> agg.isDistinct() && agg.getAggregation().getKind() == Kind.COLLECT ) ) {
+                .anyMatch( agg -> agg.isDistinct() && switch ( agg.getAggregation().getKind() ) {
+                    case COLLECT, STDDEV_SAMP, STDDEV_POP -> true;
+                    default -> false;
+                } ) ) {
             return;
         }
 

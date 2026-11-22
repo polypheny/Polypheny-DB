@@ -24,6 +24,9 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.enumerable.EnumerableInterpreterRule;
 import org.polypheny.db.algebra.enumerable.EnumerableRules;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgCall;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgForeach;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgMergeRows;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgWriteRow;
 import org.polypheny.db.algebra.enumerable.common.EnumerableBindable.EnumerableToBindableConverterRule;
 import org.polypheny.db.algebra.enumerable.common.EnumerableModifyToStreamerRule;
@@ -118,6 +121,9 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     EnumerableRules.ENUMERABLE_TRANSFORMER_RULE,
                     EnumerableRules.ENUMERABLE_GRAPH_MATCH_RULE,
                     LogicalLpgWriteRow.TO_ENUMERABLE,
+                    LogicalLpgCall.TO_ENUMERABLE,
+                    LogicalLpgForeach.TO_ENUMERABLE,
+                    LogicalLpgMergeRows.TO_ENUMERABLE,
                     EnumerableRules.ENUMERABLE_UNWIND_RULE,
                     EnumerableRules.ENUMERABLE_DOCUMENT_UNWIND_RULE,
                     EnumerableRules.ENUMERABLE_GRAPH_TRANSFORMER_RULE );

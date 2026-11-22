@@ -97,7 +97,8 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
             if ( aggCall.isDistinct() && !supportsGraphDistinctAggregation( aggCall ) ) {
                 throw new InvalidAlgException( "distinct aggregation not supported" );
             }
-            if ( !supportsGraphNumericAggregation( aggCall ) && RexImpTable.INSTANCE.get( aggCall.getAggregation(), false ) == null ) {
+            if ( !supportsGraphNumericAggregation( aggCall ) && !supportsGraphStandardDeviation( aggCall )
+                    && RexImpTable.INSTANCE.get( aggCall.getAggregation(), false ) == null ) {
                 throw new InvalidAlgException( "aggregation " + aggCall.getAggregation() + " not supported" );
             }
         }
@@ -225,13 +226,66 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
 
     private boolean supportsGraphDistinctAggregation( AggregateCall call ) {
         Kind kind = call.getAggregation().getKind();
-        return traitSet.contains( ModelTrait.GRAPH ) && (kind == Kind.COUNT || kind == Kind.COLLECT) && call.getArgList().size() == 1;
+        return traitSet.contains( ModelTrait.GRAPH ) && call.getArgList().size() == 1
+                && (kind == Kind.COUNT || kind == Kind.COLLECT || supportsGraphStandardDeviation( call ));
     }
 
 
     private boolean supportsGraphNumericAggregation( AggregateCall call ) {
         Kind kind = call.getAggregation().getKind();
         return traitSet.contains( ModelTrait.GRAPH ) && (kind == Kind.SUM || kind == Kind.AVG);
+    }
+
+
+    private boolean supportsGraphStandardDeviation( AggregateCall call ) {
+        Kind kind = call.getAggregation().getKind();
+        return traitSet.contains( ModelTrait.GRAPH ) && (kind == Kind.STDDEV_SAMP || kind == Kind.STDDEV_POP);
+    }
+
+
+    private static class GraphStandardDeviationImplementor extends StrictAggImplementor {
+
+        private final boolean distinct;
+
+
+        private GraphStandardDeviationImplementor( boolean distinct ) {
+            this.distinct = distinct;
+        }
+
+
+        @Override
+        protected boolean nonDefaultOnEmptySet( AggContext info ) {
+            return false;
+        }
+
+
+        @Override
+        public List<Type> getNotNullState( AggContext info ) {
+            return List.of( CypherFunctions.StandardDeviation.class );
+        }
+
+
+        @Override
+        protected void implementNotNullReset( AggContext info, AggResetContext reset ) {
+            Expression state = Expressions.new_( CypherFunctions.StandardDeviation.class, Expressions.constant( distinct ) );
+            reset.currentBlock().add( Expressions.statement( Expressions.assign( reset.accumulator().get( 0 ), state ) ) );
+        }
+
+
+        @Override
+        protected void implementNotNullAdd( AggContext info, AggAddContext add ) {
+            Expression argument = add.rowTranslator().translate( add.rexArguments().get( 0 ), PolyValue.class );
+            add.currentBlock().add( Expressions.statement( Expressions.call( add.accumulator().get( 0 ), "add", argument ) ) );
+        }
+
+
+        @Override
+        protected Expression implementNotNullResult( AggContext info, AggResultContext result ) {
+            Expression sample = Expressions.constant( info.aggregation().getKind() == Kind.STDDEV_SAMP );
+            Expression value = Expressions.call( result.accumulator().get( 0 ), "deviation", sample );
+            return Expressions.convert_( value, info.returnType() );
+        }
+
     }
 
 
@@ -378,6 +432,8 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
             Kind kind = call.e.getAggregation().getKind();
             if ( graphKeys && kind == Kind.COLLECT ) {
                 aggs.add( new AggImpState( call.i, call.e, new GraphCollectImplementor( call.e.isDistinct() ) ) );
+            } else if ( supportsGraphStandardDeviation( call.e ) ) {
+                aggs.add( new AggImpState( call.i, call.e, new GraphStandardDeviationImplementor( call.e.isDistinct() ) ) );
             } else if ( call.e.isDistinct() ) {
                 aggs.add( new AggImpState( call.i, call.e, new GraphDistinctCountImplementor() ) );
             } else if ( supportsGraphNumericAggregation( call.e ) ) {

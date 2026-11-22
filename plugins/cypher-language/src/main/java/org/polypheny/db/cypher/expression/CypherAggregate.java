@@ -26,7 +26,7 @@ import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.cypher.cypher2alg.CypherSyntaxException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -50,8 +50,8 @@ public class CypherAggregate extends CypherExpression {
         this.op = op;
         this.target = target;
         this.distinct = distinct;
-        if ( distinct && op != OperatorName.COUNT && op != OperatorName.COLLECT ) {
-            throw new GenericRuntimeException( "DISTINCT is supported for COUNT and COLLECT aggregations." );
+        if ( distinct && op != OperatorName.COUNT && op != OperatorName.COLLECT && op != OperatorName.STDDEV_SAMP && op != OperatorName.STDDEV_POP ) {
+            throw new CypherSyntaxException( "DISTINCT is supported for count(), collect(), stDev(), and stDevP()." );
         }
     }
 
@@ -98,6 +98,13 @@ public class CypherAggregate extends CypherExpression {
             case SUM, AVG -> Pair.of( node, LaxAggregateCall.inferGraphNumericType( context.typeFactory,
                     op == OperatorName.SUM ? Kind.SUM : Kind.AVG, Objects.requireNonNull( node ).getType() ) );
             case MIN, MAX -> Pair.of( node, context.typeFactory.createTypeWithNullability( Objects.requireNonNull( node ).getType(), true ) );
+            case STDDEV_SAMP, STDDEV_POP -> {
+                PolyType type = Objects.requireNonNull( node ).getType().getPolyType();
+                if ( type != PolyType.ANY && !PolyType.NUMERIC_TYPES.contains( type ) ) {
+                    throw new CypherSyntaxException( (op == OperatorName.STDDEV_SAMP ? "stDev()" : "stDevP()") + " requires a number." );
+                }
+                yield Pair.of( node, context.typeFactory.createPolyType( PolyType.DOUBLE ) );
+            }
             default -> Pair.of( node, context.typeFactory.createPolyType( PolyType.BIGINT ) );
         };
     }

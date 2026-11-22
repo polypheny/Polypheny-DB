@@ -16,19 +16,26 @@
 
 package org.polypheny.db.algebra.logical.lpg;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Union;
+import org.polypheny.db.algebra.core.lpg.LpgAlg;
 import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.type.PolyTypeUtil;
 
 
-public class LogicalLpgUnion extends Union {
+public class LogicalLpgUnion extends Union implements LpgAlg {
 
     /**
      * Subclass of {@link Union} not targeted at any particular engine or calling convention.
@@ -40,13 +47,35 @@ public class LogicalLpgUnion extends Union {
 
     public static LogicalLpgUnion create( List<AlgNode> inputs, boolean all ) {
         final AlgCluster cluster = inputs.get( 0 ).getCluster();
-        final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE );
+        final AlgTraitSet traitSet = cluster.traitSetOf( Convention.NONE ).replace( ModelTrait.GRAPH );
         return new LogicalLpgUnion( cluster, traitSet, inputs, all );
     }
 
 
     public static LogicalLpgUnion create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
         return create( children, args.getArg( "all", BooleanArg.class ).toBool() );
+    }
+
+
+    @Override
+    protected AlgDataType deriveRowType() {
+        AlgDataTypeFactory factory = getCluster().getTypeFactory();
+        AlgDataTypeFactory.Builder row = factory.builder();
+        List<AlgDataType> inputTypes = inputs.stream().map( AlgNode::getTupleType ).toList();
+        for ( AlgDataTypeField field : inputTypes.get( 0 ).getFields() ) {
+            List<AlgDataType> types = new ArrayList<>( inputs.size() );
+            for ( AlgDataType input : inputTypes ) {
+                types.add( input.getFields().get( field.getIndex() ).getType() );
+            }
+            row.add( field.getName(), null, PolyTypeUtil.commonDynamicType( factory, types ) );
+        }
+        return row.build();
+    }
+
+
+    @Override
+    public NodeType getNodeType() {
+        return NodeType.UNION;
     }
 
 

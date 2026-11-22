@@ -43,6 +43,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnion;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgOptPredicateList;
 import org.polypheny.db.plan.AlgOptRule;
@@ -79,6 +80,10 @@ public class UnionPullUpConstantsRule extends AlgOptRule {
     @Override
     public void onMatch( AlgOptRuleCall call ) {
         final Union union = call.alg( 0 );
+        if ( union instanceof LogicalLpgUnion ) {
+            // This rewrite constructs a relational UNION with SQL type and equality semantics.
+            return;
+        }
 
         final int count = union.getTupleType().getFieldCount();
         if ( count == 1 ) {

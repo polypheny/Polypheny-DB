@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.UnaryOperator;
 import lombok.AccessLevel;
@@ -135,6 +136,28 @@ public class PolyPath extends GraphObject {
         Map<PolyString, PolyValue> reboundBindings = new HashMap<>();
         bindings.forEach( ( name, value ) -> reboundBindings.put( name, rebind.apply( value ) ) );
         return new PolyPath( id, reboundNodes, reboundEdges, names, reboundPath, variableName ).withBindings( reboundBindings );
+    }
+
+
+    /** Removes match-only bindings and their names from the result path. */
+    public PolyPath withoutBindings( Set<PolyString> hidden ) {
+        if ( names.stream().noneMatch( name -> name != null && hidden.contains( name ) ) && hidden.stream().noneMatch( bindings::containsKey ) ) {
+            return this;
+        }
+        List<PolyString> visibleNames = names.stream().map( name -> name != null && hidden.contains( name ) ? null : name ).toList();
+        List<PolyNode> visibleNodes = nodes.stream().map( node -> node.variableName != null && hidden.contains( node.variableName )
+                ? new PolyNode( node.id, node.properties, node.labels, null ) : node ).toList();
+        List<PolyEdge> visibleEdges = edges.stream().map( edge -> edge.variableName != null && hidden.contains( edge.variableName )
+                ? new PolyEdge( edge.id, edge.properties, edge.labels, edge.left, edge.right, edge.direction, null ) : edge ).toList();
+        List<GraphPropertyHolder> visiblePath = new ArrayList<>( path.size() );
+        for ( int i = 0; i < visibleEdges.size(); i++ ) {
+            visiblePath.add( visibleNodes.get( i ) );
+            visiblePath.add( visibleEdges.get( i ) );
+        }
+        visiblePath.add( visibleNodes.get( visibleEdges.size() ) );
+        Map<PolyString, PolyValue> visibleBindings = new HashMap<>( bindings );
+        hidden.forEach( visibleBindings::remove );
+        return new PolyPath( id, visibleNodes, visibleEdges, visibleNames, visiblePath, variableName ).withBindings( visibleBindings );
     }
 
 
