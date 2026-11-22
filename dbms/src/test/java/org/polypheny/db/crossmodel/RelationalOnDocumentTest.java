@@ -174,6 +174,36 @@ public class RelationalOnDocumentTest extends CrossModelTestTemplate {
     }
 
 
+    @Test
+    public void jsonValuePreservesStoredDecimalPrecision() {
+        String collection = "crossStoredDecimals";
+        MqlTestTemplate.createCollection( collection, DATABASE_NAME );
+        MqlTestTemplate.insert( """
+                {"modern":{"$numberDecimal":"1700000000000.99999999"},
+                 "limits":[{"upper":{"$numberDecimal":"9223372036854775807.9"}}]}
+                """, collection, DATABASE_NAME );
+
+        executeStatements( ( s, c ) -> {
+            String query = """
+                    SELECT JSON_VALUE(d, 'lax $.modern'),
+                           JSON_VALUE(d, 'lax $.modern' RETURNING TIMESTAMP),
+                           JSON_VALUE(d, 'lax $.limits[0].upper'),
+                           JSON_VALUE(d, 'lax $.limits[0].upper' RETURNING TIMESTAMP)
+                    FROM %s.%s
+                    """.formatted( DATABASE_NAME, collection );
+            Calendar utc = Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) );
+            try ( ResultSet result = s.executeQuery( query ) ) {
+                assertTrue( result.next() );
+                assertEquals( "1700000000000.99999999", result.getString( 1 ) );
+                assertEquals( 1700000000000L, result.getTimestamp( 2, utc ).getTime() );
+                assertEquals( "9223372036854775807.9", result.getString( 3 ) );
+                assertEquals( Long.MAX_VALUE, result.getTimestamp( 4, utc ).getTime() );
+                assertFalse( result.next() );
+            }
+        } );
+    }
+
+
     @ParameterizedTest
     @CsvSource({
             "DATE, 2147483648.0, -2147483649.0",

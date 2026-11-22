@@ -20,10 +20,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.TreeNode;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -31,7 +30,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.jsontype.TypeDeserializer;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -238,16 +236,54 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
         @Override
         public PolyDocument deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
-            TreeNode n = p.readValueAsTree();
-
-            Map<PolyString, PolyValue> values = new HashMap<>( n.size() );
-            for ( JsonNode e : ((ArrayNode) n.get( KEY_VALUE_KEY )) ) {
-                PolyString key = PolyString.of( e.get( 0 ).asText() );
-                PolyValue value = JSON_WRAPPER.readValue( e.get( 1 ).traverse( p.getCodec() ), PolyValue.class );
-                values.put( key, value );
+            Map<PolyString, PolyValue> values = null;
+            JsonToken token = p.hasToken( JsonToken.START_OBJECT ) ? p.nextToken() : p.currentToken();
+            while ( token == JsonToken.FIELD_NAME ) {
+                String field = p.currentName();
+                p.nextToken();
+                if ( KEY_VALUE_KEY.equals( field ) ) {
+                    values = readPairs( p, ctxt );
+                } else {
+                    p.skipChildren();
+                }
+                token = p.nextToken();
             }
-
+            if ( token != JsonToken.END_OBJECT ) {
+                ctxt.reportWrongTokenException( PolyDocument.class, JsonToken.END_OBJECT, "Expected a typed document object" );
+            }
+            if ( values == null ) {
+                return ctxt.reportInputMismatch( PolyDocument.class, "Missing document entries field '%s'", KEY_VALUE_KEY );
+            }
             return PolyDocument.ofDocument( values );
+        }
+
+
+        private Map<PolyString, PolyValue> readPairs( JsonParser p, DeserializationContext ctxt ) throws IOException {
+            if ( !p.hasToken( JsonToken.START_ARRAY ) ) {
+                ctxt.reportWrongTokenException( PolyDocument.class, JsonToken.START_ARRAY, "Expected an array of document entries" );
+            }
+            Map<PolyString, PolyValue> values = new HashMap<>();
+            JsonToken token;
+            while ( (token = p.nextToken()) == JsonToken.START_ARRAY ) {
+                if ( p.nextToken() == JsonToken.END_ARRAY ) {
+                    return ctxt.reportInputMismatch( PolyDocument.class, "Missing document entry key" );
+                }
+                PolyString key = PolyString.of( ctxt.readTree( p ).asText() );
+                if ( p.nextToken() == JsonToken.END_ARRAY ) {
+                    return ctxt.reportInputMismatch( PolyDocument.class, "Missing value for document key '%s'", key );
+                }
+                values.put( key, readTypedJsonValue( p, ctxt ) );
+                while ( p.nextToken() != JsonToken.END_ARRAY ) {
+                    if ( p.currentToken() == null ) {
+                        return ctxt.reportInputMismatch( PolyDocument.class, "Incomplete entry for document key '%s'", key );
+                    }
+                    p.skipChildren();
+                }
+            }
+            if ( token != JsonToken.END_ARRAY ) {
+                ctxt.reportWrongTokenException( PolyDocument.class, JsonToken.END_ARRAY, "Expected a document entry pair or the end of the entries array" );
+            }
+            return values;
         }
 
     }

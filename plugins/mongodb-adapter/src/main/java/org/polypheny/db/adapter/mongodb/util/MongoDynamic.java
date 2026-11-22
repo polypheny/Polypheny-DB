@@ -41,6 +41,7 @@ import org.bson.BsonValue;
 import org.bson.Document;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.adapter.mongodb.bson.BsonFunctionHelper;
+import org.polypheny.db.adapter.mongodb.bson.MongoDocumentSerializer;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.functions.PolyValueFunctions;
 import org.polypheny.db.type.PolyType;
@@ -405,7 +406,12 @@ public class MongoDynamic {
 
         @Override
         public List<Document> getAll( List<Map<Long, PolyValue>> parameterValues ) {
-            return parameterValues.stream().flatMap( e -> e.values().stream().map( polyValue -> Document.parse( polyValue.asDocument().toJson() ) ) ).toList();
+            return parameterValues.stream()
+                    .flatMap( row -> row.values().stream() )
+                    .map( PolyValue::asDocument )
+                    .map( MongoDocumentSerializer::serialize )
+                    .map( BsonUtil::asDocument )
+                    .toList();
         }
 
 

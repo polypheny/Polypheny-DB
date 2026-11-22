@@ -2787,7 +2787,7 @@ public class Functions {
                 Double number = value.asDouble().value;
                 yield number == null || Double.isFinite( number ) ? number : JSON_PATH_JSON_PROVIDER.parse( value.toJson() );
             }
-            case DATE, TIME, TIMESTAMP -> value.toJson();
+            case DATE, TIME, TIMESTAMP -> value.asTemporal().getMillisSinceEpoch() == null ? null : value.toJson();
             default -> JSON_PATH_JSON_PROVIDER.parse( value.toJson() );
         };
     }
