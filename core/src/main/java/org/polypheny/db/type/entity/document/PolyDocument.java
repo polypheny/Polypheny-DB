@@ -39,6 +39,7 @@ import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.def.SimpleSerializerDef;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
@@ -77,6 +78,11 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
     public PolyDocument( Map<PolyString, PolyValue> value ) {
         this( value, false );
+    }
+
+
+    private PolyDocument( LinkedHashMap<PolyString, PolyValue> orderedValues ) {
+        super( orderedValues, PolyType.DOCUMENT, MapType.DOCUMENT, true );
     }
 
 
@@ -236,7 +242,7 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
         @Override
         public PolyDocument deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
-            Map<PolyString, PolyValue> values = null;
+            LinkedHashMap<PolyString, PolyValue> values = null;
             JsonToken token = p.hasToken( JsonToken.START_OBJECT ) ? p.nextToken() : p.currentToken();
             while ( token == JsonToken.FIELD_NAME ) {
                 String field = p.currentName();
@@ -254,15 +260,16 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
             if ( values == null ) {
                 return ctxt.reportInputMismatch( PolyDocument.class, "Missing document entries field '%s'", KEY_VALUE_KEY );
             }
-            return PolyDocument.ofDocument( values );
+            // Graph property storage checks the serialized form, including field order.
+            return new PolyDocument( values );
         }
 
 
-        private Map<PolyString, PolyValue> readPairs( JsonParser p, DeserializationContext ctxt ) throws IOException {
+        private LinkedHashMap<PolyString, PolyValue> readPairs( JsonParser p, DeserializationContext ctxt ) throws IOException {
             if ( !p.hasToken( JsonToken.START_ARRAY ) ) {
                 ctxt.reportWrongTokenException( PolyDocument.class, JsonToken.START_ARRAY, "Expected an array of document entries" );
             }
-            Map<PolyString, PolyValue> values = new HashMap<>();
+            LinkedHashMap<PolyString, PolyValue> values = new LinkedHashMap<>();
             JsonToken token;
             while ( (token = p.nextToken()) == JsonToken.START_ARRAY ) {
                 if ( p.nextToken() == JsonToken.END_ARRAY ) {

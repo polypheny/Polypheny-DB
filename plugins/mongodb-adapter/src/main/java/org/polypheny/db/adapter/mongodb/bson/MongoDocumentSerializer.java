@@ -18,6 +18,7 @@ package org.polypheny.db.adapter.mongodb.bson;
 
 import java.util.stream.Collectors;
 import org.bson.BsonDocument;
+import org.bson.BsonValue;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
@@ -35,7 +36,12 @@ public final class MongoDocumentSerializer {
     }
 
 
-    private static String toExtendedJson( PolyValue value ) {
+    public static BsonValue serializeValue( PolyValue value ) {
+        return BsonDocument.parse( "{\"value\":" + toExtendedJson( value ) + "}" ).get( "value" );
+    }
+
+
+    public static String toExtendedJson( PolyValue value ) {
         if ( value == null ) {
             return "null";
         }

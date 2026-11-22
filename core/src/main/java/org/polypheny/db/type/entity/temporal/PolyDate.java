@@ -34,9 +34,11 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.functions.TemporalFunctions;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.util.temporal.DateTimeUtils;
 
 @Getter
@@ -117,6 +119,9 @@ public class PolyDate extends PolyTemporal {
 
 
     public static PolyDate convert( @Nullable PolyValue value ) {
+        if ( value instanceof PolyString text ) {
+            value = PolyBigDecimal.convert( text );
+        }
         if ( value == null ) {
             return null;
         }

@@ -229,7 +229,10 @@ public class MongoDynamic {
 
 
     private void initMaps( long index, Queue<Pair<PolyType, Optional<Integer>>> types, Boolean isRegex, Boolean isFunction, String functionName ) {
-        this.transformers.put( index, BsonUtil.getBsonTransformer( types, bucket ) );
+        Function<PolyValue, BsonValue> transformer = types.element().left == PolyType.DOCUMENT
+                ? MongoDocumentSerializer::serializeValue
+                : BsonUtil.getBsonTransformer( types, bucket );
+        this.transformers.put( index, transformer );
         this.isRegexMap.put( index, isRegex );
         this.isFuncMap.put( index, isFunction );
         this.docHandles.put( index, new ArrayList<>() );

@@ -269,6 +269,8 @@ public class MqlToAlgConverter {
         switch ( value.getBsonType() ) {
             case DOUBLE:
                 return PolyDouble.of( value.asDouble().getValue() );
+            case DECIMAL128:
+                return BsonUtil.toPolyValue( value );
             case STRING:
                 return PolyString.of( value.asString().getValue() );
             case DOCUMENT:

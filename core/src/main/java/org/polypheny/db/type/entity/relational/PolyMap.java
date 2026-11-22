@@ -41,6 +41,7 @@ import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.def.SimpleSerializerDef;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
@@ -90,9 +91,14 @@ public class PolyMap<K extends PolyValue, V extends PolyValue> extends PolyValue
 
 
     public PolyMap( Map<K, V> map, PolyType type, MapType mapType ) {
+        this( map, type, mapType, false );
+    }
+
+
+    protected PolyMap( Map<K, V> map, PolyType type, MapType mapType, boolean preserveOrder ) {
         super( type );
         this.mapType = mapType;
-        this.map = new HashMap<>( map );
+        this.map = preserveOrder ? new LinkedHashMap<>( map ) : new HashMap<>( map );
     }
 
 

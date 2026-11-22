@@ -40,8 +40,10 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.functions.Functions;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 
@@ -120,8 +122,8 @@ public class PolyBigDecimal extends PolyNumber {
             return PolyBigDecimal.of( value.asNumber().bigDecimalValue() );
         } else if ( value.isTemporal() ) {
             return PolyBigDecimal.of( value.asTemporal().getMillisSinceEpoch() );
-        } else if ( value.isString() ) {
-            return PolyBigDecimal.of( value.asString().value );
+        } else if ( value instanceof PolyString text ) {
+            return text.isNull() ? null : PolyBigDecimal.of( Functions.toBigDecimal( text.value ) );
         }
         throw new GenericRuntimeException( getConvertError( value, PolyBigDecimal.class ) );
     }

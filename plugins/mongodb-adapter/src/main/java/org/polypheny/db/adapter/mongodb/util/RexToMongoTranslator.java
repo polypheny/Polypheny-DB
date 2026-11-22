@@ -28,6 +28,7 @@ import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.mongodb.MongoAlg.Implementor;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.adapter.mongodb.bson.BsonKeyValue;
+import org.polypheny.db.adapter.mongodb.bson.MongoDocumentSerializer;
 import org.polypheny.db.adapter.mongodb.rules.MongoRules;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -111,6 +112,9 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
     public String visitLiteral( RexLiteral literal ) {
         if ( literal.getValue() == null ) {
             return "null";
+        }
+        if ( model == DataModel.DOCUMENT ) {
+            return "{$literal: " + MongoDocumentSerializer.toExtendedJson( literal.value ) + "}";
         }
         return "{$literal: " + (literal.value.isString() ? literal.value.asString().toQuotedJson() : literal.value.toJson()) + "}";
     }

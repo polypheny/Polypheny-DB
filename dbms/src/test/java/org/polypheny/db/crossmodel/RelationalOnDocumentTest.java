@@ -118,6 +118,49 @@ public class RelationalOnDocumentTest extends CrossModelTestTemplate {
     }
 
 
+    @Test
+    public void jsonValueCastsStoredNumericStrings() {
+        String collection = "crossNumericStrings";
+        MqlTestTemplate.createCollection( collection, DATABASE_NAME );
+        MqlTestTemplate.insert( """
+                {"number":" 1 ","days":"19750","millis":"1700000000000"}
+                """, collection, DATABASE_NAME );
+
+        executeStatements( ( s, c ) -> {
+            String query = """
+                    SELECT JSON_VALUE(d, 'lax $.number' RETURNING INTEGER),
+                           JSON_VALUE(d, 'lax $.number'),
+                           JSON_VALUE(d, 'lax $.days' RETURNING DATE),
+                           JSON_VALUE(d, 'lax $.millis' RETURNING TIMESTAMP)
+                    FROM %s.%s
+                    """.formatted( DATABASE_NAME, collection );
+            Calendar utc = Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) );
+            try ( ResultSet result = s.executeQuery( query ) ) {
+                assertTrue( result.next() );
+                assertEquals( 1, result.getInt( 1 ) );
+                assertEquals( " 1 ", result.getString( 2 ) );
+                assertEquals( TimeUnit.DAYS.toMillis( 19750 ), result.getDate( 3, utc ).getTime() );
+                assertEquals( 1700000000000L, result.getTimestamp( 4, utc ).getTime() );
+                assertFalse( result.next() );
+            }
+        } );
+    }
+
+
+    @ParameterizedTest
+    @CsvSource({
+            "DATE, 2147483648, -2147483649",
+            "TIMESTAMP, 9223372036854775808, -9223372036854775809"
+    })
+    public void jsonValueRejectsOutOfRangeEpochStrings( String type, String aboveMaximum, String belowMinimum ) {
+        executeStatements( ( s, c ) -> {
+            for ( String epoch : List.of( aboveMaximum, belowMinimum ) ) {
+                assertJsonCastFails( s, "{\"n\":\"%s\"}".formatted( epoch ), type );
+            }
+        } );
+    }
+
+
     @ParameterizedTest
     @ValueSource(strings = { "18446744073709551616", "18446744073709551617", "-18446744073709551616" })
     public void jsonValueRejectsOversizedDecimalAsBoolean( String decimal ) {
@@ -220,14 +263,19 @@ public class RelationalOnDocumentTest extends CrossModelTestTemplate {
 
 
     private static void assertJsonDecimalCastFails( Statement statement, String decimal, String type ) {
+        assertJsonCastFails( statement, "{\"n\":{\"$numberDecimal\":\"%s\"}}".formatted( decimal ), type );
+    }
+
+
+    private static void assertJsonCastFails( Statement statement, String document, String type ) {
         String query = """
-                SELECT JSON_VALUE('{"n":{"$numberDecimal":"%s"}}', 'lax $.n' RETURNING %s)
-                """.formatted( decimal, type );
+                SELECT JSON_VALUE('%s', 'lax $.n' RETURNING %s)
+                """.formatted( document, type );
         assertThrows( SQLException.class, () -> {
             try ( ResultSet result = statement.executeQuery( query ) ) {
                 result.next();
             }
-        }, decimal );
+        }, document );
     }
 
 
