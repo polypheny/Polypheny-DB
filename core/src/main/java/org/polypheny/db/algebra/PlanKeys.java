@@ -54,6 +54,7 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgSetRows;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgTransformer;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnion;
@@ -131,6 +132,7 @@ public final class PlanKeys {
             attributes( LogicalLpgShortestPathJoin.class, node -> List.of( node.getCondition(), node.isOptional(), node.getPathColumns(), node.getGroupColumns() ) ),
             attributes( LogicalLpgFilter.class, node -> List.of( node.getCondition() ) ),
             attributes( LogicalLpgProject.class, node -> List.of( node.getNames(), node.getProjects() ) ),
+            attributes( LogicalLpgSetRows.class, node -> List.of( node.getActions(), node.getActionSlots(), node.getTargetCount() ) ),
             attributes( LogicalLpgAggregate.class, node -> List.of( node.groups, laxAggregates( node.aggCalls ), node.isWriteCount() ) ),
             attributes( LogicalLpgSort.class, PlanKeys::sort ),
             attributes( LogicalLpgUnwind.class, node -> Arrays.asList( node.index, node.alias ) ),

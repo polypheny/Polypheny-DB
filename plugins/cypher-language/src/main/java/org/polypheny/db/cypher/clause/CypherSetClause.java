@@ -16,11 +16,15 @@
 
 package org.polypheny.db.cypher.clause;
 
+import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.set.CypherSetItem;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.util.Pair;
 
 
 @Getter
@@ -42,11 +46,13 @@ public class CypherSetClause extends CypherClause {
 
 
     public void getSet( CypherContext context ) {
+        List<Pair<PolyString, RexNode>> actions = new ArrayList<>();
         for ( CypherSetItem item : input ) {
             item.convertItem( context );
+            actions.addAll( context.popNodes() );
         }
 
-        context.combineUpdate();
+        context.combineUpdate( actions );
     }
 
 }

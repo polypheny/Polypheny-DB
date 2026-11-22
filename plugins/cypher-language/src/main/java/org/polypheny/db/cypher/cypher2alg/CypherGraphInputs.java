@@ -29,6 +29,7 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMergeRows;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgSetRows;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgShortestPathJoin;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgWriteRow;
@@ -113,6 +114,9 @@ final class CypherGraphInputs extends AlgShuttleImpl {
         if ( other instanceof LogicalLpgMergeRows merge ) {
             return resolveMerge( merge );
         }
+        if ( other instanceof LogicalLpgSetRows set ) {
+            return resolveSetRows( set );
+        }
         if ( !(other instanceof LogicalLpgJoin join) ) {
             return super.visit( other );
         }
@@ -136,6 +140,15 @@ final class CypherGraphInputs extends AlgShuttleImpl {
         AlgNode result = resolved.rewriteExpressions( properties, actions );
         usesGraphInput |= properties.used || actions.used;
         return result;
+    }
+
+
+    private AlgNode resolveSetRows( LogicalLpgSetRows set ) {
+        LogicalLpgSetRows resolved = visitChildren( set );
+        LogicalLpgWriteRow input = (LogicalLpgWriteRow) resolved.getInput();
+        GraphReference ref = new GraphReference( input.getTupleType().getFieldCount() );
+        AlgNode result = resolved.accept( ref );
+        return ref.used ? result.copy( result.getTraitSet(), List.of( LogicalLpgWriteRow.withGraph( withGraph( input.getInput() ) ) ) ) : result;
     }
 
 

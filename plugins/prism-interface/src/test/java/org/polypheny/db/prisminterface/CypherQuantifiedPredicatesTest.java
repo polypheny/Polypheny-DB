@@ -78,6 +78,20 @@ class CypherQuantifiedPredicatesTest {
 
 
     @Test
+    void filtersShortestPathCandidatesByTheLabelOfAQuantifiedNode() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            Row result = row( connection, """
+                    MATCH p=shortestPath((:Start)-[:R*]->(:End))
+                    WHERE any(n IN nodes(p) WHERE n:Relay)
+                    RETURN length(p) AS hops
+                    """, List.of( "hops" ) );
+            assertEquals( 2, integerValue( result.getValues( 0 ) ) );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
     void appliesThreeValuedLogicAndVacuousTruth() throws IOException {
         try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
             Row result = row( connection, """
@@ -119,6 +133,25 @@ class CypherQuantifiedPredicatesTest {
             assertTrue( result.getValues( 0 ).getBoolean().getBoolean() );
             assertTrue( result.getValues( 1 ).getBoolean().getBoolean() );
             assertEquals( 3, integerValue( result.getValues( 2 ) ) );
+        }
+    }
+
+
+    @Test
+    void preservesBooleanBindingsInsideNotAndCase() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            Row result = row( connection, """
+                    RETURN any(x IN [false] WHERE NOT x) AS negated,
+                           any(x IN [true] WHERE CASE WHEN x THEN true ELSE false END) AS selected,
+                           all(x IN [true,false] WHERE any(y IN [true,false] WHERE CASE WHEN y THEN x ELSE NOT x END)) AS nested,
+                           any(x IN [true,null] WHERE NOT x) AS unknownNot,
+                           any(x IN [false,null] WHERE CASE WHEN x THEN true ELSE x END) AS unknownCase
+                    """, List.of( "negated", "selected", "nested", "unknownNot", "unknownCase" ) );
+            for ( int index : List.of( 0, 1, 2 ) ) {
+                assertTrue( result.getValues( index ).getBoolean().getBoolean() );
+            }
+            assertTrue( result.getValues( 3 ).hasNull() );
+            assertTrue( result.getValues( 4 ).hasNull() );
         }
     }
 

@@ -59,6 +59,7 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgMergeRows;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgSetRows;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnion;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnwind;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
@@ -672,7 +673,7 @@ public class CypherToAlgConverter {
                     if ( projectedKey != null ) {
                         value = projectedKey;
                     } else {
-                        value = context.resolveInScope( expression, sortBindings, part -> {
+                        value = context.resolveInScope( expression, RexType.PROJECT, sortBindings, part -> {
                             boolean aggregate = part instanceof CypherAggregate;
                             // A compound grouping key must be named by its alias or recomputed from simple keys.
                             if ( grouped && !aggregate && !(part instanceof CypherProperty property && property.getSubject() instanceof CypherVariable) ) {
@@ -702,7 +703,7 @@ public class CypherToAlgConverter {
         RexNode predicate = null;
         if ( where != null ) {
             Map<String, RexNode> filterInputs = new HashMap<>( outputRefs );
-            predicate = context.resolveInScope( where.getExpression(), name -> filterInputs.computeIfAbsent( name, key -> {
+            RexNode condition = context.resolveInScope( where.getExpression(), RexType.FILTER, name -> filterInputs.computeIfAbsent( name, key -> {
                 RexNode originalValue = original.get( key );
                 if ( originalValue == null ) {
                     return null;
@@ -710,6 +711,7 @@ public class CypherToAlgConverter {
                 int index = appendHiddenColumn( originalValue, values, names );
                 return rexBuilder.makeInputRef( originalValue.getType(), index );
             } ), part -> projectedExpression( part, projectedExpressions, unshadowedBindings, outputRefs, context ) );
+            predicate = context.booleanPredicate( condition );
         }
         AlgNode result = values.size() == width ? projection
                 : LogicalLpgProject.create( input, values, names );
@@ -773,10 +775,10 @@ public class CypherToAlgConverter {
             // Use the existing structural Rex representation in the input scope. Aggregate
             // keys include their operation and argument without adding another aggregate call.
             if ( expression instanceof CypherAggregate aggregate ) {
-                RexNode argument = aggregate.getTarget() == null ? null : context.resolveInScope( aggregate.getTarget(), sourceBindings::get, null );
+                RexNode argument = aggregate.getTarget() == null ? null : context.resolveInScope( aggregate.getTarget(), RexType.PROJECT, sourceBindings::get, null );
                 return PlanKey.of( aggregate.op, aggregate.isDistinct(), argument );
             }
-            return PlanKey.of( context.resolveInScope( expression, sourceBindings::get, null ) );
+            return PlanKey.of( context.resolveInScope( expression, RexType.PROJECT, sourceBindings::get, null ) );
         } catch ( GenericRuntimeException | UnsupportedOperationException ex ) {
             // A failed probe is not a query error. Resolve the expression normally to apply
             // output aliases and report any errors in the resulting scope.
@@ -1798,13 +1800,14 @@ public class CypherToAlgConverter {
         }
 
 
-        private RexNode resolveInScope( CypherExpression expression, Function<String, RexNode> variables, @Nullable Function<CypherExpression, RexNode> expressions ) {
+        private RexNode resolveInScope( CypherExpression expression, RexType type, Function<String, RexNode> variables,
+                @Nullable Function<CypherExpression, RexNode> expressions ) {
             Function<String, RexNode> previousVariables = scopedVariables;
             Function<CypherExpression, RexNode> previousExpressions = scopedExpressions;
             scopedVariables = variables;
             scopedExpressions = expressions;
             try {
-                return expression.getRex( this, RexType.PROJECT ).right;
+                return expression.getRex( this, type ).right;
             } finally {
                 scopedVariables = previousVariables;
                 scopedExpressions = previousExpressions;
@@ -2288,14 +2291,15 @@ public class CypherToAlgConverter {
         }
 
 
-        public void combineUpdate() {
-            if ( rexQueue.isEmpty() ) {
+        public void combineUpdate( List<Pair<PolyString, RexNode>> actions ) {
+            if ( actions.isEmpty() ) {
                 throw new GenericRuntimeException( "Empty UPDATE is not possible" );
             }
 
-            List<Pair<PolyString, RexNode>> updates = popNodes();
-
-            modify( Modify.Operation.UPDATE, updates );
+            Map<PolyString, RexNode> targets = new LinkedHashMap<>();
+            actions.forEach( action -> targets.putIfAbsent( action.left, action.right ) );
+            List<Pair<PolyString, RexNode>> updates = targets.entrySet().stream().map( entry -> Pair.of( entry.getKey(), entry.getValue() ) ).toList();
+            modify( Modify.Operation.UPDATE, updates, false, actions );
             kind = Kind.UPDATE;
         }
 
@@ -2318,6 +2322,12 @@ public class CypherToAlgConverter {
 
 
         private void modify( Modify.Operation operation, List<Pair<PolyString, RexNode>> updates, boolean detachDelete ) {
+            modify( operation, updates, detachDelete, List.of() );
+        }
+
+
+        private void modify( Modify.Operation operation, List<Pair<PolyString, RexNode>> updates,
+                boolean detachDelete, List<Pair<PolyString, RexNode>> actions ) {
             AlgNode input = pop();
             if ( operation == Modify.Operation.UPDATE ) {
                 // WITH values must be evaluated before the update expressions mutate their graph bindings.
@@ -2335,7 +2345,18 @@ public class CypherToAlgConverter {
                     names.add( PolyString.of( field.getName() ) );
                 }
             }
-            AlgNode provider = new LogicalLpgProject( cluster, cluster.traitSet(), input, parameters, names );
+            List<PolyString> aliases = Pair.left( updates );
+            AlgNode provider;
+            if ( actions.isEmpty() ) {
+                provider = new LogicalLpgProject( cluster, cluster.traitSet(), input, parameters, names );
+            } else {
+                List<AlgDataTypeField> output = new ArrayList<>();
+                for ( int i = 0; i < names.size(); i++ ) {
+                    output.add( new AlgDataTypeFieldImpl( -1L, names.get( i ).value, i, parameters.get( i ).getType() ) );
+                }
+                List<Integer> actionSlots = actions.stream().map( action -> aliases.indexOf( action.left ) ).toList();
+                provider = new LogicalLpgSetRows( input, new AlgRecordType( output ), Pair.right( actions ), actionSlots, updates.size() );
+            }
             if ( !writeHasConsumer ) {
                 List<RexNode> targets = refs( provider ).stream()
                         .map( ref -> (RexNode) rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_NOT_NULL ), ref ) )
@@ -2350,7 +2371,6 @@ public class CypherToAlgConverter {
             }
 
             List<RexNode> values = new ArrayList<>();
-            List<PolyString> aliases = Pair.left( updates );
             for ( AlgDataTypeField field : fields ) {
                 int updatedIndex = operation == Modify.Operation.UPDATE ? aliases.indexOf( PolyString.of( field.getName() ) ) : -1;
                 values.add( rexBuilder.makeInputRef( modify, updatedIndex < 0 ? updates.size() + field.getIndex() : updatedIndex ) );

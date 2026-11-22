@@ -1246,7 +1246,7 @@ class CypherTest {
     }
 
 
-    private static PreparedStatementSignature prepareNamedCypher( PrismConnection connection, String namespace, String query ) throws IOException {
+    static PreparedStatementSignature prepareNamedCypher( PrismConnection connection, String namespace, String query ) throws IOException {
         return expect( connection.send( Request.newBuilder().setPrepareNamedStatementRequest( PrepareStatementRequest.newBuilder()
                 .setNamespaceName( namespace )
                 .setLanguageName( "cypher" )
@@ -1254,7 +1254,7 @@ class CypherTest {
     }
 
 
-    private static Response executeNamedCypher( PrismConnection connection, int statementId, Map<String, ProtoValue> values ) throws IOException {
+    static Response executeNamedCypher( PrismConnection connection, int statementId, Map<String, ProtoValue> values ) throws IOException {
         return connection.send( Request.newBuilder().setExecuteNamedStatementRequest( ExecuteNamedStatementRequest.newBuilder()
                 .setStatementId( statementId )
                 .setParameters( NamedParameters.newBuilder().putAllParameters( values ) )
@@ -4941,7 +4941,7 @@ class CypherTest {
     }
 
 
-    private static Response expect( Response response, Response.TypeCase type ) {
+    static Response expect( Response response, Response.TypeCase type ) {
         assertEquals( type, response.getTypeCase(), () -> response.getErrorResponse().getMessage() );
         return response;
     }

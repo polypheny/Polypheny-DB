@@ -463,7 +463,7 @@ public class RexToLixTranslator {
             case NAME_INDEX_REF:
                 Expression replacement = replace.get( expr );
                 if ( replacement != null ) {
-                    Expression typedValue = EnumUtils.enforce( typeFactory.getJavaClass( expr.getType() ), replacement );
+                    Expression typedValue = Types.castIfNecessary( typeFactory.getJavaClass( expr.getType() ), replacement );
                     return handleNullUnboxingIfNecessary( typedValue, nullAs, storageType );
                 }
                 throw new GenericRuntimeException( "cannot translate expression " + expr );

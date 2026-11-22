@@ -83,8 +83,16 @@ public class CypherExpression extends CypherNode {
 
 
     public final Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
+        if ( this.type == ExpressionType.PATTERN && pattern instanceof CypherEveryPathPattern everyPath ) {
+            if ( type != RexType.FILTER ) {
+                throw new CypherSyntaxException( "Use exists(pattern) to evaluate a pattern as a value expression." );
+            }
+            return Pair.of( null, CypherPatternExistence.toRex( everyPath, context, RexType.PROJECT ) );
+        }
+
         RexNode projected = context.projectedExpression( this );
-        return projected == null ? toRex( context, type ) : Pair.of( null, projected );
+        // A Boolean expectation applies only to this expression. Boolean operands opt in explicitly.
+        return projected == null ? toRex( context, RexType.PROJECT ) : Pair.of( null, projected );
     }
 
 
@@ -97,13 +105,6 @@ public class CypherExpression extends CypherNode {
         if ( pattern instanceof CypherShortestPathPattern shortest ) {
             return Pair.of( null, CypherShortestPathValue.toRex( shortest, context, type ) );
         }
-        if ( this.type == ExpressionType.PATTERN && pattern instanceof CypherEveryPathPattern everyPath ) {
-            if ( type != RexType.FILTER ) {
-                throw new CypherSyntaxException( "Use exists(pattern) to evaluate a pattern as a value expression." );
-            }
-            return Pair.of( null, CypherPatternExistence.toRex( everyPath, context, type ) );
-        }
-
         OperatorName operatorName = switch ( this.type ) {
             case ALL -> OperatorName.CYPHER_ALL_MATCH;
             case ANY -> OperatorName.CYPHER_ANY_MATCH;
