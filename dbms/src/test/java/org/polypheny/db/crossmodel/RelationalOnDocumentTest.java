@@ -148,7 +148,11 @@ public class RelationalOnDocumentTest extends CrossModelTestTemplate {
 
 
     @ParameterizedTest
-    @ValueSource(strings = { "1e-2147483647", "-1e-2147483647" })
+    @ValueSource(strings = {
+            "1e-2147483647", "-1e-2147483647",
+            "1e-2147483648", "-1e-2147483648",
+            "1.25e-2147483647", "-.5e-999999999999999999999"
+    })
     public void jsonValueTruncatesVerySmallEpochStrings( String epoch ) {
         executeStatements( ( s, c ) -> {
             String query = """
@@ -288,7 +292,7 @@ public class RelationalOnDocumentTest extends CrossModelTestTemplate {
 
     private static void assertJsonCastFails( Statement statement, String document, String type ) {
         String query = """
-                SELECT JSON_VALUE('%s', 'lax $.n' RETURNING %s)
+                SELECT JSON_VALUE('%s', 'lax $.n' RETURNING %s ERROR ON ERROR)
                 """.formatted( document, type );
         assertThrows( SQLException.class, () -> {
             try ( ResultSet result = statement.executeQuery( query ) ) {

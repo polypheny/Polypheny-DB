@@ -101,6 +101,40 @@ class MqlDocumentFieldOrderTest {
     }
 
 
+    @ParameterizedTest
+    @ValueSource(booleans = { true, false })
+    void documentEqualityTreatsOperatorNamedFieldsAsData( boolean parameterizeDml ) {
+        collection = parameterizeDml ? "prepared_operator_field" : "literal_operator_field";
+        MqlTestTemplate.createCollection( collection, NAMESPACE );
+        String document = "{\"$eq\":" + DECIMAL + "}";
+        String gate = "{\"$or\":[{\"a\":1}]}";
+        execute( """
+                insertMany([
+                    {"_id":"document","obj":%s},
+                    {"_id":"scalar","obj":%s},
+                    {"_id":"gate","obj":%s},
+                    {"_id":"flattened","obj":{"a":1}}
+                ])
+                """.formatted( document, DECIMAL, gate ) );
+
+        String filter = "{\"obj\":{\"$eq\":" + document + "}}";
+        String gateFilter = "{\"obj\":{\"$eq\":" + gate + "}}";
+        assertIds( filter, "document" );
+        assertIds( gateFilter, "gate" );
+
+        boolean previousParameterizeDml = RuntimeConfig.PARAMETERIZE_DML.getBoolean();
+        RuntimeConfig.PARAMETERIZE_DML.setBoolean( parameterizeDml );
+        try {
+            assertArrayEquals( new String[]{ "1" }, execute( "deleteMany(" + filter + ")" ).getData() );
+            assertIds( "{}", "flattened", "gate", "scalar" );
+            assertArrayEquals( new String[]{ "1" }, execute( "deleteMany(" + gateFilter + ")" ).getData() );
+            assertIds( "{}", "flattened", "scalar" );
+        } finally {
+            RuntimeConfig.PARAMETERIZE_DML.setBoolean( previousParameterizeDml );
+        }
+    }
+
+
     private void assertIds( String filter, String... expected ) {
         List<String> ids = Arrays.stream( execute( "find(" + filter + ")" ).getData() )
                 .map( row -> JsonParser.parseString( row ).getAsJsonObject().get( "_id" ).getAsString() )

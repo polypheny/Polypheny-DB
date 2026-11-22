@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -113,7 +112,6 @@ import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
@@ -274,19 +272,8 @@ public class MqlToAlgConverter {
                 return BsonUtil.toPolyValue( value );
             case STRING:
                 return PolyString.of( value.asString().getValue() );
-            case DOCUMENT:
-                Map<PolyString, PolyValue> map = new LinkedHashMap<>();
-                for ( Entry<String, BsonValue> entry : value.asDocument().entrySet() ) {
-                    map.put( PolyString.of( entry.getKey() ), getPolyValue( entry.getValue() ) );
-                }
-
-                return PolyDocument.ofDocument( map );
-            case ARRAY:
-                List<PolyValue> list = new ArrayList<>();
-                for ( BsonValue bson : value.asArray() ) {
-                    list.add( getPolyValue( bson ) );
-                }
-                return PolyList.of( list );
+            case DOCUMENT, ARRAY:
+                return BsonUtil.toPolyValue( value );
             case BOOLEAN:
                 return new PolyBoolean( value.asBoolean().getValue() );
             case INT32:
@@ -1719,12 +1706,17 @@ public class MqlToAlgConverter {
         if ( key.equals( "$literal" ) ) {
             return convertLiteral( bsonValue );
         }
-        Operator op;
-        if ( !isExpr ) {
-            op = mathOperators.get( key );
-        } else {
-            op = mappings.get( key );
-        }
+        Operator op = isExpr
+                ? switch ( key ) {
+                    case "$eq" -> OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EXPR_EQUALS );
+                    case "$ne" -> OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EXPR_NOT_EQUALS );
+                    case "$lt" -> OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EXPR_LT );
+                    case "$lte" -> OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EXPR_LTE );
+                    case "$gt" -> OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EXPR_GT );
+                    case "$gte" -> OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EXPR_GTE );
+                    default -> mappings.get( key );
+                }
+                : mathOperators.get( key );
 
         String errorMsg = "After a " + String.join( ",", mathOperators.keySet() ) + " a list of literals or documents is needed.";
         if ( bsonValue.isArray() ) {
@@ -1862,29 +1854,19 @@ public class MqlToAlgConverter {
 
 
     private RexNode convertField( String parentKey, BsonValue bsonValue, AlgDataType rowType ) {
-
-        if ( bsonValue.isDocument() ) {
-            // we have a document where the sub-keys are either logical like "$eq, $or"
-            // we don't attach the id yet as we maybe have sub-documents
-            return translateDocument( bsonValue.asDocument(), rowType, parentKey );
-        } else {
-            // we have a simple assignment to a value, can attach and translate the value
-            List<RexNode> nodes = new ArrayList<>();
-            nodes.add( getIdentifier( parentKey, rowType ) );
-
-            if ( bsonValue.isArray() ) {
-                List<RexNode> arr = convertArray( parentKey, bsonValue.asArray(), true, rowType, "" );
-                nodes.add( DocumentUtil.getArray(
-                        arr,
-                        cluster.getTypeFactory().createArrayType( nullableAny, arr.size() ) ) );
-            } else if ( bsonValue.isRegularExpression() ) {
-                return convertRegex( bsonValue, parentKey, rowType );
-            } else {
-                nodes.add( convertLiteral( bsonValue ) );
-            }
-
-            return getFixedCall( nodes, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EQUALS ), PolyType.BOOLEAN );
+        if ( bsonValue instanceof BsonDocument document && !document.isEmpty() && document.getFirstKey().startsWith( "$" ) ) {
+            return translateDocument( document, rowType, parentKey );
         }
+        if ( bsonValue.isRegularExpression() ) {
+            return convertRegex( bsonValue, parentKey, rowType );
+        }
+
+        // A literal document or array is an equality operand, including its field order.
+        AlgDataType type = cluster.getTypeFactory().createTypeWithNullability( cluster.getTypeFactory().createPolyType( PolyType.BOOLEAN ), true );
+        return new RexCall(
+                type,
+                OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EQUALS ),
+                List.of( getIdentifier( parentKey, rowType ), convertLiteral( bsonValue ) ) );
     }
 
 

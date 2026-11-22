@@ -414,6 +414,8 @@ public class RexSimplify {
             final OperatorName negated = switch ( comparison.getOperator().getOperatorName() ) {
                 case MQL_EQUALS -> OperatorName.MQL_NOT_EQUALS;
                 case MQL_NOT_EQUALS -> OperatorName.MQL_EQUALS;
+                case MQL_EXPR_EQUALS -> OperatorName.MQL_EXPR_NOT_EQUALS;
+                case MQL_EXPR_NOT_EQUALS -> OperatorName.MQL_EXPR_EQUALS;
                 default -> null;
             };
             // Negated range comparisons can match missing fields, so keep their explicit NOT.

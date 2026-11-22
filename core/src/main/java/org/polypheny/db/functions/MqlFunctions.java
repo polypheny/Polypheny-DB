@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
 import java.util.regex.Pattern;
@@ -522,17 +521,11 @@ public class MqlFunctions {
      */
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean docEq( PolyValue b0, PolyValue b1 ) {
-        if ( b0 instanceof PolyList<?> list && !(b1 instanceof PolyList<?>) ) {
-            return PolyBoolean.of( list.stream().anyMatch( element -> requiresExactEquality( element, b1 )
-                    ? exactDocumentEquals( element, b1 )
-                    : Objects.equals( b1, element ) ) );
+        if ( b0 instanceof PolyList<?> list && list.value != null ) {
+            return PolyBoolean.of( wholeValueEquals( b0, b1 )
+                    || list.stream().anyMatch( element -> wholeValueEquals( element, b1 ) ) );
         }
-        if ( b0 == null || b1 == null ) {
-            return PolyBoolean.of( b0 == b1 );
-        }
-        return PolyBoolean.of( requiresExactEquality( b0, b1 )
-                ? exactDocumentEquals( b0, b1 )
-                : b0.compareTo( b1 ) == 0 );
+        return docExprEq( b0, b1 );
     }
 
 
@@ -542,51 +535,38 @@ public class MqlFunctions {
     }
 
 
-    private static boolean requiresExactEquality( PolyValue left, PolyValue right ) {
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean docExprEq( PolyValue left, PolyValue right ) {
+        return PolyBoolean.of( wholeValueEquals( left, right ) );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean docExprNe( PolyValue left, PolyValue right ) {
+        return PolyBoolean.of( !wholeValueEquals( left, right ) );
+    }
+
+
+    private static boolean wholeValueEquals( PolyValue left, PolyValue right ) {
+        boolean leftNull = left == null || left.isNull();
+        boolean rightNull = right == null || right.isNull();
+        if ( leftNull || rightNull ) {
+            return leftNull == rightNull;
+        }
         if ( left instanceof PolyNumber l && right instanceof PolyNumber r ) {
-            return isDecimalComparison( l, r );
-        }
-        if ( left instanceof PolyDocument && right instanceof PolyDocument ) {
-            return true;
-        }
-        boolean matchingContainers = left instanceof PolyList<?> && right instanceof PolyList<?>
-                || left instanceof PolyMap<?, ?> && right instanceof PolyMap<?, ?>;
-        return matchingContainers && (containsDocumentOrDecimal( left ) || containsDocumentOrDecimal( right ));
-    }
-
-
-    private static boolean containsDocumentOrDecimal( PolyValue value ) {
-        if ( value instanceof PolyDocument || value instanceof PolyBigDecimal ) {
-            return true;
-        }
-        if ( value instanceof PolyList<?> list ) {
-            return list.value != null && list.stream().anyMatch( MqlFunctions::containsDocumentOrDecimal );
-        }
-        if ( value instanceof PolyMap<?, ?> map ) {
-            return map.values().stream().anyMatch( MqlFunctions::containsDocumentOrDecimal );
-        }
-        return false;
-    }
-
-
-    private static boolean exactDocumentEquals( PolyValue left, PolyValue right ) {
-        if ( left == null || right == null ) {
-            return left == right;
-        }
-        if ( left instanceof PolyNumber l && right instanceof PolyNumber r && isDecimalComparison( l, r ) ) {
             Object leftValue = l.toJava();
             Object rightValue = r.toJava();
             if ( leftValue == null || rightValue == null ) {
                 return leftValue == rightValue;
             }
-            return compareDecimalNumbers( l, r ) == 0;
+            return compareNumericValues( l, r ) == 0;
         }
         if ( left instanceof PolyList<?> l && right instanceof PolyList<?> r ) {
             if ( l.value == null || r.value == null ) {
                 return l.value == r.value;
             }
             return l.size() == r.size()
-                    && Pair.zip( l.value, r.value ).stream().allMatch( pair -> exactDocumentEquals( pair.left, pair.right ) );
+                    && Pair.zip( l.value, r.value ).stream().allMatch( pair -> wholeValueEquals( pair.left, pair.right ) );
         }
         if ( left instanceof PolyDocument l && right instanceof PolyDocument r ) {
             if ( l.isUnset != r.isUnset || l.size() != r.size() ) {
@@ -596,7 +576,7 @@ public class MqlFunctions {
             for ( Entry<PolyString, PolyValue> leftEntry : l.entrySet() ) {
                 Entry<PolyString, PolyValue> rightEntry = rightEntries.next();
                 if ( !Objects.equals( leftEntry.getKey(), rightEntry.getKey() )
-                        || !exactDocumentEquals( leftEntry.getValue(), rightEntry.getValue() ) ) {
+                        || !wholeValueEquals( leftEntry.getValue(), rightEntry.getValue() ) ) {
                     return false;
                 }
             }
@@ -604,35 +584,36 @@ public class MqlFunctions {
         }
         if ( left instanceof PolyMap<?, ?> l && right instanceof PolyMap<?, ?> r && left.isSameType( right ) ) {
             return l.keySet().equals( r.keySet() )
-                    && l.entrySet().stream().allMatch( entry -> exactDocumentEquals( entry.getValue(), r.get( entry.getKey() ) ) );
+                    && l.entrySet().stream().allMatch( entry -> wholeValueEquals( entry.getValue(), r.get( entry.getKey() ) ) );
         }
         return left.compareTo( right ) == 0;
     }
 
 
-    private static boolean isDecimalComparison( PolyNumber left, PolyNumber right ) {
-        return left instanceof PolyBigDecimal && right.isNumber()
-                || right instanceof PolyBigDecimal && left.isNumber();
-    }
-
-
-    private static int compareDecimalNumbers( PolyNumber left, PolyNumber right ) {
-        if ( PolyType.APPROX_TYPES.contains( left.getType() ) ) {
-            return compareDoubleWithDecimal( left.doubleValue(), right.bigDecimalValue() );
+    private static int compareNumericValues( PolyNumber left, PolyNumber right ) {
+        boolean leftApproximate = PolyType.APPROX_TYPES.contains( left.getType() );
+        boolean rightApproximate = PolyType.APPROX_TYPES.contains( right.getType() );
+        if ( leftApproximate && rightApproximate ) {
+            double leftValue = left.doubleValue();
+            double rightValue = right.doubleValue();
+            return leftValue == rightValue ? 0 : Double.compare( leftValue, rightValue );
         }
-        if ( PolyType.APPROX_TYPES.contains( right.getType() ) ) {
-            return -compareDoubleWithDecimal( right.doubleValue(), left.bigDecimalValue() );
+        if ( leftApproximate ) {
+            return compareDoubleWithExact( left.doubleValue(), right.bigDecimalValue() );
+        }
+        if ( rightApproximate ) {
+            return -compareDoubleWithExact( right.doubleValue(), left.bigDecimalValue() );
         }
         return left.bigDecimalValue().compareTo( right.bigDecimalValue() );
     }
 
 
-    private static int compareDoubleWithDecimal( double number, BigDecimal decimal ) {
+    private static int compareDoubleWithExact( double number, BigDecimal exact ) {
         if ( !Double.isFinite( number ) ) {
             return number == Double.POSITIVE_INFINITY ? 1 : -1;
         }
-        // Use the exact IEEE 754 value rather than a rounded or shortest decimal representation.
-        return new BigDecimal( number ).compareTo( decimal );
+        // Compare the represented IEEE 754 value at full precision.
+        return new BigDecimal( number ).compareTo( exact );
     }
 
 
@@ -646,11 +627,7 @@ public class MqlFunctions {
      */
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean docGt( PolyValue b0, PolyValue b1 ) {
-        return compareNumbers(
-                b0,
-                b1,
-                cmp -> cmp > 0,
-                () -> Functions.gt( b0, b1 ).value );
+        return compareNumbers( b0, b1, cmp -> cmp > 0 );
     }
 
 
@@ -664,11 +641,7 @@ public class MqlFunctions {
      */
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean docGte( PolyValue b0, PolyValue b1 ) {
-        return compareNumbers(
-                b0,
-                b1,
-                cmp -> cmp >= 0,
-                () -> (Functions.gt( b0, b1 ).value || Functions.eq( b0, b1 ).value) );
+        return compareNumbers( b0, b1, cmp -> cmp >= 0 );
     }
 
 
@@ -691,11 +664,7 @@ public class MqlFunctions {
      */
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean docLt( PolyValue b0, PolyValue b1 ) {
-        return compareNumbers(
-                b0,
-                b1,
-                cmp -> cmp < 0,
-                () -> Functions.lt( b0, b1 ).value );
+        return compareNumbers( b0, b1, cmp -> cmp < 0 );
     }
 
 
@@ -709,21 +678,61 @@ public class MqlFunctions {
      */
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean docLte( PolyValue b0, PolyValue b1 ) {
-        return compareNumbers(
-                b0,
-                b1,
-                cmp -> cmp <= 0,
-                () -> (Functions.lt( b0, b1 ).value || Functions.eq( b0, b1 ).value) );
+        return compareNumbers( b0, b1, cmp -> cmp <= 0 );
     }
 
 
-    private static PolyBoolean compareNumbers( PolyValue b0, PolyValue b1, IntPredicate comparison, BooleanSupplier predicate ) {
-        if ( !(b0 instanceof PolyNumber left) || !(b1 instanceof PolyNumber right) ) {
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean docExprLt( PolyValue left, PolyValue right ) {
+        return compareScalarNumbers( left, right, cmp -> cmp < 0 );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean docExprLte( PolyValue left, PolyValue right ) {
+        return compareScalarNumbers( left, right, cmp -> cmp <= 0 );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean docExprGt( PolyValue left, PolyValue right ) {
+        return compareScalarNumbers( left, right, cmp -> cmp > 0 );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean docExprGte( PolyValue left, PolyValue right ) {
+        return compareScalarNumbers( left, right, cmp -> cmp >= 0 );
+    }
+
+
+    private static PolyBoolean compareScalarNumbers( PolyValue left, PolyValue right, IntPredicate comparison ) {
+        return PolyBoolean.of( right instanceof PolyNumber bound && bound.toJava() != null && matchesNumericBound( left, bound, comparison ) );
+    }
+
+
+    private static PolyBoolean compareNumbers( PolyValue field, PolyValue operand, IntPredicate comparison ) {
+        if ( !(operand instanceof PolyNumber right) || right.toJava() == null ) {
             return PolyBoolean.FALSE;
         }
-        return PolyBoolean.of( isDecimalComparison( left, right )
-                ? left.toJava() != null && right.toJava() != null && comparison.test( compareDecimalNumbers( left, right ) )
-                : predicate.getAsBoolean() );
+        if ( field instanceof PolyList<?> list && list.value != null ) {
+            return PolyBoolean.of( list.stream().anyMatch( element -> matchesNumericBound( element, right, comparison ) ) );
+        }
+        return PolyBoolean.of( matchesNumericBound( field, right, comparison ) );
+    }
+
+
+    private static boolean matchesNumericBound( PolyValue value, PolyNumber bound, IntPredicate comparison ) {
+        if ( !(value instanceof PolyNumber number) || number.toJava() == null ) {
+            return false;
+        }
+        // A range with a NaN operand can match only another NaN.
+        return isNaN( number ) == isNaN( bound ) && comparison.test( compareNumericValues( number, bound ) );
+    }
+
+
+    private static boolean isNaN( PolyNumber number ) {
+        return PolyType.APPROX_TYPES.contains( number.getType() ) && Double.isNaN( number.doubleValue() );
     }
 
 

@@ -2852,6 +2852,17 @@ public class Functions {
 
 
     public static PolyValue jsonValueAny( PolyValue input, JsonValueEmptyOrErrorBehavior emptyBehavior, PolyValue defaultValueOnEmpty, JsonValueEmptyOrErrorBehavior errorBehavior, PolyValue defaultValueOnError ) {
+        return jsonValueAny( input, emptyBehavior, defaultValueOnEmpty, errorBehavior, defaultValueOnError, value -> value );
+    }
+
+
+    public static PolyValue jsonValueAny(
+            PolyValue input,
+            JsonValueEmptyOrErrorBehavior emptyBehavior,
+            PolyValue defaultValueOnEmpty,
+            JsonValueEmptyOrErrorBehavior errorBehavior,
+            PolyValue defaultValueOnError,
+            Function1<PolyValue, PolyValue> cast ) {
         final PathContext context = (PathContext) input;
         final Exception exc;
         if ( context.exc != null ) {
@@ -2862,18 +2873,22 @@ public class Functions {
                 return switch ( emptyBehavior ) {
                     case ERROR -> throw Static.RESOURCE.emptyResultOfJsonValueFuncNotAllowed().ex();
                     case NULL -> null;
-                    case DEFAULT -> defaultValueOnEmpty;
+                    case DEFAULT -> cast.apply( defaultValueOnEmpty );
                 };
             } else if ( context.mode == PathMode.STRICT && !isScalarObject( value ) ) {
                 exc = Static.RESOURCE.scalarValueRequiredInStrictModeOfJsonValueFunc( value.toString() ).ex();
             } else {
-                return value;
+                try {
+                    return cast.apply( value );
+                } catch ( RuntimeException e ) {
+                    exc = e;
+                }
             }
         }
         return switch ( errorBehavior ) {
             case ERROR -> throw toUnchecked( exc );
             case NULL -> null;
-            case DEFAULT -> defaultValueOnError;
+            case DEFAULT -> cast.apply( defaultValueOnError );
         };
     }
 

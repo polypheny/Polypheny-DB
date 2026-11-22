@@ -5332,7 +5332,7 @@ from emp]]>
         </Resource>
         <Resource name="plan">
             <![CDATA[
-LogicalProject(EXPR$0=[CAST(JSON_VALUE_ANY(JSON_API_COMMON_SYNTAX(JSON_VALUE_EXPRESSION($1), 'lax $'), FLAG(SqlJsonValueEmptyOrErrorBehavior[NULL]), null:ANY, FLAG(SqlJsonValueEmptyOrErrorBehavior[NULL]), null:ANY)):VARCHAR(2000)])
+LogicalProject(EXPR$0=[JSON_VALUE(JSON_API_COMMON_SYNTAX(JSON_VALUE_EXPRESSION($1), 'lax $'), FLAG(SqlJsonValueEmptyOrErrorBehavior[NULL]), null:ANY, FLAG(SqlJsonValueEmptyOrErrorBehavior[NULL]), null:ANY, null:VARCHAR(2000))])
   LogicalScan(entity=[[CATALOG, SALES, EMP]])
 ]]>
         </Resource>

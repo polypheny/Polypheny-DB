@@ -38,7 +38,6 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
-import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.util.temporal.DateTimeUtils;
 
 @Getter
@@ -120,7 +119,7 @@ public class PolyDate extends PolyTemporal {
 
     public static PolyDate convert( @Nullable PolyValue value ) {
         if ( value instanceof PolyString text ) {
-            value = PolyBigDecimal.convert( text );
+            value = parseEpochString( text );
         }
         if ( value == null ) {
             return null;

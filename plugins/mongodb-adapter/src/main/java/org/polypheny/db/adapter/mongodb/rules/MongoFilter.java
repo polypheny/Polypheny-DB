@@ -48,12 +48,15 @@ import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
 import org.polypheny.db.adapter.mongodb.bson.BsonFunctionHelper;
 import org.polypheny.db.adapter.mongodb.bson.BsonKeyValue;
 import org.polypheny.db.adapter.mongodb.bson.MongoDocumentSerializer;
+import org.polypheny.db.adapter.mongodb.util.RexToMongoTranslator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
@@ -217,7 +220,11 @@ public class MongoFilter extends Filter implements MongoAlg {
                     return removeUnnecessaryGate( document.get( document.getFirstKey() ).asArray().get( 0 ) );
                 } else {
                     BsonDocument newDoc = new BsonDocument();
-                    document.forEach( ( k, v ) -> newDoc.append( k, removeUnnecessaryGate( v ) ) );
+                    document.forEach( ( key, operand ) -> newDoc.append( key, switch ( key ) {
+                        // Comparison operands and expression literals can contain ordinary fields named $and or $or.
+                        case "$eq", "$ne", "$lt", "$lte", "$gt", "$gte", "$literal" -> operand;
+                        default -> removeUnnecessaryGate( operand );
+                    } ) );
                     value = newDoc;
                 }
 
@@ -1038,6 +1045,11 @@ public class MongoFilter extends Filter implements MongoAlg {
          * Translates a call to a binary operator, reversing arguments if necessary.
          */
         private void translateBinary( String op, String rop, RexCall call ) {
+            OperatorName operator = call.getOperator().getOperatorName();
+            if ( operator != null && OperatorName.MQL_EXPR_COMPARISONS.contains( operator ) ) {
+                translateExprComparison( Objects.requireNonNullElse( op, "$eq" ), call );
+                return;
+            }
             final RexNode left = call.operands.get( 0 );
             final RexNode right = call.operands.get( 1 );
             boolean b = translateBinary2( op, left, right );
@@ -1072,6 +1084,26 @@ public class MongoFilter extends Filter implements MongoAlg {
             }
 
             throw new AssertionError( "cannot translate op " + op + " call " + call );
+        }
+
+
+        private void translateExprComparison( String op, RexCall call ) {
+            BsonArray operands = new BsonArray( call.operands.stream().map( this::translateExprOperand ).toList() );
+            BsonDocument expression = new BsonDocument( op, operands );
+            // Here NOT is an aggregation expression inside $expr.
+            BsonDocument condition = modifier == null ? expression : new BsonDocument( "$not", new BsonArray( List.of( expression ) ) );
+            map.computeIfAbsent( "$expr", key -> new ArrayList<>() ).add( condition );
+        }
+
+
+        private BsonValue translateExprOperand( RexNode operand ) {
+            return switch ( operand.getKind() ) {
+                case INPUT_REF -> new BsonString( "$" + getPhysicalName( (RexIndexRef) operand ) );
+                case NAME_INDEX_REF -> new BsonString( "$" + MongoRules.translateDocValueAsKey( rowType, (RexNameRef) operand ) );
+                case LITERAL -> new BsonDocument( "$literal", MongoDocumentSerializer.serializeValue( ((RexLiteral) operand).value ) );
+                case DYNAMIC_PARAM -> new BsonDocument( "$literal", new BsonDynamic( (RexDynamicParam) operand ) );
+                default -> BsonDocument.parse( operand.accept( new RexToMongoTranslator( fieldNames, implementor, DataModel.DOCUMENT ) ) );
+            };
         }
 
 
@@ -1399,7 +1431,8 @@ public class MongoFilter extends Filter implements MongoAlg {
                 return false;
             }
 
-            attachCondition( op, MongoRules.translateDocValueAsKey( rowType, left ), item );
+            // Keep literal document fields from being interpreted as selector operators after binding.
+            attachCondition( Objects.requireNonNullElse( op, "$eq" ), MongoRules.translateDocValueAsKey( rowType, left ), item );
             return true;
         }
 
