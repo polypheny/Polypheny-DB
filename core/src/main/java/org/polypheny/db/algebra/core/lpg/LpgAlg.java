@@ -38,6 +38,7 @@ public interface LpgAlg {
         VALUES,
         AGGREGATE,
         MERGE,
+        FOREACH,
         SORT
     }
 

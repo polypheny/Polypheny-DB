@@ -16,6 +16,7 @@
 
 package org.polypheny.db.transaction;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -45,6 +46,7 @@ public class StatementImpl implements Statement {
     private final long id;
     @Getter
     private final Transaction transaction;
+    private final Instant startedAt = Instant.now();
     private final List<FileInputHandle> fileInputHandles = new ArrayList<>();
 
     private QueryProcessor queryProcessor;
@@ -79,6 +81,9 @@ public class StatementImpl implements Statement {
     public DataContext getDataContext() {
         if ( dataContext == null ) {
             Map<String, Object> map = new LinkedHashMap<>();
+            map.put( DataContext.Variable.CYPHER_STATEMENT_INSTANT.camelName, startedAt );
+            Instant transactionStart = transaction instanceof TransactionImpl implementation ? implementation.getStartedAt() : startedAt;
+            map.put( DataContext.Variable.CYPHER_TRANSACTION_INSTANT.camelName, transactionStart );
             // Avoid overflow
             int queryTimeout = RuntimeConfig.QUERY_TIMEOUT.getInteger();
             if ( queryTimeout > 0 && queryTimeout < Integer.MAX_VALUE / 1000 ) {

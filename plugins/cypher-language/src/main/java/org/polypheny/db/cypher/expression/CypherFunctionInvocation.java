@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import org.apache.commons.lang3.NotImplementedException;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -31,6 +32,8 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.cypher2alg.CypherSyntaxException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
+import org.polypheny.db.functions.CypherScalarFunction;
+import org.polypheny.db.functions.CypherTemporalFunction;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
@@ -40,6 +43,7 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.util.Pair;
 
@@ -52,13 +56,33 @@ public class CypherFunctionInvocation extends CypherExpression {
     private final boolean distinct;
     private final List<CypherExpression> arguments;
     private final OperatorName op;
+    private final @Nullable CypherScalarFunction scalarFunction;
+    private final @Nullable CypherTemporalFunction temporalFunction;
 
 
     public CypherFunctionInvocation( ParserPos beforePos, ParserPos namePos, List<String> namespace, String image, boolean distinct, List<CypherExpression> arguments ) {
         super( beforePos );
         this.namePos = namePos;
         this.namespace = namespace;
-        if ( operatorNames.contains( image.toUpperCase( Locale.ROOT ) ) ) {
+        this.scalarFunction = namespace.isEmpty() ? CypherScalarFunction.named( image ) : null;
+        String qualifiedName = namespace.isEmpty() ? image : String.join( ".", namespace ) + "." + image;
+        this.temporalFunction = CypherTemporalFunction.named( qualifiedName );
+        if ( temporalFunction == null && !namespace.isEmpty() && CypherTemporalFunction.named( namespace.get( 0 ) ) != null ) {
+            throw new CypherSyntaxException( "Unknown Cypher temporal function: " + qualifiedName );
+        }
+        if ( temporalFunction != null ) {
+            String arityError = temporalFunction.arityError( arguments.size() );
+            if ( arityError != null ) {
+                throw new CypherSyntaxException( arityError );
+            }
+            this.op = OperatorName.CYPHER_TEMPORAL_FUNCTION;
+        } else if ( scalarFunction != null ) {
+            String arityError = scalarFunction.arityError( arguments.size() );
+            if ( arityError != null ) {
+                throw new CypherSyntaxException( arityError );
+            }
+            this.op = scalarFunction == CypherScalarFunction.RAND ? OperatorName.CYPHER_RAND : OperatorName.CYPHER_SCALAR_FUNCTION;
+        } else if ( operatorNames.contains( image.toUpperCase( Locale.ROOT ) ) ) {
             this.op = OperatorName.valueOf( image.toUpperCase( Locale.ROOT ) );
         } else if ( operatorNames.contains( "CYPHER_" + image.toUpperCase( Locale.ROOT ) ) ) {
             this.op = OperatorName.valueOf( "CYPHER_" + image.toUpperCase( Locale.ROOT ) );
@@ -127,6 +151,30 @@ public class CypherFunctionInvocation extends CypherExpression {
     public RexNode getRexCall( CypherContext context, RexType type ) {
         if ( distinct ) {
             throw new CypherSyntaxException( "DISTINCT requires an aggregating function." );
+        }
+        if ( temporalFunction != null ) {
+            List<RexNode> operands = new ArrayList<>( arguments.size() + 2 );
+            operands.add( context.rexBuilder.makeLiteral( temporalFunction.getName() ) );
+            operands.add( context.rexBuilder.makeLiteral( temporalFunction.isRealtime() ? namePos.getLineNum() + ":" + namePos.getColumnNum() : "" ) );
+            for ( CypherExpression argument : arguments ) {
+                operands.add( argument.getRex( context, type ).right );
+            }
+            AlgDataType result = context.typeFactory.createPolyType( temporalFunction.returnType() );
+            return nullableCall( context, result, operands );
+        }
+        if ( scalarFunction == CypherScalarFunction.RAND ) {
+            RexNode callSite = context.rexBuilder.makeLiteral( namePos.getLineNum() + ":" + namePos.getColumnNum() );
+            return context.rexBuilder.makeCall( context.typeFactory.createPolyType( PolyType.DOUBLE ),
+                    OperatorRegistry.get( QueryLanguage.from( "cypher" ), op ), List.of( callSite ) );
+        }
+        if ( scalarFunction != null ) {
+            List<RexNode> operands = new ArrayList<>( arguments.size() + 1 );
+            operands.add( context.rexBuilder.makeLiteral( scalarFunction.name() ) );
+            for ( CypherExpression argument : arguments ) {
+                operands.add( argument.getRex( context, type ).right );
+            }
+            AlgDataType resultType = scalarFunction.resultType( context.typeFactory, operands.subList( 1, operands.size() ).stream().map( RexNode::getType ).toList() );
+            return nullableCall( context, resultType, operands );
         }
         switch ( getOperatorName() ) {
             case CYPHER_POINT: {
@@ -229,6 +277,18 @@ public class CypherFunctionInvocation extends CypherExpression {
             default:
                 throw new NotImplementedException( "Cypher Function to alg conversion missing: " + getOperatorName() );
         }
+    }
+
+
+    @Override
+    public PolyValue getComparable() {
+        if ( scalarFunction == null ) {
+            return super.getComparable();
+        }
+        if ( distinct ) {
+            throw new CypherSyntaxException( "DISTINCT requires an aggregating function." );
+        }
+        return scalarFunction.apply( arguments.stream().map( CypherExpression::getComparable ).toArray( PolyValue[]::new ) );
     }
 
 

@@ -18,6 +18,7 @@ package org.polypheny.db.transaction;
 
 
 import java.text.MessageFormat;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -80,6 +81,9 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
 
     @Getter
     private final long id;
+
+    @Getter
+    private final Instant startedAt = Instant.now();
 
     @Getter
     private final PolyXid xid;

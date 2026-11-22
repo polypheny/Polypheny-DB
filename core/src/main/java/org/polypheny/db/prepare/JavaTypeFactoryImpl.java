@@ -79,6 +79,7 @@ import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
+import org.polypheny.db.type.entity.temporal.PolyCypherTemporal;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.Pair;
@@ -234,6 +235,8 @@ public class JavaTypeFactoryImpl extends PolyTypeFactoryImpl implements JavaType
                     return PolyString.class;
                 case DOCUMENT:
                     return PolyValue.class;
+                case CYPHER_TEMPORAL:
+                    return PolyCypherTemporal.class;
                 case DATE:
                     return PolyDate.class;
                 case TIME:

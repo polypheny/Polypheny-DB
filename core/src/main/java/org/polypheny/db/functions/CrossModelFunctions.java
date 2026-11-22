@@ -93,8 +93,8 @@ public class CrossModelFunctions {
         Map<Long, AlgDataType> typeBackup = context.getParameterTypes();
         JavaTypeFactory typeFactory = context.getStatement().getTransaction().getTypeFactory();
         AlgDataType idType = typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE );
-        AlgDataType labelType = typeFactory.createPolyType( PolyType.VARCHAR, 255 );
-        AlgDataType valueType = typeFactory.createPolyType( PolyType.VARCHAR, 255 );
+        AlgDataType labelType = typeFactory.createPolyType( PolyType.TEXT );
+        AlgDataType valueType = typeFactory.createPolyType( PolyType.TEXT );
 
         try {
             if ( order.contains( PolyType.EDGE ) ) {

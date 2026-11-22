@@ -278,7 +278,10 @@ class DbMetaRetriever {
 
     static synchronized TypesResponse getTypes() {
         TypesResponse.Builder responseBuilder = TypesResponse.newBuilder();
-        Arrays.stream( PolyType.values() ).forEach( polyType -> responseBuilder.addTypes( getTypeMeta( polyType ) ) );
+        // Cypher temporal results use the existing VARCHAR wire type.
+        Arrays.stream( PolyType.values() )
+                .filter( polyType -> polyType != PolyType.CYPHER_TEMPORAL )
+                .forEach( polyType -> responseBuilder.addTypes( getTypeMeta( polyType ) ) );
         return responseBuilder.build();
     }
 

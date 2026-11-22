@@ -101,6 +101,7 @@ import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.entity.spatial.PolyGeometry.PolyGeometryDeserializer;
 import org.polypheny.db.type.entity.spatial.PolyGeometry.PolyGeometrySerializer;
 import org.polypheny.db.type.entity.spatial.PolyGeometry.PolyGeometrySerializerDef;
+import org.polypheny.db.type.entity.temporal.PolyCypherTemporal;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
@@ -132,7 +133,8 @@ import org.polypheny.db.util.ByteString;
         PolyNode.class,
         PolyEdge.class,
         PolyPath.class,
-        PolyGeometry.class
+        PolyGeometry.class,
+        PolyCypherTemporal.class
 }) // add on Constructor already exists exception
 @JsonTypeInfo(use = Id.NAME) // to allow typed json serialization
 @JsonSubTypes({
@@ -157,7 +159,9 @@ import org.polypheny.db.util.ByteString;
         @JsonSubTypes.Type(value = PolyPath.class, name = "PATH"),
         @JsonSubTypes.Type(value = PolyDictionary.class, name = "DICTIONARY"),
         @JsonSubTypes.Type(value = PolyUserDefinedValue.class, name = "UDV"),
-        @JsonSubTypes.Type(value = PolyGeometry.class, name = "GEOMETRY")
+        @JsonSubTypes.Type(value = PolyGeometry.class, name = "GEOMETRY"),
+        @JsonSubTypes.Type(value = PolyInterval.class, name = "PolyInterval"),
+        @JsonSubTypes.Type(value = PolyCypherTemporal.class, name = "CYPHER_TEMPORAL")
 })
 public abstract class PolyValue implements Expressible, Comparable<PolyValue>, PolySerializable {
 
@@ -398,6 +402,7 @@ public abstract class PolyValue implements Expressible, Comparable<PolyValue>, P
             case TIME -> PolyTime.class;
             case TIMESTAMP -> PolyTimestamp.class;
             case INTERVAL -> PolyInterval.class;
+            case CYPHER_TEMPORAL -> PolyCypherTemporal.class;
             case CHAR -> PolyString.class;
             case VARCHAR -> PolyString.class;
             case BINARY -> PolyBinary.class;

@@ -16,6 +16,7 @@
 
 package org.polypheny.db.cypher.pattern;
 
+import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
 import lombok.Getter;
@@ -63,6 +64,15 @@ public class CypherNodePattern extends CypherPattern {
 
     public Pair<PolyString, PolyNode> getPolyNode() {
         return getPolyNode( null );
+    }
+
+
+    public CypherNodePattern withMatchProperties( CypherVariable binding, CypherExpression properties ) {
+        List<StringPos> labelPositions = new ArrayList<>( labels.size() );
+        for ( int i = 0; i < labels.size(); i++ ) {
+            labelPositions.add( new StringPos( labels.get( i ).value, positions.get( i ) ) );
+        }
+        return new CypherNodePattern( pos, binding, labelPositions, properties, predicate );
     }
 
 

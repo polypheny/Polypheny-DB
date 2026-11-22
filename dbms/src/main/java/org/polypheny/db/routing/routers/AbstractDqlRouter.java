@@ -35,7 +35,6 @@ import org.polypheny.db.algebra.core.lpg.LpgAlg;
 import org.polypheny.db.algebra.core.lpg.LpgAlg.NodeType;
 import org.polypheny.db.algebra.logical.common.LogicalTransformer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
-import org.polypheny.db.algebra.logical.lpg.LogicalLpgJoin;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
@@ -131,7 +130,7 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
     @Override
     public <T extends AlgNode & LpgAlg> AlgNode routeGraph( RoutedAlgBuilder builder, T alg, Statement statement ) {
-        if ( alg instanceof LogicalLpgJoin || alg.getNodeType() == NodeType.UNION ) {
+        if ( alg.getNodeType() == NodeType.JOIN || alg.getNodeType() == NodeType.UNION ) {
             for ( int i = 0; i < alg.getInputs().size(); i++ ) {
                 AlgNode input = routeGraph( builder, (AlgNode & LpgAlg) alg.getInput( i ), statement );
                 alg.replaceInput( i, builder.stackSize() > 0 ? builder.build() : input );

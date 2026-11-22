@@ -267,8 +267,9 @@ public interface NeoUtil {
 
     static PolyValue encodeGraphProperty( PolyValue value ) {
         if ( value != null && !value.isNull()
-                && (value.getType() == PolyType.DECIMAL || value.isList() || value.isMap() || value.isString()) ) {
-            // Neo4j has no exact decimal or nested property representation. Use the graph type codec and escape tagged user strings.
+                && (value.getType() == PolyType.DECIMAL || isGraphTemporal( value.getType() )
+                || value.isList() || value.isMap() || value.isString()) ) {
+            // Preserve typed graph values in the shared codec and escape tagged user strings.
             return PolyString.of( CrossModelFunctions.graphPropertyStorageValue( value ) );
         }
         return value;
@@ -342,7 +343,14 @@ public interface NeoUtil {
 
 
     static boolean needsGraphValueDecoding( PolyType type ) {
-        return type == PolyType.ANY || type == PolyType.DECIMAL || type == PolyType.ARRAY || type == PolyType.MAP;
+        return type == PolyType.ANY || type == PolyType.DECIMAL || type == PolyType.ARRAY || type == PolyType.MAP || isGraphTemporal( type );
+    }
+
+    private static boolean isGraphTemporal( PolyType type ) {
+        return switch ( type ) {
+            case DATE, TIME, TIMESTAMP, INTERVAL, CYPHER_TEMPORAL -> true;
+            default -> false;
+        };
     }
 
     static boolean isStructuralGraphType( PolyType type ) {
@@ -753,8 +761,8 @@ public interface NeoUtil {
                 // Native Cypher literals do not preserve byte arrays or exact decimals.
                 supports = false;
             }
-            if ( graph && containsMap( literal.value ) ) {
-                // The native graph translator and decoder do not preserve Polypheny map values.
+            if ( graph && containsGraphValueRequiringDecoding( literal.value ) ) {
+                // Keep the type of map and temporal literals in the Enumerable engine.
                 supports = false;
             }
             if ( literal.getType() instanceof ArrayType arrayType && arrayType.getDimension() < 1 ) {
@@ -765,9 +773,9 @@ public interface NeoUtil {
         }
 
 
-        private static boolean containsMap( PolyValue value ) {
-            return value instanceof PolyMap<?, ?>
-                    || value instanceof PolyList<?> list && list.stream().anyMatch( NeoSupportVisitor::containsMap );
+        private static boolean containsGraphValueRequiringDecoding( PolyValue value ) {
+            return value != null && (isGraphTemporal( value.getType() ) || value instanceof PolyMap<?, ?>
+                    || value instanceof PolyList<?> list && list.stream().anyMatch( NeoSupportVisitor::containsGraphValueRequiringDecoding ));
         }
 
     }

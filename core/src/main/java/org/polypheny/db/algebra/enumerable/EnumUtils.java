@@ -441,8 +441,8 @@ public class EnumUtils {
             PhysType rightPhysType,
             RexNode condition ) {
         final BlockBuilder builder = new BlockBuilder();
-        final ParameterExpression left_ = Expressions.parameter( leftPhysType.getJavaTupleType(), "left" );
-        final ParameterExpression right_ = Expressions.parameter( rightPhysType.getJavaTupleType(), "right" );
+        final ParameterExpression left_ = Expressions.parameter( Modifier.FINAL, leftPhysType.getJavaTupleType(), "left" );
+        final ParameterExpression right_ = Expressions.parameter( Modifier.FINAL, rightPhysType.getJavaTupleType(), "right" );
         final RexProgramBuilder program = new RexProgramBuilder(
                 implementor.getTypeFactory().builder()
                         .addAll( left.getTupleType().getFields() )

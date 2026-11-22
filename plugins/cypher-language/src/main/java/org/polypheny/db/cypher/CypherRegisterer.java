@@ -51,6 +51,31 @@ public class CypherRegisterer {
         register( OperatorName.CYPHER_RELATIONSHIPS, new LangFunctionOperator( OperatorName.CYPHER_RELATIONSHIPS.name(), Kind.CYPHER_FUNCTION, PolyType.ARRAY ) );
         register( OperatorName.CYPHER_LENGTH, new LangFunctionOperator( OperatorName.CYPHER_LENGTH.name(), Kind.CYPHER_FUNCTION, PolyType.BIGINT ) );
         register( OperatorName.CYPHER_SIZE, new LangFunctionOperator( OperatorName.CYPHER_SIZE.name(), Kind.CYPHER_FUNCTION, PolyType.BIGINT ) );
+        register( OperatorName.CYPHER_SCALAR_FUNCTION, new LangFunctionOperator( OperatorName.CYPHER_SCALAR_FUNCTION.name(), Kind.CYPHER_FUNCTION, PolyType.ANY ) );
+        register( OperatorName.CYPHER_TEMPORAL_FUNCTION, new LangFunctionOperator( OperatorName.CYPHER_TEMPORAL_FUNCTION.name(), Kind.CYPHER_FUNCTION, PolyType.ANY ) {
+            @Override
+            public boolean isDeterministic() {
+                return false;
+            }
+
+
+            @Override
+            public boolean isDynamicFunction() {
+                return true;
+            }
+        } );
+        register( OperatorName.CYPHER_RAND, new LangFunctionOperator( OperatorName.CYPHER_RAND.name(), Kind.CYPHER_FUNCTION, PolyType.DOUBLE ) {
+            @Override
+            public boolean isDeterministic() {
+                return false;
+            }
+
+
+            @Override
+            public boolean isDynamicFunction() {
+                return true;
+            }
+        } );
         register( OperatorName.CYPHER_RANGE, new LangFunctionOperator( OperatorName.CYPHER_RANGE.name(), Kind.CYPHER_FUNCTION, PolyType.ARRAY ) );
         register( OperatorName.CYPHER_TYPE, new LangFunctionOperator( OperatorName.CYPHER_TYPE.name(), Kind.CYPHER_FUNCTION, PolyType.VARCHAR ) );
         register( OperatorName.CYPHER_ID, new LangFunctionOperator( OperatorName.CYPHER_ID.name(), Kind.CYPHER_FUNCTION, PolyType.VARCHAR ) );
@@ -85,6 +110,8 @@ public class CypherRegisterer {
         register( OperatorName.CYPHER_EXTRACT_ID, new LangFunctionOperator( OperatorName.CYPHER_EXTRACT_ID.name(), Kind.CYPHER_FUNCTION, PolyType.VARCHAR ) );
         register( OperatorName.CYPHER_MATCH_ELEMENT_ID, new LangFunctionOperator( OperatorName.CYPHER_MATCH_ELEMENT_ID.name(), Kind.CYPHER_FUNCTION, PolyType.VARCHAR ) );
         register( OperatorName.CYPHER_VALIDATE_MATCH_NODE, new LangFunctionOperator( OperatorName.CYPHER_VALIDATE_MATCH_NODE.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
+        register( OperatorName.CYPHER_MATCH_PROPERTIES, new LangFunctionOperator( OperatorName.CYPHER_MATCH_PROPERTIES.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
+        register( OperatorName.CYPHER_MATCH_VISIBLE_PATH, new LangFunctionOperator( OperatorName.CYPHER_MATCH_VISIBLE_PATH.name(), Kind.CYPHER_FUNCTION, PolyType.PATH ) );
         register( OperatorName.CYPHER_VALIDATE_MATCH_RELATIONSHIP_LIST, new LangFunctionOperator( OperatorName.CYPHER_VALIDATE_MATCH_RELATIONSHIP_LIST.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
         register( OperatorName.CYPHER_MATCH_BINDING_GUARD, new LangFunctionOperator( OperatorName.CYPHER_MATCH_BINDING_GUARD.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
         register( OperatorName.CYPHER_CASE, new LangFunctionOperator( OperatorName.CYPHER_CASE.name(), Kind.CYPHER_FUNCTION, PolyType.ANY ) );
