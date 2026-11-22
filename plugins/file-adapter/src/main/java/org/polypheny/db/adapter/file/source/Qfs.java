@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -39,6 +40,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.RelationalDataSource;
 import org.polypheny.db.adapter.RelationalScanDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
@@ -49,6 +51,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationManager;
 import org.polypheny.db.information.InformationTable;
@@ -67,9 +70,10 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
         name = "QFS",
         description = "This data source maps a file system on the Polypheny-DB host system as a relational entity and allows to query it.",
         usedModes = DeployMode.EMBEDDED,
-        defaultMode = DeployMode.EMBEDDED)
+        defaultMode = DeployMode.EMBEDDED
+)
 @AdapterSettingString(name = "rootDir", defaultValue = "")
-public class Qfs extends DataSource<RelAdapterCatalog> {
+public class Qfs extends DataSource<RelAdapterCatalog> implements RelationalDataSource {
 
     @Delegate(excludes = Exclude.class)
     private final RelationalScanDelegate delegate;
@@ -82,18 +86,91 @@ public class Qfs extends DataSource<RelAdapterCatalog> {
 
 
     public Qfs( long adapterId, String uniqueName, Map<String, String> settings, DeployMode mode ) {
-        super( adapterId, uniqueName, settings, mode, true, new RelAdapterCatalog( adapterId ) );
+        super( adapterId, uniqueName, settings, mode, true, new RelAdapterCatalog( adapterId ), Set.of( DataModel.RELATIONAL ) );
         init( settings );
         registerInformationPage( uniqueName );
         this.delegate = new RelationalScanDelegate( this, adapterCatalog );
     }
 
 
-    private void init( final Map<String, String> settings ) {
-        rootDir = new File( settings.get( "rootDir" ) );
+    private static void validateRootdir( String rootDirPath ) {
+        File rootDir = new File( rootDirPath );
         if ( !rootDir.exists() ) {
-            throw new GenericRuntimeException( "The specified root dir does not exist!" );
+            throw new GenericRuntimeException( "The specified QFS root dir does not exist!" );
         }
+        boolean allowed = false;
+        StringJoiner allowedPaths = new StringJoiner( "\n" );
+        int numberOfWhitelistEntries = 0;
+        File whitelistFolder = PolyphenyHomeDirManager.getInstance().registerNewFolder( "config" );
+        File whitelist = new File( whitelistFolder, "whitelist.config" );
+        String path = getString( whitelist );
+        try ( FileInputStream fis = new FileInputStream( whitelist ); BufferedReader br = new BufferedReader( new InputStreamReader( fis ) ) ) {
+            String line;
+            while ( (line = br.readLine()) != null ) {
+                line = line.trim();
+                if ( line.startsWith( "#" ) ) {
+                    continue;
+                }
+                File f = new File( line );
+                if ( !f.exists() ) {
+                    log.warn( "The following QFS whitelist entry does not exist: {}", line );
+                    continue;
+                }
+                numberOfWhitelistEntries++;
+                allowedPaths.add( f.getCanonicalPath() );
+                if ( rootDir.getCanonicalPath().startsWith( f.getCanonicalPath() ) ) {
+                    allowed = true;
+                    break;
+                }
+            }
+        } catch ( IOException e ) {
+            throw new GenericRuntimeException( "Could not read QFS whitelist. A whitelist must be present and contain at least one entry. It must be located in " + path, e );
+        }
+        if ( numberOfWhitelistEntries == 0 ) {
+            throw new GenericRuntimeException( "The QFS whitelist must contain at least one entry. The file can be edited in " + path );
+        }
+        if ( !allowed ) {
+            throw new GenericRuntimeException( "The selected path (" + rootDirPath + ") is not allowed. It must be a subdirectory of one of the following paths:\n" + allowedPaths );
+        }
+    }
+
+
+    @NotNull
+    private static String getString( File whitelist ) {
+        String path = whitelist.getAbsolutePath();
+        if ( !whitelist.exists() ) {
+            try ( FileWriter fw = new FileWriter( whitelist ); PrintWriter pw = new PrintWriter( fw ) ) {
+                pw.println( "# A list of allowed directories for the Query File System (QFS) data source adapter" );
+                pw.println( "# The list must be non-empty. A QFS directory will only be accepted if it is listed here or is a subdirectory of a directory listed here." );
+            } catch ( IOException e ) {
+                throw new GenericRuntimeException( "Could not write QFS whitelist file " + path, e );
+            }
+            throw new GenericRuntimeException( "The QFS whitelist did not exist. A new one was generated. Make sure to add at least one entry to the whitelist before deploying a QFS data source. The whitelist is located in " + path );
+        }
+        return path;
+    }
+
+
+    @NotNull
+    private static InformationTable getInformationTable( Entry<String, List<ExportedColumn>> entry, InformationGroup group ) {
+        InformationTable table = new InformationTable(
+                group,
+                Arrays.asList( "Position", "Column Name", "Type", "Nullable", "Primary" ) );
+        for ( ExportedColumn exportedColumn : entry.getValue() ) {
+            table.addRow(
+                    exportedColumn.physicalPosition(),
+                    exportedColumn.name(),
+                    exportedColumn.getDisplayType(),
+                    exportedColumn.nullable() ? "✔" : "",
+                    exportedColumn.primary() ? "✔" : ""
+            );
+        }
+        return table;
+    }
+
+
+    private void init( final Map<String, String> settings ) {
+        validateRootdir( settings.get( "roodDir" ) );
     }
 
 
@@ -165,66 +242,6 @@ public class Qfs extends DataSource<RelAdapterCatalog> {
 
 
     @Override
-    protected void validateSettings( Map<String, String> newSettings, boolean initialSetup ) {
-        super.validateSettings( newSettings, initialSetup );
-        File rootDir = new File( newSettings.get( "rootDir" ) );
-        if ( !rootDir.exists() ) {
-            throw new GenericRuntimeException( "The specified QFS root dir does not exist!" );
-        }
-        boolean allowed = false;
-        StringJoiner allowedPaths = new StringJoiner( "\n" );
-        int numberOfWhitelistEntries = 0;
-        File whitelistFolder = PolyphenyHomeDirManager.getInstance().registerNewFolder( "config" );
-        File whitelist = new File( whitelistFolder, "whitelist.config" );
-        String path = getString( whitelist );
-        try ( FileInputStream fis = new FileInputStream( whitelist ); BufferedReader br = new BufferedReader( new InputStreamReader( fis ) ) ) {
-            String line;
-            while ( (line = br.readLine()) != null ) {
-                line = line.trim();
-                if ( line.startsWith( "#" ) ) {
-                    continue;
-                }
-                File f = new File( line );
-                if ( !f.exists() ) {
-                    log.warn( "The following QFS whitelist entry does not exist: {}", line );
-                    continue;
-                }
-                numberOfWhitelistEntries++;
-                allowedPaths.add( f.getCanonicalPath() );
-                if ( rootDir.getCanonicalPath().startsWith( f.getCanonicalPath() ) ) {
-                    allowed = true;
-                    break;
-                }
-            }
-        } catch ( IOException e ) {
-            throw new GenericRuntimeException( "Could not read QFS whitelist. A whitelist must be present and contain at least one entry. It must be located in " + path, e );
-        }
-        if ( numberOfWhitelistEntries == 0 ) {
-            throw new GenericRuntimeException( "The QFS whitelist must contain at least one entry. The file can be edited in " + path );
-        }
-        if ( !allowed ) {
-            throw new GenericRuntimeException( "The selected path (" + newSettings.get( "rootDir" ) + ") is not allowed. It must be a subdirectory of one of the following paths:\n" + allowedPaths.toString() );
-        }
-    }
-
-
-    @NotNull
-    private static String getString( File whitelist ) {
-        String path = whitelist.getAbsolutePath();
-        if ( !whitelist.exists() ) {
-            try ( FileWriter fw = new FileWriter( whitelist ); PrintWriter pw = new PrintWriter( fw ) ) {
-                pw.println( "# A list of allowed directories for the Query File System (QFS) data source adapter" );
-                pw.println( "# The list must be non-empty. A QFS directory will only be accepted if it is listed here or is a subdirectory of a directory listed here." );
-            } catch ( IOException e ) {
-                throw new GenericRuntimeException( "Could not write QFS whitelist file " + path, e );
-            }
-            throw new GenericRuntimeException( "The QFS whitelist did not exist. A new one was generated. Make sure to add at least one entry to the whitelist before deploying a QFS data source. The whitelist is located in " + path );
-        }
-        return path;
-    }
-
-
-    @Override
     public Map<String, List<ExportedColumn>> getExportedColumns() {
         //name, extension, path, mime, canExecute, canRead, canWrite, size, lastModified
         String physSchemaName = getUniqueName();
@@ -240,6 +257,7 @@ public class Qfs extends DataSource<RelAdapterCatalog> {
                 null,
                 null,
                 false,
+                true,
                 physSchemaName,
                 physTableName,
                 "path",
@@ -256,6 +274,7 @@ public class Qfs extends DataSource<RelAdapterCatalog> {
                 null,
                 null,
                 false,
+                true,
                 physSchemaName,
                 physTableName,
                 "name",
@@ -271,6 +290,7 @@ public class Qfs extends DataSource<RelAdapterCatalog> {
                 null,
                 null,
                 null,
+                true,
                 true,
                 physSchemaName,
                 physTableName,
@@ -288,6 +308,7 @@ public class Qfs extends DataSource<RelAdapterCatalog> {
                 null,
                 null,
                 false,
+                true,
                 physSchemaName,
                 physTableName,
                 "file",
@@ -312,7 +333,7 @@ public class Qfs extends DataSource<RelAdapterCatalog> {
 
         int i = 2;
         for ( Map.Entry<String, List<ExportedColumn>> entry : getExportedColumns().entrySet() ) {
-            InformationGroup group = new InformationGroup( informationPage, entry.getValue().get( 0 ).physicalTableName ).setOrder( i++ );
+            InformationGroup group = new InformationGroup( informationPage, entry.getValue().get( 0 ).physicalTableName() ).setOrder( i++ );
             im.addGroup( group );
             informationGroups.add( group );
 
@@ -323,21 +344,9 @@ public class Qfs extends DataSource<RelAdapterCatalog> {
     }
 
 
-    @NotNull
-    private static InformationTable getInformationTable( Entry<String, List<ExportedColumn>> entry, InformationGroup group ) {
-        InformationTable table = new InformationTable(
-                group,
-                Arrays.asList( "Position", "Column Name", "Type", "Nullable", "Primary" ) );
-        for ( ExportedColumn exportedColumn : entry.getValue() ) {
-            table.addRow(
-                    exportedColumn.physicalPosition,
-                    exportedColumn.name,
-                    exportedColumn.getDisplayType(),
-                    exportedColumn.nullable ? "✔" : "",
-                    exportedColumn.primary ? "✔" : ""
-            );
-        }
-        return table;
+    @Override
+    public RelationalDataSource asRelationalDataSource() {
+        return this;
     }
 
 

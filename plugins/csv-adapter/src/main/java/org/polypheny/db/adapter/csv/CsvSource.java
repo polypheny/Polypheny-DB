@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import org.pf4j.Extension;
 import org.polypheny.db.adapter.ConnectionMethod;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.RelationalDataSource;
 import org.polypheny.db.adapter.RelationalScanDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
@@ -51,6 +52,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.prepare.Context;
@@ -72,22 +74,21 @@ import org.slf4j.LoggerFactory;
 @AdapterSettingString(subOf = "method_link", defaultValue = "classpath://hr", name = "directoryName", description = "You can select a path to a folder or specific .csv or .csv.gz files.", position = 2)
 @AdapterSettingInteger(name = "maxStringLength", defaultValue = 255, position = 3,
         description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")
-public class CsvSource extends DataSource<RelAdapterCatalog> {
+public class CsvSource extends DataSource<RelAdapterCatalog> implements RelationalDataSource {
 
     private static final Logger log = LoggerFactory.getLogger( CsvSource.class );
     @Delegate(excludes = Excludes.class)
     private final RelationalScanDelegate delegate;
     private final ConnectionMethod connectionMethod;
-
+    private final int maxStringLength;
     private URL csvDir;
     @Getter
     private CsvSchema currentNamespace;
-    private final int maxStringLength;
     private Map<String, List<ExportedColumn>> exportedColumnCache;
 
 
     public CsvSource( final long storeId, final String uniqueName, final Map<String, String> settings, final DeployMode mode ) {
-        super( storeId, uniqueName, settings, mode, true, new RelAdapterCatalog( storeId ) );
+        super( storeId, uniqueName, settings, mode, true, new RelAdapterCatalog( storeId ), Set.of( DataModel.RELATIONAL ) );
 
         this.connectionMethod = settings.containsKey( "method" ) ? ConnectionMethod.from( settings.get( "method" ).toUpperCase() ) : ConnectionMethod.UPLOAD;
 
@@ -105,6 +106,31 @@ public class CsvSource extends DataSource<RelAdapterCatalog> {
         enableInformationPage();
 
         this.delegate = new RelationalScanDelegate( this, adapterCatalog );
+    }
+
+
+    private static String computePhysicalEntityName( String fileName ) {
+        // Compute physical table name
+        String physicalTableName = fileName.toLowerCase();
+        // remove gz
+        if ( physicalTableName.endsWith( ".gz" ) ) {
+            physicalTableName = physicalTableName.substring( 0, physicalTableName.length() - ".gz".length() );
+        }
+        // use only filename
+        if ( physicalTableName.contains( "/" ) ) {
+            String[] splits = physicalTableName.split( "/" );
+            physicalTableName = splits[splits.length - 2];
+        }
+
+        if ( physicalTableName.contains( "\\" ) ) {
+            String[] splits = physicalTableName.split( "\\\\" );
+            physicalTableName = splits[splits.length - 2];
+        }
+
+        return physicalTableName
+                .substring( 0, physicalTableName.length() - ".csv".length() )
+                .trim()
+                .replaceAll( "[^a-z0-9_]+", "" );
     }
 
 
@@ -136,7 +162,7 @@ public class CsvSource extends DataSource<RelAdapterCatalog> {
     public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context ) {
         PhysicalEntity table = entities.get( 0 );
         updateNamespace( table.namespaceName, table.namespaceId );
-        adapterCatalog.addPhysical( alloc, currentNamespace.createCsvTable( table.id, table.unwrap( PhysicalTable.class ).orElseThrow(), this ) );
+        adapterCatalog.addPhysical( alloc, currentNamespace.createCsvTable( table.id, table.unwrapOrThrow( PhysicalTable.class ), this ) );
     }
 
 
@@ -260,6 +286,7 @@ public class CsvSource extends DataSource<RelAdapterCatalog> {
                             null,
                             null,
                             false,
+                            true,
                             fileName,
                             physicalTableName,
                             name,
@@ -275,31 +302,6 @@ public class CsvSource extends DataSource<RelAdapterCatalog> {
         }
         this.exportedColumnCache = exportedColumnCache;
         return exportedColumnCache;
-    }
-
-
-    private static String computePhysicalEntityName( String fileName ) {
-        // Compute physical table name
-        String physicalTableName = fileName.toLowerCase();
-        // remove gz
-        if ( physicalTableName.endsWith( ".gz" ) ) {
-            physicalTableName = physicalTableName.substring( 0, physicalTableName.length() - ".gz".length() );
-        }
-        // use only filename
-        if ( physicalTableName.contains( "/" ) ) {
-            String[] splits = physicalTableName.split( "/" );
-            physicalTableName = splits[splits.length - 2];
-        }
-
-        if ( physicalTableName.contains( "\\" ) ) {
-            String[] splits = physicalTableName.split( "\\\\" );
-            physicalTableName = splits[splits.length - 2];
-        }
-
-        return physicalTableName
-                .substring( 0, physicalTableName.length() - ".csv".length() )
-                .trim()
-                .replaceAll( "[^a-z0-9_]+", "" );
     }
 
 
@@ -338,7 +340,7 @@ public class CsvSource extends DataSource<RelAdapterCatalog> {
 
     private void addInformationExportedColumns() {
         for ( Map.Entry<String, List<ExportedColumn>> entry : getExportedColumns().entrySet() ) {
-            InformationGroup group = new InformationGroup( informationPage, entry.getValue().get( 0 ).physicalSchemaName );
+            InformationGroup group = new InformationGroup( informationPage, entry.getValue().get( 0 ).physicalSchemaName() );
             informationGroups.add( group );
 
             InformationTable table = new InformationTable(
@@ -346,12 +348,12 @@ public class CsvSource extends DataSource<RelAdapterCatalog> {
                     Arrays.asList( "Position", "Column Name", "Type", "Nullable", "Filename", "Primary" ) );
             for ( ExportedColumn exportedColumn : entry.getValue() ) {
                 table.addRow(
-                        exportedColumn.physicalPosition,
-                        exportedColumn.name,
+                        exportedColumn.physicalPosition(),
+                        exportedColumn.name(),
                         exportedColumn.getDisplayType(),
-                        exportedColumn.nullable ? "✔" : "",
-                        exportedColumn.physicalSchemaName,
-                        exportedColumn.primary ? "✔" : ""
+                        exportedColumn.nullable() ? "✔" : "",
+                        exportedColumn.physicalSchemaName(),
+                        exportedColumn.primary() ? "✔" : ""
                 );
             }
             informationElements.add( table );
@@ -369,6 +371,12 @@ public class CsvSource extends DataSource<RelAdapterCatalog> {
     public void renameLogicalColumn( long id, String newColumnName ) {
         adapterCatalog.renameLogicalColumn( id, newColumnName );
         adapterCatalog.fields.values().stream().filter( c -> c.id == id ).forEach( c -> updateNativePhysical( c.allocId ) );
+    }
+
+
+    @Override
+    public RelationalDataSource asRelationalDataSource() {
+        return this;
     }
 
 

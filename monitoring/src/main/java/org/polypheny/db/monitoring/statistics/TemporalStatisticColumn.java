@@ -17,6 +17,7 @@
 package org.polypheny.db.monitoring.statistics;
 
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.google.gson.annotations.Expose;
 import java.util.List;
 import java.util.TreeSet;
@@ -34,6 +35,7 @@ import org.polypheny.db.type.entity.category.PolyTemporal;
  */
 @Getter
 @Slf4j
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class TemporalStatisticColumn extends StatisticColumn {
 
 
@@ -55,7 +57,7 @@ public class TemporalStatisticColumn extends StatisticColumn {
 
 
     public TemporalStatisticColumn( QueryResult column ) {
-        super( column.getColumn().namespaceId, column.getColumn().type );
+        super( column.getColumn().namespaceId, column.getColumn().type, column.getColumn().name );
         temporalType = column.getColumn().type.getFamily().name();
     }
 

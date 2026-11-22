@@ -17,18 +17,30 @@
 package org.polypheny.db.sql.fun;
 
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+
 import com.google.common.collect.ImmutableList;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.runtime.Hook;
 
 
 @SuppressWarnings({ "SqlDialectInspection", "SqlNoDataSourceInspection" })
@@ -86,19 +98,71 @@ public class StringFunctionsTest {
 
     // --------------- Tests ---------------
 
+
     @Test
-    public void stringReplaceTest() throws SQLException {
-        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
-            Connection connection = polyphenyDbConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-                List<Object[]> expectedResult = ImmutableList.of(
-                        new Object[]{"Hello"}
-                );
-                TestHelper.checkResultSet(
-                        statement.executeQuery( "SELECT replace('Hi', 'i', 'ello')" ),
-                        expectedResult,
-                        true );
+    public void stringReplaceLiterals() throws SQLException {
+        try ( JdbcConnection connection = new JdbcConnection( true );
+                Statement statement = connection.getConnection().createStatement();
+                ResultSet result = statement.executeQuery( """
+                        SELECT REPLACE('Hi', 'i', 'ello'),
+                               REPLACE('😀', '', '-'),
+                               REPLACE('abc', 'b', ''),
+                               REPLACE('', 'b', '-'),
+                               REPLACE(CAST(NULL AS VARCHAR(3)), 'b', '-'),
+                               REPLACE('abc', CAST(NULL AS VARCHAR(3)), '-'),
+                               REPLACE('abc', 'b', CAST(NULL AS VARCHAR(3)))
+                        """ ) ) {
+            assertEquals( 8, result.getMetaData().getPrecision( 1 ) );
+            TestHelper.checkResultSet( result, ImmutableList.of( new Object[]{ "Hello", "😀", "ac", "", null, null, null } ) );
+        }
+    }
+
+
+    @Test
+    public void stringReplaceParameters() throws SQLException {
+        AtomicBoolean localReplace = new AtomicBoolean();
+        try ( Hook.Closeable hook = Hook.JAVA_PLAN.add( (Object plan) -> {
+            if ( plan instanceof String javaPlan && javaPlan.contains( "Functions.replace(" ) ) {
+                localReplace.set( true );
             }
+        } ); JdbcConnection connection = new JdbcConnection( true );
+                PreparedStatement statement = connection.getConnection().prepareStatement( """
+                        SELECT REPLACE(CAST(? AS VARCHAR(10)), CAST(? AS VARCHAR(10)), CAST(? AS VARCHAR(10)))
+                        """ ) ) {
+            statement.setString( 1, "a.$.b.$" );
+            statement.setString( 2, ".$" );
+            statement.setString( 3, "_" );
+            try ( ResultSet result = statement.executeQuery() ) {
+                assertTrue( localReplace.get(), "Expected REPLACE in the generated Java plan" );
+                TestHelper.checkResultSet( result, ImmutableList.of( new Object[]{ "a_.b_" } ) );
+            }
+        }
+    }
+
+
+    @Test
+    public void stringReplaceHsqldbPushdown() throws SQLException {
+        assumeTrue( "hsqldb".equalsIgnoreCase( PolyphenyDb.defaultStoreName ) );
+        Queue<String> pushedSql = new ConcurrentLinkedQueue<>();
+        Pattern replaceCall = Pattern.compile( "\\bREPLACE\\s*\\(", Pattern.CASE_INSENSITIVE );
+        try ( Hook.Closeable hook = Hook.QUERY_PLAN.add( (Object plan) -> {
+            if ( plan instanceof String sql ) {
+                pushedSql.add( sql );
+            }
+        } ); JdbcConnection connection = new JdbcConnection( true );
+                Statement statement = connection.getConnection().createStatement();
+                ResultSet result = statement.executeQuery( """
+                        SELECT REPLACE(CAST(DataA AS VARCHAR(5)), 'i', 'ello'),
+                               REPLACE(DataA, '', '-'),
+                               REPLACE(DataA, 'i', ''),
+                               REPLACE('', DataA, '-'),
+                               REPLACE(NULLIF(DataA, 'First'), 'i', '-')
+                        FROM TableA WHERE ID = 1
+                        """ ) ) {
+            assertTrue( pushedSql.stream().anyMatch( sql -> replaceCall.matcher( sql ).results().count() == 5 ),
+                    () -> "Expected five REPLACE calls in the HSQLDB query, got " + pushedSql );
+            assertEquals( 20, result.getMetaData().getPrecision( 1 ) );
+            TestHelper.checkResultSet( result, ImmutableList.of( new Object[]{ "Fellorst", "First", "Frst", "", null } ) );
         }
     }
 

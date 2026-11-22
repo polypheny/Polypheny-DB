@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgDistribution;
@@ -66,7 +68,7 @@ import org.polypheny.db.util.ImmutableBitSet;
  *
  * <ol>
  * <li>Add a static method <code>getXyz</code> specification to this class.</li>
- * <li>Add unit tests to {@code org.polypheny.db.test.RelMetadataTest}.</li>
+ * <li>Add unit tests to {@link AlgMetadataProvider}.</li>
  * <li>Write a new provider class <code>RelMdXyz</code> in this package. Follow the pattern from an existing class such as {@link AlgMdColumnOrigins}, overloading on all of the logical algebra expressions to which the query applies.</li>
  * <li>Add a {@code SOURCE} static member, similar to {@link AlgMdColumnOrigins#SOURCE}.</li>
  * <li>Register the {@code SOURCE} object in {@link DefaultAlgMetadataProvider}.</li>
@@ -227,16 +229,16 @@ public class AlgMetadataQuery {
      * @param alg the algebra expression
      * @return estimated tuple count, or null if no reliable estimate can be determined
      */
-    public Double getTupleCount( AlgNode alg ) {
+    public Optional<Double> getTupleCount( AlgNode alg ) {
         for ( ; ; ) {
             try {
                 Double result = rowCountHandler.getTupleCount( alg, this );
-                return validateResult( result );
+                return Optional.ofNullable( validateResult( result ) );
             } catch ( JaninoRelMetadataProvider.NoHandler e ) {
                 rowCountHandler = revise( e.algClass, TupleCount.DEF );
             } catch ( CyclicMetadataException e ) {
                 log.warn( "Cyclic metadata detected while computing row count for {}", alg );
-                return null;
+                return Optional.empty();
             }
         }
     }
@@ -288,6 +290,8 @@ public class AlgMetadataQuery {
                 return cumulativeCostHandler.getCumulativeCost( alg, this );
             } catch ( JaninoRelMetadataProvider.NoHandler e ) {
                 cumulativeCostHandler = revise( e.algClass, BuiltInMetadata.CumulativeCost.DEF );
+            } catch ( CyclicMetadataException e ) {
+                return alg.getCluster().getPlanner().getCostFactory().makeInfiniteCost();
             }
         }
     }
@@ -305,6 +309,8 @@ public class AlgMetadataQuery {
                 return nonCumulativeCostHandler.getNonCumulativeCost( alg, this );
             } catch ( JaninoRelMetadataProvider.NoHandler e ) {
                 nonCumulativeCostHandler = revise( e.algClass, BuiltInMetadata.NonCumulativeCost.DEF );
+            } catch ( CyclicMetadataException e ) {
+                return alg.getCluster().getPlanner().getCostFactory().makeInfiniteCost();
             }
         }
     }
@@ -404,7 +410,7 @@ public class AlgMetadataQuery {
             return null;
         }
         final Set<AlgColumnOrigin> colOrigins = getColumnOrigins( alg, 0 );
-        if ( colOrigins == null || colOrigins.size() == 0 ) {
+        if ( colOrigins == null || colOrigins.isEmpty() ) {
             return null;
         }
         return colOrigins.iterator().next().getOriginTable();
@@ -807,6 +813,7 @@ public class AlgMetadataQuery {
     }
 
 
+    @Nullable
     private static Double validateResult( Double result ) {
         if ( result == null ) {
             return null;

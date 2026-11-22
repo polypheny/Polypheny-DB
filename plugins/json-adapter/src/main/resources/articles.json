@@ -1,0 +1,97 @@
+[
+    {
+        "id": 1,
+        "title": "Unlocking the Secrets of Deep Space",
+        "author": "Samantha Ray",
+        "published": "2024-04-24",
+        "featured": true,
+        "rating": 4.7,
+        "tags": [
+            "space",
+            "astronomy"
+        ]
+    },
+    {
+        "id": 2,
+        "title": "Revolutionizing Agriculture with AI",
+        "author": "Marcus O'Neill",
+        "date": "2024-04-10",
+        "rating": 4.2
+    },
+    {
+        "id": 3,
+        "title": "The Future of Urban Transportation",
+        "writer": "Elena Gomez",
+        "published_date": "2024/03/29",
+        "is_featured": true,
+        "rating": "4.9"
+    },
+    {
+        "id": 4,
+        "title": "Ancient Civilizations: Mysteries Unveiled",
+        "author": "Thomas Crane",
+        "published": "2024-01-15"
+    },
+    {
+        "id": 5,
+        "title": "The Psychology of Pandemic Fatigue",
+        "author": "Laura McPherson",
+        "published_date": "Feb 27, 2024",
+        "featured": true,
+        "score": 4.6
+    },
+    {
+        "id": 6,
+        "title": "Exploring the Depths of the Amazon Rainforest",
+        "author": "David Liu",
+        "published_date": "2024-03-13",
+        "is_featured": false,
+        "rating": 4.3,
+        "notes": null
+    },
+    {
+        "id": 7,
+        "headline": "New Horizons in Genetic Engineering",
+        "author": "Nadia Singh",
+        "date_published": "2024-04-02",
+        "featured": true
+    },
+    {
+        "id": 8,
+        "title": "Artificial Intelligence and Ethics",
+        "author": "James Lewis",
+        "published_date": "2024-04-18",
+        "rating": 4.4,
+        "extra": {
+            "read_time": "12 min",
+            "language": "English"
+        }
+    },
+    {
+        "id": 9,
+        "bundle": true,
+        "collection_title": "Voices from the Frontier",
+        "documents": [
+            {
+                "title": "Biohacking: The Human Enhancement Movement",
+                "author": "Carmen Yu",
+                "published": "2024-02-11",
+                "rating": 4.1
+            },
+            {
+                "title": "The Rise of Citizen Science",
+                "author": "Noah Patterson",
+                "published_date": "2024-02-12"
+            },
+            {
+                "headline": "Digital Nomads: Life on the Move",
+                "byline": "Anita Chau",
+                "release": "2024-02-13",
+                "tags": [
+                    "remote work",
+                    "culture"
+                ]
+            }
+        ]
+    }
+]

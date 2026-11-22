@@ -16,14 +16,23 @@
 
 package org.polypheny.db.cypher;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.TestHelper.CypherConnection;
 import org.polypheny.db.cypher.helper.TestEdge;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.cypher.helper.TestNode;
 import org.polypheny.db.cypher.helper.TestPath;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
 
@@ -38,9 +47,9 @@ public class MatchTest extends CypherTestTemplate {
     }
 
 
-    ///////////////////////////////////////////////
-    ///////// MATCH
-    ///////////////////////////////////////////////
+    /// ////////////////////////////////////////////
+    /// ////// MATCH
+    /// ////////////////////////////////////////////
     @Test
     public void simpleMatchTest() {
         GraphResult res = execute( "MATCH (n) RETURN n" );
@@ -109,9 +118,10 @@ public class MatchTest extends CypherTestTemplate {
 
     }
 
-    ///////////////////////////////////////////////
-    ///////// PROJECT
-    ///////////////////////////////////////////////
+
+    /// ////////////////////////////////////////////
+    /// ////// PROJECT
+    /// ////////////////////////////////////////////
 
 
     @Test
@@ -142,9 +152,10 @@ public class MatchTest extends CypherTestTemplate {
         assert is( res, Type.ANY, 1 );
     }
 
-    ///////////////////////////////////////////////
-    ///////// EDGE
-    ///////////////////////////////////////////////
+
+    /// ////////////////////////////////////////////
+    /// ////// EDGE
+    /// ////////////////////////////////////////////
 
 
     @Test
@@ -183,7 +194,7 @@ public class MatchTest extends CypherTestTemplate {
         execute( SINGLE_EDGE_1 );
         execute( SINGLE_EDGE_2 );
         GraphResult res = execute( "MATCH (n:Person)-[r:KNOWS {since: 1994}]->() RETURN n" );
-        assert containsNodes( res, true, TestEdge.from( List.of( "Person" ), Pair.of( "name", "Max" ) ) );
+        assert containsNodes( res, true, TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) ) );
     }
 
 
@@ -194,7 +205,7 @@ public class MatchTest extends CypherTestTemplate {
         execute( MULTIPLE_HOP_EDGE );
 
         GraphResult res = execute( "MATCH (n)-[]->()-[]-() RETURN n" );
-        containsNodes( res, true, TestEdge.from( List.of( "Person" ) ) );
+        containsNodes( res, true, TestNode.from( List.of( "Person" ) ) );
 
         res = execute( "MATCH ()-[r:FRIEND_OF {since:2000}]->()-[]-() RETURN r" );
         assertEdge( res, 0 );
@@ -236,9 +247,131 @@ public class MatchTest extends CypherTestTemplate {
                 Row.of( TestNode.from( List.of( "Animal" ), Pair.of( "name", "Kira" ) ) ) );
     }
 
-    ///////////////////////////////////////////////
-    ///////// MIXED
-    ///////////////////////////////////////////////
+
+    @Test
+    void unboundedHopsReturnEveryNonemptyTrailWithoutReusingAnEdge() {
+        createHopGraph();
+
+        assertPaths( "MATCH p=(:Place {name:'A'})-[*]->(:Place) RETURN p", List.of(
+                List.of( "A", "B" ), List.of( "A", "B", "C" ), List.of( "A", "B", "C", "A" ),
+                List.of( "A", "B", "D" ), List.of( "A", "B", "E" ) ) );
+        assertPaths( "MATCH p=(:Place {name:'Isolated'})-[*]->(:Place) RETURN p", List.of() );
+    }
+
+
+    @Test
+    void openHopBoundsRespectDirectionAndRelationshipConstraints() {
+        createHopGraph();
+
+        assertPaths( "MATCH p=(:Place {name:'A'})<-[:ROAD*2.. {open:true}]-(:Place) RETURN p", List.of(
+                List.of( "A", "C", "B" ), List.of( "A", "C", "B", "A" ) ) );
+        assertPaths( "MATCH p=(:Place {name:'A'})-[:ROAD*1.. {open:true}]->(:Place) RETURN p", List.of(
+                List.of( "A", "B" ), List.of( "A", "B", "C" ), List.of( "A", "B", "C", "A" ) ) );
+        assertPaths( "MATCH p=(:Place {name:'A'})-[:ROAD*..2 {open:true}]->(:Place) RETURN p", List.of(
+                List.of( "A", "B" ), List.of( "A", "B", "C" ) ) );
+        assertPaths( "MATCH p=(:Place {name:'Isolated'})-[*0..]->(:Place) RETURN p", List.of( List.of( "Isolated" ) ) );
+    }
+
+
+    @Test
+    void acceptsOpenCypherIntegerLiteralsInHopRanges() {
+        createHopGraph();
+        String query = "MATCH p=(:Place {name:'A'})-[:ROAD*%s]->(:Place) RETURN p";
+        List<List<String>> twoHops = List.of( List.of( "A", "B", "C" ), List.of( "A", "B", "E" ) );
+        List<List<String>> twoOrThreeHops = List.of( List.of( "A", "B", "C" ), List.of( "A", "B", "E" ), List.of( "A", "B", "C", "A" ) );
+        for ( String exact : List.of( "2", "0x2", "0o2" ) ) {
+            assertPaths( query.formatted( exact ), twoHops );
+        }
+        assertPaths( query.formatted( "0x2 .. 0o3" ), twoOrThreeHops );
+        assertPaths( query.formatted( "0o2.." ), twoOrThreeHops );
+        assertPaths( query.formatted( "..0x2" ), List.of( List.of( "A", "B" ), List.of( "A", "B", "C" ), List.of( "A", "B", "E" ) ) );
+        assertPaths( query.formatted( "2..0xF" ), twoOrThreeHops );
+        assertPaths( query.formatted( "0x0" ), List.of( List.of( "A" ) ) );
+    }
+
+
+    @Test
+    void comparesWideIntegerBoundsBeforeNarrowingToGraphCapacity() {
+        createHopGraph();
+        String query = "MATCH p=(:Place {name:'A'})-[:ROAD*%s]->(:Place) RETURN p";
+        List<List<String>> twoOrThreeHops = List.of( List.of( "A", "B", "C" ), List.of( "A", "B", "E" ), List.of( "A", "B", "C", "A" ) );
+        assertPaths( query.formatted( "2..2147483648" ), twoOrThreeHops );
+        assertPaths( query.formatted( "0o2..0x7fffffffffffffff" ), twoOrThreeHops );
+        assertPaths( query.formatted( "2147483648" ), List.of() );
+        assertPaths( query.formatted( "0x80000000.." ), List.of() );
+        assertPaths( query.formatted( "9223372036854775807..0o2" ), List.of() );
+        for ( String overflow : List.of( "9223372036854775808", "0x8000000000000000" ) ) {
+            assertNotNull( CypherConnection.executeGetResponse( query.formatted( overflow ) ).getError(), overflow );
+        }
+    }
+
+
+    @Test
+    void rejectsNonStandardRangeLiteralsDuringParsing() {
+        String query = "MATCH p=()-[:ROAD*%s]->() RETURN p";
+        for ( String invalid : List.of( "01", "0_1", "1_2", "0x_1", "0o_1", "0X1", "0O1", "0x", "0o8", "-2", "1..02", "0x_1..2" ) ) {
+            assertNotNull( CypherConnection.executeGetResponse( query.formatted( invalid ) ).getError(), invalid );
+        }
+        String createError = CypherConnection.executeGetResponse( "CREATE ()-[:ROAD*01]->()" ).getError();
+        assertNotNull( createError );
+        assertTrue( createError.contains( "Invalid Cypher relationship length: 01" ), createError );
+    }
+
+
+    @Test
+    void repeatedZeroHopRelationshipCannotMatchWithinOneClause() {
+        createHopGraph();
+
+        String source = "(a:Place {name:'A'})-[r:ROAD*0]->(b)";
+        assertPaths( "MATCH p=" + source + "-[r:ROAD*0]->(c) RETURN p", List.of() );
+        assertPaths( "MATCH p=" + source + ", (a)-[r:ROAD*0]->(c) RETURN p", List.of() );
+        assertPaths( "MATCH p=" + source + "-[s:ROAD*0]->(c) RETURN p", List.of( List.of( "A" ) ) );
+        assertPaths( "MATCH p=" + source + ", (a)-[s:ROAD*0]->(c) RETURN p", List.of( List.of( "A" ) ) );
+
+        GraphResult result = execute( "MATCH (a:Place {name:'A'}) OPTIONAL MATCH p=(a)-[r:ROAD*0]->(b), (a)-[r:ROAD*0]->(c) RETURN p IS NULL AS missing" );
+        assertEquals( 1, result.getData().length );
+        assertTrue( PolyValue.fromTypedJson( result.getData()[0][0], PolyValue.class ).asBoolean().value );
+    }
+
+
+    @Test
+    void joinsAnUnboundedSegmentWithAFixedHopAndSharedEndpoint() {
+        createHopGraph();
+
+        assertPaths( "MATCH p=(a:Place {name:'A'})-[:ROAD]->()-[:ROAD*]->(a) RETURN p",
+                List.of( List.of( "A", "B", "C", "A" ) ) );
+    }
+
+
+    private static void createHopGraph() {
+        execute( """
+                CREATE (a:Place {name:'A'})-[:ROAD {open:true}]->(b:Place {name:'B'})
+                    -[:ROAD {open:true}]->(c:Place {name:'C'})-[:ROAD {open:true}]->(a),
+                    (b)-[:RAIL {open:true}]->(:Place {name:'D'}),
+                    (b)-[:ROAD {open:false}]->(:Place {name:'E'}), (:Place {name:'Isolated'})
+                """ );
+    }
+
+
+    private static void assertPaths( String query, List<List<String>> expected ) {
+        List<List<String>> names = Arrays.stream( execute( query ).getData() )
+                .map( row -> PolyValue.fromTypedJson( row[0], PolyValue.class ).asPath() )
+                .map( path -> {
+                    assertEquals( path.getNodes().size() - 1, path.getEdges().size() );
+                    assertEquals( path.getEdges().size(), path.getEdges().stream().map( edge -> edge.id ).distinct().count() );
+                    return path.getNodes().stream()
+                            .map( node -> node.getProperties().get( PolyString.of( "name" ) ).asString().getValue() )
+                            .toList();
+                } )
+                .toList();
+        assertEquals( expected.size(), names.size(), query );
+        assertEquals( Set.copyOf( expected ), Set.copyOf( names ), query );
+    }
+
+
+    /// ////////////////////////////////////////////
+    /// ////// MIXED
+    /// ////////////////////////////////////////////
 
 
     @Test
@@ -257,9 +390,10 @@ public class MatchTest extends CypherTestTemplate {
 
     }
 
-    ///////////////////////////////////////////////
-    ///////// "CROSS PRODUCT" MATCH
-    ///////////////////////////////////////////////
+
+    /// ////////////////////////////////////////////
+    /// ////// "CROSS PRODUCT" MATCH
+    /// ////////////////////////////////////////////
 
 
     @Test
@@ -338,9 +472,10 @@ public class MatchTest extends CypherTestTemplate {
                 Row.of( HANS, HANS, HANS ) );
     }
 
-    ///////////////////////////////////////////////
-    ///////// PATH
-    ///////////////////////////////////////////////
+
+    /// ////////////////////////////////////////////
+    /// ////// PATH
+    /// ////////////////////////////////////////////
 
 
     @Test

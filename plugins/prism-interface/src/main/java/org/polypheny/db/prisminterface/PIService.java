@@ -28,8 +28,10 @@ import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
 import org.polypheny.db.prisminterface.statements.PIPreparedIndexedStatement;
 import org.polypheny.db.prisminterface.statements.PIPreparedNamedStatement;
@@ -44,6 +46,7 @@ import org.polypheny.db.prisminterface.utils.VersionUtils;
 import org.polypheny.db.sql.language.SqlJdbcFunctionCall;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.RunMode;
 import org.polypheny.db.util.Util;
 import org.polypheny.prism.ClientInfoProperties;
@@ -166,22 +169,18 @@ class PIService {
     }
 
 
-    private Response handleRequest( Request req ) {
+    private Response handleRequest( Request req ) throws IOException {
         Response r;
         try {
             r = handleMessage( req );
         } catch ( Throwable t ) {
-            if ( Catalog.mode == RunMode.BENCHMARK ) {
+            if ( Catalog.mode == RunMode.BENCHMARK && !(t instanceof DeadlockException) ) {
                 log.error( "Request failed: ", t );
             }
             r = createErrorResponse( req.getId(), Objects.requireNonNullElse( t.getMessage(), t.getClass().getSimpleName() ) );
         }
-        try {
-            sendOneMessage( r );
-            return r;
-        } catch ( IOException e ) {
-            throw new GenericRuntimeException( e );
-        }
+        sendOneMessage( r );
+        return r;
     }
 
 
@@ -212,15 +211,17 @@ class PIService {
 
 
     private void acceptLoop() {
+        String reason = null;
         try {
             handleMessages();
         } catch ( Throwable e ) {
-            if ( !(e instanceof EOFException) ) {
+            if ( !(e instanceof EOFException) && !e.getMessage().equals( "Broken pipe" ) ) {
                 throw new GenericRuntimeException( e );
             }
+            reason = e.getMessage();
         } finally {
             if ( uuid != null ) {
-                clientManager.unregisterConnection( clientManager.getClient( uuid ) );
+                clientManager.unregisterConnection( clientManager.getClient( uuid ), reason );
             }
             Util.closeNoThrow( con );
         }
@@ -233,18 +234,26 @@ class PIService {
 
 
     private Request readOneMessage( BlockingQueue<Optional<byte[]>> waiting ) throws IOException {
-        try {
-            return Request.parseFrom( waiting.take().orElseThrow( EOFException::new ) );
-        } catch ( InterruptedException e ) {
-            throw new IOException( e );
+        byte[] msg;
+        while ( true ) {
+            try {
+                msg = waiting.take().orElseThrow( EOFException::new );
+                break;
+            } catch ( InterruptedException e ) {
+                // retry
+            }
         }
+        return Request.parseFrom( msg );
     }
 
 
     private Response handleMessage( Request req ) throws IOException {
-        if ( uuid == null || clientManager.getClient( uuid ) == null ) {
+        PIClient client = uuid == null ? null : clientManager.getClient( uuid );
+        if ( client == null ) {
             throw new IllegalStateException( "Clients must be authenticated before sending any messages" );
         }
+        checkAutocommitExecution( req, client );
+
         return switch ( req.getTypeCase() ) {
             case DBMS_VERSION_REQUEST -> getDbmsVersion( req.getDbmsVersionRequest(), new ResponseMaker<>( req, "dbms_version_response" ) );
             case DEFAULT_NAMESPACE_REQUEST -> getDefaultNamespace( req.getDefaultNamespaceRequest(), new ResponseMaker<>( req, "default_namespace_response" ) );
@@ -282,6 +291,38 @@ class PIService {
     }
 
 
+    private void checkAutocommitExecution( Request request, PIClient client ) {
+        if ( !client.isAutoCommit() ) {
+            return;
+        }
+        boolean graphStatement;
+        switch ( request.getTypeCase() ) {
+            case EXECUTE_UNPARAMETERIZED_STATEMENT_REQUEST -> graphStatement = isGraphLanguage( request.getExecuteUnparameterizedStatementRequest().getLanguageName() );
+            case EXECUTE_UNPARAMETERIZED_STATEMENT_BATCH_REQUEST -> graphStatement = request.getExecuteUnparameterizedStatementBatchRequest()
+                    .getStatementsList().stream().anyMatch( item -> isGraphLanguage( item.getLanguageName() ) );
+            case PREPARE_NAMED_STATEMENT_REQUEST -> {
+                // Preparing a named Cypher statement only parses it and does not join the active transaction.
+                if ( isGraphLanguage( request.getPrepareNamedStatementRequest().getLanguageName() ) ) {
+                    return;
+                }
+                graphStatement = false;
+            }
+            case EXECUTE_NAMED_STATEMENT_REQUEST -> graphStatement = client.getStatementManager()
+                    .getStatement( request.getExecuteNamedStatementRequest().getStatementId() ).getLanguage().dataModel() == DataModel.GRAPH;
+            case PREPARE_INDEXED_STATEMENT_REQUEST, EXECUTE_INDEXED_STATEMENT_REQUEST, EXECUTE_INDEXED_STATEMENT_BATCH_REQUEST -> graphStatement = false;
+            default -> {
+                return;
+            }
+        }
+        client.getStatementManager().checkAutocommitExecution( graphStatement );
+    }
+
+
+    private static boolean isGraphLanguage( String language ) {
+        return QueryLanguage.containsLanguage( language ) && QueryLanguage.from( language ).dataModel() == DataModel.GRAPH;
+    }
+
+
     private Response connect( ConnectionRequest request, ResponseMaker<ConnectionResponse> responseObserver ) throws TransactionException, AuthenticationException {
         if ( uuid != null ) {
             throw new PIServiceException( "Can only connect once per session" );
@@ -305,7 +346,7 @@ class PIService {
 
     private Response disconnect( DisconnectRequest request, ResponseMaker<DisconnectResponse> responseObserver ) {
         PIClient client = getClient();
-        clientManager.unregisterConnection( client );
+        clientManager.unregisterConnection( client, null );
         uuid = null;
         return responseObserver.makeResponse( DisconnectResponse.newBuilder().build() );
     }
@@ -352,7 +393,7 @@ class PIService {
 
     private Response searchEntities( EntitiesRequest request, ResponseMaker<EntitiesResponse> responseObserver ) {
         String entityPattern = request.hasEntityPattern() ? request.getEntityPattern() : null;
-        return responseObserver.makeResponse( DbMetaRetriever.searchEntities( request.getNamespaceName(), entityPattern ) );
+        return responseObserver.makeResponse( DbMetaRetriever.searchEntities( request.getNamespaceName(), entityPattern, getClient() ) );
     }
 
 
@@ -412,10 +453,19 @@ class PIService {
     private Response executeUnparameterizedStatementBatch( ExecuteUnparameterizedStatementBatchRequest request, ResponseMaker<StatementBatchResponse> responseObserver ) throws IOException {
         PIClient client = getClient();
         PIUnparameterizedStatementBatch batch = client.getStatementManager().createUnparameterizedStatementBatch( request.getStatementsList() );
-        Response mid = responseObserver.makeResponse( PrismUtils.createStatementBatchStatus( batch.getBatchId() ), false );
-        sendOneMessage( mid );
-        List<Long> updateCounts = batch.executeBatch();
-        return responseObserver.makeResponse( PrismUtils.createStatementBatchStatus( batch.getBatchId(), updateCounts ) );
+        try {
+            List<Node> parsedStatements = batch.validate();
+            sendOneMessage( responseObserver.makeResponse( PrismUtils.createStatementBatchStatus( batch.getBatchId() ), false ) );
+            List<Long> updateCounts = batch.executeBatch( parsedStatements );
+            return responseObserver.makeResponse( PrismUtils.createStatementBatchStatus( batch.getBatchId(), updateCounts ) );
+        } catch ( Throwable failure ) {
+            try {
+                client.getStatementManager().closeStatementOrBatch( batch.getBatchId() );
+            } catch ( RuntimeException closeFailure ) {
+                failure.addSuppressed( closeFailure );
+            }
+            throw failure;
+        }
     }
 
 
@@ -486,7 +536,7 @@ class PIService {
 
     private Response rollbackTransaction( RollbackRequest request, ResponseMaker<RollbackResponse> responseStreamObserver ) {
         PIClient client = getClient();
-        client.rollbackCurrentTransaction();
+        client.rollbackCurrentTransaction( null );
         return responseStreamObserver.makeResponse( RollbackResponse.newBuilder().build() );
     }
 
@@ -501,7 +551,7 @@ class PIService {
     private Response closeResult( CloseResultRequest request, ResponseMaker<CloseResultResponse> responseObserver ) {
         PIClient client = getClient();
         PIStatement statement = client.getStatementManager().getStatement( request.getStatementId() );
-        statement.closeResults();
+        statement.closeResultsAndCommitIfAuto();
         return responseObserver.makeResponse( CloseResultResponse.newBuilder().build() );
     }
 
@@ -509,6 +559,13 @@ class PIService {
     private Response updateConnectionProperties( ConnectionPropertiesUpdateRequest request, ResponseMaker<ConnectionPropertiesUpdateResponse> responseObserver ) {
         PIClient client = getClient();
         ConnectionProperties properties = request.getConnectionProperties();
+        boolean changesAutocommit = properties.hasIsAutoCommit() && properties.getIsAutoCommit() != client.isAutoCommit();
+        if ( changesAutocommit && client.getStatementManager().hasOpenResult( true ) ) {
+            throw new PIServiceException( "Close or finish the open Cypher result before changing autocommit mode" );
+        }
+        if ( changesAutocommit && client.hasActiveIsolatedReadTransactions() ) {
+            throw new PIServiceException( "Close or finish the open results before changing autocommit mode" );
+        }
         if ( properties.hasIsAutoCommit() ) {
             client.setAutoCommit( properties.getIsAutoCommit() );
         }
@@ -535,6 +592,15 @@ class PIService {
 
     private Response setClientInfoProperties( ClientInfoProperties properties, ResponseMaker<ClientInfoPropertiesResponse> reponseObserver ) {
         PIClient client = getClient();
+        String format = properties.getPropertiesMap().get( PIClientInfoProperties.CYPHER_RESULT_FORMAT );
+        if ( format != null && !PIClientInfoProperties.AUTO_FORMAT.equals( format ) ) {
+            if ( !PIClientInfoProperties.RELATIONAL_FORMAT.equals( format ) ) {
+                throw new PIServiceException( "CypherResultFormat must be 'auto' or 'relational'" );
+            }
+            if ( !client.supportsGraphValues() ) {
+                throw new PIServiceException( "Relational Cypher results require Prism 2.3 or later" );
+            }
+        }
         client.getPIClientInfoProperties().putAll( properties.getPropertiesMap() );
         return reponseObserver.makeResponse( ClientInfoPropertiesResponse.newBuilder().build() );
     }

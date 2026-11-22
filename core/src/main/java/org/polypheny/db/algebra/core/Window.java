@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.AbstractList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.Optional;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
@@ -207,23 +207,15 @@ public abstract class Window extends SingleAlg {
         //
         // TODO #1. Add memory cost.
         // TODO #2. MIN and MAX have higher CPU cost than SUM and COUNT.
-        final double rowsIn = mq.getTupleCount( getInput() );
+        Optional<Double> rowsIn = mq.getTupleCount( getInput() );
+        if ( rowsIn.isEmpty() ) {
+            return planner.getCostFactory().makeInfiniteCost();
+        }
         int count = groups.size();
         for ( Group group : groups ) {
             count += group.aggCalls.size();
         }
-        return planner.getCostFactory().makeCost( rowsIn, rowsIn * count, 0 );
-    }
-
-
-    @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                input.algCompareString() + "$" +
-                (constants != null ? constants.stream().map( RexLiteral::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
-                rowType.toString() + "$" +
-                (groups != null ? groups.hashCode() : "") + "&";
-
+        return planner.getCostFactory().makeCost( rowsIn.get(), rowsIn.get() * count, 0 );
     }
 
 
@@ -425,5 +417,10 @@ public abstract class Window extends SingleAlg {
 
     }
 
-}
 
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
+}

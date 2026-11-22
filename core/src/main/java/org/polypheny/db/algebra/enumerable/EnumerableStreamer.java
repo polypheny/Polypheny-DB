@@ -18,6 +18,7 @@ package org.polypheny.db.algebra.enumerable;
 
 
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.function.Function;
@@ -58,8 +59,13 @@ public class EnumerableStreamer extends Streamer implements EnumerableAlg {
     }
 
 
-    public static EnumerableStreamer create( AlgTraitSet traitSet, AlgNode query, AlgNode prepared ) {
-        return new EnumerableStreamer( query.getCluster(), traitSet, query, prepared );
+    public EnumerableStreamer( AlgCluster cluster, AlgTraitSet traitSet, AlgNode provider, AlgNode collector, int returningParameters, boolean batchGraphWrites ) {
+        super( cluster, traitSet, provider, collector, returningParameters, batchGraphWrites );
+    }
+
+
+    public static EnumerableStreamer create( AlgTraitSet traitSet, AlgNode query, AlgNode prepared, int returningParameters, boolean batchGraphWrites ) {
+        return new EnumerableStreamer( query.getCluster(), traitSet, query, prepared, returningParameters, batchGraphWrites );
     }
 
 
@@ -76,31 +82,41 @@ public class EnumerableStreamer extends Streamer implements EnumerableAlg {
 
         final Result prepared = implementor.visitChild( this, 1, (EnumerableAlg) getRight(), pref );
 
-        Expression executor = builder.append( builder.newName( "executor" + System.nanoTime() ), prepared.block() );
-
+        boolean returning = getReturningParameters() > 0;
         ParameterExpression exp = Expressions.parameter( Types.of( Function0.class, Enumerable.class ), builder.newName( "executor" + System.nanoTime() ) );
 
-        // move executor enumerable into a lambda so parameters get not prematurely  executed with a "wrong" context (e.g. Cottontail)
-        FunctionExpression<Function<?>> expCall = Expressions.lambda( Expressions.block( Expressions.return_( null, executor ) ) );
-
+        // Each returning graph row binds its write parameters before evaluating the collector.
+        FunctionExpression<Function<?>> expCall;
+        if ( returning ) {
+            expCall = Expressions.lambda( prepared.block() );
+        } else {
+            Expression executor = builder.append( builder.newName( "executor" + System.nanoTime() ), prepared.block() );
+            expCall = Expressions.lambda( Expressions.block( Expressions.return_( null, executor ) ) );
+        }
         builder.add( Expressions.declare( Modifier.FINAL, exp, expCall ) );
 
-        MethodCallExpression transformContext = Expressions.call(
-                BuiltInMethod.STREAM_RIGHT.method,
+        int parameterCount = returning ? getReturningParameters() : getLeft().getTupleType().getFieldCount();
+        List<Expression> arguments = new ArrayList<>( List.of(
                 Expressions.constant( DataContext.ROOT ),
                 builder.append( builder.newName( "query" + System.nanoTime() ), query.block() ),
                 exp,
-                Expressions.constant( getLeft().getTupleType().getFields().stream().map( f -> f.getType().getPolyType() ).toList() ) );
+                Expressions.constant( getLeft().getTupleType().getFields().stream().limit( parameterCount ).map( f -> f.getType().getPolyType() ).toList() ) ) );
+        if ( returning ) {
+            arguments.add( Expressions.constant( isBatchGraphWrites() ) );
+        }
+        MethodCallExpression transformContext = Expressions.call(
+                (returning ? BuiltInMethod.STREAM_GRAPH_ROWS : BuiltInMethod.STREAM_RIGHT).method, arguments );
 
-        builder.add( Expressions.return_( null, builder.append( "test", transformContext ) ) );
+        // Keep returning graph writes in their own statement so a following MATCH cannot start its scan first.
+        builder.add( Expressions.return_( null, builder.append( "rows", transformContext, !returning ) ) );
 
-        return implementor.result( prepared.physType(), builder.toBlock() );
+        return implementor.result( returning ? query.physType() : prepared.physType(), builder.toBlock() );
     }
 
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new EnumerableStreamer( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), inputs.get( 1 ) );
+        return new EnumerableStreamer( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), inputs.get( 1 ), getReturningParameters(), isBatchGraphWrites() );
     }
 
 }

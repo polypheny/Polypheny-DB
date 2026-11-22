@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -122,6 +122,7 @@ public class AlgMdPopulationSize implements MetadataHandler<BuiltInMetadata.Popu
     }
 
 
+    @SuppressWarnings("unused") // used by codegen
     public Double getPopulationSize( Project alg, AlgMetadataQuery mq, ImmutableBitSet groupKey ) {
         ImmutableBitSet.Builder baseCols = ImmutableBitSet.builder();
         ImmutableBitSet.Builder projCols = ImmutableBitSet.builder();
@@ -147,7 +148,7 @@ public class AlgMdPopulationSize implements MetadataHandler<BuiltInMetadata.Popu
         }
 
         // REVIEW zfong: Broadbase did not have the call to numDistinctVals.  This is needed; otherwise, population can be larger than the number of rows in the AlgNode.
-        return AlgMdUtil.numDistinctVals( population, mq.getTupleCount( alg ) );
+        return AlgMdUtil.numDistinctVals( population, mq.getTupleCount( alg ).orElse( Double.MAX_VALUE ) );
     }
 
 
@@ -156,13 +157,14 @@ public class AlgMdPopulationSize implements MetadataHandler<BuiltInMetadata.Popu
      *
      * @see AlgMetadataQuery#getPopulationSize(AlgNode, ImmutableBitSet)
      */
+    @SuppressWarnings("unused") //used by codegen
     public Double getPopulationSize( AlgNode alg, AlgMetadataQuery mq, ImmutableBitSet groupKey ) {
         // if the keys are unique, return the row count; otherwise, we have no further information on which to return any legitimate value
 
         // REVIEW zfong: Broadbase code returns the product of each unique key, which would result in the population being larger than the total rows in the relnode
         boolean uniq = AlgMdUtil.areColumnsDefinitelyUnique( mq, alg, groupKey );
         if ( uniq ) {
-            return mq.getTupleCount( alg );
+            return mq.getTupleCount( alg ).orElse( Double.MAX_VALUE );
         }
 
         return null;

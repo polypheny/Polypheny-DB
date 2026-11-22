@@ -29,8 +29,10 @@ import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalDocumentCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.LogicalDocSnapshot;
+import org.polypheny.db.util.Pair;
 
 @Slf4j
 @EqualsAndHashCode
@@ -38,14 +40,22 @@ public class LogicalDocSnapshotImpl implements LogicalDocSnapshot {
 
     private final ImmutableMap<Long, LogicalNamespace> namespaces;
     private final ImmutableMap<Long, LogicalCollection> collections;
-    private final ImmutableMap<String, LogicalCollection> collectionNames;
+    private final ImmutableMap<Pair<Long, String>, LogicalCollection> collectionNames;
     private final ImmutableMap<Long, List<LogicalCollection>> namespaceCollections;
 
 
     public LogicalDocSnapshotImpl( Map<Long, LogicalDocumentCatalog> catalogs ) {
         this.namespaces = ImmutableMap.copyOf( catalogs.values().stream().collect( Collectors.toMap( n -> n.getLogicalNamespace().id, LogicalCatalog::getLogicalNamespace ) ) );
         this.collections = ImmutableMap.copyOf( catalogs.values().stream().flatMap( c -> c.getCollections().values().stream() ).collect( Collectors.toMap( c -> c.id, c -> c ) ) );
-        this.collectionNames = ImmutableMap.copyOf( this.collections.values().stream().collect( Collectors.toMap( c -> c.name, c -> c ) ) );
+        this.collectionNames = ImmutableMap.copyOf( this.collections.values().stream().collect(
+                Collectors.toMap(
+                        c -> Pair.of( c.namespaceId, c.name ),
+                        c -> c,
+                        ( existing, replacement ) -> {
+                            throw new GenericRuntimeException( "A collection of documents called '" + existing.name + "' already exists." );
+                        }
+                )
+        ) );
         this.namespaceCollections = ImmutableMap.copyOf( catalogs.values().stream().collect( Collectors.toMap( c -> c.getLogicalNamespace().id, c -> List.copyOf( c.getCollections().values() ) ) ) );
     }
 

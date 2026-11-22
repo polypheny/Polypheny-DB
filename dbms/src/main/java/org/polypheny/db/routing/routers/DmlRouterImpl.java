@@ -31,13 +31,11 @@ import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Values;
-import org.polypheny.db.algebra.core.common.BatchIterator;
-import org.polypheny.db.algebra.core.common.ConditionalExecute;
-import org.polypheny.db.algebra.core.common.ConstraintEnforcer;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
 import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.core.lpg.LpgScan;
@@ -46,9 +44,11 @@ import org.polypheny.db.algebra.logical.common.LogicalBatchIterator;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.common.LogicalContextSwitcher;
+import org.polypheny.db.algebra.logical.common.LogicalStreamer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgMergeRows;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
 import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
@@ -89,6 +89,7 @@ import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.RoutedAlgBuilder;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Triple;
@@ -98,7 +99,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     @Override
-    public AlgNode routeDml( LogicalRelModify modify, Statement statement ) {
+    public AlgNode routeRelationalDml( LogicalRelModify modify, Statement statement ) {
         AlgCluster cluster = modify.getCluster();
 
         if ( modify.entity == null ) {
@@ -331,8 +332,6 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         } else {
             return new LogicalModifyCollect( modify.getCluster(), modify.getTraitSet(), modifies, true );
         }
-
-
     }
 
 
@@ -593,15 +592,14 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     @Override
-    public AlgNode handleConditionalExecute( AlgNode node, RoutingContext context ) {
-        LogicalConditionalExecute lce = (LogicalConditionalExecute) node;
+    public LogicalConditionalExecute handleConditionalExecute( LogicalConditionalExecute lce, RoutingContext context ) {
         RoutedAlgBuilder builder = context.getRoutedAlgBuilder();
         builder = RoutingManager.getInstance().getFallbackRouter().routeFirst( lce.getLeft(), builder, context );
         AlgNode action;
-        if ( lce.getRight() instanceof LogicalConditionalExecute ) {
-            action = handleConditionalExecute( lce.getRight(), context );
+        if ( lce.getRight() instanceof LogicalConditionalExecute logicalConditionalExecute ) {
+            action = handleConditionalExecute( logicalConditionalExecute, context );
         } else if ( lce.getRight() instanceof LogicalRelModify ) {
-            action = routeDml( (LogicalRelModify) lce.getRight(), context.getStatement() );
+            action = routeRelationalDml( (LogicalRelModify) lce.getRight(), context.getStatement() );
         } else {
             throw new IllegalArgumentException();
         }
@@ -611,20 +609,19 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     @Override
-    public AlgNode handleConstraintEnforcer( AlgNode alg, RoutingContext context ) {
-        LogicalConstraintEnforcer constraint = (LogicalConstraintEnforcer) alg;
+    public LogicalConstraintEnforcer handleConstraintEnforcer( LogicalConstraintEnforcer constraint, RoutingContext context ) {
         RoutedAlgBuilder builder = context.getRoutedAlgBuilder();
         builder = RoutingManager.getInstance().getFallbackRouter().routeFirst( constraint.getRight(), builder, context );
 
-        if ( constraint.getLeft() instanceof RelModify ) {
+        if ( constraint.getLeft() instanceof LogicalRelModify logicalRelModify ) {
             return LogicalConstraintEnforcer.create(
-                    routeDml( (LogicalRelModify) constraint.getLeft(), context.getStatement() ),
+                    routeRelationalDml( logicalRelModify, context.getStatement() ),
                     builder.build(),
                     constraint.getExceptionClasses(),
                     constraint.getExceptionMessages() );
-        } else if ( constraint.getLeft() instanceof BatchIterator ) {
+        } else if ( constraint.getLeft() instanceof LogicalBatchIterator logicalBatchIterator ) {
             return LogicalConstraintEnforcer.create(
-                    handleBatchIterator( constraint.getLeft(), context ),
+                    handleBatchIterator( logicalBatchIterator, context ),
                     builder.build(),
                     constraint.getExceptionClasses(),
                     constraint.getExceptionMessages() );
@@ -635,15 +632,14 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     @Override
-    public AlgNode handleBatchIterator( AlgNode alg, RoutingContext context ) {
-        LogicalBatchIterator iterator = (LogicalBatchIterator) alg;
+    public LogicalBatchIterator handleBatchIterator( LogicalBatchIterator iterator, RoutingContext context ) {
         AlgNode input;
-        if ( iterator.getInput() instanceof RelModify ) {
-            input = routeDml( (LogicalRelModify) iterator.getInput(), context.getStatement() );
-        } else if ( iterator.getInput() instanceof ConditionalExecute ) {
-            input = handleConditionalExecute( iterator.getInput(), context );
-        } else if ( iterator.getInput() instanceof ConstraintEnforcer ) {
-            input = handleConstraintEnforcer( iterator.getInput(), context );
+        if ( iterator.getInput() instanceof LogicalRelModify logicalRelModify ) {
+            input = routeRelationalDml( logicalRelModify, context.getStatement() );
+        } else if ( iterator.getInput() instanceof LogicalConditionalExecute logicalConditionalExecute ) {
+            input = handleConditionalExecute( logicalConditionalExecute, context );
+        } else if ( iterator.getInput() instanceof LogicalConstraintEnforcer logicalConstraintEnforcer ) {
+            input = handleConstraintEnforcer( logicalConstraintEnforcer, context );
         } else {
             throw new GenericRuntimeException( "BachIterator had an unknown child!" );
         }
@@ -657,6 +653,14 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
 
         LogicalCollection collection = alg.entity.unwrap( LogicalCollection.class ).orElseThrow( () -> new GenericRuntimeException( String.format( "%s is not a collection", alg.entity.name ) ) );
+
+        if ( !collection.modifiable ) {
+            throw switch ( collection.entityType ) {
+                case ENTITY -> new GenericRuntimeException( "Unable to modify a collection marked as read-only!" );
+                case SOURCE -> new GenericRuntimeException( "The collection '%s' is provided by a data source which does not support data modification.", collection.name );
+                case VIEW, MATERIALIZED_VIEW -> new GenericRuntimeException( "Polypheny-DB does not support modifying views." );
+            };
+        }
 
         List<AlgNode> modifies = new ArrayList<>();
 
@@ -676,6 +680,12 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
 
 
     @Override
+    public AlgNode routeGraphDml( AlgNode root, Statement statement ) {
+        return buildGraphDml( root, statement, null, null );
+    }
+
+
+    @Override
     public AlgNode routeGraphDml( LogicalLpgModify alg, Statement statement, @Nullable AllocationEntity target, @Nullable List<Long> excludedPlacements ) {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
         List<AlgNode> modifies = new ArrayList<>();
@@ -685,7 +695,10 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             return alg;
         }
 
-        LogicalGraph graph = alg.entity.unwrap( LogicalGraph.class ).orElseThrow();
+        LogicalGraph graph = alg.entity.unwrapOrThrow( LogicalGraph.class );
+        if ( alg.returnsRows() ) {
+            return routeReturningGraphDml( alg, statement, graph, target, excludedPlacements );
+        }
 
         if ( target != null ) {
             return new LogicalLpgModify( alg.getCluster(),
@@ -728,7 +741,54 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
     }
 
 
+    private AlgNode routeReturningGraphDml( LogicalLpgModify modify, Statement statement, LogicalGraph graph,
+            @Nullable AllocationEntity target, @Nullable List<Long> excludedPlacements ) {
+        Snapshot snapshot = statement.getTransaction().getSnapshot();
+        List<AllocationPartition> partitions = snapshot.alloc().getPartitionsFromLogical( graph.id );
+        if ( partitions.size() != 1 ) {
+            throw new GenericRuntimeException( "Graph writes require exactly one partition" );
+        }
+        List<AllocationEntity> targets = target != null ? List.of( target ) : snapshot.alloc().getPlacementsFromLogical( graph.id ).stream()
+                .filter( placement -> excludedPlacements == null || !excludedPlacements.contains( placement.id ) )
+                .map( placement -> snapshot.alloc().getAlloc( placement.id, partitions.get( 0 ).id ).orElseThrow() )
+                .toList();
+        if ( targets.isEmpty() ) {
+            throw new GenericRuntimeException( "No graph placement is available to write" );
+        }
+
+        AlgNode provider = buildGraphDml( modify.getInput(), statement, target, excludedPlacements );
+        if ( modify.operation == Operation.MERGE && provider instanceof LogicalLpgMergeRows merge ) {
+            List<AlgNode> inputs = new ArrayList<>( merge.getInputs() );
+            inputs.add( graphWriteCollector( modify, statement, targets, Operation.INSERT, merge.getInsertTypes() ) );
+            if ( !merge.getUpdateTypes().isEmpty() ) {
+                inputs.add( graphWriteCollector( modify, statement, targets, Operation.UPDATE, merge.getUpdateTypes() ) );
+            }
+            return merge.copy( merge.getTraitSet(), inputs );
+        }
+        List<PolyType> parameters = provider.getTupleType().getFields().stream().limit( modify.getReturningParameters() )
+                .map( field -> field.getType().getPolyType() ).toList();
+        AlgNode collector = graphWriteCollector( modify, statement, targets, modify.operation, parameters );
+        return new LogicalStreamer( modify.getCluster(), modify.getTraitSet(), provider, collector,
+                modify.getReturningParameters(), modify.operation == Operation.DELETE );
+    }
+
+
+    private AlgNode graphWriteCollector( LogicalLpgModify modify, Statement statement, List<AllocationEntity> targets,
+            Operation operation, List<PolyType> parameters ) {
+        AlgBuilder builder = AlgBuilder.create( statement, modify.getCluster() );
+        List<AlgNode> collectors = targets.stream()
+                .map( allocation -> AdapterManager.getInstance().getStore( allocation.adapterId ).orElseThrow()
+                        .getGraphRowModification( allocation.id, operation, parameters, builder, modify.isDetachDelete() ) )
+                .toList();
+        return collectors.size() == 1 ? collectors.get( 0 )
+                : new LogicalModifyCollect( modify.getCluster(), modify.getTraitSet(), collectors, true );
+    }
+
+
     private AlgNode buildGraphDml( AlgNode node, Statement statement, @Nullable AllocationEntity target, @Nullable List<Long> excludedPlacements ) {
+        if ( node instanceof LogicalLpgModify modify && modify.returnsRows() ) {
+            return routeGraphDml( modify, statement, null, null );
+        }
         if ( node instanceof LpgScan ) {
             return super.handleGraphScan( (LogicalLpgScan) node, statement, target, excludedPlacements );
         }

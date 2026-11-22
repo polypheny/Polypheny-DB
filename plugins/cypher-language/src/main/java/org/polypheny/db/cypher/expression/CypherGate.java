@@ -19,6 +19,7 @@ package org.polypheny.db.cypher.expression;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -53,34 +54,20 @@ public class CypherGate extends CypherExpression {
 
 
     @Override
-    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
-        OperatorName operatorName = null;
-        switch ( gate ) {
-            case OR:
-                operatorName = OperatorName.OR;
-                break;
-            case AND:
-                operatorName = OperatorName.AND;
-                break;
-            case XOR:
-                throw new UnsupportedOperationException();
-            case NOT:
-                return handleSingular( context, type, OperatorName.NOT );
-        }
-
-        return Pair.of( null, new RexCall(
-                context.booleanType,
-                OperatorRegistry.get( operatorName ),
-                List.of( left.getRex( context, type ).right, right.getRex( context, type ).right ) ) );
-
-    }
-
-
-    private Pair<PolyString, RexNode> handleSingular( CypherContext context, RexType type, OperatorName operatorName ) {
-        return Pair.of( null, new RexCall(
-                context.booleanType,
-                OperatorRegistry.get( operatorName ),
-                List.of( left.getRex( context, type ).right ) ) );
+    protected Pair<PolyString, RexNode> toRex( CypherContext context, RexType type ) {
+        OperatorName operatorName = switch ( gate ) {
+            case OR -> OperatorName.OR;
+            case AND -> OperatorName.AND;
+            case NOT -> OperatorName.NOT;
+            case XOR -> throw new UnsupportedOperationException();
+        };
+        RexNode lhs = context.booleanPredicate( left.getRex( context, type ).right );
+        List<RexNode> operands = gate == Gate.NOT
+                ? List.of( lhs )
+                : List.of( lhs, context.booleanPredicate( right.getRex( context, type ).right ) );
+        boolean nullable = operands.stream().anyMatch( operand -> operand.getType().isNullable() );
+        AlgDataType resultType = context.typeFactory.createTypeWithNullability( context.booleanType, nullable );
+        return Pair.of( null, new RexCall( resultType, OperatorRegistry.get( operatorName ), operands ) );
     }
 
 

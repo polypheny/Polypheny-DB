@@ -17,8 +17,6 @@
 package org.polypheny.db.runtime;
 
 import com.drew.lang.annotations.NotNull;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -27,9 +25,6 @@ import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 
 public class PolyCollections {
-
-    private static Gson gson = new GsonBuilder().serializeNulls().enableComplexMapKeySerialization().create();
-
 
     public static class FlatMap<K extends Comparable<?>, V extends Comparable<?>> extends HashMap<K, V> implements Comparable<FlatMap<K, V>> {
 

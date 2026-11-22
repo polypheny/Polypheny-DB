@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 The Polypheny Project
+ * Copyright 2019-2024 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ package org.polypheny.db.algebra;
 
 import java.io.Serializable;
 import java.util.Objects;
+import lombok.Getter;
 import org.polypheny.db.algebra.constant.Monotonicity;
 
 
@@ -105,20 +106,14 @@ public class AlgFieldCollation implements Serializable {
          * Converts the direction to a {@link Monotonicity}.
          */
         public Monotonicity monotonicity() {
-            switch ( this ) {
-                case ASCENDING:
-                    return Monotonicity.INCREASING;
-                case STRICTLY_ASCENDING:
-                    return Monotonicity.STRICTLY_INCREASING;
-                case DESCENDING:
-                    return Monotonicity.DECREASING;
-                case STRICTLY_DESCENDING:
-                    return Monotonicity.STRICTLY_DECREASING;
-                case CLUSTERED:
-                    return Monotonicity.MONOTONIC;
-                default:
-                    throw new AssertionError( "unknown: " + this );
-            }
+            //
+            return switch ( this ) {
+                case ASCENDING -> Monotonicity.INCREASING;
+                case STRICTLY_ASCENDING -> Monotonicity.STRICTLY_INCREASING;
+                case DESCENDING -> Monotonicity.DECREASING;
+                case STRICTLY_DESCENDING -> Monotonicity.STRICTLY_DECREASING;
+                case CLUSTERED -> Monotonicity.MONOTONIC;
+            };
         }
 
 
@@ -126,20 +121,14 @@ public class AlgFieldCollation implements Serializable {
          * Converts a {@link Monotonicity} to a direction.
          */
         public static Direction of( Monotonicity monotonicity ) {
-            switch ( monotonicity ) {
-                case INCREASING:
-                    return ASCENDING;
-                case DECREASING:
-                    return DESCENDING;
-                case STRICTLY_INCREASING:
-                    return STRICTLY_ASCENDING;
-                case STRICTLY_DECREASING:
-                    return STRICTLY_DESCENDING;
-                case MONOTONIC:
-                    return CLUSTERED;
-                default:
-                    throw new AssertionError( "unknown: " + monotonicity );
-            }
+            return switch ( monotonicity ) {
+                case INCREASING -> ASCENDING;
+                case DECREASING -> DESCENDING;
+                case STRICTLY_INCREASING -> STRICTLY_ASCENDING;
+                case STRICTLY_DECREASING -> STRICTLY_DESCENDING;
+                case MONOTONIC -> CLUSTERED;
+                case CONSTANT, NOT_MONOTONIC -> throw new UnsupportedOperationException( "Cannot convert monotonicity " + monotonicity + " into a direction" );
+            };
         }
 
 
@@ -147,16 +136,11 @@ public class AlgFieldCollation implements Serializable {
          * Returns the null direction if not specified. Consistent with Oracle, NULLS are sorted as if they were positive infinity.
          */
         public NullDirection defaultNullDirection() {
-            switch ( this ) {
-                case ASCENDING:
-                case STRICTLY_ASCENDING:
-                    return NullDirection.LAST;
-                case DESCENDING:
-                case STRICTLY_DESCENDING:
-                    return NullDirection.FIRST;
-                default:
-                    return NullDirection.UNSPECIFIED;
-            }
+            return switch ( this ) {
+                case ASCENDING, STRICTLY_ASCENDING -> NullDirection.LAST;
+                case DESCENDING, STRICTLY_DESCENDING -> NullDirection.FIRST;
+                default -> NullDirection.UNSPECIFIED;
+            };
         }
 
 
@@ -164,13 +148,10 @@ public class AlgFieldCollation implements Serializable {
          * Returns whether this is {@link #DESCENDING} or {@link #STRICTLY_DESCENDING}.
          */
         public boolean isDescending() {
-            switch ( this ) {
-                case DESCENDING:
-                case STRICTLY_DESCENDING:
-                    return true;
-                default:
-                    return false;
-            }
+            return switch ( this ) {
+                case DESCENDING, STRICTLY_DESCENDING -> true;
+                default -> false;
+            };
         }
     }
 
@@ -195,11 +176,13 @@ public class AlgFieldCollation implements Serializable {
     /**
      * 0-based index of field being sorted.
      */
+    @Getter
     private final int fieldIndex;
 
     /**
      * Direction of sorting.
      */
+    @Getter
     public final Direction direction;
 
     /**
@@ -269,16 +252,6 @@ public class AlgFieldCollation implements Serializable {
     }
 
 
-    public int getFieldIndex() {
-        return fieldIndex;
-    }
-
-
-    public AlgFieldCollation.Direction getDirection() {
-        return direction;
-    }
-
-
     public String toString() {
         if ( direction == Direction.ASCENDING && nullDirection == direction.defaultNullDirection() ) {
             return String.valueOf( fieldIndex );
@@ -296,14 +269,11 @@ public class AlgFieldCollation implements Serializable {
         if ( nullDirection == direction.defaultNullDirection() ) {
             return direction.shortString;
         }
-        switch ( nullDirection ) {
-            case FIRST:
-                return direction.shortString + "-nulls-first";
-            case LAST:
-                return direction.shortString + "-nulls-last";
-            default:
-                return direction.shortString;
-        }
+        return switch ( nullDirection ) {
+            case FIRST -> direction.shortString + "-nulls-first";
+            case LAST -> direction.shortString + "-nulls-last";
+            default -> direction.shortString;
+        };
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,9 +64,9 @@ public abstract class Result<E, F> {
     public QueryType queryType = QueryType.DQL;
 
     /**
-     * Transaction id, for the websocket. It will not be serialized to gson.
+     * Transaction id, for the websocket and UI.
      */
-    public transient String xid;
+    public String xid;
 
     /**
      * Error message if a query failed
@@ -96,6 +96,12 @@ public abstract class Result<E, F> {
      */
     public long affectedTuples;
 
+    /**
+     * Whether the associated transaction has been rolled back.
+     */
+    @NonFinal
+    public boolean isRolledBack;
+
 
     /**
      * Remove when bugs in SuperBuilder regarding generics are fixed
@@ -107,15 +113,20 @@ public abstract class Result<E, F> {
          */
         protected B $fillValuesFrom( C instance ) {
             this.data = instance.data;
+            this.header = instance.header;
             this.dataModel = instance.dataModel;
             this.xid = instance.xid;
-            this.error = instance.error;
             this.namespace = instance.namespace;
             this.query = instance.query;
             this.exception = instance.exception;
             this.language$value = instance.language;
             this.error = instance.error;
             this.queryType$value = instance.queryType;
+            this.currentPage = instance.currentPage;
+            this.highestPage = instance.highestPage;
+            this.hasMore = instance.hasMore;
+            this.affectedTuples = instance.affectedTuples;
+            this.isRolledBack = instance.isRolledBack;
 
             return self();
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -202,7 +202,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
         parseCorrelTable( e, x );
         if ( input instanceof Aggregate ) {
             final Builder builder;
-            if ( input.unwrap( Aggregate.class ).orElseThrow().getInput() instanceof Project ) {
+            if ( input.unwrapOrThrow( Aggregate.class ).getInput() instanceof Project ) {
                 builder = x.builder( e, true );
                 builder.clauses.add( Clause.HAVING );
             } else {
@@ -273,7 +273,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
 
 
     public Result visit( RelScan<?> e ) {
-        return result( new SqlIdentifier( List.of( e.getEntity().unwrap( LogicalTable.class ).orElseThrow().getNamespaceName(), e.getEntity().name ), ParserPos.ZERO ),
+        return result( new SqlIdentifier( List.of( e.getEntity().unwrapOrThrow( LogicalTable.class ).getNamespaceName(), e.getEntity().name ), ParserPos.ZERO ),
                 ImmutableList.of( Clause.FROM ),
                 e,
                 null );
@@ -395,6 +395,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
     public Result visit( Sort e ) {
         Result x = visitChild( 0, e.getInput() );
         Builder builder = x.builder( e, false, Clause.ORDER_BY );
+        boolean setExplicitSelect = false;
         if ( stack.size() != 1 && builder.select.getSqlSelectList() == null ) {
             // Generates explicit column names instead of start(*) for non-root ORDER BY to avoid ambiguity.
             final List<SqlNode> selectList = Expressions.list();
@@ -402,6 +403,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
                 addSelect( selectList, builder.context.field( field.getIndex() ), e.getTupleType() );
             }
             builder.select.setSelectList( new SqlNodeList( selectList, POS ) );
+            setExplicitSelect = true;
         }
         List<SqlNode> orderByList = Expressions.list();
         for ( AlgFieldCollation field : e.getCollation().getFieldCollations() ) {
@@ -409,6 +411,8 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
         }
         if ( !orderByList.isEmpty() ) {
             builder.setOrderBy( new SqlNodeList( orderByList, POS ) );
+            x = builder.result();
+        } else if ( setExplicitSelect ) {
             x = builder.result();
         }
         if ( e.fetch != null ) {
@@ -430,7 +434,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
         final Context context = aliasContext( pairs, false );
 
         // Target Table Name
-        final SqlIdentifier sqlTargetTable = getPhysicalTableName( modify.getEntity().unwrap( JdbcTable.class ).orElseThrow() );
+        final SqlIdentifier sqlTargetTable = getPhysicalTableName( modify.getEntity().unwrapOrThrow( JdbcTable.class ) );
 
         switch ( modify.getOperation() ) {
             case INSERT: {
@@ -443,7 +447,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
                         sqlTargetTable,
                         sqlSource,
                         physicalIdentifierList(
-                                modify.getEntity().unwrap( JdbcTable.class ).orElseThrow(),
+                                modify.getEntity().unwrapOrThrow( JdbcTable.class ),
                                 modify.getInput().getTupleType().getFieldNames() ) );
                 return result( sqlInsert, ImmutableList.of(), modify, null );
             }
@@ -452,7 +456,7 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
                 final SqlUpdate sqlUpdate = new SqlUpdate(
                         POS,
                         sqlTargetTable,
-                        physicalIdentifierList( modify.getEntity().unwrap( JdbcTable.class ).orElseThrow(), modify.getUpdateColumns() ),
+                        physicalIdentifierList( modify.getEntity().unwrapOrThrow( JdbcTable.class ), modify.getUpdateColumns() ),
                         exprList( context, modify.getSourceExpressions() ),
                         ((SqlSelect) input.node).getWhere(),
                         input.asSelect(),
@@ -496,7 +500,11 @@ public abstract class AlgToSqlConverter extends SqlImplementor implements AlgPro
      * Converts a list of names expressions to a list of single-part {@link SqlIdentifier}s.
      */
     private SqlNodeList physicalIdentifierList( JdbcTable entity, List<String> columnNames ) {
-        List<SqlIdentifier> columns = entity.columns.stream().filter( c -> columnNames.contains( c.logicalName ) ).map( c -> new SqlIdentifier( c.name, ParserPos.ZERO ) ).toList();
+        Map<String, String> physicalNames = entity.columns.stream().collect( ImmutableMap.toImmutableMap( c -> c.logicalName, c -> c.name ) );
+        List<SqlIdentifier> columns = columnNames.stream()
+                .filter( physicalNames::containsKey )
+                .map( name -> new SqlIdentifier( physicalNames.get( name ), ParserPos.ZERO ) )
+                .toList();
         if ( columns.isEmpty() ) {
             columns = entity.columns.stream().map( c -> new SqlIdentifier( c.name, ParserPos.ZERO ) ).toList();
         }

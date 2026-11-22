@@ -16,6 +16,7 @@
 
 package org.polypheny.db.cypher.expression;
 
+import java.util.Map;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.cypher.admin.CypherWithGraph;
@@ -25,6 +26,8 @@ import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
 
 @Getter
 @Slf4j
@@ -49,6 +52,13 @@ public class CypherUseGraph extends CypherWithGraph implements ExecutableStateme
         if ( useClause != null ) {
             log.warn( useClause.toString() );
         }
+    }
+
+
+    @Override
+    public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
+        //TODO TH: Does this make sense?
+        return Map.of();
     }
 
 

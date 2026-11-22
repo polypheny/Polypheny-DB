@@ -39,6 +39,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.PartitionType;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
@@ -50,9 +51,10 @@ import org.polypheny.db.partition.properties.TemperaturePartitionProperty;
 import org.polypheny.db.processing.DataMigrator;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.transaction.TransactionManagerImpl;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockablesRegistry;
 import org.polypheny.db.util.background.BackgroundTask.TaskPriority;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 import org.polypheny.db.util.background.BackgroundTaskManager;
@@ -261,9 +263,10 @@ public class FrequencyMapImpl extends FrequencyMap {
 
         Map<DataStore<?>, List<Long>> partitionsToRemoveFromStore = new HashMap<>();
 
-        Transaction transaction = null;
+        Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, null, "FrequencyMap" );
         try {
-            transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "FrequencyMap" );
+            transaction.acquireLockable( LockablesRegistry.INSTANCE.getOrCreateLockable( table ), LockType.EXCLUSIVE );
+            transaction.acquireCatalogWriteLock();
 
             Statement statement = transaction.createStatement();
             DataMigrator dataMigrator = statement.getTransaction().getDataMigrator();
@@ -312,15 +315,9 @@ public class FrequencyMapImpl extends FrequencyMap {
             }
 
             transaction.commit();
-        } catch ( TransactionException e ) {
-            log.error( "Error while reassigning new location for temperature-based partitions", e );
-            if ( transaction != null ) {
-                try {
-                    transaction.rollback();
-                } catch ( TransactionException ex ) {
-                    log.error( "Error while rolling back the transaction", e );
-                }
-            }
+        } catch ( RuntimeException e ) {
+            transaction.rollback( "Error while reassigning new location for temperature-based partitions. " + e.getMessage() );
+            throw new GenericRuntimeException( e );
         }
     }
 
@@ -336,7 +333,7 @@ public class FrequencyMapImpl extends FrequencyMap {
             if ( !hotPartitionsToCreate.isEmpty() ) {
                 catalog.getSnapshot().alloc().getPartitionsOnDataPlacement( store.getAdapterId(), table.id );
 
-                store.createTable( statement.getPrepareContext(), LogicalTableWrapper.of( null, null, null ), AllocationTableWrapper.of( null, null ) );
+                store.createTable( statement.getPrepareContext(), LogicalTableWrapper.of( null, null, null ), AllocationTableWrapper.of( null, null, null ) );
 
                 List<LogicalColumn> logicalColumns = new ArrayList<>();
                 catalog.getSnapshot().alloc().getColumnPlacementsOnAdapterPerEntity( store.getAdapterId(), table.id ).forEach( cp -> logicalColumns.add( catalog.getSnapshot().rel().getColumn( cp.columnId ).orElseThrow() ) );

@@ -20,12 +20,12 @@ package org.polypheny.db.restapi;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import io.javalin.http.Context;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
@@ -67,7 +67,6 @@ import org.polypheny.db.tools.AlgBuilder.GroupKey;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.Transaction.MultimediaFlavor;
-import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -95,7 +94,7 @@ public class Rest {
 
     String processGetResource( final ResourceGetRequest resourceGetRequest, final Context ctx ) throws RestException {
         if ( log.isDebugEnabled() ) {
-            log.debug( "Starting to process get resource request. Session ID: {}.", ctx.req.getSession().getId() );
+            log.debug( "Starting to process get resource request. Session ID: {}.", ctx.req().getSession().getId() );
         }
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
@@ -109,7 +108,7 @@ public class Rest {
         // Initial projection
         algBuilder = this.initialProjection( algBuilder, rexBuilder, resourceGetRequest.requestColumns );
 
-        List<RexNode> filters = this.filters( statement, algBuilder, rexBuilder, resourceGetRequest.filters, ctx.req );
+        List<RexNode> filters = this.filters( statement, algBuilder, rexBuilder, resourceGetRequest.filters, ctx.req() );
         if ( filters != null ) {
             algBuilder = algBuilder.filter( filters );
         }
@@ -160,7 +159,7 @@ public class Rest {
         // Initial projection
         algBuilder = this.initialProjection( algBuilder, rexBuilder, resourcePatchRequest.requestColumns );
 
-        List<RexNode> filters = this.filters( statement, algBuilder, rexBuilder, resourcePatchRequest.filters, ctx.req );
+        List<RexNode> filters = this.filters( statement, algBuilder, rexBuilder, resourcePatchRequest.filters, ctx.req() );
         if ( filters != null ) {
             algBuilder = algBuilder.filter( filters );
         }
@@ -217,7 +216,7 @@ public class Rest {
 //         Initial projection
         algBuilder = this.initialProjection( algBuilder, rexBuilder, resourceDeleteRequest.requestColumns );
 
-        List<RexNode> filters = this.filters( statement, algBuilder, rexBuilder, resourceDeleteRequest.filters, ctx.req );
+        List<RexNode> filters = this.filters( statement, algBuilder, rexBuilder, resourceDeleteRequest.filters, ctx.req() );
         if ( filters != null ) {
             algBuilder = algBuilder.filter( filters );
         }
@@ -534,7 +533,7 @@ public class Rest {
 
 
     private Transaction getTransaction() {
-        return transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultNamespaceId, false, "REST Interface", MultimediaFlavor.FILE );
+        return transactionManager.startTransaction( Catalog.defaultUserId, Catalog.defaultNamespaceId, null, "REST Interface", MultimediaFlavor.FILE );
     }
 
 
@@ -555,12 +554,9 @@ public class Rest {
 
             statement.getTransaction().commit();
         } catch ( Throwable e ) {
-            log.error( "Error during execution of REST query", e );
-            try {
-                statement.getTransaction().rollback();
-            } catch ( TransactionException transactionException ) {
-                log.error( "Could not rollback", e );
-            }
+            String error = "Error during execution of REST query. " + e;
+
+            statement.getTransaction().rollback( error );
             return null;
         }
         Pair<String, Integer> result = restResult.getResult( ctx );

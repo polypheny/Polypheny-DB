@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,12 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.common.Transformer;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.util.Quadruple;
 
 
 @Setter
@@ -59,6 +61,12 @@ public class LogicalTransformer extends Transformer {
     }
 
 
+    public static LogicalTransformer create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        Quadruple<List<String>, ModelTrait, ModelTrait, AlgDataType> extracted = extractArgs( args, children );
+        return create( cluster, children, extracted.a, extracted.b, extracted.c, extracted.d, true );
+    }
+
+
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
         return new LogicalTransformer( getCluster(), traitSet, inputs, names, inModelTrait, outModelTrait, rowType, isCrossModel );
@@ -75,6 +83,5 @@ public class LogicalTransformer extends Transformer {
         }
         return writer;
     }
-
 
 }

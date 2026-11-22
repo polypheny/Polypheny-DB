@@ -19,8 +19,6 @@ package org.polypheny.db.algebra.core.document;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import org.bson.types.ObjectId;
 import org.polypheny.db.algebra.AbstractAlgNode;
@@ -117,14 +115,6 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
 
 
     @Override
-    public String algCompareString() {
-        return getClass().getCanonicalName() + "$"
-                + (dynamicDocuments == null && documents != null ? documents.stream().map( PolyDocument::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "")
-                + (dynamicDocuments != null ? dynamicDocuments.stream().map( d -> d.name ).collect( Collectors.joining( "$" ) ) : "") + "&";
-    }
-
-
-    @Override
     public DocType getDocType() {
         return DocType.VALUES;
     }
@@ -140,6 +130,12 @@ public abstract class DocumentValues extends AbstractAlgNode implements Document
 
     public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<Entity> entities, Snapshot snapshot ) {
         return List.of( getRelationalEquivalent() );
+    }
+
+
+    @Override
+    public boolean isDataModifying() {
+        return false;
     }
 
 }

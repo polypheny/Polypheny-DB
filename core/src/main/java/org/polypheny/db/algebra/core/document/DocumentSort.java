@@ -18,12 +18,9 @@ package org.polypheny.db.algebra.core.document;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
-import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.plan.AlgCluster;
@@ -63,13 +60,8 @@ public abstract class DocumentSort extends SingleAlg {
 
 
     @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                input.algCompareString() + "$" +
-                fieldExps.stream().map( RexNode::toString ).collect( Collectors.joining( "$" ) ) + "$" +
-                (collation != null ? collation.getFieldCollations().stream().map( AlgFieldCollation::getDirection ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
-                (offset != null ? offset.toString() : "") + "$" +
-                (fetch != null ? fetch.toString() : "") + "&";
+    public boolean isDataModifying() {
+        return false;
     }
 
 }

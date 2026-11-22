@@ -172,7 +172,12 @@ public interface PhysType {
     /**
      * Returns a lambda to create a collation key and a comparator. The comparator is sometimes null.
      */
-    Pair<Expression, Expression> generateCollationKey( List<AlgFieldCollation> collations );
+    default Pair<Expression, Expression> generateCollationKey( List<AlgFieldCollation> collations ) {
+        return generateCollationKey( collations, false );
+    }
+
+
+    Pair<Expression, Expression> generateCollationKey( List<AlgFieldCollation> collations, boolean graph );
 
     /**
      * Returns a comparator. Unlike the comparator returned by {@link #generateCollationKey(java.util.List)}, this comparator acts on the whole element.

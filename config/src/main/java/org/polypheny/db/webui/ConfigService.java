@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,6 +65,8 @@ public class ConfigService implements ConfigListener {
 
         http.get( PREFIX + "/getPageList", ctx -> ctx.result( cm.getWebUiPageList() ) );
 
+        http.post( PREFIX + "/getConfig", ctx -> ctx.result( cm.getConfig( ctx.body() ).toJson() ) );
+
         // get Ui of certain page
         http.post( PREFIX + "/getPage", ctx -> {
             //input: req: {pageId: 123}
@@ -112,14 +114,14 @@ public class ConfigService implements ConfigListener {
         Config c = cm.getConfig( entry.getKey() );
         switch ( c.getConfigType() ) {
             case "ConfigInteger":
-                Double d = (Double) entry.getValue();
-                if ( !c.setInt( d.intValue() ) ) {
+                Number n = (Number) entry.getValue();
+                if ( !c.setInt( n.intValue() ) ) {
                     allValid = false;
                     appendError( feedback, entry, c );
                 }
                 break;
             case "ConfigDouble":
-                if ( !c.setDouble( (double) entry.getValue() ) ) {
+                if ( !c.setDouble( ((Number) entry.getValue()).doubleValue() ) ) {
                     allValid = false;
                     appendError( feedback, entry, c );
                 }
@@ -131,7 +133,7 @@ public class ConfigService implements ConfigListener {
                 }
                 break;
             case "ConfigLong":
-                if ( !c.setLong( (long) entry.getValue() ) ) {
+                if ( !c.setLong( ((Number) entry.getValue()).longValue() ) ) {
                     allValid = false;
                     appendError( feedback, entry, c );
                 }

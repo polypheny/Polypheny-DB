@@ -47,7 +47,6 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
@@ -198,21 +197,8 @@ public abstract class Match extends SingleAlg {
 
 
     @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                input.algCompareString() + "$" +
-                rowType.toString() + "$" +
-                (pattern != null ? pattern.hashCode() : "") + "$" +
-                strictStart + "$" +
-                strictEnd + "$" +
-                (patternDefinitions != null ? patternDefinitions.values().stream().map( RexNode::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
-                (measures != null ? measures.values().stream().map( RexNode::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
-                (after != null ? after.hashCode() : "") + "$" +
-                (subsets != null ? String.join( "$", subsets.keySet() ) : "") + "$" +
-                (subsets != null ? subsets.values().stream().map( s -> String.join( "$", s ) ).collect( Collectors.joining( "$" ) ) : "") + "$" +
-                allRows + "$" +
-                (partitionKeys != null ? partitionKeys.stream().map( Objects::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "&" +
-                (interval != null ? interval.hashCode() : "") + "&";
+    public boolean isDataModifying() {
+        return false;
     }
 
 

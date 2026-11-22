@@ -51,9 +51,9 @@ import org.polypheny.db.util.Pair;
 public class PolyEdge extends GraphPropertyHolder {
 
     @JsonProperty
-    public PolyString source;
+    public PolyString left;
     @JsonProperty
-    public PolyString target;
+    public PolyString right;
     @JsonProperty
     public EdgeDirection direction;
 
@@ -61,17 +61,18 @@ public class PolyEdge extends GraphPropertyHolder {
     @NonFinal
     @Accessors(fluent = true)
     @JsonProperty
+    // An absent range means exactly one hop. An absent upper bound means there is no length limit.
     public Pair<Integer, Integer> fromTo;
 
 
     public PolyEdge(
             @NonNull PolyDictionary properties,
             List<PolyString> labels,
-            PolyString source,
-            PolyString target,
+            PolyString left,
+            PolyString right,
             EdgeDirection direction,
             PolyString variableName ) {
-        this( PolyString.of( UUID.randomUUID().toString() ), properties, labels, source, target, direction, variableName );
+        this( PolyString.of( UUID.randomUUID().toString() ), properties, labels, left, right, direction, variableName );
     }
 
 
@@ -79,27 +80,19 @@ public class PolyEdge extends GraphPropertyHolder {
             @JsonProperty("id") PolyString id,
             @JsonProperty("properties") @NonNull PolyDictionary properties,
             @JsonProperty("labels") List<PolyString> labels,
-            @JsonProperty("source") PolyString source,
-            @JsonProperty("target") PolyString target,
+            @JsonProperty("left") PolyString left,
+            @JsonProperty("right") PolyString right,
             @JsonProperty("direction") EdgeDirection direction,
             @JsonProperty("variableName") PolyString variableName ) {
         super( id, PolyType.EDGE, properties, labels, variableName );
-        this.source = source;
-        this.target = target;
+        this.left = left;
+        this.right = right;
         this.direction = direction;
     }
 
 
-    public int getVariants() {
-        if ( fromTo == null ) {
-            return 1;
-        }
-        return fromTo.right - fromTo.left + 1;
-    }
-
-
     public PolyEdge from( PolyString left, PolyString right ) {
-        return new PolyEdge( id, properties, labels, left == null ? this.source : left, right == null ? this.target : right, direction, null );
+        return new PolyEdge( id, properties, labels, left == null ? this.left : left, right == null ? this.right : right, direction, null );
     }
 
 
@@ -120,7 +113,7 @@ public class PolyEdge extends GraphPropertyHolder {
             // no copy needed
             return this;
         }
-        return new PolyEdge( id, properties, labels, source, target, direction, newName );
+        return new PolyEdge( id, properties, labels, left, right, direction, newName );
     }
 
 
@@ -140,26 +133,28 @@ public class PolyEdge extends GraphPropertyHolder {
     }
 
 
+    public @Nullable Integer getMaxLength() {
+        return fromTo == null ? Integer.valueOf( 1 ) : fromTo.right;
+    }
+
+
+    public boolean hasEmptyRange() {
+        Integer maxLength = getMaxLength();
+        return maxLength != null && maxLength < getMinLength();
+    }
+
+
     public String getRangeDescriptor() {
         if ( fromTo == null ) {
             return "";
         }
-        String range = "*";
-
-        if ( fromTo.left != null && fromTo.right != null ) {
-            if ( fromTo.left.equals( fromTo.right ) ) {
-                return range + fromTo.right;
-            }
-            return range + fromTo.left + ".." + fromTo.right;
+        if ( fromTo.right == null ) {
+            return getMinLength() == 1 ? "*" : "*" + fromTo.left + "..";
         }
-        if ( fromTo.right != null ) {
-            return fromTo.right.toString();
+        if ( fromTo.left.equals( fromTo.right ) ) {
+            return "*" + fromTo.right;
         }
-
-        if ( fromTo.left != null ) {
-            return fromTo.left.toString();
-        }
-        return range;
+        return "*" + fromTo.left + ".." + fromTo.right;
     }
 
 
@@ -168,8 +163,7 @@ public class PolyEdge extends GraphPropertyHolder {
         if ( !this.isSameType( o ) ) {
             return -1;
         }
-        return this.equals( o.asEdge() ) ? 0 : -1;
-
+        return id.compareTo( o.asEdge().id );
     }
 
 
@@ -182,14 +176,14 @@ public class PolyEdge extends GraphPropertyHolder {
                                 id.asExpression(),
                                 properties.asExpression(),
                                 labels.asExpression(),
-                                source.asExpression(),
-                                target.asExpression(),
+                                left.asExpression(),
+                                right.asExpression(),
                                 Expressions.constant( direction ),
                                 getVariableName() == null ? Expressions.constant( null ) : getVariableName().asExpression() ),
                         PolyEdge.class );
         if ( fromTo != null ) {
             expression = Expressions.call( expression, "fromTo",
-                    Expressions.call( BuiltInMethod.PAIR_OF.method, Expressions.constant( fromTo.left ), Expressions.constant( fromTo.right ) ) );
+                    Expressions.call( BuiltInMethod.PAIR_OF.method, Expressions.constant( fromTo.left, Integer.class ), Expressions.constant( fromTo.right, Integer.class ) ) );
         }
         return expression;
     }
@@ -200,8 +194,8 @@ public class PolyEdge extends GraphPropertyHolder {
         return "{\"id\":" + id.toQuotedJson() +
                 ", \"properties\":" + properties.toJson() +
                 ", \"labels\":" + labels.toJson() +
-                ", \"source\":" + source.toQuotedJson() +
-                ", \"target\":" + target.toQuotedJson() +
+                ", \"source\":" + left.toQuotedJson() + // UI expects source & target
+                ", \"target\":" + right.toQuotedJson() +
                 ", \"direction\":\"" + direction.name() + "\"" +
                 "}";
     }
@@ -238,8 +232,8 @@ public class PolyEdge extends GraphPropertyHolder {
                 "id=" + id +
                 ", properties=" + properties +
                 ", labels=" + labels +
-                ", leftId=" + source +
-                ", rightId=" + target +
+                ", leftId=" + left +
+                ", rightId=" + right +
                 ", direction=" + direction +
                 '}';
     }
@@ -259,8 +253,8 @@ public class PolyEdge extends GraphPropertyHolder {
                         out.writeUTF8Nullable( item.variableName.value );
                     }
                     out.writeUTF8( item.direction.name() );
-                    out.writeUTF8( item.source.value );
-                    out.writeUTF8( item.target.value );
+                    out.writeUTF8( item.left.value );
+                    out.writeUTF8( item.right.value );
                     out.writeUTF8( item.properties.serialize() );
                 }
 
@@ -285,6 +279,5 @@ public class PolyEdge extends GraphPropertyHolder {
         }
 
     }
-
 
 }

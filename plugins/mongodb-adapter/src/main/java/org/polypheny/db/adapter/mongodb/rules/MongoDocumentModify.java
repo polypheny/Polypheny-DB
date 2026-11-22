@@ -75,7 +75,7 @@ public class MongoDocumentModify extends DocumentModify<MongoEntity> implements 
 
     private void handleDelete( Implementor implementor ) {
         Implementor condImplementor = new Implementor( true );
-        input.unwrap( MongoAlg.class ).orElseThrow().implement( condImplementor );
+        input.unwrapOrThrow( MongoAlg.class ).implement( condImplementor );
 
         // carry over the onlyOne flag
         if ( condImplementor.onlyOne ) {
@@ -94,7 +94,7 @@ public class MongoDocumentModify extends DocumentModify<MongoEntity> implements 
 
     private void handleUpdate( Implementor implementor ) {
         Implementor condImplementor = new Implementor( true );
-        input.unwrap( MongoAlg.class ).orElseThrow().implement( condImplementor );
+        input.unwrapOrThrow( MongoAlg.class ).implement( condImplementor );
 
         implementor.filter = condImplementor.filter;
 

@@ -20,23 +20,17 @@ package org.polypheny.db.adapter.monetdb.sources;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.RelationalDataSource;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
-import org.polypheny.db.adapter.jdbc.JdbcTable;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.TransactionalConnectionFactory;
 import org.polypheny.db.adapter.jdbc.sources.AbstractJdbcSource;
 import org.polypheny.db.adapter.monetdb.MonetdbSqlDialect;
-import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
-import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
-import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
-import org.polypheny.db.catalog.entity.physical.PhysicalTable;
-import org.polypheny.db.prepare.Context;
 import org.polypheny.db.sql.language.SqlDialect;
 
 
@@ -76,7 +70,6 @@ public class MonetdbSource extends AbstractJdbcSource {
         if ( log.isDebugEnabled() ) {
             log.debug( "JDBC Connection URL: {}", connectionUrl );
         }
-        dataSource.setDefaultAutoCommit( false );
         return new TransactionalConnectionFactory( dataSource, Integer.parseInt( settings.get( "maxConnections" ) ), dialect );
     }
 
@@ -111,21 +104,8 @@ public class MonetdbSource extends AbstractJdbcSource {
 
 
     @Override
-    public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
-        PhysicalTable table = adapterCatalog.createTable(
-                logical.table.getNamespaceName(),
-                logical.table.name,
-                logical.columns.stream().collect( Collectors.toMap( c -> c.id, c -> c.name ) ),
-                logical.table,
-                logical.columns.stream().collect( Collectors.toMap( t -> t.id, t -> t ) ),
-                logical.pkIds,
-                allocation );
-
-        JdbcTable physical = currentJdbcSchema.createJdbcTable( table );
-
-        adapterCatalog.replacePhysical( physical );
-
-        return List.of( physical );
+    public RelationalDataSource asRelationalDataSource() {
+        return this;
     }
 
 }

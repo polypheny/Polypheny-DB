@@ -92,8 +92,6 @@ public class AlgJson {
                     "org.polypheny.db.algebra.logical.relational.",
                     "org.polypheny.db.algebra.logical.common.",
                     "org.polypheny.db.adapter.cassandra.",
-                    "org.polypheny.db.adapter.cottontail.",
-                    "org.polypheny.db.adapter.cottontail.algebra.",
                     "org.polypheny.db.adapter.mongodb.",
                     "org.polypheny.db.adapter.mongodb.MongoRules$",
                     "org.polypheny.db.adapter.file.algebra.",

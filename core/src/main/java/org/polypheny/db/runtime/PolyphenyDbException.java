@@ -35,6 +35,7 @@ package org.polypheny.db.runtime;
 
 
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 
 // NOTE:  This class gets compiled independently of everything else so that resource generation can use reflection.  That means it must have no dependencies on other Polypheny-DB code.
@@ -46,7 +47,7 @@ import org.polypheny.db.config.RuntimeConfig;
  * @see PolyphenyDbContextException
  */
 @Slf4j
-public class PolyphenyDbException extends RuntimeException {
+public class PolyphenyDbException extends GenericRuntimeException {
 
     private static final long serialVersionUID = -1314522633397794178L;
 

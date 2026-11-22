@@ -16,11 +16,17 @@
 
 package org.polypheny.db.cypher;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.TestHelper.CypherConnection;
 import org.polypheny.db.cypher.helper.TestNode;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
 
@@ -93,6 +99,83 @@ public class DmlUpdateTest extends CypherTestTemplate {
                         List.of( "Person" ),
                         Pair.of( "age", 13 ),
                         Pair.of( "job", "Developer" ) ) ) );
+    }
+
+
+    @Test
+    void invalidSetValuesRollBackThePrecedingCreate() {
+        for ( String assignment : List.of(
+                "n.value = [{num:1}]",
+                "n.value = {num:1}",
+                "n.value = [[1]]",
+                "n.value = [1,null]",
+                "n.value = [1,'one']",
+                "n += {valid:2, invalid:[{num:1}]}",
+                "n = {valid:2, invalid:[{num:1}]}" ) ) {
+            assertInvalidPropertyType( "CREATE (n:InvalidSet) SET " + assignment );
+            assertEquals( 0, value( "MATCH (n:InvalidSet) RETURN count(n)" ).asNumber().intValue(), assignment );
+        }
+    }
+
+
+    @Test
+    void failedSetLeavesOtherAssignmentsAndInputRowsUnchanged() {
+        execute( "CREATE (:Original {marker:1})-[:ORIGINAL {marker:1}]->(:Other)" );
+
+        assertInvalidPropertyType( """
+                MATCH (:Original)-[r:ORIGINAL]->(:Other)
+                SET r.marker = 2, r.bad = [{num:1}]
+                """ );
+        assertEquals( 1, value( "MATCH ()-[r:ORIGINAL]->() RETURN r.marker" ).asNumber().intValue() );
+
+        assertInvalidPropertyType( """
+                MATCH (n:Original)
+                UNWIND [{rank:0, value:[1]}, {rank:1, value:[{num:1}]}] AS row
+                WITH n, row.value AS value ORDER BY row.rank
+                SET n.marker = 2, n.value = value
+                """ );
+        assertEquals( 1, value( "MATCH (n:Original) RETURN n.marker" ).asNumber().intValue() );
+        assertTrue( value( "MATCH (n:Original) RETURN n.value IS NULL" ).asBoolean().value );
+
+        assertInvalidPropertyType( """
+                MATCH (n:Original) SET n.marker = 2
+                WITH n, {marker:3, invalid:[{num:1}]} AS props
+                SET n = props
+                """ );
+        assertEquals( 1, value( "MATCH (n:Original) RETURN n.marker" ).asNumber().intValue() );
+    }
+
+
+    @Test
+    void setPropertyMapsCanBeComputedAndKeepNullRemovalSemantics() {
+        execute( "CREATE (:Original {marker:1, dropMe:2})" );
+        execute( """
+                MATCH (n:Original)
+                WITH n, {dropMe:null, values:[1,2.5], marker:n.marker + 1} AS props
+                SET n += props
+                """ );
+        assertTrue( value( "MATCH (n:Original) RETURN n.dropMe IS NULL" ).asBoolean().value );
+        assertEquals( 2, value( "MATCH (n:Original) RETURN n.marker" ).asNumber().intValue() );
+        assertEquals( 2.5, value( "MATCH (n:Original) RETURN n.values[1]" ).asNumber().doubleValue() );
+
+        execute( "MATCH (n:Original) SET n = n" );
+        assertEquals( 2, value( "MATCH (n:Original) RETURN n.marker" ).asNumber().intValue() );
+
+        execute( "MATCH (n:Original) WITH n, {empty:[]} AS props SET n = props" );
+        assertTrue( value( "MATCH (n:Original) RETURN n.marker IS NULL" ).asBoolean().value );
+        assertTrue( value( "MATCH (n:Original) RETURN n.empty" ).asList().isEmpty() );
+    }
+
+
+    private static void assertInvalidPropertyType( String query ) {
+        String error = CypherConnection.executeGetResponse( query ).getError();
+        assertNotNull( error, query );
+        assertTrue( error.contains( "InvalidPropertyType" ), error );
+    }
+
+
+    private static PolyValue value( String query ) {
+        return PolyValue.fromTypedJson( execute( query ).getData()[0][0], PolyValue.class );
     }
 
 

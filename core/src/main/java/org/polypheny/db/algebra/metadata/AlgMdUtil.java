@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
@@ -489,7 +490,7 @@ public class AlgMdUtil {
                         mq.getPopulationSize( left, leftMask.build() ),
                         mq.getPopulationSize( right, rightMask.build() ) );
 
-        return numDistinctVals( population, mq.getTupleCount( joinRel ) );
+        return numDistinctVals( population, mq.getTupleCount( joinRel ).orElse( Double.MAX_VALUE ) );
     }
 
 
@@ -548,7 +549,7 @@ public class AlgMdUtil {
                             mq.getDistinctRowCount( right, rightMask.build(), rightPred ) );
         }
 
-        return AlgMdUtil.numDistinctVals( distRowCount, mq.getTupleCount( joinRel ) );
+        return AlgMdUtil.numDistinctVals( distRowCount, mq.getTupleCount( joinRel ).orElse( Double.MAX_VALUE ) );
     }
 
 
@@ -558,7 +559,7 @@ public class AlgMdUtil {
     public static double getUnionAllRowCount( AlgMetadataQuery mq, Union alg ) {
         double rowCount = 0;
         for ( AlgNode input : alg.getInputs() ) {
-            rowCount += mq.getTupleCount( input );
+            rowCount += mq.getTupleCount( input ).orElse( Double.MAX_VALUE );
         }
         return rowCount;
     }
@@ -570,9 +571,14 @@ public class AlgMdUtil {
     public static double getMinusRowCount( AlgMetadataQuery mq, Minus minus ) {
         // REVIEW jvs:  I just pulled this out of a hat.
         final List<AlgNode> inputs = minus.getInputs();
-        double dRows = mq.getTupleCount( inputs.get( 0 ) );
+        Optional<Double> rows = mq.getTupleCount( inputs.get( 0 ) );
+        if ( rows.isEmpty() ) {
+            return Double.MAX_VALUE;
+        }
+
+        double dRows = 0;
         for ( int i = 1; i < inputs.size(); i++ ) {
-            dRows -= 0.5 * mq.getTupleCount( inputs.get( i ) );
+            dRows -= 0.5 * mq.getTupleCount( inputs.get( i ) ).orElse( Double.MAX_VALUE );
         }
         if ( dRows < 0 ) {
             dRows = 0;
@@ -586,18 +592,18 @@ public class AlgMdUtil {
      */
     public static Double getJoinRowCount( AlgMetadataQuery mq, Join join, RexNode condition ) {
         // Row count estimates of 0 will be rounded up to 1. So, use maxRowCount where the product is very small.
-        final Double left = mq.getTupleCount( join.getLeft() );
-        final Double right = mq.getTupleCount( join.getRight() );
-        if ( left == null || right == null ) {
+        Optional<Double> left = mq.getTupleCount( join.getLeft() );
+        Optional<Double> right = mq.getTupleCount( join.getRight() );
+        if ( left.isEmpty() || right.isEmpty() ) {
             return null;
         }
-        if ( left <= 1D || right <= 1D ) {
+        if ( left.get() <= 1D || right.get() <= 1D ) {
             Double max = mq.getMaxRowCount( join );
             if ( max != null && max <= 1D ) {
                 return max;
             }
         }
-        double product = left * right;
+        double product = left.get() * right.get();
 
         // TODO: correlation factor
         return product * mq.getSelectivity( join, condition );
@@ -609,11 +615,11 @@ public class AlgMdUtil {
      */
     public static Double getSemiJoinRowCount( AlgMetadataQuery mq, AlgNode left, AlgNode right, JoinAlgType joinType, RexNode condition ) {
         // TODO: correlation factor
-        final Double leftCount = mq.getTupleCount( left );
-        if ( leftCount == null ) {
+        Optional<Double> leftCount = mq.getTupleCount( left );
+        if ( leftCount.isEmpty() ) {
             return null;
         }
-        return leftCount * RexUtil.getSelectivity( condition );
+        return leftCount.get() * RexUtil.getSelectivity( condition );
     }
 
 
@@ -631,7 +637,7 @@ public class AlgMdUtil {
 
 
     public static double estimateFilteredRows( AlgNode child, RexNode condition, AlgMetadataQuery mq ) {
-        return mq.getTupleCount( child ) * mq.getSelectivity( child, condition );
+        return mq.getTupleCount( child ).map( count -> count * mq.getSelectivity( child, condition ) ).orElse( Double.MAX_VALUE );
     }
 
 
@@ -687,21 +693,21 @@ public class AlgMdUtil {
             if ( distinctRowCount == null ) {
                 return null;
             } else {
-                return numDistinctVals( distinctRowCount, mq.getTupleCount( alg ) );
+                return numDistinctVals( distinctRowCount, mq.getTupleCount( alg ).orElse( Double.MAX_VALUE ) );
             }
         }
 
 
         @Override
         public Double visitLiteral( RexLiteral literal ) {
-            return numDistinctVals( 1.0, mq.getTupleCount( alg ) );
+            return numDistinctVals( 1.0, mq.getTupleCount( alg ).orElse( Double.MAX_VALUE ) );
         }
 
 
         @Override
         public Double visitCall( RexCall call ) {
             Double distinctRowCount;
-            Double rowCount = mq.getTupleCount( alg );
+            Double rowCount = mq.getTupleCount( alg ).orElse( Double.MAX_VALUE );
             if ( call.isA( Kind.MINUS_PREFIX ) ) {
                 distinctRowCount = cardOfProjExpr( mq, alg, call.getOperands().get( 0 ) );
             } else if ( call.isA( ImmutableList.of( Kind.PLUS, Kind.MINUS ) ) ) {

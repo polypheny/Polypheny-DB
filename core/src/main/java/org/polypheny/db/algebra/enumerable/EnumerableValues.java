@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,7 @@ import org.polypheny.db.algebra.core.Values;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMdDistribution;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgCluster;
@@ -83,6 +84,12 @@ public class EnumerableValues extends Values implements EnumerableAlg {
                         .replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.values( mq, rowType, tuples ) )
                         .replaceIf( AlgDistributionTraitDef.INSTANCE, () -> AlgMdDistribution.values( rowType, tuples ) );
         return new EnumerableValues( cluster, rowType, tuples, traitSet );
+    }
+
+
+    public static EnumerableValues create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        Pair<AlgDataType, ImmutableList<ImmutableList<RexLiteral>>> extracted = extractArgs( args, cluster );
+        return create( cluster, extracted.left, extracted.right );
     }
 
 

@@ -69,6 +69,7 @@ import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.util.ImmutableBitSet;
@@ -109,6 +110,15 @@ public final class AggregateExpandDistinctAggregatesRule extends AlgOptRule {
     public void onMatch( AlgOptRuleCall call ) {
         final Aggregate aggregate = call.alg( 0 );
         if ( !aggregate.containsDistinctCall() ) {
+            return;
+        }
+        // These graph accumulators apply Cypher equality, including between numeric subtypes.
+        // The relational rewrite can also reorder collect() and infer a SQL multiset.
+        if ( aggregate.getTraitSet().contains( ModelTrait.GRAPH ) && aggregate.getAggCallList().stream()
+                .anyMatch( agg -> agg.isDistinct() && switch ( agg.getAggregation().getKind() ) {
+                    case COLLECT, STDDEV_SAMP, STDDEV_POP -> true;
+                    default -> false;
+                } ) ) {
             return;
         }
 

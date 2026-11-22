@@ -22,8 +22,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.annotation.Nullable;
-import lombok.EqualsAndHashCode;
-import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
@@ -51,10 +49,8 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.tools.AlgBuilder;
 
-@EqualsAndHashCode(callSuper = true)
-@Value
 @Slf4j
-public class LogicalStreamer extends Streamer {
+public final class LogicalStreamer extends Streamer {
 
     /**
      * {@code
@@ -69,6 +65,11 @@ public class LogicalStreamer extends Streamer {
      */
     public LogicalStreamer( AlgCluster cluster, AlgTraitSet traitSet, AlgNode provider, AlgNode collector ) {
         super( cluster, traitSet, provider, collector );
+    }
+
+
+    public LogicalStreamer( AlgCluster cluster, AlgTraitSet traitSet, AlgNode provider, AlgNode collector, int returningParameters, boolean batchGraphWrites ) {
+        super( cluster, traitSet, provider, collector, returningParameters, batchGraphWrites );
     }
 
 
@@ -179,7 +180,7 @@ public class LogicalStreamer extends Streamer {
 
         if ( modify.getEntity().unwrap( PhysicalTable.class ).isPresent() ) {
             indexes = new ArrayList<>();
-            for ( long fieldId : modify.getEntity().unwrap( PhysicalTable.class ).orElseThrow().getUniqueFieldIds() ) {
+            for ( long fieldId : modify.getEntity().unwrap( PhysicalTable.class ).get().getUniqueFieldIds() ) {
                 indexes.add( modify.getEntity().getTupleType().getFieldIds().indexOf( fieldId ) );
             }
         }
@@ -242,7 +243,7 @@ public class LogicalStreamer extends Streamer {
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalStreamer( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), inputs.get( 1 ) );
+        return new LogicalStreamer( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), inputs.get( 1 ), getReturningParameters(), isBatchGraphWrites() );
     }
 
 

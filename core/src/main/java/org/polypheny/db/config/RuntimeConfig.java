@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,8 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.Config.ConfigListener;
 import org.polypheny.db.ddl.DdlManager.DefaultIndexPlacementStrategy;
 import org.polypheny.db.processing.ConstraintStrategy;
+import org.polypheny.db.transaction.DeadlockDetectorType;
+import org.polypheny.db.transaction.locking.S2plLockingLevel;
 import org.polypheny.db.util.background.BackgroundTask;
 import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 
@@ -34,33 +36,19 @@ import org.polypheny.db.util.background.BackgroundTask.TaskSchedulingType;
 @Slf4j
 public enum RuntimeConfig {
 
-    APPROXIMATE_DISTINCT_COUNT(
-            "runtime/approximateDistinctCount",
-            "Whether approximate results from \"COUNT(DISTINCT ...)\" aggregate functions are acceptable.",
-            false,
-            ConfigType.BOOLEAN
-    ), // Druid
+    S2PL_LOCKING_LEVEL(
+            "runtime/s2plLockingLevel",
+            "Define the granularity of lock acquisition.",
+            S2plLockingLevel.ENTITY,
+            ConfigType.ENUM
+    ),
 
-    APPROXIMATE_TOP_N(
-            "runtime/approximateTopN",
-            "Whether approximate results from \"Top N\" queries (\"ORDER BY aggFun DESC LIMIT n\") are acceptable.",
-            false,
-            ConfigType.BOOLEAN
-    ), // Druid
-
-    APPROXIMATE_DECIMAL(
-            "runtime/approximateDecimal",
-            "Whether approximate results from aggregate functions on DECIMAL types are acceptable.",
-            false,
-            ConfigType.BOOLEAN
-    ), // Druid
-
-    NULL_EQUAL_TO_EMPTY(
-            "runtime/nullEqualToEmpty",
-            "Whether to treat empty strings as null for Druid Adapter.",
-            true,
-            ConfigType.BOOLEAN
-    ), // Druid
+    S2PL_DEADLOCK_DETECTOR_TYPE(
+            "runtime/s2plDeadlockDetectorType",
+            "Define the method used to detect deadlocks.",
+            DeadlockDetectorType.GRAPH_DEADLOCK_DETECTOR,
+            ConfigType.ENUM
+    ),
 
     RELATIONAL_NAMESPACE_DEFAULT_CASE_SENSITIVE(
             "runtime/relationalCaseSensitive",
@@ -68,12 +56,14 @@ public enum RuntimeConfig {
             false,
             ConfigType.BOOLEAN
     ),
+
     DOCUMENT_NAMESPACE_DEFAULT_CASE_SENSITIVE(
             "runtime/documentCaseSensitive",
             "Whether a document namespace is case-sensitive if not specified otherwise.",
             false,
             ConfigType.BOOLEAN
     ),
+
     GRAPH_NAMESPACE_DEFAULT_CASE_SENSITIVE(
             "runtime/graphCaseSensitive",
             "Whether a graph (namespace) is case-sensitive if not specified otherwise.",
@@ -154,14 +144,6 @@ public enum RuntimeConfig {
             ConfigType.BOOLEAN,
             "planningGroup" ),
 
-    VALIDATE_MM_CONTENT_TYPE(
-            "validation/validateMultimediaContentType",
-            "Validate multimedia data by checking its content-type.",
-            true,
-            ConfigType.BOOLEAN,
-            "validationGroup"
-    ),
-
     TWO_PC_MODE(
             "runtime/twoPcMode",
             "Use two-phase commit protocol for committing queries on data stores.",
@@ -204,13 +186,6 @@ public enum RuntimeConfig {
             ConfigType.INTEGER,
             "statisticSettingsGroup" ),
 
-    UNIQUE_VALUES(
-            "statistics/maxCharUniqueVal",
-            "Maximum character of unique values",
-            10,
-            ConfigType.INTEGER,
-            "statisticSettingsGroup" ),
-
     STATISTIC_RATE(
             "statistics/passiveTrackingRate",
             "Rate of passive tracking of statistics.",
@@ -223,24 +198,10 @@ public enum RuntimeConfig {
             TaskSchedulingType.EVERY_SECOND_FIXED,
             ConfigType.ENUM ),
 
-    EXPLORE_BY_EXAMPLE_TO_SQL(
-            "exploreByExample/classificationToSQL",
-            "Build SQL query from classification.",
-            true,
-            ConfigType.BOOLEAN,
-            "uiSettings" ),
-
     UI_PAGE_SIZE(
             "ui/pageSize",
             "Number of rows per page in the data view.",
             10,
-            ConfigType.INTEGER,
-            "uiSettingsDataViewGroup" ),
-
-    UI_NODE_AMOUNT(
-            "ui/nodeAmount",
-            "Number of nodes in the graph data view.",
-            300,
             ConfigType.INTEGER,
             "uiSettingsDataViewGroup" ),
 
@@ -251,29 +212,6 @@ public enum RuntimeConfig {
             10_000,
             ConfigType.INTEGER,
             "uiSettingsDataViewGroup" ),
-
-    UI_USE_HARDLINKS(
-            "ui/useHardlinks",
-            "Whether or not to use hardlinks for temporal files in the UI. If false, softlinks are used. This config has only an effect when one or multiple file stores are deployed. "
-                    + "With hardlinks, the data you see is the correct data that was selected during the transaction. "
-                    + "But with multiple file stores on different file systems, hardlinks won't work. "
-                    + "In this case you can use softlinks, but you might see data that is more recent.",
-            true,
-            ConfigType.BOOLEAN,
-            "uiSettingsDataViewGroup" ),
-
-    HUB_IMPORT_BATCH_SIZE(
-            "hub/hubImportBatchSize",
-            "Number of rows that should be inserted at a time when importing a dataset from Polypheny-Hub.",
-            1000,
-            ConfigType.INTEGER,
-            "uiSettingsDataViewGroup" ),
-
-    SCHEMA_CACHING(
-            "runtime/schemaCaching",
-            "Cache polypheny-db schema",
-            true,
-            ConfigType.BOOLEAN ),
 
     QUERY_PLAN_CACHING(
             "runtime/queryPlanCaching",
@@ -463,31 +401,30 @@ public enum RuntimeConfig {
             ConfigType.ENUM,
             "temperaturePartitionProcessingSettingsGroup" ),
 
-    CATALOG_DEBUG_MESSAGES(
-            "runtime/catalogDebugMessages",
-            "Enable output of catalog debug messages on the monitoring page.",
-            false,
-            ConfigType.BOOLEAN,
-            "monitoringGroup" ),
-
     AVAILABLE_PLUGINS(
             "runtime/availablePlugins",
-            "All plugins, which are available, be it active, only loaded or unloaded.",
+            "All plugins which are loaded.",
             List.of(),
             ConfigType.PLUGIN_LIST,
             "pluginsGroup"
     ),
 
-    BLOCKED_PLUGINS(
-            "runtime/blockedPlugins",
-            "All plugins, which are blocked by default.",
-            List.of( "druid-adapter",
-                    "elasticsearch-adapter",
-                    "geode-adapter",
-                    "html-adapter",
-                    "pig-adapter" ),
-            ConfigType.STRING_LIST
+    WORKFLOWS_WORKERS(
+            "workflows/globalWorkers",
+            "The maximum number of worker threads over all workflows. Changes apply as soon as all currently executing workflows have finished.",
+            40,
+            ConfigType.INTEGER,
+            "workflowsSettingsGroup"
     ),
+
+    WORKFLOWS_ENABLE_UNSAFE(
+            "workflows/enableUnsafe",
+            "Enable execution of possibly harmful activities. For instance, this includes activities that execute user-define Java code.",
+            false,
+            ConfigType.BOOLEAN,
+            "workflowsSettingsGroup"
+    ),
+
 
     INSTANCE_UUID(
             "runtime/uuid",
@@ -495,28 +432,26 @@ public enum RuntimeConfig {
             "WARNING! YOU SHOULD NOT BE SEEING THIS",
             ConfigType.STRING
     ),
+
     DOCKER_TIMEOUT(
             "runtime/dockerTimeout",
             "Connection and respones timeout for autodocker.",
             45,
             ConfigType.INTEGER
     ),
+
+    DOCKER_DIRECT_CONNECTION(
+            "runtime/dockerDirectConnection",
+            "Use direct connections to Docker containers in benchmark mode.",
+            true,
+            ConfigType.BOOLEAN
+    ),
+
     SERIALIZATION_BUFFER_SIZE(
             "runtime/serialization",
             "How big the buffersize for catalog objects should be.",
-            200000,
-            ConfigType.INTEGER ),
-    LOCKING_MAX_TIMEOUT_SECONDS(
-            "runtime/maxTimeout",
-            "How long a transactions should wait for a lock until it is aborted",
-            30,
+            2_000_000,
             ConfigType.INTEGER );
-
-
-    private final String key;
-    private final String description;
-
-    private final ConfigManager configManager = ConfigManager.getInstance();
 
 
     static {
@@ -594,6 +529,15 @@ public enum RuntimeConfig {
         configManager.registerWebUiPage( pluginPage );
         configManager.registerWebUiGroup( pluginGroup );
 
+        // Workflows Plugin
+        final WebUiPage workflowsPage = new WebUiPage(
+                "workflowsPage",
+                "Workflows",
+                "Settings related to the Workflows plugin." );
+        configManager.registerWebUiGroup(
+                new WebUiGroup( "workflowsSettingsGroup", workflowsPage.getId() ).withTitle( "Execution" ) );
+        configManager.registerWebUiPage( workflowsPage );
+
         // UI specific setting
         final WebUiPage uiSettingsPage = new WebUiPage(
                 "uiSettings",
@@ -645,6 +589,11 @@ public enum RuntimeConfig {
     }
 
 
+    private final String key;
+    private final String description;
+    private final ConfigManager configManager = ConfigManager.getInstance();
+
+
     RuntimeConfig( final String key, final String description, final Object defaultValue, final ConfigType configType ) {
         this( key, description, defaultValue, configType, null );
     }
@@ -654,99 +603,30 @@ public enum RuntimeConfig {
         this.key = key;
         this.description = description;
 
-        final Config config;
-        switch ( configType ) {
-            case BOOLEAN:
-                config = new ConfigBoolean( key, description, (boolean) defaultValue );
-                break;
-
-            case DECIMAL:
-                config = new ConfigDecimal( key, description, (BigDecimal) defaultValue );
-                break;
-
-            case DOUBLE:
-                config = new ConfigDouble( key, description, (double) defaultValue );
-                break;
-
-            case INTEGER:
-                config = new ConfigInteger( key, description, (int) defaultValue );
-                break;
-
-            case LONG:
-                config = new ConfigLong( key, description, (long) defaultValue );
-                break;
-
-            case STRING:
-                config = new ConfigString( key, description, (String) defaultValue );
-                break;
-
-            case ENUM:
-                config = new ConfigEnum( key, description, defaultValue.getClass(), (Enum) defaultValue );
-                break;
-
-            case BOOLEAN_TABLE:
-                config = new ConfigTable( key, (boolean[][]) defaultValue );
-                break;
-
-            case DECIMAL_TABLE:
-                config = new ConfigTable( key, (BigDecimal[][]) defaultValue );
-                break;
-
-            case DOUBLE_TABLE:
-                config = new ConfigTable( key, (double[][]) defaultValue );
-                break;
-
-            case INTEGER_TABLE:
-                config = new ConfigTable( key, (int[][]) defaultValue );
-                break;
-
-            case LONG_TABLE:
-                config = new ConfigTable( key, (long[][]) defaultValue );
-                break;
-
-            case STRING_TABLE:
-                config = new ConfigTable( key, (String[][]) defaultValue );
-                break;
-
-            case BOOLEAN_ARRAY:
-                config = new ConfigArray( key, (boolean[]) defaultValue );
-                break;
-
-            case DECIMAL_ARRAY:
-                config = new ConfigArray( key, (BigDecimal[]) defaultValue );
-                break;
-
-            case DOUBLE_ARRAY:
-                config = new ConfigArray( key, (double[]) defaultValue );
-                break;
-
-            case INTEGER_ARRAY:
-                config = new ConfigArray( key, (int[]) defaultValue );
-                break;
-
-            case LONG_ARRAY:
-                config = new ConfigArray( key, (long[]) defaultValue );
-                break;
-
-            case STRING_ARRAY:
-                config = new ConfigArray( key, (String[]) defaultValue );
-                break;
-
-            case STRING_LIST:
-                config = new ConfigList( key, (List<?>) defaultValue, String.class );
-                break;
-
-            case DOCKER_LIST:
-                config = new ConfigList( key, (List<?>) defaultValue, ConfigDocker.class );
-                break;
-
-            case PLUGIN_LIST:
-                config = new ConfigList( key, (List<?>) defaultValue, ConfigPlugin.class );
-                break;
-
-            default:
-                throw new GenericRuntimeException( "Unknown config type: " + configType.name() );
-        }
+        final Config config = switch ( configType ) {
+            case BOOLEAN -> new ConfigBoolean( key, description, (boolean) defaultValue );
+            case DECIMAL -> new ConfigDecimal( key, description, (BigDecimal) defaultValue );
+            case DOUBLE -> new ConfigDouble( key, description, (double) defaultValue );
+            case INTEGER -> new ConfigInteger( key, description, (int) defaultValue );
+            case LONG -> new ConfigLong( key, description, (long) defaultValue );
+            case STRING -> new ConfigString( key, description, (String) defaultValue );
+            case ENUM -> new ConfigEnum( key, description, defaultValue.getClass(), (Enum) defaultValue );
+            case BOOLEAN_TABLE -> new ConfigTable( key, (boolean[][]) defaultValue );
+            case DECIMAL_TABLE -> new ConfigTable( key, (BigDecimal[][]) defaultValue );
+            case DOUBLE_TABLE -> new ConfigTable( key, (double[][]) defaultValue );
+            case INTEGER_TABLE -> new ConfigTable( key, (int[][]) defaultValue );
+            case LONG_TABLE -> new ConfigTable( key, (long[][]) defaultValue );
+            case STRING_TABLE -> new ConfigTable( key, (String[][]) defaultValue );
+            case BOOLEAN_ARRAY -> new ConfigArray( key, (boolean[]) defaultValue );
+            case DECIMAL_ARRAY -> new ConfigArray( key, (BigDecimal[]) defaultValue );
+            case DOUBLE_ARRAY -> new ConfigArray( key, (double[]) defaultValue );
+            case INTEGER_ARRAY -> new ConfigArray( key, (int[]) defaultValue );
+            case LONG_ARRAY -> new ConfigArray( key, (long[]) defaultValue );
+            case STRING_ARRAY -> new ConfigArray( key, (String[]) defaultValue );
+            case STRING_LIST -> new ConfigList( key, (List<?>) defaultValue, String.class );
+            case DOCKER_LIST -> new ConfigList( key, (List<?>) defaultValue, ConfigDocker.class );
+            case PLUGIN_LIST -> new ConfigList( key, (List<?>) defaultValue, ConfigPlugin.class );
+        };
         configManager.registerConfig( config );
         if ( webUiGroup != null ) {
             config.withUi( webUiGroup );
@@ -759,8 +639,18 @@ public enum RuntimeConfig {
     }
 
 
+    public void setBoolean( final boolean value ) {
+        configManager.getConfig( key ).setBoolean( value );
+    }
+
+
     public BigDecimal getDecimal() {
         return configManager.getConfig( key ).getDecimal();
+    }
+
+
+    public void setDecimal( final BigDecimal value ) {
+        configManager.getConfig( key ).setDecimal( value );
     }
 
 
@@ -769,13 +659,30 @@ public enum RuntimeConfig {
     }
 
 
+    public void setDouble( final double value ) {
+        configManager.getConfig( key ).setDouble( value );
+    }
+
+
     public Enum getEnum() {
         return configManager.getConfig( key ).getEnum();
     }
 
 
+    public void setEnum( Enum value ) {
+        configManager.getConfig( key ).setEnum( value );
+    }
+
+
     public int getInteger() {
         return configManager.getConfig( key ).getInt();
+    }
+
+    // TODO: Add methods for array and table
+
+
+    public void setInteger( final int value ) {
+        configManager.getConfig( key ).setInt( value );
     }
 
 
@@ -784,8 +691,18 @@ public enum RuntimeConfig {
     }
 
 
+    public void setLong( final long value ) {
+        configManager.getConfig( key ).setLong( value );
+    }
+
+
     public String getString() {
         return configManager.getConfig( key ).getString();
+    }
+
+
+    public void setString( final String value ) {
+        configManager.getConfig( key ).setString( value );
     }
 
 
@@ -798,45 +715,8 @@ public enum RuntimeConfig {
         return configManager.getConfig( key ).getList( type );
     }
 
-    // TODO: Add methods for array and table
 
-
-    public void setBoolean( final boolean value ) {
-        configManager.getConfig( key ).setBoolean( value );
-    }
-
-
-    public void setDecimal( final BigDecimal value ) {
-        configManager.getConfig( key ).setDecimal( value );
-    }
-
-
-    public void setDouble( final double value ) {
-        configManager.getConfig( key ).setDouble( value );
-    }
-
-
-    public void setEnum( Enum value ) {
-        configManager.getConfig( key ).setEnum( value );
-    }
-
-
-    public void setInteger( final int value ) {
-        configManager.getConfig( key ).setInt( value );
-    }
-
-
-    public void setLong( final long value ) {
-        configManager.getConfig( key ).setLong( value );
-    }
-
-
-    public void setString( final String value ) {
-        configManager.getConfig( key ).setString( value );
-    }
-
-
-    public void setList( final List<ConfigScalar> values ) {
+    public void setList( final List<? extends ConfigScalar> values ) {
         configManager.getConfig( key ).setList( values );
     }
 

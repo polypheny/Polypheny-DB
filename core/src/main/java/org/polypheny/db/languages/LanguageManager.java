@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,9 +37,12 @@ import org.polypheny.db.processing.ImplementationContext.ExecutedContext;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
+import org.polypheny.db.processing.QueryContext.PhysicalQueryContext;
+import org.polypheny.db.processing.QueryContext.TranslatedQueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionException;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 
 @Slf4j
@@ -93,34 +96,54 @@ public class LanguageManager {
     // This should be refactored to use the new method only transmitting the transaction as soon as the
     // new prism interface is enabled
     public List<ImplementationContext> anyPrepareQuery( QueryContext context, Statement statement ) {
+        return anyPrepareQuery( context, statement, null );
+    }
+
+
+    /**
+     * Prepares the supplied parsed contexts when the caller has already inspected the query.
+     */
+    public List<ImplementationContext> anyPrepareQuery( QueryContext context, Statement statement, @Nullable List<ParsedQueryContext> preParsedQueries ) {
         Transaction transaction = statement.getTransaction();
         if ( transaction.isAnalyze() ) {
-            context.getInformationTarget().accept( statement.getTransaction().getQueryAnalyzer() );
+            transaction.getQueryAnalyzer().visitInformationTarget( context.getInformationTarget() );
         }
 
-        if ( transaction.isAnalyze() ) {
-            statement.getOverviewDuration().start( "Parsing" );
-        }
         List<ParsedQueryContext> parsedQueries;
 
-        try {
-            // handle empty query
-            if ( context.getQuery().trim().isEmpty() ) {
-                throw new GenericRuntimeException( String.format( "%s query is empty", context.getLanguage().serializedName() ) );
+        if ( preParsedQueries != null ) {
+            parsedQueries = preParsedQueries;
+        } else if ( context instanceof ParsedQueryContext ) {
+            parsedQueries = List.of( (ParsedQueryContext) context );
+        } else {
+            try {
+                if ( transaction.isAnalyze() ) {
+                    statement.getOverviewDuration().start( "Parsing" );
+                }
+
+                // handle empty query
+                if ( context.getQuery().trim().isEmpty() ) {
+                    throw new GenericRuntimeException( String.format( "%s query is empty", context.getLanguage().serializedName() ) );
+                }
+
+                parsedQueries = context.getLanguage().parser().apply( context );
+            } catch ( Throwable e ) {
+                if ( transaction.isAnalyze() ) {
+                    statement.getAnalyzer().registerException( e );
+                }
+                cancelTransaction( transaction, String.format( "Error on preparing query: %s", e.getMessage() ) );
+                context.removeTransaction( transaction );
+                return List.of( ImplementationContext.ofError( e, ParsedQueryContext.fromQuery( context.getQuery(), null, context ), statement ) );
             }
 
-            parsedQueries = context.getLanguage().parser().apply( context );
-        } catch ( Throwable e ) {
-            log.warn( "Error on preparing query: {}", e.getMessage() );
             if ( transaction.isAnalyze() ) {
-                transaction.getQueryAnalyzer().attachStacktrace( e );
+                statement.getOverviewDuration().stop( "Parsing" );
             }
-            cancelTransaction( transaction );
-            return List.of( ImplementationContext.ofError( e, ParsedQueryContext.fromQuery( context.getQuery(), null, context ), statement ) );
+
         }
 
-        if ( transaction.isAnalyze() ) {
-            statement.getOverviewDuration().stop( "Parsing" );
+        if ( context instanceof TranslatedQueryContext ) {
+            return implementTranslatedQuery( statement, transaction, (TranslatedQueryContext) context );
         }
 
         Processor processor = context.getLanguage().processorSupplier().get();
@@ -130,6 +153,12 @@ public class LanguageManager {
         String changedNamespace = null;
         for ( ParsedQueryContext parsed : parsedQueries ) {
             if ( i != 0 ) {
+                // as long as we directly commit the transaction, we cannot reuse the same transaction
+                if ( previousDdl && !transaction.isActive() ) {
+                    // Use the query analyzer of the old transaction
+                    transaction = parsed.getTransactionManager().startTransaction( transaction.getUser().id, transaction.getDefaultNamespace().id, transaction.getQueryAnalyzer(), transaction.getOrigin() );
+                    parsed.addTransaction( transaction );
+                }
                 statement = transaction.createStatement();
             }
             if ( changedNamespace != null ) {
@@ -155,22 +184,10 @@ public class LanguageManager {
                                 new GenericRuntimeException( "DDL statement is not executable" ),
                                 implementationContexts );
                     }
-                    // as long as we directly commit the transaction, we cannot reuse the same transaction
-                    if ( previousDdl && !transaction.isActive() ) {
-                        transaction = parsed.getTransactionManager().startTransaction( transaction.getUser().id, transaction.getDefaultNamespace().id, transaction.isAnalyze(), transaction.getOrigin() );
-                        statement = transaction.createStatement();
-                        parsed.addTransaction( transaction );
-                    }
 
                     implementation = processor.prepareDdl( statement, (ExecutableStatement) parsed.getQueryNode().get(), parsed );
                     previousDdl = true;
                 } else {
-                    // as long as we directly commit the transaction, we cannot reuse the same transaction
-                    if ( previousDdl && !transaction.isActive() ) {
-                        transaction = parsed.getTransactionManager().startTransaction( transaction.getUser().id, transaction.getDefaultNamespace().id, transaction.isAnalyze(), transaction.getOrigin() );
-                        statement = transaction.createStatement();
-                        parsed.addTransaction( transaction );
-                    }
                     previousDdl = false;
                     if ( parsed.getLanguage().validatorSupplier() != null ) {
                         if ( transaction.isAnalyze() ) {
@@ -195,6 +212,10 @@ public class LanguageManager {
                     if ( transaction.isAnalyze() ) {
                         statement.getOverviewDuration().stop( "Translation" );
                     }
+
+                    if ( !statement.getTransaction().isActive() ) {
+                        log.warn( "Transaction is not active" );
+                    }
                     implementation = statement.getQueryProcessor().prepareQuery( root, true );
                 }
                 // queries are able to switch the context of the following queries
@@ -203,11 +224,19 @@ public class LanguageManager {
                 implementationContexts.add( new ImplementationContext( implementation, parsed, statement, null ) );
 
             } catch ( Throwable e ) {
-                log.warn( "Caught exception: ", e ); // TODO: This should not log in all cases, at least not with stacktrace
-                if ( transaction.isAnalyze() ) {
-                    transaction.getQueryAnalyzer().attachStacktrace( e );
+                if ( !(e instanceof DeadlockException) ) {
+                    // we only log unexpected cases with stacktrace
+                    log.warn( "Caught exception: ", e );
                 }
-                cancelTransaction( transaction );
+
+                if ( transaction.isAnalyze() ) {
+                    statement.getAnalyzer().registerException( e );
+                }
+                if ( e instanceof DeadlockException ) {
+                    cancelTransaction( transaction, null );
+                } else {
+                    cancelTransaction( transaction, e.getMessage() );
+                }
                 implementationContexts.add( ImplementationContext.ofError( e, parsed, statement ) );
                 return implementationContexts;
             }
@@ -220,27 +249,27 @@ public class LanguageManager {
     @NotNull
     private static List<ImplementationContext> handleParseException( Statement statement, ParsedQueryContext parsed, Transaction transaction, Exception e, List<ImplementationContext> implementationContexts ) {
         if ( transaction.isAnalyze() ) {
-            transaction.getQueryAnalyzer().attachStacktrace( e );
+            statement.getAnalyzer().registerException( e );
         }
         implementationContexts.add( ImplementationContext.ofError( e, parsed, statement ) );
         return implementationContexts;
     }
 
 
-    private static void cancelTransaction( @Nullable Transaction transaction ) {
+    private static void cancelTransaction( @Nullable Transaction transaction, @Nullable String reason ) {
         if ( transaction != null && transaction.isActive() ) {
-            try {
-                transaction.rollback();
-            } catch ( TransactionException ex ) {
-                // Ignore
-                log.warn( "Error during rollback: " + ex.getMessage() );
-            }
+            transaction.rollback( reason );
         }
     }
 
 
     public List<ExecutedContext> anyQuery( QueryContext context ) {
-        List<ImplementationContext> prepared = anyPrepareQuery( context, context.getTransactions().get( context.getTransactions().size() - 1 ) );
+        List<ImplementationContext> prepared;
+        if ( context instanceof TranslatedQueryContext ) {
+            prepared = anyPrepareQuery( context, context.getStatement() );
+        } else {
+            prepared = anyPrepareQuery( context, context.getTransactions().get( context.getTransactions().size() - 1 ) );
+        }
         List<ExecutedContext> executedContexts = new ArrayList<>();
 
         for ( ImplementationContext implementation : prepared ) {
@@ -252,9 +281,9 @@ public class LanguageManager {
             } catch ( Throwable e ) {
                 Transaction transaction = implementation.getStatement().getTransaction();
                 if ( transaction.isAnalyze() && implementation.getException().isEmpty() ) {
-                    transaction.getQueryAnalyzer().attachStacktrace( e );
+                    implementation.getStatement().getAnalyzer().registerException( e );
                 }
-                cancelTransaction( transaction );
+                cancelTransaction( transaction, e.getMessage() );
 
                 executedContexts.add( ExecutedContext.ofError( e, implementation, null ) );
                 return executedContexts;
@@ -262,6 +291,37 @@ public class LanguageManager {
         }
 
         return executedContexts;
+    }
+
+
+    private List<ImplementationContext> implementTranslatedQuery( Statement statement, Transaction transaction, TranslatedQueryContext translated ) {
+        try {
+            PolyImplementation implementation;
+
+            if ( translated instanceof PhysicalQueryContext physical ) {
+                for ( int i = 0; i < physical.getDynamicValues().size(); i++ ) {
+                    PolyValue v = physical.getDynamicValues().get( i );
+                    AlgDataType type = physical.getDynamicTypes().get( i );
+                    statement.getDataContext().addParameterValues( i, type, List.of( v ) );
+                }
+                implementation = statement.getQueryProcessor().prepareQuery( physical.getRoot(), translated.isRouted(), true, true );
+            } else {
+                implementation = statement.getQueryProcessor().prepareQuery( translated.getRoot(), translated.isRouted(), true );
+            }
+
+            return List.of( new ImplementationContext( implementation, translated, statement, null ) );
+        } catch ( Throwable e ) {
+            if ( transaction.isAnalyze() ) {
+                statement.getAnalyzer().registerException( e );
+            }
+            if ( !(e instanceof DeadlockException) ) {
+                // we only log unexpected cases with stacktrace
+                log.warn( "Caught exception: ", e );
+            }
+
+            cancelTransaction( transaction, String.format( "Caught %s exception: %s", e.getClass().getSimpleName(), e.getMessage() ) );
+            return List.of( (ImplementationContext.ofError( e, translated, statement )) );
+        }
     }
 
 

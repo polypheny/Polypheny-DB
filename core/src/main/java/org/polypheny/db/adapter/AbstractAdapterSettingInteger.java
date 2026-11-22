@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,12 @@ import java.util.Arrays;
 import java.util.List;
 import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 public class AbstractAdapterSettingInteger extends AbstractAdapterSetting {
 
-    public AbstractAdapterSettingInteger( String name, boolean canBeNull, String subOf, boolean required, boolean modifiable, Integer defaultValue, List<DeploySetting> modes, int position ) {
-        super( AdapterSettingType.INTEGER, name, canBeNull, subOf, required, modifiable, modes, defaultValue.toString(), position );
+    public AbstractAdapterSettingInteger( String name, boolean canBeNull, String subOf, boolean required, boolean modifiable, Integer defaultValue, List<DeploySetting> modes, int position, String description ) {
+        super( AdapterSettingType.INTEGER, name, canBeNull, subOf, required, modifiable, modes, defaultValue.toString(), position, description );
     }
 
 
@@ -37,13 +38,25 @@ public class AbstractAdapterSettingInteger extends AbstractAdapterSetting {
                 annotation.modifiable(),
                 annotation.defaultValue(),
                 Arrays.asList( annotation.appliesTo() ),
-                annotation.position() );
+                annotation.position(),
+                annotation.description()
+        );
     }
 
 
     @Override
     public String getValue() {
         return defaultValue;
+    }
+
+
+    @Override
+    public void validate( String s ) {
+        try {
+            Integer.parseInt( s );
+        } catch ( NumberFormatException e ) {
+            throw new GenericRuntimeException( "Setting %s is invalid: \"%s\" is not an integer", name, s );
+        }
     }
 
 }

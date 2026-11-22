@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
@@ -56,40 +57,38 @@ import org.polypheny.db.transaction.PolyXid;
 @Slf4j
 public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scannable, Expressible {
 
-    private final AdapterProperties properties;
-    protected final DeployMode deployMode;
-    protected String deploymentId;
     public final String adapterName;
     public final ACatalog adapterCatalog;
-
-
     public final long adapterId;
-    private final String uniqueName;
-
+    protected final DeployMode deployMode;
     protected final Map<String, String> settings;
-
     protected final InformationPage informationPage;
     protected final List<InformationGroup> informationGroups;
     protected final List<Information> informationElements;
-    private ConfigListener listener;
-
+    private final AdapterProperties properties;
+    private final String uniqueName;
     private final Map<Long, Namespace> namespaces = new ConcurrentHashMap<>();
+    protected String deploymentId;
+    private ConfigListener listener;
 
 
     public Adapter( long adapterId, String uniqueName, Map<String, String> settings, DeployMode mode, ACatalog catalog ) {
         this.adapterCatalog = catalog;
         this.properties = getClass().getAnnotation( AdapterProperties.class );
-        if ( getClass().getAnnotation( AdapterProperties.class ) == null ) {
+        if ( this.properties == null ) {
             throw new GenericRuntimeException( "The used adapter does not annotate its properties correctly." );
         }
 
+        if ( !Arrays.asList( this.properties.usedModes() ).contains( mode ) ) {
+            throw new GenericRuntimeException( "Invalid deploy mode %s for adapter %s", mode, properties.name() );
+        }
         this.deployMode = mode;
 
         this.adapterId = adapterId;
         this.uniqueName = uniqueName;
         this.adapterName = properties.name();
         // Make sure the settings are actually valid
-        this.validateSettings( settings, true );
+        validateSettings( getClass(), deployMode, null, settings, true );
         this.settings = new HashMap<>( settings );
 
         informationPage = new InformationPage( uniqueName );
@@ -101,6 +100,39 @@ public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scanna
             this.listener = attachListener( Integer.parseInt( settings.get( "instanceId" ) ) );
         }
         Catalog.getInstance().addStoreSnapshot( catalog );
+    }
+
+
+    public static List<AbstractAdapterSetting> getAvailableSettings( Class<?> clazz ) {
+        return AbstractAdapterSetting.fromAnnotations( clazz.getAnnotations() );
+    }
+
+
+    public static void validateSettings( Class<? extends Adapter> adapterClass, DeployMode deployMode, @Nullable Map<String, String> oldSettings, Map<String, String> newSettings, boolean initialSetup ) {
+        for ( AbstractAdapterSetting s : getAvailableSettings( adapterClass ) ) {
+            // we only need to check settings which apply to the used mode
+            if ( !s.appliesTo.contains( deployMode ) ) {
+                continue;
+            }
+
+            if ( newSettings.containsKey( s.name ) ) {
+                String newValue = newSettings.get( s.name );
+                s.validate( newValue );
+                if ( s.modifiable || initialSetup ) {
+                    if ( !s.canBeNull && newValue == null ) {
+                        throw new GenericRuntimeException( "Setting \"" + s.name + "\" cannot be null." );
+                    }
+                } else {
+                    assert oldSettings != null;
+                    if ( !newValue.equals( oldSettings.get( s.name ) ) ) {
+                        throw new GenericRuntimeException( "Setting \"" + s.name + "\" cannot be modified." );
+                    }
+                }
+            } else if ( s.required && initialSetup ) {
+                throw new GenericRuntimeException( "Setting \"" + s.name + "\" must be present." );
+            }
+        }
+
     }
 
 
@@ -132,20 +164,28 @@ public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scanna
 
     public abstract void updateNamespace( String name, long id );
 
+
     public abstract Namespace getCurrentNamespace();
+
 
     public abstract void truncate( Context context, long allocId );
 
+
+    /**
+     * Check whether the adapter can publish the transaction without changing its contents.
+     * Called for all involved adapters before the first commit, even when two-phase commit is disabled.
+     */
+    public void validateCommit( PolyXid xid ) {
+    }
+
+
     public abstract boolean prepare( PolyXid xid );
+
 
     public abstract void commit( PolyXid xid );
 
+
     public abstract void rollback( PolyXid xid );
-
-
-    public List<AbstractAdapterSetting> getAvailableSettings( Class<?> clazz ) {
-        return AbstractAdapterSetting.fromAnnotations( clazz.getAnnotations(), properties );
-    }
 
 
     public void shutdownAndRemoveListeners() {
@@ -181,46 +221,10 @@ public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scanna
 
 
     public void updateSettings( Map<String, String> newSettings ) {
-        this.validateSettings( newSettings, false );
+        validateSettings( getClass(), deployMode, settings, newSettings, false );
         List<String> updatedSettings = this.applySettings( newSettings );
         this.reloadSettings( updatedSettings );
         Catalog.getInstance().updateAdapterSettings( getAdapterId(), newSettings );
-    }
-
-
-    public Map<String, String> getCurrentSettings() {
-        // we unwrap the dockerInstance details here, for convenience
-        return settings;
-    }
-
-
-    protected void validateSettings( Map<String, String> newSettings, boolean initialSetup ) {
-        for ( AbstractAdapterSetting s : getAvailableSettings( getClass() ) ) {
-            // we only need to check settings which apply to the used mode
-            if ( !s.appliesTo
-                    .stream()
-                    .flatMap( setting -> setting.getModes( List.of( properties.usedModes() ) ).stream() )
-                    .toList().contains( deployMode ) ) {
-                continue;
-            }
-            if ( !initialSetup && settings.containsKey( s.name ) && settings.get( s.name ).equals( s.getValue() ) ) {
-                // we can leave the setting as it is
-                return;
-            }
-
-            if ( newSettings.containsKey( s.name ) ) {
-                if ( s.modifiable || initialSetup ) {
-                    String newValue = newSettings.get( s.name );
-                    if ( !s.canBeNull && newValue == null ) {
-                        throw new GenericRuntimeException( "Setting \"" + s.name + "\" cannot be null." );
-                    }
-                } else {
-                    throw new GenericRuntimeException( "Setting \"" + s.name + "\" cannot be modified." );
-                }
-            } else if ( s.required && initialSetup ) {
-                throw new GenericRuntimeException( "Setting \"" + s.name + "\" must be present." );
-            }
-        }
     }
 
 
@@ -318,5 +322,9 @@ public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scanna
         throw new GenericRuntimeException( getUniqueName() + " uses this Docker instance and does not support to dynamically change it." );
     }
 
+
+    public List<String> getActiveFeatureNames() {
+        return List.of();
+    }
 
 }

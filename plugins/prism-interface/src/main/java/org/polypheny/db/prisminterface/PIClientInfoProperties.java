@@ -22,6 +22,9 @@ import java.util.Properties;
 
 class PIClientInfoProperties extends Properties {
 
+    static final String CYPHER_RESULT_FORMAT = "CypherResultFormat";
+    static final String AUTO_FORMAT = "auto";
+    static final String RELATIONAL_FORMAT = "relational";
     private static final int MAX_STRING_LENGTH = 2147483647;
     static final List<ClientInfoPropertiesDefault> DEFAULTS = Arrays.asList(
             new ClientInfoPropertiesDefault(
@@ -47,6 +50,12 @@ class PIClientInfoProperties extends Properties {
                     "",
                     MAX_STRING_LENGTH,
                     "User name of the user under which the application interacting with the prism-interface via this user is running."
+            ),
+            new ClientInfoPropertiesDefault(
+                    CYPHER_RESULT_FORMAT,
+                    AUTO_FORMAT,
+                    RELATIONAL_FORMAT.length(),
+                    "Cypher result format: auto selects the standard format; relational preserves rows and columns (requires Prism 2.3)."
             )
     );
 

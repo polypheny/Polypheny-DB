@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.PlanKey;
 import org.polypheny.db.algebra.core.JoinAlgType;
+import org.polypheny.db.algebra.core.common.Scan;
 import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.core.document.DocumentValues;
 import org.polypheny.db.algebra.core.lpg.LpgAlg;
@@ -43,11 +45,13 @@ import org.polypheny.db.algebra.logical.common.LogicalTransformer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
+import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
@@ -88,7 +92,7 @@ import org.polypheny.db.util.mapping.Mappings;
 @Slf4j
 public abstract class BaseRouter implements Router {
 
-    public static final Cache<Integer, AlgNode> joinedScanCache = CacheBuilder.newBuilder()
+    public static final Cache<PlanKey, RoutedDistribution> joinedScanCache = CacheBuilder.newBuilder()
             .maximumSize( RuntimeConfig.JOINED_TABLE_SCAN_CACHE_SIZE.getInteger() )
             .build();
 
@@ -120,11 +124,11 @@ public abstract class BaseRouter implements Router {
 
         if ( entity.unwrap( LogicalTable.class ).isPresent() ) {
             List<AllocationEntity> allocations = statement.getTransaction().getSnapshot().alloc().getFromLogical( entity.id );
-            table = entity.unwrap( LogicalTable.class ).orElseThrow();
+            table = entity.unwrapOrThrow( LogicalTable.class );
             builder.relScan( allocations.get( 0 ) );
         } else if ( entity.unwrap( AllocationTable.class ).isPresent() ) {
             builder.relScan( entity.unwrap( AllocationTable.class ).get() );
-            table = statement.getTransaction().getSnapshot().rel().getTable( entity.unwrap( AllocationTable.class ).orElseThrow().logicalId ).orElseThrow();
+            table = statement.getTransaction().getSnapshot().rel().getTable( entity.unwrapOrThrow( AllocationTable.class ).logicalId ).orElseThrow();
         } else {
             throw new NotImplementedException();
         }
@@ -195,10 +199,26 @@ public abstract class BaseRouter implements Router {
                 break;
             case 2:
                 builders.forEach(
-                        builder -> builder.replaceTop( node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 1 ), builder.peek( 0 ) ) ), 2 )
+                        builder -> builder.replaceTop(
+                                node.copy( node.getTraitSet(), ImmutableList.of( builder.peek( 1 ), builder.peek( 0 ) ) )
+                                , 2 )
                 );
                 break;
             default:
+                if ( node instanceof LogicalRelUnion l ) {
+                    builders.forEach(
+                            builder -> {
+                                List<AlgNode> inputs = new ArrayList<>();
+                                for ( int i = 0; i < node.getInputs().size(); i++ ) {
+                                    inputs.add( builder.peek( i ) );
+                                }
+                                builder.replaceTop(
+                                        node.copy( node.getTraitSet(), inputs )
+                                        , l.getInputs().size() );
+                            }
+                    );
+                    break;
+                }
                 throw new GenericRuntimeException( "Unexpected number of input elements: " + node.getInputs().size() );
         }
         return builders;
@@ -208,13 +228,13 @@ public abstract class BaseRouter implements Router {
     public AlgNode buildJoinedScan( ColumnDistribution columnDistribution, RoutingContext context ) {
         RoutedAlgBuilder builder = context.getRoutedAlgBuilder();
 
-        if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
-            AlgNode cachedNode = joinedScanCache.getIfPresent( columnDistribution.hashCode() );
-            if ( cachedNode != null ) {
-                return cachedNode;
-            }
-        }
-        RoutedDistribution routedDistribution = columnDistribution.route();
+        Optional<PlanKey> cacheKey = RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() && context.getStatement().getTransaction().getUseCache()
+                ? columnDistribution.cacheKey( Catalog.snapshot() )
+                : Optional.empty();
+        // Rebuild the scan in this statement's cluster, using the cached placement decision.
+        RoutedDistribution routedDistribution = cacheKey
+                .map( key -> joinedScanCache.asMap().computeIfAbsent( key, ignored -> columnDistribution.route() ) )
+                .orElseGet( columnDistribution::route );
         context.routedDistribution = routedDistribution;
 
         for ( FullPartition partition : routedDistribution.partitions() ) {
@@ -279,13 +299,9 @@ public abstract class BaseRouter implements Router {
         builder.union( true, columnDistribution.getPartitions().size() );
 
         AlgNode node = builder.build();
-        if ( RuntimeConfig.JOINED_TABLE_SCAN_CACHE.getBoolean() ) {
-            joinedScanCache.put( columnDistribution.hashCode(), node );
-        }
-
         // todo dl: remove after RowType refactor
         if ( catalog.getSnapshot().getNamespace( columnDistribution.getTable().namespaceId ).orElseThrow().dataModel == DataModel.DOCUMENT ) {
-            AlgDataType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( 1L, "d", 0, context.getCluster().getTypeFactory().createPolyType( PolyType.DOCUMENT ) ) ) );
+            AlgDataType rowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( 1L, DocumentType.DOCUMENT_FIELD, 0, context.getCluster().getTypeFactory().createPolyType( PolyType.DOCUMENT ) ) ) );
             builder.push( LogicalTransformer.create(
                     node.getCluster(),
                     List.of( node ),
@@ -319,7 +335,7 @@ public abstract class BaseRouter implements Router {
 
         LogicalNamespace namespace = snapshot.getNamespace( alg.entity.namespaceId ).orElseThrow();
 
-        LogicalGraph graph = alg.entity.unwrap( LogicalGraph.class ).orElseThrow();
+        LogicalGraph graph = alg.entity.unwrapOrThrow( LogicalGraph.class );
 
         List<AllocationPlacement> placements = snapshot.alloc().getPlacementsFromLogical( graph.id ).stream().filter( p -> excludedPlacements == null || !excludedPlacements.contains( p.id ) ).toList();
         if ( targetAlloc != null ) {
@@ -414,6 +430,25 @@ public abstract class BaseRouter implements Router {
             builder.push( handleDocScan( (DocumentScan<?>) alg, statement, null ) );
             return alg;
         } else if ( alg instanceof DocumentValues ) {
+            return alg;
+        } else if ( alg.getModel() != DataModel.DOCUMENT ) {
+            // cross model
+            if ( alg instanceof Scan<?> scan ) {
+                switch ( alg.getModel() ) {
+                    case RELATIONAL -> {
+                        handleRelScan( builder, statement, scan.entity );
+                    }
+                    case DOCUMENT -> {
+                        throw new GenericRuntimeException( "Error while routing graph query." );
+                    }
+                    case GRAPH -> {
+                        handleGraphScan( (LogicalLpgScan) alg, statement, (AllocationEntity) scan.entity, List.of() );
+                    }
+                }
+            } else {
+                this.handleGeneric( alg, builder );
+            }
+
             return alg;
         }
         throw new UnsupportedOperationException();

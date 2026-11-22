@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ package org.polypheny.db.sql.language.ddl.altertable;
 import static org.polypheny.db.util.Static.RESOURCE;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.index.IndexManager;
@@ -37,7 +38,8 @@ import org.polypheny.db.sql.language.SqlNodeList;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.TransactionException;
+import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.util.ImmutableNullableList;
 
@@ -53,6 +55,7 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
     private final SqlNodeList columnList;
     private final boolean unique;
     private final SqlIdentifier storeName;
+    private final Map<String, String> options;
 
 
     public SqlAlterTableAddIndex(
@@ -62,7 +65,8 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
             boolean unique,
             SqlIdentifier indexMethod,
             SqlIdentifier indexName,
-            SqlIdentifier storeName ) {
+            SqlIdentifier storeName,
+            Map<String, String> options ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.columnList = Objects.requireNonNull( columnList );
@@ -70,6 +74,7 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
         this.indexName = indexName;
         this.indexMethod = indexMethod;
         this.storeName = storeName;
+        this.options = options;
     }
 
 
@@ -107,6 +112,21 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
             writer.keyword( "STORE" );
             storeName.unparse( writer, leftPrec, rightPrec );
         }
+        if ( options != null && !options.isEmpty() ) {
+            writer.keyword( "WITH" );
+            writer.print( "(" );
+            boolean first = true;
+            for ( Map.Entry<String, String> e : options.entrySet() ) {
+                if ( !first ) {
+                    writer.print( "," );
+                }
+                writer.identifier( e.getKey() );
+                writer.print( "=" );
+                writer.literal( e.getValue() );
+                first = false;
+            }
+            writer.print( ")" );
+        }
     }
 
 
@@ -120,37 +140,40 @@ public class SqlAlterTableAddIndex extends SqlAlterTable {
 
         String indexMethodName = indexMethod != null ? indexMethod.getSimple() : null;
 
-        try {
-            if ( storeName != null && storeName.getSimple().equalsIgnoreCase( IndexManager.POLYPHENY ) ) {
-                DdlManager.getInstance().createPolyphenyIndex(
-                        logicalTable,
-                        indexMethodName,
-                        columnList.getList().stream().map( Node::toString ).toList(),
-                        indexName.getSimple(),
-                        unique,
-                        statement );
-            } else {
-                DataStore<?> storeInstance = null;
-                if ( storeName != null ) {
-                    storeInstance = getDataStoreInstance( storeName );
-                    if ( storeInstance == null ) {
-                        throw CoreUtil.newContextException(
-                                storeName.getPos(),
-                                RESOURCE.unknownAdapter( storeName.getSimple() ) );
-                    }
+        if ( storeName != null && storeName.getSimple().equalsIgnoreCase( IndexManager.POLYPHENY ) ) {
+            DdlManager.getInstance().createPolyphenyIndex(
+                    logicalTable,
+                    indexMethodName,
+                    columnList.getList().stream().map( Node::toString ).toList(),
+                    indexName.getSimple(),
+                    unique,
+                    statement );
+        } else {
+            DataStore<?> storeInstance = null;
+            if ( storeName != null ) {
+                storeInstance = getDataStoreInstance( storeName );
+                if ( storeInstance == null ) {
+                    throw CoreUtil.newContextException(
+                            storeName.getPos(),
+                            RESOURCE.unknownAdapter( storeName.getSimple() ) );
                 }
-                DdlManager.getInstance().createIndex(
-                        logicalTable,
-                        indexMethodName,
-                        columnList.getList().stream().map( Node::toString ).toList(),
-                        indexName.getSimple(),
-                        unique,
-                        storeInstance,
-                        statement );
             }
-        } catch ( TransactionException e ) {
-            throw new GenericRuntimeException( e );
+            DdlManager.getInstance().createIndex(
+                    logicalTable,
+                    indexMethodName,
+                    columnList.getList().stream().map( Node::toString ).toList(),
+                    indexName.getSimple(),
+                    unique,
+                    storeInstance,
+                    statement,
+                    options );
         }
+    }
+
+
+    @Override
+    public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
+        return getMapOfTableLockable( table, context, LockType.EXCLUSIVE );
     }
 
 }

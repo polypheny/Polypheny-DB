@@ -270,7 +270,7 @@ public abstract class SqlToAlgTestBase extends SqlLanguageDependent {
 
             TransactionManager transactionManager = testHelper.getTransactionManager();
 
-            Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, false, "Sql Test" );
+            Transaction transaction = transactionManager.startTransaction( Catalog.defaultUserId, null, "Sql Test" );
 
             AlgRoot root = null;
             for ( Node node : nodes ) {

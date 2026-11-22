@@ -37,12 +37,17 @@ public class AggImpState {
 
 
     public AggImpState( int aggIdx, AggregateCall call, boolean windowContext ) {
-        this.aggIdx = aggIdx;
-        this.call = call;
-        this.implementor = RexImpTable.INSTANCE.get( call.getAggregation(), windowContext );
+        this( aggIdx, call, RexImpTable.INSTANCE.get( call.getAggregation(), windowContext ) );
         if ( implementor == null ) {
             throw new IllegalArgumentException( "Unable to get aggregate implementation for aggregate " + call.getAggregation() + (windowContext ? " in window context" : "") );
         }
+    }
+
+
+    AggImpState( int aggIdx, AggregateCall call, AggImplementor implementor ) {
+        this.aggIdx = aggIdx;
+        this.call = call;
+        this.implementor = implementor;
     }
 
 }

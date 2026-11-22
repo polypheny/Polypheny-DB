@@ -16,7 +16,9 @@
 
 package org.polypheny.db.languages;
 
-public class UnsupportedLanguageOperation extends RuntimeException {
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+
+public class UnsupportedLanguageOperation extends GenericRuntimeException {
 
     public UnsupportedLanguageOperation( QueryLanguage language ) {
         super( "The requested operation is not supported for the used QueryLanguage: " + language );

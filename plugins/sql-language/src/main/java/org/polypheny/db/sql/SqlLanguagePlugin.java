@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -129,6 +129,7 @@ import org.polypheny.db.sql.language.fun.SqlMultisetMemberOfOperator;
 import org.polypheny.db.sql.language.fun.SqlMultisetQueryConstructor;
 import org.polypheny.db.sql.language.fun.SqlMultisetSetOperator;
 import org.polypheny.db.sql.language.fun.SqlMultisetValueConstructor;
+import org.polypheny.db.sql.language.fun.SqlNamedDistanceFunction;
 import org.polypheny.db.sql.language.fun.SqlNewOperator;
 import org.polypheny.db.sql.language.fun.SqlNthValueAggFunction;
 import org.polypheny.db.sql.language.fun.SqlNtileAggFunction;
@@ -185,18 +186,6 @@ public class SqlLanguagePlugin extends PolyPlugin {
      */
     public SqlLanguagePlugin( PluginContext context ) {
         super( context );
-    }
-
-
-    @Override
-    public void start() {
-        startup();
-    }
-
-
-    @Override
-    public void stop() {
-        throw new GenericRuntimeException( "Cannot remove language SQL." );
     }
 
 
@@ -1527,6 +1516,18 @@ public class SqlLanguagePlugin extends PolyPlugin {
         register( OperatorName.DISTANCE, new SqlDistanceFunction() );
 
         /*
+         * distance functions without additional parameters
+         */
+        register( OperatorName.L1_DISTANCE, new SqlNamedDistanceFunction( "L1_DISTANCE", Kind.L1_DISTANCE, FunctionCategory.L1_DISTANCE, SqlNamedDistanceFunction.TWO_NUMERIC_ARRAYS ) );
+        register( OperatorName.L2_DISTANCE, new SqlNamedDistanceFunction( "L2_DISTANCE", Kind.L2_DISTANCE, FunctionCategory.L2_DISTANCE, SqlNamedDistanceFunction.TWO_NUMERIC_ARRAYS ) );
+        register( OperatorName.COSINE_DISTANCE, new SqlNamedDistanceFunction( "COSINE_DISTANCE", Kind.COSINE_DISTANCE, FunctionCategory.COSINE_DISTANCE, SqlNamedDistanceFunction.TWO_NUMERIC_ARRAYS ) );
+        register( OperatorName.HAMMING_DISTANCE, new SqlNamedDistanceFunction( "HAMMING_DISTANCE", Kind.HAMMING_DISTANCE, FunctionCategory.HAMMING_DISTANCE, SqlNamedDistanceFunction.TWO_BOOLEAN_ARRAYS ) );
+        register( OperatorName.JACCARD_DISTANCE, new SqlNamedDistanceFunction( "JACCARD_DISTANCE", Kind.JACCARD_DISTANCE, FunctionCategory.JACCARD_DISTANCE, SqlNamedDistanceFunction.TWO_BOOLEAN_ARRAYS ) );
+        register( OperatorName.INNER_PRODUCT_DISTANCE, new SqlNamedDistanceFunction( "INNER_PRODUCT_DISTANCE", Kind.INNER_PRODUCT_DISTANCE, FunctionCategory.INNER_PRODUCT_DISTANCE, SqlNamedDistanceFunction.TWO_NUMERIC_ARRAYS ) );
+
+
+
+        /*
          * Get metadata of multimedia files
          */
         register( OperatorName.META, new SqlMetaFunction() );
@@ -1546,7 +1547,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                 new SqlFunction(
                         "REPLACE",
                         Kind.OTHER_FUNCTION,
-                        ReturnTypes.ARG0_NULLABLE_VARYING,
+                        ReturnTypes.STRING_REPLACE,
                         null,
                         OperandTypes.STRING_STRING_STRING,
                         FunctionCategory.STRING ) );
@@ -2432,6 +2433,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                         null,
                         null ) );
 
+
         /*
          * Operator to quantify patterns within {@code MATCH_RECOGNIZE}.
          *
@@ -2519,12 +2521,12 @@ public class SqlLanguagePlugin extends PolyPlugin {
          */
         register(
                 OperatorName.CROSS_MODEL_ITEM,
-                new LangFunctionOperator( OperatorName.CROSS_MODEL_ITEM.name(), Kind.CROSS_MODEL_ITEM ) );
+                new LangFunctionOperator( OperatorName.CROSS_MODEL_ITEM.name(), Kind.CROSS_MODEL_ITEM, PolyType.DOCUMENT ) );
 
         /*
          * Operator which transforms a value to JSON.
          */
-        register( OperatorName.TO_JSON, new LangFunctionOperator( OperatorName.TO_JSON.name(), Kind.OTHER ) );
+        register( OperatorName.TO_JSON, new LangFunctionOperator( OperatorName.TO_JSON.name(), Kind.OTHER, PolyType.TEXT ) );
 
         // GEO functions
         register( OperatorName.ST_GEOMFROMTEXT, new SqlStGeomFromText() );
@@ -3022,6 +3024,18 @@ public class SqlLanguagePlugin extends PolyPlugin {
     private static void register( OperatorName key, Operator operator ) {
         OperatorRegistry.register( key, operator );
         OperatorRegistry.register( QueryLanguage.from( "sql" ), key, operator );
+    }
+
+
+    @Override
+    public void start() {
+        startup();
+    }
+
+
+    @Override
+    public void stop() {
+        throw new GenericRuntimeException( "Cannot remove language SQL." );
     }
 
 }

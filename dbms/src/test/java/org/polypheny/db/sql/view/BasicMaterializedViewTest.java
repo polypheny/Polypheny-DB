@@ -1066,11 +1066,11 @@ public class BasicMaterializedViewTest {
 
 
     @Test
-    // we have to add these additional commits as this can lead to deadlocks atm, due to the locking approach employed struggeling with really slow stores(e.g. cottontail)
     public void testUpdateFreshnessIntervals() throws SQLException {
-        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
-            Connection connection = polyphenyDbConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
+        // Each poll completes its own transaction so the refresh can write between attempts.
+        try ( JdbcConnection writer = new JdbcConnection( false ); JdbcConnection reader = new JdbcConnection( true ) ) {
+            Connection connection = writer.getConnection();
+            try ( Statement statement = connection.createStatement(); Statement viewQuery = reader.getConnection().createStatement() ) {
                 statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
                 statement.executeUpdate( VIEW_TEST_DEP_TABLE_SQL );
                 statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestDep AS SELECT * FROM viewTestDepTable FRESHNESS INTERVAL 1000 \"milliseconds\"" );
@@ -1085,7 +1085,7 @@ public class BasicMaterializedViewTest {
                     TestHelper.checkResultSetWithDelay(
                             4,
                             2,
-                            () -> statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            () -> viewQuery.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
                                     new Object[]{ 1, "Max", "Muster", 1, 0 }
                             ) );
@@ -1093,7 +1093,7 @@ public class BasicMaterializedViewTest {
                     TestHelper.checkResultSetWithDelay(
                             2,
                             1,
-                            () -> statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            () -> viewQuery.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
                                     new Object[]{ 1, "Max", "Muster", 1, 0 }
                             ) );
@@ -1101,7 +1101,7 @@ public class BasicMaterializedViewTest {
                     TestHelper.checkResultSetWithDelay(
                             2,
                             1,
-                            () -> statement.executeQuery( "SELECT * FROM viewTestEmp1" ),
+                            () -> viewQuery.executeQuery( "SELECT * FROM viewTestEmp1" ),
                             ImmutableList.of(
                                     new Object[]{ 1, "Max", "Muster", 1, 0 }
                             ) );
@@ -1109,12 +1109,10 @@ public class BasicMaterializedViewTest {
                     TestHelper.checkResultSetWithDelay(
                             2,
                             1,
-                            () -> statement.executeQuery( "SELECT * FROM viewTestDep" ),
+                            () -> viewQuery.executeQuery( "SELECT * FROM viewTestDep" ),
                             ImmutableList.of(
                                     new Object[]{ 1, "IT", 1, 0 }
                             ) );
-
-                    connection.commit(); // see comment on top
 
                     statement.executeUpdate( "INSERT INTO viewTestDepTable VALUES ( 2, 'Sales', 2), ( 3, 'HR', 3)" );
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 2, 'Ernst', 'Walter', 2), ( 3, 'Elsa', 'Kuster', 3 )" );
@@ -1123,7 +1121,7 @@ public class BasicMaterializedViewTest {
                     TestHelper.checkResultSetWithDelay(
                             4,
                             2,
-                            () -> statement.executeQuery( "SELECT empId, firstName, lastName, depId FROM viewTestEmp" ),
+                            () -> viewQuery.executeQuery( "SELECT empId, firstName, lastName, depId FROM viewTestEmp" ),
                             ImmutableList.of(
                                     new Object[]{ 1, "Max", "Muster", 1 },
                                     new Object[]{ 2, "Ernst", "Walter", 2 },
@@ -1134,7 +1132,7 @@ public class BasicMaterializedViewTest {
                     TestHelper.checkResultSetWithDelay(
                             2,
                             1,
-                            () -> statement.executeQuery( "SELECT empId, firstName, lastName, depId FROM viewTestEmp1" ),
+                            () -> viewQuery.executeQuery( "SELECT empId, firstName, lastName, depId FROM viewTestEmp1" ),
                             ImmutableList.of(
                                     new Object[]{ 1, "Max", "Muster", 1 },
                                     new Object[]{ 2, "Ernst", "Walter", 2 },
@@ -1145,7 +1143,7 @@ public class BasicMaterializedViewTest {
                     TestHelper.checkResultSetWithDelay(
                             2,
                             1,
-                            () -> statement.executeQuery( "SELECT depId,depName,locationId FROM viewTestDep" ),
+                            () -> viewQuery.executeQuery( "SELECT depId,depName,locationId FROM viewTestDep" ),
                             ImmutableList.of(
                                     new Object[]{ 1, "IT", 1 },
                                     new Object[]{ 2, "Sales", 2 },
@@ -1153,7 +1151,6 @@ public class BasicMaterializedViewTest {
                             ),
                             true );
 
-                    connection.commit();
                     statement.executeUpdate( "DELETE FROM viewTestEmpTable" );
                     connection.commit();
                     statement.executeUpdate( "TRUNCATE TABLE viewTestDepTable" );
@@ -1162,22 +1159,21 @@ public class BasicMaterializedViewTest {
                     TestHelper.checkResultSetWithDelay(
                             4,
                             2,
-                            () -> statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            () -> viewQuery.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of() );
 
                     TestHelper.checkResultSetWithDelay(
                             4,
                             1,
-                            () -> statement.executeQuery( "SELECT * FROM viewTestEmp1" ),
+                            () -> viewQuery.executeQuery( "SELECT * FROM viewTestEmp1" ),
                             ImmutableList.of() );
 
                     TestHelper.checkResultSetWithDelay(
                             4,
                             1,
-                            () -> statement.executeQuery( "SELECT * FROM viewTestDep" ),
+                            () -> viewQuery.executeQuery( "SELECT * FROM viewTestDep" ),
                             ImmutableList.of() );
 
-                    connection.commit();
                     statement.executeUpdate( "INSERT INTO viewTestDepTable VALUES ( 1, 'IT', 1)" );
                     statement.executeUpdate( "INSERT INTO viewTestEmpTable VALUES ( 1, 'Max', 'Muster', 1 )" );
                     connection.commit();
@@ -1185,7 +1181,7 @@ public class BasicMaterializedViewTest {
                     TestHelper.checkResultSetWithDelay(
                             4,
                             2,
-                            () -> statement.executeQuery( "SELECT * FROM viewTestEmp" ),
+                            () -> viewQuery.executeQuery( "SELECT * FROM viewTestEmp" ),
                             ImmutableList.of(
                                     new Object[]{ 1, "Max", "Muster", 1, 0 }
                             ) );
@@ -1193,7 +1189,7 @@ public class BasicMaterializedViewTest {
                     TestHelper.checkResultSetWithDelay(
                             5,
                             1,
-                            () -> statement.executeQuery( "SELECT * FROM viewTestEmp1" ),
+                            () -> viewQuery.executeQuery( "SELECT * FROM viewTestEmp1" ),
                             ImmutableList.of(
                                     new Object[]{ 1, "Max", "Muster", 1, 0 }
                             ) );
@@ -1201,12 +1197,10 @@ public class BasicMaterializedViewTest {
                     TestHelper.checkResultSetWithDelay(
                             4,
                             1,
-                            () -> statement.executeQuery( "SELECT * FROM viewTestDep" ),
+                            () -> viewQuery.executeQuery( "SELECT * FROM viewTestDep" ),
                             ImmutableList.of(
                                     new Object[]{ 1, "IT", 1, 0 }
                             ) );
-
-                    connection.commit();
 
                 } finally {
                     statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp" );
@@ -1307,6 +1301,46 @@ public class BasicMaterializedViewTest {
                     statement.executeUpdate( "DROP VIEW viewTestEmpDep" );
                     statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
                     statement.executeUpdate( "DROP TABLE viewTestDepTable" );
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testMaterializedViewRollback() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
+
+                try {
+                    statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );
+                    statement.executeUpdate( "CREATE MATERIALIZED VIEW viewTestEmp1 AS SELECT * FROM viewTestEmpTable" );
+
+                    statement.executeUpdate( VIEW_TEST_EMP_TABLE_DATA_SQL );
+                    // Rollback the catalog to test that views are correctly restored
+                    connection.rollback();
+
+                    statement.executeUpdate( VIEW_TEST_EMP_TABLE_DATA_SQL );
+                    statement.executeUpdate( "ALTER MATERIALIZED VIEW viewTestEmp FRESHNESS MANUAL" );
+                    connection.commit();
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT empId,firstName,lastName,depId FROM viewTestEmp ORDER BY empid" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Max", "Muster", 1 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3 }
+                            )
+                    );
+
+                    // Drop the materialized views
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp" );
+                    statement.executeUpdate( "DROP MATERIALIZED VIEW viewTestEmp1" );
+                } finally {
+                    statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
+                    dropTables( statement );
                 }
             }
         }

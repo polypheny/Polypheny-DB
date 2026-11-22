@@ -90,8 +90,6 @@ public class HsqldbStore extends AbstractJdbcStore {
             }
             dataSource.setUsername( "sa" );
             dataSource.setPassword( "" );
-            dataSource.setMaxTotal( -1 ); // No limit for number of connections (limited by connection handler; see settings maxConnections)
-            dataSource.setDefaultAutoCommit( false );
             dataSource.setDefaultTransactionIsolation( Connection.TRANSACTION_READ_COMMITTED );
             dataSource.setDriverClassLoader( PolyPluginManager.getMainClassLoader() );
             return new TransactionalConnectionFactory( dataSource, Integer.parseInt( settings.get( "maxConnections" ) ), dialect );

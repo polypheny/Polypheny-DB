@@ -62,7 +62,7 @@ public class MongoDocumentAggregate extends DocumentAggregate implements MongoAl
             return;
         }
 
-        final String inName = MongoRules.maybeQuote( getGroup().map( n -> "$" + n.unwrap( RexNameRef.class ).orElseThrow().name ).orElseThrow() );
+        final String inName = MongoRules.maybeQuote( getGroup().map( n -> "$" + n.unwrapOrThrow( RexNameRef.class ).name ).orElseThrow() );
 
         list.add( "_id: " + inName );
         //implementor.physicalMapper.add( inName );
@@ -90,28 +90,28 @@ public class MongoDocumentAggregate extends DocumentAggregate implements MongoAl
             if ( aggCall.getInput().isEmpty() ) {
                 return "{$sum: 1}";
             } else {
-                assert aggCall.getInput().get().unwrap( RexNameRef.class ).orElseThrow().getNames().size() == 1;
+                assert aggCall.getInput().get().unwrapOrThrow( RexNameRef.class ).getNames().size() == 1;
                 final String inName = ((RexNameRef) aggCall.getInput().get()).name;
                 return "{$sum: {$cond: [ {$eq: [" + MongoRules.quote( inName ) + ", null]}, 0, 1]}}";
             }
         } else if ( aggCall.function instanceof SqlSumAggFunction || aggCall.function instanceof SqlSumEmptyIsZeroAggFunction ) {
-            assert aggCall.getInput().get().unwrap( RexNameRef.class ).orElseThrow().getNames().size() == 1;
+            assert aggCall.getInput().get().unwrapOrThrow( RexNameRef.class ).getNames().size() == 1;
             final String inName = ((RexNameRef) aggCall.getInput().get()).name;
             return "{$sum: " + MongoRules.maybeQuote( "$" + inName ) + "}";
         } else if ( aggCall.function.getOperatorName() == OperatorName.MIN ) {
-            assert aggCall.getInput().get().unwrap( RexNameRef.class ).orElseThrow().getNames().size() == 1;
+            assert aggCall.getInput().get().unwrapOrThrow( RexNameRef.class ).getNames().size() == 1;
             final String inName = ((RexNameRef) aggCall.getInput().get()).name;
             return "{$min: " + MongoRules.maybeQuote( "$" + inName ) + "}";
         } else if ( aggCall.function.equals( OperatorRegistry.getAgg( OperatorName.MAX ) ) ) {
-            assert aggCall.getInput().get().unwrap( RexNameRef.class ).orElseThrow().getNames().size() == 1;
+            assert aggCall.getInput().get().unwrapOrThrow( RexNameRef.class ).getNames().size() == 1;
             final String inName = ((RexNameRef) aggCall.getInput().get()).name;
             return "{$max: " + MongoRules.maybeQuote( "$" + inName ) + "}";
         } else if ( aggCall.function.getOperatorName() == OperatorName.AVG || aggCall.function.getKind() == OperatorRegistry.getAgg( OperatorName.AVG ).getKind() ) {
-            assert aggCall.getInput().get().unwrap( RexNameRef.class ).orElseThrow().getNames().size() == 1;
+            assert aggCall.getInput().get().unwrapOrThrow( RexNameRef.class ).getNames().size() == 1;
             final String inName = ((RexNameRef) aggCall.getInput().get()).name;
             return "{$avg: " + MongoRules.maybeQuote( "$" + inName ) + "}";
         } else if ( aggCall.function instanceof SqlSingleValueAggFunction ) {
-            assert aggCall.getInput().get().unwrap( RexNameRef.class ).orElseThrow().getNames().size() == 1;
+            assert aggCall.getInput().get().unwrapOrThrow( RexNameRef.class ).getNames().size() == 1;
             final String inName = ((RexNameRef) aggCall.getInput().get()).name;
             return "{$sum:" + MongoRules.maybeQuote( "$" + inName ) + "}";
         } else {

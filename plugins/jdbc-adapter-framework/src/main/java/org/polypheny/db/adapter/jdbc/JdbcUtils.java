@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,6 +56,7 @@ import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationPage;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.sql.language.util.SqlTypeRepresentation;
+import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -82,6 +83,50 @@ public final class JdbcUtils {
 
     private JdbcUtils() {
         throw new AssertionError( "no instances!" );
+    }
+
+
+    /**
+     * Builds and adds an new information group, observing the connection pool, to the provided information objects
+     *
+     * @param informationPage The information page used to show information on this jdbc adapter
+     * @param groups The collection of information groups associated with this adapter
+     * @param informationElements The collection of information elements associated with this adapter
+     */
+    public static void addInformationPoolSize( InformationPage informationPage, List<InformationGroup> groups, List<Information> informationElements, ConnectionFactory connectionFactory, String uniqueName ) {
+        InformationGroup group = new InformationGroup( informationPage, "JDBC Connection Pool" );
+
+        InformationGraph connectionPoolSizeGraph = new InformationGraph(
+                group,
+                GraphType.DOUGHNUT,
+                new String[]{ "Active", "Available", "Idle" }
+        );
+        informationElements.add( connectionPoolSizeGraph );
+
+        InformationTable connectionPoolSizeTable = new InformationTable(
+                group,
+                Arrays.asList( "Attribute", "Value" ) );
+        informationElements.add( connectionPoolSizeTable );
+
+        group.setRefreshFunction( () -> {
+            int idle = connectionFactory.getNumIdle();
+            int active = connectionFactory.getNumActive();
+            int max = connectionFactory.getMaxTotal();
+            int available = max - idle - active;
+
+            connectionPoolSizeGraph.updateGraph(
+                    new String[]{ "Active", "Available", "Idle" },
+                    new GraphData<>( uniqueName + "-connection-pool-data", new Integer[]{ active, available, idle } )
+            );
+
+            connectionPoolSizeTable.reset();
+            connectionPoolSizeTable.addRow( "Active", active );
+            connectionPoolSizeTable.addRow( "Idle", idle );
+            connectionPoolSizeTable.addRow( "Max", max );
+        } );
+
+        groups.add( group );
+
     }
 
 
@@ -116,6 +161,36 @@ public final class JdbcUtils {
                     throw new GenericRuntimeException( e );
                 }
             };
+        }
+
+
+        private static Timestamp shift( Timestamp v ) {
+            if ( v == null ) {
+                return null;
+            }
+            long time = v.getTime();
+            int offset = TimeZone.getDefault().getOffset( time );
+            return new Timestamp( time + offset );
+        }
+
+
+        private static Time shift( Time v ) {
+            if ( v == null ) {
+                return null;
+            }
+            long time = v.getTime();
+            int offset = TimeZone.getDefault().getOffset( time );
+            return new Time( (time + offset) % DateTimeUtils.MILLIS_PER_DAY );
+        }
+
+
+        private static Date shift( Date v ) {
+            if ( v == null ) {
+                return null;
+            }
+            long time = v.getTime();
+            int offset = TimeZone.getDefault().getOffset( time );
+            return new Date( time + offset );
         }
 
 
@@ -169,89 +244,19 @@ public final class JdbcUtils {
                             return PolyBoolean.ofNullable( (Boolean) o );
                         case Types.DOUBLE:
                             return PolyDouble.ofNullable( (Number) o );
-                        case Types.FLOAT:
+                        case Types.FLOAT, Types.REAL:
                             return PolyFloat.ofNullable( (Number) o );
                         case Types.DECIMAL:
                             return PolyBigDecimal.ofNullable( (BigDecimal) o );
+                        case Types.BIGINT:
+                            return PolyBigDecimal.ofNullable( (Number) o );
+                        case Types.BINARY:
+                            return PolyBinary.ofNullable( (byte[]) o );
                     }
                 default:
                     throw new GenericRuntimeException( "not implemented " + reps[i] + " " + types[i] );
             }
         }
-
-
-        private static Timestamp shift( Timestamp v ) {
-            if ( v == null ) {
-                return null;
-            }
-            long time = v.getTime();
-            int offset = TimeZone.getDefault().getOffset( time );
-            return new Timestamp( time + offset );
-        }
-
-
-        private static Time shift( Time v ) {
-            if ( v == null ) {
-                return null;
-            }
-            long time = v.getTime();
-            int offset = TimeZone.getDefault().getOffset( time );
-            return new Time( (time + offset) % DateTimeUtils.MILLIS_PER_DAY );
-        }
-
-
-        private static Date shift( Date v ) {
-            if ( v == null ) {
-                return null;
-            }
-            long time = v.getTime();
-            int offset = TimeZone.getDefault().getOffset( time );
-            return new Date( time + offset );
-        }
-
-    }
-
-
-    /**
-     * Builds and adds an new information group, observing the connection pool, to the provided information objects
-     *
-     * @param informationPage The information page used to show information on this jdbc adapter
-     * @param groups The collection of information groups associated with this adapter
-     * @param informationElements The collection of information elements associated with this adapter
-     */
-    public static void addInformationPoolSize( InformationPage informationPage, List<InformationGroup> groups, List<Information> informationElements, ConnectionFactory connectionFactory, String uniqueName ) {
-        InformationGroup group = new InformationGroup( informationPage, "JDBC Connection Pool" );
-
-        InformationGraph connectionPoolSizeGraph = new InformationGraph(
-                group,
-                GraphType.DOUGHNUT,
-                new String[]{ "Active", "Available", "Idle" }
-        );
-        informationElements.add( connectionPoolSizeGraph );
-
-        InformationTable connectionPoolSizeTable = new InformationTable(
-                group,
-                Arrays.asList( "Attribute", "Value" ) );
-        informationElements.add( connectionPoolSizeTable );
-
-        group.setRefreshFunction( () -> {
-            int idle = connectionFactory.getNumIdle();
-            int active = connectionFactory.getNumActive();
-            int max = connectionFactory.getMaxTotal();
-            int available = max - idle - active;
-
-            connectionPoolSizeGraph.updateGraph(
-                    new String[]{ "Active", "Available", "Idle" },
-                    new GraphData<>( uniqueName + "-connection-pool-data", new Integer[]{ active, available, idle } )
-            );
-
-            connectionPoolSizeTable.reset();
-            connectionPoolSizeTable.addRow( "Active", active );
-            connectionPoolSizeTable.addRow( "Idle", idle );
-            connectionPoolSizeTable.addRow( "Max", max );
-        } );
-
-        groups.add( group );
 
     }
 

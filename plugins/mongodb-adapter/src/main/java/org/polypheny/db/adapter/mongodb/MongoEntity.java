@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,12 +64,14 @@ import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.bson.BsonDocument;
+import org.bson.BsonString;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.json.JsonMode;
 import org.bson.json.JsonWriterSettings;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.DocumentIndexProvider;
 import org.polypheny.db.adapter.mongodb.rules.MongoScan;
 import org.polypheny.db.adapter.mongodb.util.MongoDynamic;
 import org.polypheny.db.adapter.mongodb.util.MongoTupleType;
@@ -84,6 +86,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.algebra.type.AlgProtoDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
@@ -115,7 +118,7 @@ import org.polypheny.db.util.Util;
 @Slf4j
 @Value
 @SuperBuilder(toBuilder = true)
-public class MongoEntity extends PhysicalEntity implements TranslatableEntity, ModifiableTable, ModifiableCollection, QueryableEntity {
+public class MongoEntity extends PhysicalEntity implements TranslatableEntity, ModifiableTable, ModifiableCollection, QueryableEntity, DocumentIndexProvider {
 
     @Getter
     public MongoNamespace mongoNamespace;
@@ -128,6 +131,65 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
     @Getter
     public MongoCollection<Document> collection;
     public List<? extends PhysicalField> fields;
+
+
+    @Override
+    public List<DocumentIndexMetadata> getDocumentIndexes() {
+        if ( dataModel != DataModel.DOCUMENT ) {
+            return List.of();
+        }
+        List<DocumentIndexMetadata> indexes = new ArrayList<>();
+        try ( var cursor = collection.listIndexes().iterator() ) {
+            while ( cursor.hasNext() ) {
+                indexes.addAll( describeDocumentIndex( cursor.next() ) );
+            }
+        }
+        return indexes;
+    }
+
+
+    static List<DocumentIndexMetadata> describeDocumentIndex( Document index ) {
+        Document keys = index.get( "key", Document.class );
+        if ( keys == null ) {
+            return List.of();
+        }
+        // The protocol reports individual fields without compound-index grouping.
+        // Never imply that a component of a unique compound index is itself unique.
+        boolean unique = keys.size() == 1 && (Boolean.TRUE.equals( index.getBoolean( "unique" ) ) || "_id_".equals( index.getString( "name" ) ));
+        List<DocumentIndexMetadata> indexes = new ArrayList<>();
+        keys.forEach( (path, method) -> {
+            // MongoDB represents text indexes using internal _fts/_ftsx keys.
+            // The public document paths are stored in the weights document.
+            if ( "text".equals( method ) && "_fts".equals( path ) ) {
+                Document weights = index.get( "weights", Document.class );
+                if ( weights != null ) {
+                    weights.keySet().forEach( field -> indexes.add( new DocumentIndexMetadata( escapeDocumentIndexPath( field ), "text", unique ) ) );
+                }
+                return;
+            }
+            if ( "_ftsx".equals( path ) && keys.containsKey( "_fts" ) ) {
+                return;
+            }
+            String type;
+            if ( path.equals( "$**" ) || path.endsWith( ".$**" ) ) {
+                type = "wildcard";
+            } else if ( method instanceof Number ) {
+                type = "btree";
+            } else {
+                type = "hashed".equals( method ) ? "hash" : method.toString();
+            }
+            indexes.add( new DocumentIndexMetadata( escapeDocumentIndexPath( path ), type, unique ) );
+        } );
+        return indexes;
+    }
+
+
+    private static String escapeDocumentIndexPath( String path ) {
+        // MongoDB index paths already use dots as nested-field separators and cannot
+        // target literal-dot field names. Preserve those separators, escaping only
+        // literal backslashes to match the document metadata path representation.
+        return path.replace( "\\", "\\\\" );
+    }
 
 
     /**
@@ -156,7 +218,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
     public AlgProtoDataType buildProto() {
         final AlgDataTypeFactory.Builder fieldInfo = AlgDataTypeFactory.DEFAULT.builder();
 
-        for ( PhysicalColumn column : fields.stream().map( f -> f.unwrap( PhysicalColumn.class ).orElseThrow() ).sorted( Comparator.comparingInt( a -> a.position ) ).toList() ) {
+        for ( PhysicalColumn column : fields.stream().map( f -> f.unwrapOrThrow( PhysicalColumn.class ) ).sorted( Comparator.comparingInt( a -> a.position ) ).toList() ) {
             AlgDataType sqlType = column.getAlgDataType( AlgDataTypeFactory.DEFAULT );
             fieldInfo.add( column.id, column.logicalName, column.name, sqlType ).nullable( column.nullable );
         }
@@ -267,7 +329,9 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                 final Iterator<PolyValue[]> resultIterator;
                 try {
                     if ( !list.isEmpty() ) {
-                        resultIterator = mongoDb.getCollection( physical.name ).aggregate( session, list ).map( getter::apply ).iterator();
+                        resultIterator = session != null
+                                ? mongoDb.getCollection( physical.name ).aggregate( session, list ).map( getter::apply ).iterator()
+                                : mongoDb.getCollection( physical.name ).aggregate( list ).map( getter::apply ).iterator();
                     } else {
                         resultIterator = Collections.emptyIterator();
                     }
@@ -349,7 +413,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
         if ( dataModel == DataModel.DOCUMENT ) {
             return new PhysicalCollection( id, allocationId, logicalId, namespaceId, name, namespaceName, adapterId );
         }
-        return new PhysicalTable( id, allocationId, logicalId, name, fields.stream().map( f -> f.unwrap( PhysicalColumn.class ).orElseThrow() ).toList(), namespaceId, namespaceName, uniqueFieldIds, adapterId );
+        return new PhysicalTable( id, allocationId, logicalId, name, fields.stream().map( f -> f.unwrapOrThrow( PhysicalColumn.class ) ).toList(), namespaceId, namespaceName, uniqueFieldIds, adapterId );
     }
 
 
@@ -394,13 +458,27 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
          * @see MongoMethod#MONGO_QUERYABLE_AGGREGATE
          */
         @SuppressWarnings("UnusedDeclaration")
-        public Enumerable<PolyValue[]> aggregate( MongoTupleType tupleType, List<String> operations, List<String> preProjections, List<String> logicalCols ) {
-            ClientSession session = getEntity().getTransactionProvider().getSession( dataContext.getStatement().getTransaction().getXid() );
-            dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( (int) this.getEntity().getStoreId() ).orElseThrow() );
+        public Enumerable<PolyValue[]> aggregate( MongoTupleType tupleType, List<String> operations, List<String> preProjections, List<String> logicalCols, List<String> ddls ) {
+            boolean sourceBacked = Catalog.snapshot().getAdapter( getEntity().getStoreId() )
+                    .map( adapter -> adapter.type == AdapterType.SOURCE )
+                    .orElse( false );
+            ClientSession session = sourceBacked ? null : getEntity().getTransactionProvider().getSession( dataContext.getStatement().getTransaction().getXid() );
+            dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getAdapter( this.getEntity().getStoreId() ).orElseThrow() );
 
             Map<Long, PolyValue> values = new HashMap<>();
             if ( dataContext.getParameterValues().size() == 1 ) {
                 values = dataContext.getParameterValues().get( 0 );
+            }
+
+            if ( !ddls.isEmpty() ) {
+                for ( String ddl : ddls ) {
+                    String[] ddlArray = ddl.split( "\n" );
+                    String field = ddlArray[0];
+                    String indexType = ddlArray[1];
+                    BsonDocument index = new BsonDocument();
+                    index.put( field, new BsonString( indexType ) );
+                    getEntity().getCollection().createIndex( index );
+                }
             }
 
             return getEntity().aggregate(
@@ -441,17 +519,17 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
         @SuppressWarnings("UnusedDeclaration")
         public Enumerable<Object> handleDirectDML( Operation operation, String filter, List<String> operations, boolean onlyOne, boolean needsDocument ) {
             PolyXid xid = dataContext.getStatement().getTransaction().getXid();
-            dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getStore( entity.getAdapterId() ).orElseThrow() );
+            dataContext.getStatement().getTransaction().registerInvolvedAdapter( AdapterManager.getInstance().getAdapter( entity.getAdapterId() ).orElseThrow() );
             GridFSBucket bucket = entity.getMongoNamespace().getBucket();
 
             try {
                 final long changes = doDML( operation, filter, operations, onlyOne, needsDocument, xid, bucket );
-
+                // this has to be a list of arrays, so List.of(...) will unwrap array and produce errors
                 return Linq4j.asEnumerable( Collections.singletonList( new PolyValue[]{ PolyLong.of( changes ) } ) );
             } catch ( MongoException e ) {
                 entity.getTransactionProvider().rollback( xid );
-                log.warn( "Failed" );
-                log.warn( String.format( "op: %s\nfilter: %s\nops: [%s]", operation.name(), filter, String.join( ";", operations ) ) );
+
+                log.warn( "Failed op: {}\nfilter: {}\nops: [{}]", operation.name(), filter, String.join( ";", operations ) );
                 log.warn( e.getMessage() );
                 throw new GenericRuntimeException( e.getMessage(), e );
             }
@@ -469,6 +547,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                         // prepared
                         MongoDynamic util = MongoDynamic.create( BsonDocument.parse( operations.get( 0 ) ), bucket, getEntity().getDataModel() );
                         List<Document> inserts = util.getAll( dataContext.getParameterValues() );
+
                         entity.getCollection().insertMany( session, inserts );
                         return inserts.size();
                     } else {
@@ -495,10 +574,12 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                                 } else {
                                     changes += entity
                                             .getCollection()
-                                            .updateOne( session, filterUtil.insert( parameterValue ), Collections.singletonList( docUtil.insert( parameterValue ) ) )
+                                            .updateOne( session, filterUtil.insert( parameterValue ), List.of( docUtil.insert( parameterValue ) ) )
                                             .getModifiedCount();
                                 }
                             } else {
+                                log.debug( "filter {}", filterUtil.insert( parameterValue ) );
+                                log.debug( "operation {}", docUtil.insert( parameterValue ) );
                                 if ( needsDocument ) {
                                     changes += entity
                                             .getCollection()
@@ -507,7 +588,7 @@ public class MongoEntity extends PhysicalEntity implements TranslatableEntity, M
                                 } else {
                                     changes += entity
                                             .getCollection()
-                                            .updateMany( session, filterUtil.insert( parameterValue ), Collections.singletonList( docUtil.insert( parameterValue ) ) )
+                                            .updateMany( session, filterUtil.insert( parameterValue ), List.of( docUtil.insert( parameterValue ) ) )
                                             .getModifiedCount();
                                 }
                             }

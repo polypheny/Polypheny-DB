@@ -99,7 +99,6 @@ public class SystemVariablesTest {
     @Test
     @Tag("mongodbExcluded")
     @Tag("fileExcluded")
-    @Tag("cottontailExcluded")
     @Tag("neo4jExcluded")
     public void testPiConstant() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {

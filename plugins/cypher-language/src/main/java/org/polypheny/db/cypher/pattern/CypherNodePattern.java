@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,14 @@
 
 package org.polypheny.db.cypher.pattern;
 
+import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
 import lombok.Getter;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.expression.CypherExpression;
+import org.polypheny.db.cypher.expression.CypherLiteral;
+import org.polypheny.db.cypher.expression.CypherLiteral.Literal;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.languages.ParserPos;
@@ -38,7 +42,7 @@ public class CypherNodePattern extends CypherPattern {
     private final List<ParserPos> positions;
 
     @Nullable
-    private final CypherExpression properties;
+    private CypherExpression properties;
     private final CypherExpression predicate;
 
 
@@ -59,14 +63,38 @@ public class CypherNodePattern extends CypherPattern {
 
 
     public Pair<PolyString, PolyNode> getPolyNode() {
-        PolyDictionary properties = this.properties != null ? (PolyDictionary) this.properties.getComparable() : new PolyDictionary();
+        return getPolyNode( null );
+    }
+
+
+    public CypherNodePattern withMatchProperties( CypherVariable binding, CypherExpression properties ) {
+        List<StringPos> labelPositions = new ArrayList<>( labels.size() );
+        for ( int i = 0; i < labels.size(); i++ ) {
+            labelPositions.add( new StringPos( labels.get( i ).value, positions.get( i ) ) );
+        }
+        return new CypherNodePattern( pos, binding, labelPositions, properties, predicate );
+    }
+
+
+    public Pair<PolyString, PolyNode> getPolyNode( @Nullable CypherContext context ) {
+        boolean project = context != null && context.usesCreateExpressions();
+        PolyDictionary properties = this.properties != null && !project ? (PolyDictionary) this.properties.getComparable() : new PolyDictionary();
 
         String name = null;
         if ( variable != null ) {
             name = variable.getName();
         }
 
-        return Pair.of( PolyString.of( name ), new PolyNode( properties, PolyList.copyOf( labels ), PolyString.of( name ) ) );
+        PolyNode node = new PolyNode( properties, PolyList.copyOf( labels ), PolyString.of( name ) );
+        if ( project ) {
+            context.addCreateProperties( node.id, this.properties );
+        }
+        return Pair.of( PolyString.of( name ), node );
+    }
+
+
+    public void initializeProperties() {
+        properties = new CypherLiteral( ParserPos.ZERO, Literal.MAP, List.of(), List.of() );
     }
 
 }

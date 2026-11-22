@@ -185,8 +185,8 @@ public class EnumUtils {
             final ParameterExpression parameter = Expressions.parameter( Primitive.box( inputPhysType.getJavaTupleType() ), EnumUtils.LEFT_RIGHT.get( ord.i ) );
             parameters.add( parameter );
             if ( expressions.size() == outputFieldCount ) {
-                // For instance, if semi-join needs to return just the left inputs
-                break;
+                // The selector still needs both parameters when no fields are selected.
+                continue;
             }
             final int fieldCount = inputPhysType.getTupleType().getFieldCount();
             for ( int i = 0; i < fieldCount; i++ ) {
@@ -389,7 +389,9 @@ public class EnumUtils {
 
 
     public static Expression unwrapPoly( Expression expression ) {
-        return expression.type == PolyBoolean.class ? Expressions.convert_( Expressions.field( expression, "value" ), boolean.class ) : expression;
+        return expression.type == PolyBoolean.class
+                ? Expressions.makeTernary( ExpressionType.Conditional, Expressions.call( expression, "isNull" ), Expressions.constant( false ), Expressions.convert_( Expressions.field( expression, "value" ), boolean.class ) )
+                : expression;
     }
 
 
@@ -439,8 +441,8 @@ public class EnumUtils {
             PhysType rightPhysType,
             RexNode condition ) {
         final BlockBuilder builder = new BlockBuilder();
-        final ParameterExpression left_ = Expressions.parameter( leftPhysType.getJavaTupleType(), "left" );
-        final ParameterExpression right_ = Expressions.parameter( rightPhysType.getJavaTupleType(), "right" );
+        final ParameterExpression left_ = Expressions.parameter( Modifier.FINAL, leftPhysType.getJavaTupleType(), "left" );
+        final ParameterExpression right_ = Expressions.parameter( Modifier.FINAL, rightPhysType.getJavaTupleType(), "right" );
         final RexProgramBuilder program = new RexProgramBuilder(
                 implementor.getTypeFactory().builder()
                         .addAll( left.getTupleType().getFields() )

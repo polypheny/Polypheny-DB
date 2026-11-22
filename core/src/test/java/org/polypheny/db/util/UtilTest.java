@@ -808,7 +808,7 @@ public class UtilTest {
         final Set<Integer> set = IntegerIntervalSet.of( s );
         assertEquals( set.size(), ints.length );
         List<Integer> list = new ArrayList<>( set );
-        assertEquals( new HashSet<>( Ints.asList( ints ) ), set );
+        assertEquals( Set.copyOf( Ints.asList( ints ) ), set );
         return list;
     }
 
@@ -980,7 +980,7 @@ public class UtilTest {
     private void checkCompositeMap( String[] beatles, Map<String, Integer> map ) {
         assertThat( 4, equalTo( map.size() ) );
         assertThat( false, equalTo( map.isEmpty() ) );
-        assertThat( map.keySet(), equalTo( (Set<String>) new HashSet<>( Arrays.asList( beatles ) ) ) );
+        assertThat( map.keySet(), equalTo(  Set.copyOf( Arrays.asList( beatles ) ) ) );
         assertThat( ImmutableMultiset.copyOf( map.values() ), equalTo( ImmutableMultiset.copyOf( Arrays.asList( 4, 4, 6, 5 ) ) ) );
     }
 

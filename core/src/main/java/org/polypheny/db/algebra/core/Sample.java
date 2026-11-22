@@ -85,13 +85,6 @@ public class Sample extends SingleAlg {
     }
 
 
-    @Override
-    public String algCompareString() {
-        // Compare makes no sense here. Use hashCode() to avoid errors.
-        return this.getClass().getSimpleName() + "$" + hashCode() + "&";
-    }
-
-
     /**
      * Retrieve the sampling parameters for this Sample.
      */
@@ -106,6 +99,12 @@ public class Sample extends SingleAlg {
                 .item( "mode", params.isBernoulli() ? "bernoulli" : "system" )
                 .item( "rate", params.getSamplingPercentage() )
                 .item( "repeatableSeed", params.isRepeatable() ? params.getRepeatableSeed() : "-" );
+    }
+
+
+    @Override
+    public boolean isDataModifying() {
+        return false;
     }
 
 }

@@ -18,9 +18,7 @@ package org.polypheny.db.algebra.core.document;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgNode;
@@ -62,15 +60,6 @@ public class DocumentAggregate extends SingleAlg implements DocumentAlg {
 
 
     @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                input.algCompareString() + "$" +
-                (group != null ? group.hashCode() : "") + "$" +
-                aggCalls.stream().map( Objects::toString ).collect( Collectors.joining( " $ " ) ) + "&";
-    }
-
-
-    @Override
     protected AlgDataType deriveRowType() {
         AlgDataTypeFactory.Builder builder = getCluster().getTypeFactory().builder();
         builder.add( "_id", null, DocumentType.ofDoc() );
@@ -86,6 +75,12 @@ public class DocumentAggregate extends SingleAlg implements DocumentAlg {
     @Override
     public DocType getDocType() {
         return DocType.AGGREGATE;
+    }
+
+
+    @Override
+    public boolean isDataModifying() {
+        return false;
     }
 
 }

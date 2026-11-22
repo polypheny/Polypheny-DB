@@ -26,7 +26,6 @@ import java.util.Map.Entry;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import lombok.experimental.SuperBuilder;
-import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.languages.QueryLanguage;
@@ -45,13 +44,26 @@ public class LogicalMaterializedView extends LogicalView {
 
 
     public LogicalMaterializedView(
+            long id,
+            String name,
+            long namespaceId,
+            String query,
+            Map<Long, List<Long>> underlyingTables,
+            QueryLanguage language,
+            MaterializedCriteria materializedCriteria,
+            boolean ordered
+    ) {
+        this( id, name, namespaceId, query, underlyingTables, language.serializedName(), materializedCriteria, ordered );
+    }
+
+
+    public LogicalMaterializedView(
             @Deserialize("id") long id,
             @Deserialize("name") String name,
             @Deserialize("namespaceId") long namespaceId,
-            @Deserialize("entityType") String query,
-            @Deserialize("algCollation") AlgCollation algCollation,
+            @Deserialize("query") String query,
             @Deserialize("underlyingTables") Map<Long, List<Long>> underlyingTables,
-            @Deserialize("language") QueryLanguage language,
+            @Deserialize("languageName") String languageName,
             @Deserialize("materializedCriteria") MaterializedCriteria materializedCriteria,
             @Deserialize("ordered") boolean ordered
     ) {
@@ -61,9 +73,8 @@ public class LogicalMaterializedView extends LogicalView {
                 namespaceId,
                 EntityType.MATERIALIZED_VIEW,
                 query,
-                algCollation,
                 underlyingTables,
-                language );
+                languageName );
 
         Map<Long, ImmutableList<Long>> map = new HashMap<>();
         for ( Entry<Long, List<Long>> e : underlyingTables.entrySet() ) {

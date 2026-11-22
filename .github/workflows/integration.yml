@@ -12,13 +12,13 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                adapter: [ mongodb, hsqldb, monetdb, postgresql, file, cottontail, neo4j ]
+                adapter: [ mongodb, hsqldb, monetdb, postgresql, file, neo4j ]
         name: ${{ matrix.adapter }}
         steps:
             -   name: Checkout
-                uses: actions/checkout@v4
+                uses: actions/checkout@v5
             -   name: Set up JDK
-                uses: actions/setup-java@v4
+                uses: actions/setup-java@v5
                 with:
                     distribution: 'temurin'
                     java-version: 21

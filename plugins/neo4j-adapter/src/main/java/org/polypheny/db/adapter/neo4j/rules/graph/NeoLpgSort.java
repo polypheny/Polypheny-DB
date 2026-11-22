@@ -70,7 +70,8 @@ public class NeoLpgSort extends LpgSort implements NeoGraphAlg {
 
         List<String> groups = new ArrayList<>();
         for ( AlgFieldCollation fieldCollation : collation.getFieldCollations() ) {
-            groups.add( lastNames.get( fieldCollation.getFieldIndex() ) + (fieldCollation.direction == Direction.ASCENDING ? "" : " DESC ") );
+            String field = NeoStatements.quoteIdentifier( lastNames.get( fieldCollation.getFieldIndex() ) );
+            groups.add( field + (fieldCollation.direction == Direction.ASCENDING ? "" : " DESC ") );
         }
 
         if ( !groups.isEmpty() ) {

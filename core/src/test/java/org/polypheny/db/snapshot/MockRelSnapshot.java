@@ -21,6 +21,7 @@ import java.util.Optional;
 import lombok.NonNull;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -197,6 +198,12 @@ public class MockRelSnapshot implements LogicalRelSnapshot {
 
 
     @Override
+    public @NonNull Optional<LogicalConstraint> getConstraint( long tableId, long id ) {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
     public @NonNull Optional<LogicalForeignKey> getForeignKey( long tableId, String foreignKeyName ) {
         throw new UnsupportedOperationException();
     }
@@ -246,6 +253,12 @@ public class MockRelSnapshot implements LogicalRelSnapshot {
 
     @Override
     public AlgNode getNodeInfo( long id ) {
+        throw new UnsupportedOperationException();
+    }
+
+
+    @Override
+    public AlgCollation getCollationInfo( long id ) {
         throw new UnsupportedOperationException();
     }
 

@@ -83,11 +83,11 @@ class CaseInsensitiveComparator implements Comparator, Serializable {
         if ( c != 0 ) {
             return c;
         }
-        if ( o1 instanceof Key ) {
-            return ((Key) o1).compareResult;
+        if ( o1 instanceof Key key ) {
+            return key.compareResult;
         }
-        if ( o2 instanceof Key ) {
-            return -((Key) o2).compareResult;
+        if ( o2 instanceof Key key ) {
+            return -key.compareResult;
         }
         return s1.compareTo( s2 );
     }

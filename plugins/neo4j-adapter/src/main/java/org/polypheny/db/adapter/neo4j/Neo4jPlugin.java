@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,8 +43,11 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.IndexMethodModel;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.DeployMode.DeploySetting;
 import org.polypheny.db.adapter.GraphModifyDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
+import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.adapter.neo4j.types.NestedSingleType;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
 import org.polypheny.db.catalog.catalogs.GraphAdapterCatalog;
@@ -92,18 +95,6 @@ public class Neo4jPlugin extends PolyPlugin {
     }
 
 
-    @Override
-    public void afterCatalogInit() {
-        this.id = AdapterManager.addAdapterTemplate( Neo4jStore.class, ADAPTER_NAME, Neo4jStore::new );
-    }
-
-
-    @Override
-    public void stop() {
-        AdapterManager.removeAdapterTemplate( id );
-    }
-
-
     public static String getPhysicalEntityName( long namespaceId, long allocId ) {
         return String.format( "n_%d_entity_%d_", namespaceId, allocId );
     }
@@ -124,38 +115,96 @@ public class Neo4jPlugin extends PolyPlugin {
     }
 
 
-    private static String getMappingLabel( long id ) {
+    static String getMappingLabel( long id ) {
         return String.format( "___n_%d___", id );
     }
 
 
+    @Override
+    public void afterCatalogInit() {
+        this.id = AdapterManager.addAdapterTemplate( Neo4jStore.class, ADAPTER_NAME, Neo4jStore::new );
+    }
+
+
+    @Override
+    public void stop() {
+        AdapterManager.removeAdapterTemplate( id );
+    }
+
+
+    public enum IndexTypes {
+        DEFAULT,
+        COMPOSITE;
+
+
+        public IndexMethodModel asMethod() {
+            return new IndexMethodModel( name().toLowerCase( Locale.ROOT ), name() + " INDEX" );
+        }
+    }
+
+
+    @SuppressWarnings("unused")
+    public interface Exclude {
+
+        void refreshGraph( long allocId );
+
+        void dropGraph( Context context, AllocationGraph allocation );
+
+        void createGraph( Context context, LogicalGraph logical, AllocationGraph allocation );
+
+        void dropColumn( Context context, long allocId, long columnId );
+
+        void dropTable( Context context, long allocId );
+
+        void updateColumnType( Context context, long allocId, LogicalColumn newCol );
+
+        void addColumn( Context context, long allocId, LogicalColumn logicalColumn );
+
+        void refreshTable( long allocId );
+
+        void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper );
+
+        String addIndex( Context context, LogicalIndex logicalIndex, AllocationTable allocation );
+
+        void dropIndex( Context context, LogicalIndex index, long allocId );
+
+        void renameLogicalColumn( long id, String newColumnName );
+
+        void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context );
+
+        void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities, Context context );
+
+        void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities, Context context );
+
+    }
+
+
     @Slf4j
+    @Extension
     @AdapterProperties(
             name = "Neo4j",
             description = "Neo4j is a graph-model based database system. It stores data in a graph structure which consists of nodes and edges.",
             usedModes = { DeployMode.DOCKER, DeployMode.REMOTE },
             defaultMode = DeployMode.DOCKER)
-    @Extension
+    @AdapterSettingString(name = "host", defaultValue = "localhost", appliesTo = DeploySetting.REMOTE)
+    @AdapterSettingInteger(name = "port", defaultValue = 7687, appliesTo = DeploySetting.REMOTE)
+    @AdapterSettingString(name = "user", defaultValue = "neo4j", appliesTo = DeploySetting.REMOTE)
+    @AdapterSettingString(name = "password", defaultValue = "neo4j", appliesTo = DeploySetting.REMOTE)
     public static class Neo4jStore extends DataStore<GraphAdapterCatalog> {
 
         private final String DEFAULT_DATABASE = "public";
         @Delegate(excludes = Exclude.class)
         private final GraphModifyDelegate delegate;
-
-        private int port;
         private final String user;
         private final Session session;
         private final DockerContainer container;
-        private Driver db;
         private final String pass;
         private final AuthToken auth;
+        private final TransactionProvider transactionProvider;
+        private int port;
+        private Driver db;
         @Getter
         private NeoNamespace currentNamespace;
-
-        @Getter
-        private NeoGraph currentGraph;
-
-        private final TransactionProvider transactionProvider;
         private String host;
 
 
@@ -173,7 +222,6 @@ public class Neo4jPlugin extends PolyPlugin {
             this.auth = AuthTokens.basic( this.user, this.pass );
 
             if ( deployMode == DeployMode.DOCKER ) {
-
                 if ( settings.getOrDefault( "deploymentId", "" ).isEmpty() ) {
                     int instanceId = Integer.parseInt( settings.get( "instanceId" ) );
                     DockerInstance instance = DockerManager.getInstance().getInstanceById( instanceId )
@@ -206,7 +254,9 @@ public class Neo4jPlugin extends PolyPlugin {
                 this.host = settings.get( "host" );
                 this.port = Integer.parseInt( settings.get( "port" ) );
                 this.container = null;
-
+                if ( !testConnection() ) {
+                    throw new GenericRuntimeException( "Could not connect to neo4j database" );
+                }
             } else {
                 throw new GenericRuntimeException( "Not supported deploy mode: " + deployMode.name() );
             }
@@ -233,13 +283,11 @@ public class Neo4jPlugin extends PolyPlugin {
          * Test if a connection to the provided Neo4j database is possible.
          */
         private boolean testConnection() {
-            if ( container == null ) {
-                return false;
+            if ( container != null ) {
+                HostAndPort hp = container.connectToContainer( 7687 );
+                this.host = hp.host();
+                this.port = hp.port();
             }
-
-            HostAndPort hp = container.connectToContainer( 7687 );
-            this.host = hp.host();
-            this.port = hp.port();
 
             try {
                 this.db = GraphDatabase.driver( new URI( String.format( "bolt://%s:%s", host, port ) ), auth );
@@ -343,7 +391,7 @@ public class Neo4jPlugin extends PolyPlugin {
             fields.add( column );
             adapterCatalog.replacePhysical(
                     physical.toBuilder().fields( fields.stream()
-                            .map( f -> f.unwrap( PhysicalColumn.class ).orElseThrow() )
+                            .map( f -> f.unwrapOrThrow( PhysicalColumn.class ) )
                             .sorted( Comparator.comparingInt( a -> a.position ) ).toList() ).build() );
         }
 
@@ -360,7 +408,7 @@ public class Neo4jPlugin extends PolyPlugin {
         @Override
         public void dropColumn( Context context, long allocId, long columnId ) {
             NeoEntity physical = adapterCatalog.fromAllocation( allocId, NeoEntity.class );
-            PhysicalColumn column = adapterCatalog.getField( columnId, allocId ).unwrap( PhysicalColumn.class ).orElseThrow();
+            PhysicalColumn column = adapterCatalog.getField( columnId, allocId ).unwrapOrThrow( PhysicalColumn.class );
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
 
             adapterCatalog.fields.values().stream().filter( f -> f.id == columnId && f.allocId == allocId ).forEach( f -> {
@@ -418,7 +466,10 @@ public class Neo4jPlugin extends PolyPlugin {
         public void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context ) {
             for ( PhysicalEntity entity : entities ) {
                 updateNamespace( entity.namespaceName, entity.namespaceId );
-                adapterCatalog.addPhysical( alloc, currentNamespace.createEntity( entity, entity.unwrap( PhysicalTable.class ).orElseThrow().columns, currentNamespace ) );
+
+                // TODO: If entity is of type PhysicalGraph, unwrap() does not work
+                //   Happens if we restart Polypheny-DB and try to restore the graph from Neo4j.
+                adapterCatalog.addPhysical( alloc, currentNamespace.createEntity( entity, entity.unwrapOrThrow( PhysicalTable.class ).columns, currentNamespace ) );
             }
         }
 
@@ -427,7 +478,7 @@ public class Neo4jPlugin extends PolyPlugin {
         public void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities, Context context ) {
             for ( PhysicalEntity entity : entities ) {
                 updateNamespace( entity.namespaceName, entity.namespaceId );
-                adapterCatalog.addPhysical( alloc, currentNamespace.createEntity( entity, List.of(), currentNamespace ) );
+                adapterCatalog.addPhysical( alloc, currentNamespace.createGraph( entity, List.of(), this.db, this ) );
             }
         }
 
@@ -561,8 +612,6 @@ public class Neo4jPlugin extends PolyPlugin {
 
         @Override
         public void shutdown() {
-            DockerContainer.getContainerByUUID( deploymentId ).ifPresent( DockerContainer::destroy );
-
             removeInformationPage();
         }
 
@@ -572,53 +621,6 @@ public class Neo4jPlugin extends PolyPlugin {
 
         }
 
-
-    }
-
-
-    public enum IndexTypes {
-        DEFAULT,
-        COMPOSITE;
-
-
-        public IndexMethodModel asMethod() {
-            return new IndexMethodModel( name().toLowerCase( Locale.ROOT ), name() + " INDEX" );
-        }
-    }
-
-
-    @SuppressWarnings("unused")
-    public interface Exclude {
-
-        void refreshGraph( long allocId );
-
-        void dropGraph( Context context, AllocationGraph allocation );
-
-        void createGraph( Context context, LogicalGraph logical, AllocationGraph allocation );
-
-        void dropColumn( Context context, long allocId, long columnId );
-
-        void dropTable( Context context, long allocId );
-
-        void updateColumnType( Context context, long allocId, LogicalColumn newCol );
-
-        void addColumn( Context context, long allocId, LogicalColumn logicalColumn );
-
-        void refreshTable( long allocId );
-
-        void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocationWrapper );
-
-        String addIndex( Context context, LogicalIndex logicalIndex, AllocationTable allocation );
-
-        void dropIndex( Context context, LogicalIndex index, long allocId );
-
-        void renameLogicalColumn( long id, String newColumnName );
-
-        void restoreTable( AllocationTable alloc, List<PhysicalEntity> entities, Context context );
-
-        void restoreGraph( AllocationGraph alloc, List<PhysicalEntity> entities, Context context );
-
-        void restoreCollection( AllocationCollection alloc, List<PhysicalEntity> entities, Context context );
 
     }
 

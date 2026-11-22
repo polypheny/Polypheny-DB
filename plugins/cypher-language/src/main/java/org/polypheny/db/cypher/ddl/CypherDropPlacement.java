@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package org.polypheny.db.cypher.ddl;
 
 import java.util.List;
-import java.util.stream.Stream;
+import java.util.Map;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
@@ -32,6 +32,9 @@ import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockableUtils;
 
 public class CypherDropPlacement extends CypherAdminCommand implements ExecutableStatement {
 
@@ -55,15 +58,19 @@ public class CypherDropPlacement extends CypherAdminCommand implements Executabl
 
         List<LogicalNamespace> graphs = statement.getTransaction().getSnapshot().getNamespaces( new Pattern( this.databaseName ) );
 
-        DataStore<?> dataStore = Stream.of( storeName )
-                .map( store -> adapterManager.getStore( storeName ).orElseThrow() )
-                .toList().get( 0 );
+        DataStore<?> dataStore = adapterManager.getStore( storeName ).orElseThrow();
 
         if ( graphs.size() != 1 ) {
             throw new GenericRuntimeException( "Error while adding graph placement" );
         }
 
         DdlManager.getInstance().dropGraphPlacement( graphs.get( 0 ).id, dataStore, statement );
+    }
+
+
+    @Override
+    public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
+        return LockableUtils.getMapOfGlobalLockable( LockType.EXCLUSIVE );
     }
 
 }

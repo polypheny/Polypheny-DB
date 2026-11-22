@@ -52,12 +52,19 @@ public class CypherVariable extends CypherExpression {
 
 
     @Override
-    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
+    protected Pair<PolyString, RexNode> toRex( CypherContext context, RexType type ) {
+        RexNode scoped = context.scopedVariable( name );
+        if ( scoped != null ) {
+            return Pair.of( PolyString.of( name ), scoped );
+        }
+        if ( !context.hasInput() ) {
+            throw new GenericRuntimeException( "The used variable is not known: %s", name );
+        }
         AlgNode node = context.peek();
 
         int index = node.getTupleType().getFieldNames().indexOf( name );
 
-        if ( index >= 0 ) {
+        if ( index >= 0 && context.isVisibleVariable( name ) ) {
             // search r  -> RowType(r:Edge)
             return Pair.of(
                     PolyString.of( name ),
@@ -65,7 +72,7 @@ public class CypherVariable extends CypherExpression {
         }
 
         for ( AlgDataTypeField field : node.getTupleType().getFields() ) {
-            if ( field.getType() instanceof PathType ) {
+            if ( field.getType() instanceof PathType && context.isImplicitPathBinding( field.getName() ) ) {
                 for ( AlgDataTypeField pathField : field.getType().getFields() ) {
                     if ( pathField.getName().equals( name ) ) {
                         // search r -> RowType(Path(r:Edge, n:Node))

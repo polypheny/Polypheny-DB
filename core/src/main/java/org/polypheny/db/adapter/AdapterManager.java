@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 package org.polypheny.db.adapter;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSerializer;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,10 +24,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+import lombok.Getter;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.adapter.annotations.AdapterSettingsPreset;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
@@ -40,18 +42,13 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 
 public class AdapterManager {
 
+    private static final AdapterManager INSTANCE = new AdapterManager();
     public static Expression ADAPTER_MANAGER_EXPRESSION = Expressions.call( AdapterManager.class, "getInstance" );
-
     private final Map<Long, Adapter<?>> adapterById = new HashMap<>();
     private final Map<String, Adapter<?>> adapterByName = new HashMap<>();
-
-
-    private static final AdapterManager INSTANCE = new AdapterManager();
-
-
-    public static AdapterManager getInstance() {
-        return INSTANCE;
-    }
+    @Getter
+    private final Map<Long, AdapterTemplate> adapterTemplates = new ConcurrentHashMap<>();
+    private final AtomicLong idBuilder = new AtomicLong();
 
 
     private AdapterManager() {
@@ -59,33 +56,49 @@ public class AdapterManager {
     }
 
 
-    public static long addAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, Function5<Long, String, Map<String, String>, DeployMode, Adapter<?>> deployer ) {
+    public static AdapterManager getInstance() {
+        return INSTANCE;
+    }
+
+
+    public static long addAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, DeployFn deployer ) {
         List<AbstractAdapterSetting> settings = AdapterTemplate.getAllSettings( clazz );
         AdapterProperties properties = clazz.getAnnotation( AdapterProperties.class );
-        return Catalog.getInstance().createAdapterTemplate( clazz, adapterName, properties.description(), List.of( properties.usedModes() ), settings, deployer );
+        List<DeployMode> modes = List.of( properties.usedModes() );
+        List<AdapterSettingsPreset> presets = AdapterTemplate.getAllPresets( clazz, settings, modes );
+        long id = AdapterManager.getInstance().idBuilder.getAndIncrement();
+        AdapterManager.getInstance().adapterTemplates.put( id, new AdapterTemplate( id, clazz, adapterName, settings, modes, presets, properties.description(), deployer ) );
+        return id;
     }
 
 
     public static void removeAdapterTemplate( long templateId ) {
-        AdapterTemplate template = Catalog.snapshot().getAdapterTemplate( templateId ).orElseThrow();
+        AdapterTemplate template = getAdapterTemplate( templateId ).orElseThrow();
         if ( Catalog.snapshot().getAdapters().stream().anyMatch( a -> a.adapterName.equals( template.adapterName ) && a.type == template.adapterType ) ) {
             throw new GenericRuntimeException( "Adapter is still deployed!" );
         }
-        Catalog.getInstance().dropAdapterTemplate( templateId );
+        AdapterManager.getInstance().adapterTemplates.remove( templateId );
+    }
+
+
+    public static Optional<AdapterTemplate> getAdapterTemplate( long id ) {
+        return Optional.ofNullable( AdapterManager.getInstance().adapterTemplates.get( id ) );
     }
 
 
     public static AdapterTemplate getAdapterTemplate( String name, AdapterType adapterType ) {
-        return Catalog.snapshot().getAdapterTemplate( name, adapterType ).orElseThrow( () -> new GenericRuntimeException( "No adapter template found for name: " + name + " of type: " + adapterType ) );
+        return AdapterManager.getInstance().adapterTemplates.values().stream()
+                .filter( t -> t.adapterName.equalsIgnoreCase( name ) && t.adapterType == adapterType )
+                .findFirst().orElseThrow( () -> new GenericRuntimeException( "No adapter template found for name: " + name + " of type: " + adapterType ) );
     }
 
 
     public List<AdapterInformation> getAdapterTemplates( AdapterType adapterType ) {
-        List<AdapterTemplate> adapterTemplates = Catalog.snapshot().getAdapterTemplates( adapterType );
+        List<AdapterTemplate> templates = adapterTemplates.values().stream().filter( t -> t.adapterType == adapterType ).toList();
 
         List<AdapterInformation> result = new ArrayList<>();
 
-        for ( AdapterTemplate adapterTemplate : adapterTemplates ) {
+        for ( AdapterTemplate adapterTemplate : templates ) {
             // Exclude abstract classes
             if ( !Modifier.isAbstract( adapterTemplate.getClazz().getModifiers() ) ) {
 
@@ -94,7 +107,7 @@ public class AdapterManager {
                     throw new GenericRuntimeException( adapterTemplate.getClazz().getSimpleName() + " does not annotate the adapter correctly" );
                 }
                 // Merge annotated AdapterSettings into settings
-                List<AbstractAdapterSetting> settings = AbstractAdapterSetting.fromAnnotations( adapterTemplate.getClazz().getAnnotations(), adapterTemplate.getClazz().getAnnotation( AdapterProperties.class ) );
+                List<AbstractAdapterSetting> settings = AbstractAdapterSetting.fromAnnotations( adapterTemplate.getClazz().getAnnotations() );
 
                 result.add( new AdapterInformation( properties.name(), properties.description(), adapterType, settings, List.of( properties.usedModes() ) ) );
             }
@@ -168,38 +181,50 @@ public class AdapterManager {
     }
 
 
-    public Adapter<?> addAdapter( String adapterName, String uniqueName, AdapterType adapterType, DeployMode mode, Map<String, String> settings ) {
+    public Adapter<?> addAdapter( Catalog catalog, String adapterName, String uniqueName, AdapterType adapterType, DeployMode mode, Map<String, String> settings ) {
         uniqueName = uniqueName.toLowerCase();
         if ( getAdapters().containsKey( uniqueName ) ) {
-            throw new GenericRuntimeException( "There is already an adapter with this unique name" );
+            throw new GenericRuntimeException( "There is already an adapter with this unique name: " + uniqueName );
         }
 
         AdapterTemplate adapterTemplate = AdapterTemplate.fromString( adapterName, adapterType );
 
-        long adapterId = Catalog.getInstance().createAdapter( uniqueName, adapterName, adapterType, settings, mode );
+        for ( AbstractAdapterSetting setting : adapterTemplate.settings ) {
+            if ( !setting.appliesTo.contains( mode ) ) {
+                settings.remove( setting.name );
+            }
+        }
+
+        long adapterId = catalog.createAdapter( uniqueName, adapterName, adapterType, settings, mode );
         try {
             Adapter<?> adapter = adapterTemplate.getDeployer().get( adapterId, uniqueName, settings, mode );
             adapterByName.put( adapter.getUniqueName(), adapter );
             adapterById.put( adapter.getAdapterId(), adapter );
             return adapter;
+        } catch ( GenericRuntimeException e ) {
+            catalog.dropAdapter( adapterId );
+            throw e;
         } catch ( Exception e ) {
-            Catalog.getInstance().dropAdapter( adapterId );
-            throw new GenericRuntimeException( "Something went wrong while adding a new adapter", e );
+            catalog.dropAdapter( adapterId );
+            String message = e.getMessage() == null || e.getMessage().isBlank()
+                    ? "Something went wrong while adding a new adapter"
+                    : e.getMessage();
+            throw new GenericRuntimeException( message, e );
         }
     }
 
 
-    public void removeAdapter( long adapterId ) {
+    public void removeAdapter( Catalog catalog, long adapterId ) {
         Optional<Adapter<?>> optionalAdapter = getAdapter( adapterId );
         if ( optionalAdapter.isEmpty() ) {
             throw new GenericRuntimeException( "Unknown adapter instance with id: %s", adapterId );
         }
         Adapter<?> adapterInstance = optionalAdapter.get();
 
-        LogicalAdapter logicalAdapter = Catalog.snapshot().getAdapter( adapterId ).orElseThrow();
+        LogicalAdapter logicalAdapter = catalog.getSnapshot().getAdapter( adapterId ).orElseThrow();
 
         // Check if the store has any placements
-        List<AllocationEntity> placements = Catalog.snapshot().alloc().getEntitiesOnAdapter( logicalAdapter.id ).orElseThrow( () -> new GenericRuntimeException( "There is still data placed on this data store" ) );
+        List<AllocationEntity> placements = catalog.getSnapshot().alloc().getEntitiesOnAdapter( logicalAdapter.id ).orElseThrow( () -> new GenericRuntimeException( "There is still data placed on this data store" ) );
         if ( !placements.isEmpty() ) {
             if ( adapterInstance instanceof DataStore<?> ) {
                 throw new GenericRuntimeException( "There is still data placed on this data store" );
@@ -214,7 +239,7 @@ public class AdapterManager {
         adapterByName.remove( adapterInstance.getUniqueName() );
 
         // Delete store from catalog
-        Catalog.getInstance().dropAdapter( logicalAdapter.id );
+        catalog.dropAdapter( logicalAdapter.id );
     }
 
 
@@ -230,26 +255,15 @@ public class AdapterManager {
     }
 
 
-    public record AdapterInformation( String name, String description, AdapterType type, List<AbstractAdapterSetting> settings, List<DeployMode> modes ) {
+    @FunctionalInterface
+    public interface DeployFn {
 
-        public static JsonSerializer<AdapterInformation> getSerializer() {
-            return ( src, typeOfSrc, context ) -> {
-                JsonObject jsonStore = new JsonObject();
-                jsonStore.addProperty( "name", src.name );
-                jsonStore.addProperty( "description", src.description );
-                jsonStore.addProperty( "type", src.type.name() );
-                jsonStore.add( "adapterSettings", context.serialize( src.settings ) );
-                return jsonStore;
-            };
-        }
+        Adapter<?> get( Long adapterId, String uniqueName, Map<String, String> settings, DeployMode deployMode );
 
     }
 
 
-    @FunctionalInterface
-    public interface Function5<P1, P2, P3, P4, R> {
-
-        R get( P1 p1, P2 p2, P3 p3, P4 p4 );
+    public record AdapterInformation( String name, String description, AdapterType type, List<AbstractAdapterSetting> settings, List<DeployMode> modes ) {
 
     }
 

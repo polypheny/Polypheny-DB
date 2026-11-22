@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ package org.polypheny.db.algebra.enumerable;
 
 
 import com.google.common.collect.ImmutableList;
+import java.util.List;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -42,13 +43,16 @@ import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Triple;
 
 
 /**
@@ -78,6 +82,12 @@ public class EnumerableSort extends Sort implements EnumerableAlg {
     }
 
 
+    public static EnumerableSort create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        Triple<AlgCollation, RexNode, RexNode> extracted = extractArgs( args );
+        return create( children.get( 0 ), extracted.left, extracted.middle, extracted.right );
+    }
+
+
     @Override
     public EnumerableSort copy( AlgTraitSet traitSet, AlgNode newInput, AlgCollation newCollation, ImmutableList<RexNode> nodes, RexNode offset, RexNode fetch ) {
         return new EnumerableSort( getCluster(), traitSet, newInput, newCollation, offset, fetch );
@@ -93,7 +103,7 @@ public class EnumerableSort extends Sort implements EnumerableAlg {
         Expression childExp = builder.append( "child", result.block() );
 
         PhysType inputPhysType = result.physType();
-        final Pair<Expression, Expression> pair = inputPhysType.generateCollationKey( collation.getFieldCollations() );
+        final Pair<Expression, Expression> pair = inputPhysType.generateCollationKey( collation.getFieldCollations(), traitSet.contains( ModelTrait.GRAPH ) );
 
         builder.add(
                 Expressions.return_(

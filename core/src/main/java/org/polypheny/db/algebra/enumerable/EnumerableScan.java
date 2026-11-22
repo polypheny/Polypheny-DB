@@ -95,7 +95,7 @@ public class EnumerableScan extends RelScan<PhysicalTable> implements Enumerable
      * Creates an EnumerableScan.
      */
     public static EnumerableScan create( AlgCluster cluster, Entity entity ) {
-        PhysicalTable oPhysicalTable = entity.unwrap( PhysicalTable.class ).orElseThrow();
+        PhysicalTable oPhysicalTable = entity.unwrapOrThrow( PhysicalTable.class );
         Class<?> elementType = EnumerableScan.deduceElementType( oPhysicalTable );
         final AlgTraitSet traitSet =
                 cluster.traitSetOf( EnumerableConvention.INSTANCE )

@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.neo4j;
 
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.as_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.count_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.distinct_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.edge_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.labels_;
@@ -25,33 +26,33 @@ import static org.polypheny.db.adapter.neo4j.util.NeoStatements.literal_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.match_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.node_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.path_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.quotedIdentifier_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.return_;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
-import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgModify;
-import org.polypheny.db.adapter.neo4j.rules.graph.NeoLpgProject;
-import org.polypheny.db.adapter.neo4j.util.NeoStatements.ElementStatement;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.NeoStatement;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.OperatorStatement;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.ReturnStatement;
 import org.polypheny.db.adapter.neo4j.util.NeoStatements.StatementType;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttleImpl;
-import org.polypheny.db.algebra.core.lpg.LpgProject;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.GraphType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.type.PathType;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
+import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.util.Pair;
 
@@ -88,6 +89,7 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
 
 
     public final List<OperatorStatement> statements = new ArrayList<>();
+    private final Set<String> matchedPaths = new HashSet<>();
     private ImmutableList<ImmutableList<RexLiteral>> values;
 
 
@@ -98,8 +100,8 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
     }
 
 
-    private void addRowCount( int size ) {
-        statements.add( return_( as_( literal_( PolyInteger.of( size ) ), literal_( PolyString.of( "ROWCOUNT" ) ) ) ) );
+    private void addRowCount( NeoStatement count ) {
+        statements.add( return_( as_( count, literal_( PolyString.of( "ROWCOUNT" ) ) ) ) );
     }
 
 
@@ -118,7 +120,16 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
      * @param statement the statement to add
      */
     public void add( OperatorStatement statement ) {
+        if ( statement.type == StatementType.WITH ) {
+            matchedPaths.clear();
+        }
         this.statements.add( statement );
+    }
+
+
+    public NeoStatement matchPath( PolyString name, PolyPath path ) {
+        matchedPaths.add( name.value );
+        return path_( name, path, PolyString.of( graph.mappingLabel ), false );
     }
 
 
@@ -132,21 +143,19 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
                     path_( node_( "" ), edge_( PolyString.of( "e" ), this.graph.mappingLabel, list_( List.of() ), EdgeDirection.NONE ), node_( "" ) ) ) );
         }
         if ( statements.get( statements.size() - 1 ).type == StatementType.CREATE ) {
-            addRowCount( 1 );
+            addRowCount( literal_( PolyInteger.of( 1 ) ) );
         }
 
         OperatorStatement statement = statements.get( statements.size() - 1 );
         if ( statements.get( statements.size() - 1 ).type != StatementType.RETURN ) {
             if ( isDml ) {
-                addRowCount( 1 );
+                addRowCount( switch ( statement.type ) {
+                    case SET, DELETE, DELETE_DETACH -> count_( "*" );
+                    default -> literal_( PolyInteger.of( 1 ) );
+                } );
             } else if ( statement.type == StatementType.WITH ) {
-                // can replace
-                statements.remove( statements.size() - 1 );
-                if ( getLast() instanceof NeoLpgProject ) {
-                    statements.add( return_( NeoLpgModify.buildReturnProject( (LpgProject) getLast(), getGraph().mappingLabel ) ) );
-                } else {
-                    statements.add( return_( statement.statements ) );
-                }
+                // Reuse the translated projection so its aliases remain bound.
+                statements.set( statements.size() - 1, return_( statement.statements ) );
             } else {
                 // have to add
                 statements.add( return_( getFields( last.getTupleType() ) ) );
@@ -182,20 +191,20 @@ public class NeoGraphImplementor extends AlgShuttleImpl {
      * @return the field as Neo4j statement
      */
     private NeoStatement getField( AlgDataTypeField field ) {
-        switch ( field.getType().getPolyType() ) {
-            case NODE:
-                return node_( field.getName() );
-            case EDGE:
-                return edge_( field.getName() );
-            case PATH:
-                PathType type = (PathType) field.getType();
-                List<ElementStatement> path = new ArrayList<>();
-                for ( AlgDataTypeField pathPart : type.getFields() ) {
-                    path.add( (ElementStatement) getField( pathPart ) );
-                }
-                return path_( path );
+        if ( field.getType().getPolyType() == PolyType.PATH ) {
+            NeoStatement path = quotedIdentifier_( field.getName() );
+            if ( !matchedPaths.contains( field.getName() ) || field.getType().getFields().isEmpty() ) {
+                return path;
+            }
+            // The adapter decoder receives the actual path followed by its bindings in PathType field order.
+            List<NeoStatement> values = new ArrayList<>();
+            values.add( path );
+            for ( AlgDataTypeField binding : field.getType().getFields() ) {
+                values.add( quotedIdentifier_( binding.getName() ) );
+            }
+            return list_( values, "[", "]" );
         }
-        return literal_( PolyString.of( field.getName() ) );
+        return quotedIdentifier_( field.getName() );
     }
 
 

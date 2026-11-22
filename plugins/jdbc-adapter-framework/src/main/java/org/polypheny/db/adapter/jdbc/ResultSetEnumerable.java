@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TimeZone;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.AbstractEnumerable;
@@ -61,8 +62,10 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.validate.SqlType;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.VectorType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.temporal.PolyDate;
@@ -81,16 +84,6 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
     // a one hour shift, as we lose this timezone information on retrieval
     // therefore we use the offset if needed
     public final static int OFFSET = Calendar.getInstance().getTimeZone().getRawOffset();
-
-    private final ConnectionHandler connectionHandler;
-    private final String sql;
-    private final Function1<ResultSet, Function0<PolyValue[]>> rowBuilderFactory;
-    private final PreparedStatementEnricher preparedStatementEnricher;
-
-    private Long queryStart;
-    private long timeout;
-    private boolean timeoutSetFailed;
-
     private static final Function1<ResultSet, Function0<PolyValue[]>> AUTO_ROW_BUILDER_FACTORY =
             resultSet -> {
                 final ResultSetMetaData metaData;
@@ -133,6 +126,13 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                     };
                 }
             };
+    private final ConnectionHandler connectionHandler;
+    private final String sql;
+    private final Function1<ResultSet, Function0<PolyValue[]>> rowBuilderFactory;
+    private final PreparedStatementEnricher preparedStatementEnricher;
+    private Long queryStart;
+    private long timeout;
+    private boolean timeoutSetFailed;
 
 
     private ResultSetEnumerable(
@@ -203,22 +203,6 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
     }
 
 
-    public void setTimeout( DataContext context ) {
-        this.queryStart = (Long) context.get( DataContext.Variable.UTC_TIMESTAMP.camelName );
-        Object timeout = context.get( DataContext.Variable.TIMEOUT.camelName );
-        if ( timeout instanceof Long ) {
-            this.timeout = (Long) timeout;
-        } else {
-            if ( timeout != null ) {
-                if ( log.isDebugEnabled() ) {
-                    log.debug( "Variable.TIMEOUT should be `long`. Given value was {}", timeout );
-                }
-            }
-            this.timeout = 0;
-        }
-    }
-
-
     /**
      * Called from generated code that proposes to create a {@code ResultSetEnumerable} over a prepared statement.
      */
@@ -234,7 +218,6 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                             i + 1,
                             values.get( index ),
                             context.getParameterType( index ),
-                            preparedStatement.getParameterMetaData().getParameterType( i + 1 ),
                             connectionHandler );
                 }
                 if ( batch ) {
@@ -250,11 +233,12 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
      * Assigns a value to a dynamic parameter in a prepared statement, calling the appropriate {@code setXxx}
      * method based on the type of the parameter.
      */
-    private static void setDynamicParam( PreparedStatement preparedStatement, int i, PolyValue value, AlgDataType type, int sqlType, ConnectionHandler connectionHandler ) throws SQLException {
+    private static void setDynamicParam( PreparedStatement preparedStatement, int i, PolyValue value, AlgDataType type, ConnectionHandler connectionHandler ) throws SQLException {
         if ( value == null || value.isNull() ) {
             preparedStatement.setNull( i, Types.NULL );
             return;
         }
+        SqlDialect dialect = connectionHandler.getDialect();
 
         switch ( type.getPolyType() ) {
             case BIGINT:
@@ -291,7 +275,7 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                 preparedStatement.setTime( i, value.asTime().asSqlTime(), Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ) );
                 break;
             case TIMESTAMP:
-                if ( connectionHandler.getDialect().handlesUtcIncorrectly() ) {
+                if ( dialect.handlesUtcIncorrectly() ) {
                     preparedStatement.setTimestamp( i, PolyTimestamp.of( value.asTimestamp().millisSinceEpoch + OFFSET ).asSqlTimestamp() );
                 } else {
                     preparedStatement.setTimestamp( i, value.asTimestamp().asSqlTimestamp(), Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ) );
@@ -302,7 +286,16 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                 handleBinary( preparedStatement, i, value, connectionHandler );
                 break;
             case ARRAY:
-                if ( (type.getComponentType().getPolyType() == PolyType.ARRAY && connectionHandler.getDialect().supportsNestedArrays()) || (type.getComponentType().getPolyType() != PolyType.ARRAY) && connectionHandler.getDialect().supportsArrays() ) {
+                Optional<VectorType> vectorType = type.unwrap( VectorType.class );
+                if ( vectorType.isPresent() && dialect.vectorPushdownTypeIsPresent( vectorType.get().getVectorElementType() ) ) {
+                    Object dbObj = dialect.getVectorDbObject( vectorType.get().getVectorElementType(), value.asList() );
+                    if ( dbObj != null ) {
+                        preparedStatement.setObject( i, dbObj );
+                        break;
+                    }
+                }
+
+                if ( (type.getComponentType().getPolyType() == PolyType.ARRAY && dialect.supportsNestedArrays()) || (type.getComponentType().getPolyType() != PolyType.ARRAY) && dialect.supportsArrays() ) {
                     Array array = getArray( value, type, connectionHandler );
                     preparedStatement.setArray( i, array );
                     array.free(); // according to documentation this is advised to not hog the memory
@@ -388,6 +381,54 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
     }
 
 
+    private static Function1<ResultSet, Function0<PolyValue[]>> primitiveRowBuilderFactory( final Primitive[] primitives ) {
+        return resultSet -> {
+            final ResultSetMetaData metaData;
+            final int columnCount;
+            try {
+                metaData = resultSet.getMetaData();
+                columnCount = metaData.getColumnCount();
+            } catch ( SQLException e ) {
+                throw new GenericRuntimeException( e );
+            }
+            assert columnCount == primitives.length;
+            if ( columnCount == 1 ) {
+                return () -> {
+                    throw new NotImplementedException();
+                };
+            }
+            //noinspection unchecked
+            return (Function0) () -> {
+                try {
+                    final List<Object> list = new ArrayList<>();
+                    for ( int i = 0; i < columnCount; i++ ) {
+                        list.add( primitives[i].jdbcGet( resultSet, i + 1 ) );
+                    }
+                    return list.toArray();
+                } catch ( SQLException e ) {
+                    throw new GenericRuntimeException( e );
+                }
+            };
+        };
+    }
+
+
+    public void setTimeout( DataContext context ) {
+        this.queryStart = (Long) context.get( DataContext.Variable.UTC_TIMESTAMP.camelName );
+        Object timeout = context.get( DataContext.Variable.TIMEOUT.camelName );
+        if ( timeout instanceof Long ) {
+            this.timeout = (Long) timeout;
+        } else {
+            if ( timeout != null ) {
+                if ( log.isDebugEnabled() ) {
+                    log.debug( "Variable.TIMEOUT should be `long`. Given value was {}", timeout );
+                }
+            }
+            this.timeout = 0;
+        }
+    }
+
+
     @Override
     public Enumerator<PolyValue[]> enumerator() {
         if ( preparedStatementEnricher == null ) {
@@ -411,7 +452,8 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                 int updateCount = statement.getUpdateCount();
                 return Linq4j.singletonEnumerator( new PolyValue[]{ PolyLong.of( updateCount ) } );
             }
-        } catch ( SQLException e ) {
+        } catch ( Throwable e ) {
+            log.error( "Error while executing JDBC SQL: {}", sql, e );
             throw Static.RESOURCE.exceptionWhilePerformingQueryOnJdbcSubSchema( sql ).ex( e );
         } finally {
             closeIfPossible( statement );
@@ -439,7 +481,8 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                     return Linq4j.singletonEnumerator( new PolyValue[]{ PolyLong.of( updateCount ) } );
                 }
             }
-        } catch ( SQLException e ) {
+        } catch ( Throwable e ) {
+            log.error( "Error while executing JDBC prepared SQL: {}", sql, e );
             throw Static.RESOURCE.exceptionWhilePerformingQueryOnJdbcSubSchema( sql ).ex( e );
         } finally {
             closeIfPossible( preparedStatement );
@@ -480,6 +523,17 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                 // ignore
             }
         }
+    }
+
+
+    /**
+     * Consumer for decorating a {@link PreparedStatement}, that is, setting its parameters.
+     */
+    public interface PreparedStatementEnricher {
+
+        // returns true if this needs to be executed as batch
+        boolean enrich( PreparedStatement statement, ConnectionHandler connectionHandler ) throws SQLException;
+
     }
 
 
@@ -540,49 +594,6 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                 }
             }
         }
-
-    }
-
-
-    private static Function1<ResultSet, Function0<PolyValue[]>> primitiveRowBuilderFactory( final Primitive[] primitives ) {
-        return resultSet -> {
-            final ResultSetMetaData metaData;
-            final int columnCount;
-            try {
-                metaData = resultSet.getMetaData();
-                columnCount = metaData.getColumnCount();
-            } catch ( SQLException e ) {
-                throw new GenericRuntimeException( e );
-            }
-            assert columnCount == primitives.length;
-            if ( columnCount == 1 ) {
-                return () -> {
-                    throw new NotImplementedException();
-                };
-            }
-            //noinspection unchecked
-            return (Function0) () -> {
-                try {
-                    final List<Object> list = new ArrayList<>();
-                    for ( int i = 0; i < columnCount; i++ ) {
-                        list.add( primitives[i].jdbcGet( resultSet, i + 1 ) );
-                    }
-                    return list.toArray();
-                } catch ( SQLException e ) {
-                    throw new GenericRuntimeException( e );
-                }
-            };
-        };
-    }
-
-
-    /**
-     * Consumer for decorating a {@link PreparedStatement}, that is, setting its parameters.
-     */
-    public interface PreparedStatementEnricher {
-
-        // returns true if this needs to be executed as batch
-        boolean enrich( PreparedStatement statement, ConnectionHandler connectionHandler ) throws SQLException;
 
     }
 

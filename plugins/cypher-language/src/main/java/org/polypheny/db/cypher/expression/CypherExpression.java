@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.cypher.CypherNode;
+import org.polypheny.db.cypher.cypher2alg.CypherSyntaxException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.pattern.CypherPattern;
@@ -33,6 +34,7 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
@@ -53,12 +55,6 @@ public class CypherExpression extends CypherNode {
     }
 
 
-    @Override
-    public CypherKind getCypherKind() {
-        return CypherKind.EXPRESSION;
-    }
-
-
     public CypherExpression( ParserPos pos, ExpressionType type, CypherVariable variable, CypherExpression expression, CypherExpression where ) {
         super( pos );
         this.type = type;
@@ -75,7 +71,24 @@ public class CypherExpression extends CypherNode {
     }
 
 
-    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
+    @Override
+    public CypherKind getCypherKind() {
+        return CypherKind.EXPRESSION;
+    }
+
+
+    public final Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
+        RexNode projected = context.projectedExpression( this );
+        return projected == null ? toRex( context, type ) : Pair.of( null, projected );
+    }
+
+
+    protected Pair<PolyString, RexNode> toRex( CypherContext context, RexType type ) {
+        if ( this instanceof CypherFunctionInvocation func ) {
+            // var is null in case of function call
+            return Pair.of( PolyString.of( null ), func.getRexCall( context, type ) );
+        }
+
         OperatorName operatorName = switch ( this.type ) {
             // EveryPathPattern
             //return pattern.getPatternMatch( context );
@@ -103,6 +116,15 @@ public class CypherExpression extends CypherNode {
     }
 
 
+    static void requireListOperand( RexNode operand, String diagnostic ) {
+        PolyType type = operand.getType().getPolyType();
+        if ( type != PolyType.ARRAY && type != PolyType.ANY && type != PolyType.NULL
+                && !(operand instanceof RexLiteral literal && literal.isNull()) ) {
+            throw new CypherSyntaxException( diagnostic );
+        }
+    }
+
+
     public String getName() {
         throw new UnsupportedOperationException();
     }
@@ -125,13 +147,13 @@ public class CypherExpression extends CypherNode {
     }
 
 
-    public enum ExpressionType {
-        ALL, NONE, SINGLE, PATTERN, ANY, VARIABLE, AGGREGATE, DEFAULT, LITERAL
+    public PolyValue getComparable() {
+        throw new UnsupportedOperationException();
     }
 
 
-    public PolyValue getComparable() {
-        throw new UnsupportedOperationException();
+    public enum ExpressionType {
+        ALL, NONE, SINGLE, PATTERN, ANY, VARIABLE, AGGREGATE, DEFAULT, LITERAL
     }
 
 }

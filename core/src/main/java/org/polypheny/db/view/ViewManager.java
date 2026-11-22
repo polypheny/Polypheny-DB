@@ -251,7 +251,7 @@ public class ViewManager {
                 return expandViewNode( other );
             } else */
             if ( doesSubstituteOrderBy && other instanceof LogicalRelScan ) {
-                LogicalTable catalogTable = other.getEntity().unwrap( LogicalTable.class ).orElseThrow();
+                LogicalTable catalogTable = other.getEntity().unwrapOrThrow( LogicalTable.class );
                 if ( catalogTable.entityType == EntityType.MATERIALIZED_VIEW && ((LogicalMaterializedView) catalogTable).isOrdered() ) {
                     return orderMaterialized( other );
                 }
@@ -274,7 +274,7 @@ public class ViewManager {
         public AlgRoot startSubstitution( AlgRoot logicalRoot ) {
             if ( logicalRoot.alg instanceof LogicalRelViewScan ) {
                 AlgNode node = checkNode( logicalRoot.alg );
-                return AlgRoot.of( node, logicalRoot.kind );
+                return AlgRoot.of( node, logicalRoot.kind ).withResultKind( logicalRoot.resultKind );
             } else {
                 logicalRoot.alg.accept( this );
                 return logicalRoot;

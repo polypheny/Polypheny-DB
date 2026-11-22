@@ -18,12 +18,14 @@ package org.polypheny.db.processing;
 
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.constant.ResultKind;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.nodes.Node;
@@ -32,6 +34,9 @@ import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
+import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 
@@ -40,6 +45,17 @@ public abstract class Processor {
 
     public abstract List<? extends Node> parse( String query );
 
+
+    public PreparedNamedQuery prepareNamedQuery( String query ) {
+        throw new UnsupportedOperationException( "Named parameters are not supported by this query processor" );
+    }
+
+
+    /** A parsed parameter signature and a binder that creates a fresh AST for each execution. */
+    public record PreparedNamedQuery(List<String> parameterNames, Function<Map<String, PolyValue>, Node> bind) {
+    }
+
+
     public abstract Pair<Node, AlgDataType> validate( Transaction transaction, Node parsed, boolean addDefaultValues );
 
     public abstract AlgRoot translate( Statement statement, ParsedQueryContext context );
@@ -47,19 +63,14 @@ public abstract class Processor {
 
     public PolyImplementation prepareDdl( Statement statement, ExecutableStatement node, ParsedQueryContext context ) {
         try {
-            // Acquire global schema lock
-            lock( statement );
-            // Execute statement
+            Map<Lockable, LockType> requiredLockables = node.deriveLockables( statement.getPrepareContext(), context );
+            Transaction transaction = statement.getTransaction();
+            requiredLockables.forEach( transaction::acquireLockable );
+            transaction.acquireCatalogWriteLock();
             return getImplementation( statement, node, context );
         } catch ( DeadlockException e ) {
-            throw new GenericRuntimeException( "Exception while acquiring global schema lock", e );
-        } catch ( TransactionException e ) {
-            throw new GenericRuntimeException( e );
-        } finally {
-            // Release lock
-            unlock( statement );
+            throw new DeadlockException( " Exception while acquiring global schema lock", e );
         }
-
     }
 
 
@@ -74,18 +85,23 @@ public abstract class Processor {
                 null,
                 Kind.CREATE_NAMESPACE, // technically correct, maybe change
                 statement,
-                null );
+                null,
+                ResultKind.COMMAND );
     }
 
 
-    public abstract void unlock( Statement statement );
-
-    protected abstract void lock( Statement statement ) throws DeadlockException;
+    protected abstract void lock( Transaction transaction, ParsedQueryContext context ) throws DeadlockException;
 
     public abstract String getQuery( Node parsed, QueryParameters parameters );
 
     public abstract AlgDataType getParameterRowType( Node left );
 
     public abstract List<String> splitStatements( String statements );
+
+
+    /** Whether a parsed statement is a mutation or DDL that returns no result rows. */
+    public boolean isUpdateOnly( Node statement ) {
+        return statement.isDdl() || Kind.DML.contains( statement.getKind() );
+    }
 
 }

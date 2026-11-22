@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,16 +29,16 @@ import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
 @Accessors(chain = true)
 public class AbstractAdapterSettingDirectory extends AbstractAdapterSetting {
 
+    public transient final Map<String, InputStream> inputStreams;
     @Setter
     public String directory;
     //This field is necessary for the UI and needs to be initialized to be serialized to JSON.
     @Setter
     public String[] fileNames = new String[]{ "" };
-    public transient final Map<String, InputStream> inputStreams;
 
 
-    public AbstractAdapterSettingDirectory( String name, String defaultValue, boolean canBeNull, String subOf, boolean required, boolean modifiable, List<DeploySetting> modes, int position ) {
-        super( AdapterSettingType.DIRECTORY, name, canBeNull, subOf, required, modifiable, modes, defaultValue, position );
+    public AbstractAdapterSettingDirectory( String name, String defaultValue, boolean canBeNull, String subOf, boolean required, boolean modifiable, List<DeploySetting> modes, int position, String description ) {
+        super( AdapterSettingType.DIRECTORY, name, canBeNull, subOf, required, modifiable, modes, defaultValue, position, description );
         //so it will be serialized
         this.directory = "";
         this.inputStreams = new HashMap<>();
@@ -54,7 +54,8 @@ public class AbstractAdapterSettingDirectory extends AbstractAdapterSetting {
                 annotation.required(),
                 annotation.modifiable(),
                 Arrays.asList( annotation.appliesTo() ),
-                annotation.position()
+                annotation.position(),
+                annotation.description()
         );
     }
 
@@ -62,6 +63,12 @@ public class AbstractAdapterSettingDirectory extends AbstractAdapterSetting {
     @Override
     public String getValue() {
         return directory;
+    }
+
+
+    @Override
+    public void validate( String s ) {
+
     }
 
 }

@@ -105,6 +105,40 @@ public abstract class ReturnTypes {
     public static final PolyReturnTypeInference ARG0_NULLABLE_VARYING = cascade( ARG0, PolyTypeTransforms.TO_NULLABLE, PolyTypeTransforms.TO_VARYING );
 
     /**
+     * Infers a varying result for REPLACE. A nonempty search can match each input character,
+     * so each character can contribute up to the replacement width to the result.
+     */
+    public static final PolyReturnTypeInference STRING_REPLACE = cascade(
+            opBinding -> {
+                final AlgDataType source = opBinding.getOperandType( 0 );
+                final AlgDataType varying = PolyTypeTransforms.TO_VARYING.transformType( opBinding, source );
+                if ( varying.getPolyType() != PolyType.VARCHAR ) {
+                    return varying;
+                }
+
+                long precision = source.getPrecision();
+                if ( precision > 0 && opBinding.getOperandType( 1 ).getPrecision() != 0 ) {
+                    final int replacementWidth = opBinding.getOperandType( 2 ).getPrecision();
+                    precision = replacementWidth == AlgDataType.PRECISION_NOT_SPECIFIED
+                            ? AlgDataType.PRECISION_NOT_SPECIFIED
+                            : precision * Math.max( 1, replacementWidth );
+                }
+
+                final AlgDataTypeFactory typeFactory = opBinding.getTypeFactory();
+                final int maxPrecision = typeFactory.getTypeSystem().getMaxPrecision( PolyType.VARCHAR );
+                final int resultPrecision = precision > (maxPrecision < 0 ? Integer.MAX_VALUE : maxPrecision)
+                        ? AlgDataType.PRECISION_NOT_SPECIFIED
+                        : (int) precision;
+                if ( resultPrecision == varying.getPrecision() ) {
+                    return varying;
+                }
+
+                final AlgDataType result = typeFactory.createPolyType( PolyType.VARCHAR, resultPrecision );
+                return typeFactory.createTypeWithCharsetAndCollation( result, source.getCharset(), source.getCollation() );
+            },
+            PolyTypeTransforms.TO_NULLABLE );
+
+    /**
      * Type-inference strategy whereby the result type of a call is the type of the operand #0 (0-based). If any of the other
      * operands are nullable the returned type will also be nullable.
      */

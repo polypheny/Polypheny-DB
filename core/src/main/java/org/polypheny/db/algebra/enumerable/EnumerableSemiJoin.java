@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,8 @@ package org.polypheny.db.algebra.enumerable;
 
 
 import com.google.common.collect.ImmutableList;
+import java.util.List;
+import java.util.Optional;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -46,6 +48,10 @@ import org.polypheny.db.algebra.core.JoinInfo;
 import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.arguments.IntArg;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
@@ -86,6 +92,15 @@ public class EnumerableSemiJoin extends SemiJoin implements EnumerableAlg {
     }
 
 
+    public static EnumerableSemiJoin create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        RexArg condition = args.getArg( "condition", RexArg.class );
+        ImmutableList<Integer> leftKeys = ImmutableList.copyOf( args.getListArg( "leftKeys", IntArg.class ).map( IntArg::getArg ) );
+        ImmutableList<Integer> rightKeys = ImmutableList.copyOf( args.getListArg( "rightKeys", IntArg.class ).map( IntArg::getArg ) );
+
+        return create( children.get( 0 ), children.get( 1 ), condition.getNode(), leftKeys, rightKeys );
+    }
+
+
     @Override
     public SemiJoin copy( AlgTraitSet traitSet, RexNode condition, AlgNode left, AlgNode right, JoinAlgType joinType, boolean semiJoinDone ) {
         assert joinType == JoinAlgType.INNER;
@@ -102,7 +117,11 @@ public class EnumerableSemiJoin extends SemiJoin implements EnumerableAlg {
 
     @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
-        double rowCount = mq.getTupleCount( this );
+        Optional<Double> count = mq.getTupleCount( this );
+        if ( count.isEmpty() ) {
+            return planner.getCostFactory().makeInfiniteCost();
+        }
+        double rowCount = count.get();
 
         // Right-hand input is the "build", and hopefully small, input.
         final double rightRowCount = right.estimateTupleCount( mq );
@@ -140,6 +159,15 @@ public class EnumerableSemiJoin extends SemiJoin implements EnumerableAlg {
                                                 leftResult.physType().generateAccessor( leftKeys ),
                                                 rightResult.physType().generateAccessor( rightKeys ) ) ) )
                         .toBlock() );
+    }
+
+
+    @Override
+    public PolyAlgArgs bindArguments() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+        return args.put( 0, new RexArg( condition ) )
+                .put( "leftKeys", new ListArg<>( leftKeys, IntArg::new ) )
+                .put( "rightKeys", new ListArg<>( rightKeys, IntArg::new ) );
     }
 
 }

@@ -36,7 +36,7 @@ public class WithTest extends CypherTestTemplate {
         execute( SINGLE_NODE_PERSON_1 );
         execute( SINGLE_NODE_PERSON_2 );
 
-        GraphResult res = execute( "MATCH (n:Person) WITH n.name, n WHERE n.name STARTS WITH 'H' RETURN n" );
+        GraphResult res = execute( "MATCH (n:Person) WITH n.name AS name, n WHERE n.name STARTS WITH 'H' RETURN n" );
         assertNode( res, 0 );
 
         assert containsRows( res, true, true,

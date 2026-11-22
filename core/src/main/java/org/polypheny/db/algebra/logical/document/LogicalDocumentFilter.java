@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import lombok.Value;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.document.DocumentFilter;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNode;
@@ -40,6 +42,12 @@ public class LogicalDocumentFilter extends DocumentFilter {
 
     public static LogicalDocumentFilter create( AlgNode node, RexNode condition ) {
         return new LogicalDocumentFilter( node.getCluster(), node.getTraitSet(), node, condition );
+    }
+
+
+    public static LogicalDocumentFilter create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        RexArg condition = args.getArg( "condition", RexArg.class );
+        return create( children.get( 0 ), condition.getNode() );
     }
 
 
@@ -66,6 +74,14 @@ public class LogicalDocumentFilter extends DocumentFilter {
         return "LogicalDocumentFilter{" +
                 "digest='" + digest + '\'' +
                 '}';
+    }
+
+
+    @Override
+    public PolyAlgArgs bindArguments() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+        args.put( "condition", new RexArg( condition ) );
+        return args;
     }
 
 }

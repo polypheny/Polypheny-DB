@@ -83,7 +83,7 @@ public final class DockerInstance {
         try {
             checkConnection();
         } catch ( IOException e ) {
-            log.error( "Could not connect to docker instance " + host.alias() + ": " + e.getMessage() );
+            log.error( "Could not connect to docker instance {}: {}", host.alias(), e.getMessage() );
         }
     }
 
@@ -117,7 +117,7 @@ public final class DockerInstance {
                         try {
                             this.client.deleteContainer( containerInfo.getUuid() );
                         } catch ( IOException e ) {
-                            log.error( "Failed to delete container " + containerInfo.getUuid(), e );
+                            log.error( "Failed to delete container {}", containerInfo.getUuid(), e );
                         }
                     }
             );
@@ -170,7 +170,7 @@ public final class DockerInstance {
                 }
                 checkConnection();
             } catch ( IOException e ) {
-                log.info( "Failed to reconnect: " + e );
+                log.info( "Failed to reconnect: {}", String.valueOf( e ) );
             }
         }
     }
@@ -231,9 +231,9 @@ public final class DockerInstance {
                 client.deleteContainer( container.getContainerId() );
             } catch ( IOException e ) {
                 if ( e.getMessage().startsWith( "No such container" ) ) {
-                    log.info( "Cannot delete container: No container with UUID " + container.getContainerId() );
+                    log.info( "Cannot delete container: No container with UUID {}", container.getContainerId() );
                 } else {
-                    log.error( "Failed to delete container with UUID " + container.getContainerId(), e );
+                    log.error( "Failed to delete container with UUID {}", container.getContainerId(), e );
                 }
             }
         }
@@ -283,7 +283,7 @@ public final class DockerInstance {
                     this.host = newHost;
                     checkConnection();
                 } catch ( IOException e ) {
-                    log.info( "Failed to connect to '" + hostname + "': " + e.getMessage() );
+                    log.info( "Failed to connect to '{}': {}", hostname, e.getMessage() );
                     return Optional.of( HandshakeManager.getInstance().newHandshake( newHost, null, true ) );
                 }
             }

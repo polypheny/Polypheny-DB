@@ -16,12 +16,20 @@
 
 package org.polypheny.db.cypher;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.TestHelper.CypherConnection;
 import org.polypheny.db.cypher.helper.TestEdge;
 import org.polypheny.db.cypher.helper.TestNode;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.graph.PolyPath;
+import org.polypheny.db.type.entity.graph.PolyPath.PolySegment;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.results.GraphResult;
 
@@ -104,6 +112,63 @@ public class DmlInsertTest extends CypherTestTemplate {
 
 
     @Test
+    void rejectsInvalidPropertiesInLiteralAndRowDependentCreate() {
+        for ( String query : List.of(
+                "CREATE (:RejectedCreate {value:[{num:1}]}) RETURN 1",
+                "CREATE (:RejectedCreate)-[:REJECTED_CREATE {value:[true,1]}]->(:RejectedCreate)",
+                """
+                        UNWIND [{rank:0, value:[1]}, {rank:1, value:[{num:1}]}] AS row
+                        WITH row.value AS value ORDER BY row.rank
+                        CREATE (:RejectedCreate {value:value})
+                        """,
+                """
+                        CREATE (n:RejectedCreate)
+                        WITH n, {num:1} AS value
+                        CREATE (n)-[:REJECTED_CREATE {value:value}]->(:RejectedCreate)
+                        """ ) ) {
+            String error = CypherConnection.executeGetResponse( query ).getError();
+            assertNotNull( error, query );
+            assertTrue( error.contains( "InvalidPropertyType" ), error );
+            assertEquals( 0, execute( "MATCH (n) RETURN n" ).getData().length, query );
+            assertEquals( 0, execute( "MATCH ()-[r]->() RETURN r" ).getData().length, query );
+        }
+    }
+
+
+    @Test
+    void rejectsRebindingNodesInCreate() {
+        for ( String query : List.of(
+                "CREATE (n:Foo)-[:T1]->(), (n:Bar)-[:T2]->()",
+                "CREATE (n:Foo) CREATE (n:Bar)-[:OWNS]->(:Dog)",
+                "CREATE (n:Foo) CREATE (n {})-[:OWNS]->(:Dog)",
+                "CREATE (n:Foo) CREATE (n {bad:[{x:1}]})-[:OWNS]->(:Dog)",
+                "CREATE (n:Foo), (n)" ) ) {
+            String error = CypherConnection.executeGetResponse( query ).getError();
+            assertNotNull( error, query );
+            assertTrue( error.contains( "VariableAlreadyBound" ), error );
+            assertEquals( 0, execute( "MATCH (n) RETURN n" ).getData().length, query );
+            assertEquals( 0, execute( "MATCH ()-[r]->() RETURN r" ).getData().length, query );
+        }
+    }
+
+
+    @Test
+    void rejectsInlinePredicatesInCreate() {
+        for ( String query : List.of(
+                "CREATE (n:PredicateCreate WHERE false) RETURN n",
+                "CREATE (:PredicateCreate)-[r:PREDICATE_CREATE WHERE false]->(:PredicateCreate) RETURN r",
+                "CREATE p=(n:PredicateCreate WHERE false)-[:PREDICATE_CREATE]->(:PredicateCreate) RETURN p",
+                "CREATE (:PredicateCreate) CREATE (:PredicateCreate)-[r:PREDICATE_CREATE WHERE true]->(:PredicateCreate)" ) ) {
+            String error = CypherConnection.executeGetResponse( query ).getError();
+            assertNotNull( error, query );
+            assertTrue( error.contains( "Inline WHERE predicates are not allowed in CREATE patterns" ), error );
+            assertEquals( 0, execute( "MATCH (n) RETURN n" ).getData().length, query );
+            assertEquals( 0, execute( "MATCH ()-[r]->() RETURN r" ).getData().length, query );
+        }
+    }
+
+
+    @Test
     @Disabled
     public void insertReturnNodeTest() {
         GraphResult res = execute(
@@ -131,6 +196,41 @@ public class DmlInsertTest extends CypherTestTemplate {
         execute( "CREATE (p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira', age:3, type:'dog'})" );
         GraphResult res = execute( "MATCH ()-[r]->() RETURN r" );
         assert containsEdges( res, true, TestEdge.from( List.of( "OWNER_OF" ) ) );
+    }
+
+
+    @Test
+    public void insertSingleHopPathReturnPathTest() {
+        execute( "CREATE (:PERSON {name: 'tim'})-[:KNOWS {since:'two weeks'}]-> (:PERSON {name:'tom'})" );
+        GraphResult res = execute( "MATCH p = ()-[]->() RETURN p" );
+        PolyPath p = PolyValue.fromTypedJson( res.getData()[0][0], PolyPath.class );
+        assert p.getSegments().size() == 1;
+        assert p.getNodes().size() == 2;
+        assert p.getEdges().size() == 1;
+        PolySegment s = p.getSegments().get( 0 );
+        assert TestNode.from( List.of( "PERSON" ), Pair.of( "name", "tim" ) ).matches( p.getNodes().stream().filter( n -> n.id == s.sourceId ).findFirst().orElseThrow(), true );
+        assert TestEdge.from( List.of( "KNOWS" ), Pair.of( "since", "two weeks" ) ).matches( p.getEdges().stream().filter( e -> e.id == s.edgeId ).findFirst().orElseThrow(), true );
+        assert TestNode.from( List.of( "PERSON" ), Pair.of( "name", "tom" ) ).matches( p.getNodes().stream().filter( n -> n.id == s.targetId ).findFirst().orElseThrow(), true );
+    }
+
+
+    @Test
+    public void insertSingleHopPathReturnPathTest2() {
+        execute( "CREATE (p:Person {name: 'Max'})-[rel:OWNER_OF]->(a:Animal {name:'Kira', age:3, type:'dog'})" );
+        GraphResult res = execute( "MATCH p = ()-[]->() RETURN p" );
+        PolyPath p = PolyValue.fromTypedJson( res.getData()[0][0], PolyPath.class );
+        assert p.getSegments().size() == 1;
+        assert p.getNodes().size() == 2;
+        assert p.getEdges().size() == 1;
+        PolySegment s = p.getSegments().get( 0 );
+        assert TestNode.from( List.of( "Person" ), Pair.of( "name", "Max" ) ).matches( p.getNodes().stream().filter( n -> n.id == s.sourceId ).findFirst().orElseThrow(), true );
+        assert TestEdge.from( List.of( "OWNER_OF" ) ).matches( p.getEdges().stream().filter( e -> e.id == s.edgeId ).findFirst().orElseThrow(), true );
+        assert TestNode.from(
+                List.of( "Animal" ),
+                Pair.of( "name", "Kira" ),
+                Pair.of( "age", 3 ),
+                Pair.of( "type", "dog" )
+        ).matches( p.getNodes().stream().filter( n -> n.id == s.targetId ).findFirst().orElseThrow(), true );
     }
 
 
@@ -229,7 +329,6 @@ public class DmlInsertTest extends CypherTestTemplate {
         assert containsRows( res, true, true,
                 Row.of( TestEdge.from( List.of( "KNOWS" ) ) ),
                 Row.of( TestEdge.from( List.of( "KNOWS" ) ) ) );
-
     }
 
 }

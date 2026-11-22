@@ -36,8 +36,8 @@ package org.polypheny.db.runtime;
 
 /**
  * Synthetic record with zero fields.
- *
- * Since all instances are identical, {@code Unit} is a singleton.
+ * <p>
+ * Since all instances are identical, {@link Unit} is a singleton.
  */
 public class Unit implements Comparable<Unit> {
 

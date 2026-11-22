@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -179,13 +179,6 @@ public class AlgSubset extends AbstractAlgNode {
 
 
     @Override
-    public String algCompareString() {
-        // Compare makes no sense here. Use hashCode() to avoid errors.
-        return this.getClass().getSimpleName() + "$" + hashCode() + "&";
-    }
-
-
-    @Override
     public AlgOptCost computeSelfCost( AlgPlanner planner, AlgMetadataQuery mq ) {
         return planner.getCostFactory().makeZeroCost();
     }
@@ -194,9 +187,9 @@ public class AlgSubset extends AbstractAlgNode {
     @Override
     public double estimateTupleCount( AlgMetadataQuery mq ) {
         if ( best != null ) {
-            return mq.getTupleCount( best );
+            return mq.getTupleCount( best ).orElse( Double.MAX_VALUE );
         } else {
-            return mq.getTupleCount( set.alg );
+            return mq.getTupleCount( set.alg ).orElse( Double.MAX_VALUE );
         }
     }
 
@@ -223,6 +216,12 @@ public class AlgSubset extends AbstractAlgNode {
             digest.append( '.' ).append( trait );
         }
         return digest.toString();
+    }
+
+
+    @Override
+    public boolean isDataModifying() {
+        return false;
     }
 
 
@@ -493,4 +492,3 @@ public class AlgSubset extends AbstractAlgNode {
     }
 
 }
-

@@ -17,7 +17,6 @@
 package org.polypheny.db.algebra.core.lpg;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
@@ -33,25 +32,19 @@ public class LpgTransformer extends Transformer {
 
     public final List<PolyType> operationOrder;
     public final Operation operation;
+    public final boolean detachDelete;
 
 
     /**
      * Creates a {@link LpgTransformer}.
      * Transforms the underlying {@link ModelTrait#GRAPH} node to a {@link ModelTrait#RELATIONAL} node.
      */
-    public LpgTransformer( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, AlgDataType rowType, List<PolyType> operationOrder, Operation operation ) {
+    public LpgTransformer( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, AlgDataType rowType,
+            List<PolyType> operationOrder, Operation operation, boolean detachDelete ) {
         super( cluster, inputs, null, traitSet.replace( ModelTrait.GRAPH ), ModelTrait.RELATIONAL, ModelTrait.GRAPH, rowType, false );
         this.operationOrder = operationOrder;
         this.operation = operation;
-    }
-
-
-    @Override
-    public String algCompareString() {
-        return getClass().getSimpleName() + "$"
-                + operationOrder.stream().map( PolyType::name ).collect( Collectors.joining( "$" ) ) + "$"
-                + operation + "$"
-                + getInputs().stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) ) + "&";
+        this.detachDelete = detachDelete;
     }
 
 
@@ -63,7 +56,7 @@ public class LpgTransformer extends Transformer {
             terms.input( "input_" + i, input );
             i++;
         }
-        return terms;
+        return terms.itemIf( "detachDelete", true, detachDelete );
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,11 @@ import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.document.DocumentScan;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
+import org.polypheny.db.algebra.polyalg.arguments.EntityArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptRule;
@@ -37,12 +41,17 @@ public class LogicalDocumentScan extends DocumentScan<Entity> implements Relatio
      * Subclass of {@link DocumentScan} not targeted at any particular engine or calling convention.
      */
     public LogicalDocumentScan( AlgCluster cluster, AlgTraitSet traitSet, Entity document ) {
-        super( cluster, traitSet.replace( ModelTrait.DOCUMENT ), document );
+        super( cluster, traitSet.plus( ModelTrait.DOCUMENT ), document );
     }
 
 
     public static AlgNode create( AlgCluster cluster, Entity collection ) {
         return new LogicalDocumentScan( cluster, cluster.traitSet(), collection );
+    }
+
+
+    public static AlgNode create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        return create( cluster, args.getArg( 0, EntityArg.class ).getEntity() );
     }
 
 
@@ -55,6 +64,13 @@ public class LogicalDocumentScan extends DocumentScan<Entity> implements Relatio
     @Override
     public AlgNode accept( AlgShuttle shuttle ) {
         return shuttle.visit( this );
+    }
+
+
+    @Override
+    public PolyAlgArgs bindArguments() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+        return args.put( 0, new EntityArg( entity, Catalog.snapshot(), DataModel.DOCUMENT ) );
     }
 
 }

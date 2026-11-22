@@ -387,7 +387,6 @@ public class ComparisonOperatorTest {
 
     @Test
     @Tag("mongodbExcluded")
-    @Tag("cottontailExcluded")
     public void testNotInOperator() throws SQLException {
         try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
             Connection connection = polyphenyDbConnection.getConnection();

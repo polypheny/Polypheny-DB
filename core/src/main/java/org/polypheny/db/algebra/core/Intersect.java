@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,10 +35,11 @@ package org.polypheny.db.algebra.core;
 
 
 import java.util.List;
-import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 
@@ -63,7 +64,7 @@ public abstract class Intersect extends SetOp {
         // REVIEW jvs:  I just pulled this out of a hat.
         double dRows = Double.MAX_VALUE;
         for ( AlgNode input : inputs ) {
-            dRows = Math.min( dRows, mq.getTupleCount( input ) );
+            dRows = Math.min( dRows, mq.getTupleCount( input ).orElse( Double.MAX_VALUE ) );
         }
         dRows *= 0.25;
         return dRows;
@@ -71,10 +72,9 @@ public abstract class Intersect extends SetOp {
 
 
     @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                inputs.stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) ) + "$" +
-                all + "&";
+    public PolyAlgArgs bindArguments() {
+        PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+        return args.put( "all", new BooleanArg( all ) );
     }
 
 }

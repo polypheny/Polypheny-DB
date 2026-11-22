@@ -16,6 +16,7 @@
 
 package org.polypheny.db.languages.mql;
 
+import java.util.Map;
 import org.bson.BsonArray;
 import org.bson.BsonDocument;
 import org.jetbrains.annotations.Nullable;
@@ -33,6 +34,9 @@ import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
+import org.polypheny.db.transaction.locking.LockableUtils;
 
 
 public class MqlCreateView extends MqlNode implements ExecutableStatement {
@@ -52,9 +56,7 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
 
     @Override
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
-        long database = parsedQueryContext.getQueryNode().orElseThrow().getNamespaceId();
-
-        long namespaceId = context.getSnapshot().getNamespace( database ).orElseThrow().id;
+        long namespaceId = context.getSnapshot().getNamespace( parsedQueryContext.getNamespaceId() ).orElseThrow().id;
 
         QueryContext queryContext = QueryContext.builder()
                 .query( buildQuery() )
@@ -73,6 +75,12 @@ public class MqlCreateView extends MqlNode implements ExecutableStatement {
         AlgCollation algCollation = algRoot.collation;
 
         throw new GenericRuntimeException( "Document views are currently not supported" );
+    }
+
+
+    @Override
+    public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
+        return LockableUtils.getMapOfNamespaceLockableFromContext( context, parsedQueryContext, LockType.EXCLUSIVE );
     }
 
 

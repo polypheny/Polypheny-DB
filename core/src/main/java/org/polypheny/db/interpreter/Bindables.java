@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Enumerable;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgCollation;
@@ -74,10 +73,18 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.logical.relational.LogicalWindow;
 import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.polyalg.arguments.EntityArg;
+import org.polypheny.db.algebra.polyalg.arguments.IntArg;
+import org.polypheny.db.algebra.polyalg.arguments.ListArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptRule;
@@ -218,6 +225,14 @@ public class Bindables {
         }
 
 
+        public static BindableScan create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+            return create( cluster,
+                    args.getArg( 0, EntityArg.class ).getEntity(),
+                    args.getListArg( "filters", RexArg.class ).map( RexArg::getNode ),
+                    args.getListArg( "projects", IntArg.class ).map( IntArg::getArg ) );
+        }
+
+
         @Override
         public AlgDataType deriveRowType() {
             final AlgDataTypeFactory.Builder builder = getCluster().getTypeFactory().builder();
@@ -257,15 +272,6 @@ public class Bindables {
         }
 
 
-        @Override
-        public String algCompareString() {
-            return getClass().getSimpleName() + "$" +
-                    "." + entity.id +
-                    (filters != null ? filters.stream().map( RexNode::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
-                    (projects != null ? projects.toString() : "") + "&";
-        }
-
-
         public static boolean canHandle( Entity entity ) {
             return entity.unwrap( ScannableEntity.class ).isPresent()
                     || entity.unwrap( FilterableEntity.class ).isPresent();
@@ -275,7 +281,7 @@ public class Bindables {
         @Override
         public Enumerable<PolyValue[]> bind( DataContext dataContext ) {
             // TODO: filterable and projectable
-            return entity.unwrap( ScannableEntity.class ).orElseThrow().scan( dataContext );
+            return entity.unwrapOrThrow( ScannableEntity.class ).scan( dataContext );
         }
 
 
@@ -291,6 +297,20 @@ public class Bindables {
         @Override
         public boolean isImplementationCacheable() {
             return false;
+        }
+
+
+        @Override
+        public PolyAlgArgs bindArguments() {
+            PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
+            List<String> fieldNames = entity.getTupleType().getFieldNames();
+            PolyAlgArg filtersArg = new ListArg<>( filters, f -> new RexArg( f, fieldNames ), args.getDecl().canUnpackValues() );
+            PolyAlgArg projectsArg = new ListArg<>( projects, IntArg::new, args.getDecl().canUnpackValues() );
+
+            args.put( "entity", new EntityArg( entity, Catalog.snapshot(), DataModel.RELATIONAL ) )
+                    .put( "filters", filtersArg )
+                    .put( "projects", projectsArg );
+            return args;
         }
 
     }

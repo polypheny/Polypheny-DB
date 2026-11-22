@@ -49,6 +49,7 @@ import org.polypheny.prism.Entity;
 import org.polypheny.prism.ForeignKey;
 import org.polypheny.prism.Function;
 import org.polypheny.prism.FunctionsResponse;
+import org.polypheny.prism.Graph;
 import org.polypheny.prism.Index;
 import org.polypheny.prism.Namespace;
 import org.polypheny.prism.NamespacesResponse;
@@ -101,13 +102,13 @@ class DbMetaRetriever {
 
 
     // Entity search by namespace
-    static EntitiesResponse searchEntities( String namespaceName, String entityPattern ) {
+    static EntitiesResponse searchEntities( String namespaceName, String entityPattern, PIClient client ) {
         EntitiesResponse.Builder responseBuilder = EntitiesResponse.newBuilder();
         LogicalNamespace namespace = Catalog.snapshot().getNamespace( namespaceName ).orElseThrow();
         return switch ( namespace.getDataModel() ) {
             case RELATIONAL -> responseBuilder.addAllEntities( getRelationalEntities( namespace.getId(), entityPattern ) ).build();
             case GRAPH -> responseBuilder.addAllEntities( getGraphEntities( namespace.getId(), entityPattern ) ).build();
-            case DOCUMENT -> responseBuilder.addAllEntities( getDocumentEntities( namespace.getId(), entityPattern ) ).build();
+            case DOCUMENT -> responseBuilder.addAllEntities( getDocumentEntities( namespace.getId(), entityPattern, client ) ).build();
         };
     }
 
@@ -239,13 +240,19 @@ class DbMetaRetriever {
     }
 
 
-    static List<Entity> getDocumentEntities( long namespaceId, String entityPattern ) {
-        return null;
+    static List<Entity> getDocumentEntities( long namespaceId, String entityPattern, PIClient client ) {
+        return Catalog.snapshot().doc().getCollections( namespaceId, getPatternOrNull( entityPattern ) ).stream()
+                .sorted( java.util.Comparator.comparing( collection -> collection.name ) )
+                .map( collection -> Entity.newBuilder().setDocument( DocumentMetaRetriever.getCollectionMeta( collection, client ) ).build() )
+                .toList();
     }
 
 
     static List<Entity> getGraphEntities( long namespaceId, String entityPattern ) {
-        return null;
+        return Catalog.snapshot().graph().getGraphs( getPatternOrNull( entityPattern ) ).stream()
+                .filter( graph -> graph.namespaceId == namespaceId )
+                .map( graph -> Entity.newBuilder().setGraph( Graph.getDefaultInstance() ).build() )
+                .toList();
     }
 
 
@@ -271,7 +278,10 @@ class DbMetaRetriever {
 
     static synchronized TypesResponse getTypes() {
         TypesResponse.Builder responseBuilder = TypesResponse.newBuilder();
-        Arrays.stream( PolyType.values() ).forEach( polyType -> responseBuilder.addTypes( getTypeMeta( polyType ) ) );
+        // Cypher temporal results use the existing VARCHAR wire type.
+        Arrays.stream( PolyType.values() )
+                .filter( polyType -> polyType != PolyType.CYPHER_TEMPORAL )
+                .forEach( polyType -> responseBuilder.addTypes( getTypeMeta( polyType ) ) );
         return responseBuilder.build();
     }
 

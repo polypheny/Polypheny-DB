@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.core.lpg.LpgValues;
 import org.polypheny.db.algebra.core.relational.RelationalTransformable;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
+import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
@@ -37,6 +38,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.functions.CrossModelFunctions;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexLiteral;
@@ -50,6 +52,7 @@ import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.util.Collation;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.Triple;
 
 
 @Getter
@@ -57,9 +60,9 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
 
     public static final BasicPolyType ID_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.VARCHAR, 36 )
             .createWithCharsetAndCollation( Charsets.UTF_8, Collation.IMPLICIT );
-    public static final BasicPolyType LABEL_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.VARCHAR, 255 )
+    public static final BasicPolyType LABEL_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.TEXT )
             .createWithCharsetAndCollation( Charsets.UTF_8, Collation.IMPLICIT );
-    public static final BasicPolyType VALUE_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.VARCHAR, 255 )
+    public static final BasicPolyType VALUE_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.TEXT )
             .createWithCharsetAndCollation( Charsets.UTF_8, Collation.IMPLICIT );
     public static final BasicPolyType NODE_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.NODE );
     public static final BasicPolyType EDGE_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.EDGE );
@@ -116,6 +119,18 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
     }
 
 
+    public static LogicalLpgValues create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
+        Triple<Collection<PolyNode>, Collection<PolyEdge>, ImmutableList<ImmutableList<RexLiteral>>> extracted = extractArgs( args, cluster );
+        AlgDataType type = deriveTupleType( cluster, extracted.left, extracted.middle, extracted.right );
+        return new LogicalLpgValues( cluster, cluster.traitSet(), extracted.left, extracted.middle, extracted.right, type );
+    }
+
+
+    private static RexLiteral getStringLiteral( String value, BasicPolyType type ) {
+        return new RexLiteral( PolyString.of( value ), type, PolyType.VARCHAR );
+    }
+
+
     @Override
     public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<Entity> entities, Snapshot snapshot ) {
         AlgTraitSet out = traitSet.replace( ModelTrait.RELATIONAL );
@@ -134,7 +149,7 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
         LogicalRelValues edgePropertyValues = new LogicalRelValues( cluster, out, entities.get( 3 ).getTupleType(), getEdgePropertyValues( edges ) );
 
         return Arrays.asList(
-                nodeValues,
+                nodeValues.tuples.isEmpty() ? null : nodeValues,
                 nodePropertyValues.tuples.isEmpty() ? null : nodePropertyValues,
                 edgeValues,
                 edgePropertyValues.tuples.isEmpty() ? null : edgePropertyValues );
@@ -168,19 +183,17 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
             RexLiteral id = getStringLiteral( node.id.value, ID_TYPE );
 
             for ( Entry<PolyString, PolyValue> entry : node.properties.entrySet() ) {
+                if ( entry.getValue() == null || entry.getValue().isNull() ) {
+                    continue;
+                }
                 ImmutableList.Builder<RexLiteral> row = ImmutableList.builder();
                 row.add( id );
                 row.add( getStringLiteral( entry.getKey().value, LABEL_TYPE ) );
-                row.add( getStringLiteral( entry.getValue().toString(), VALUE_TYPE ) );
+                row.add( getStringLiteral( CrossModelFunctions.graphPropertyStorageValue( entry.getValue() ), VALUE_TYPE ) );
                 rows.add( row.build() );
             }
         }
         return rows.build();
-    }
-
-
-    private static RexLiteral getStringLiteral( String value, BasicPolyType type ) {
-        return new RexLiteral( PolyString.of( value ), type, PolyType.VARCHAR );
     }
 
 
@@ -191,8 +204,8 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
             row.add( getStringLiteral( edge.id.value, ID_TYPE ) );
             row.add( getStringLiteral( edge.labels.get( 0 ).value, LABEL_TYPE ) );
 
-            row.add( getStringLiteral( edge.source.value, ID_TYPE ) );
-            row.add( getStringLiteral( edge.target.value, ID_TYPE ) );
+            row.add( getStringLiteral( edge.left.value, ID_TYPE ) );
+            row.add( getStringLiteral( edge.right.value, ID_TYPE ) );
             rows.add( row.build() );
         }
 
@@ -206,10 +219,13 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
             RexLiteral id = getStringLiteral( edge.id.value, ID_TYPE );
 
             for ( Entry<PolyString, PolyValue> entry : edge.properties.entrySet() ) {
+                if ( entry.getValue() == null || entry.getValue().isNull() ) {
+                    continue;
+                }
                 ImmutableList.Builder<RexLiteral> row = ImmutableList.builder();
                 row.add( id );
                 row.add( getStringLiteral( entry.getKey().value, LABEL_TYPE ) );
-                row.add( getStringLiteral( entry.getValue().toString(), VALUE_TYPE ) );
+                row.add( getStringLiteral( CrossModelFunctions.graphPropertyStorageValue( entry.getValue() ), VALUE_TYPE ) );
                 rows.add( row.build() );
             }
         }

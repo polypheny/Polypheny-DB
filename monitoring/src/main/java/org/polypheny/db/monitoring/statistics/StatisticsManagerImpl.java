@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.polypheny.db.monitoring.statistics;
 
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeSupport;
 import java.math.BigDecimal;
@@ -33,6 +34,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +52,7 @@ import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.EntityType;
@@ -72,7 +75,6 @@ import org.polypheny.db.schema.impl.AbstractEntity;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFamily;
 import org.polypheny.db.type.entity.PolyValue;
@@ -93,27 +95,18 @@ import org.polypheny.db.util.background.BackgroundTaskManager;
 public class StatisticsManagerImpl extends StatisticsManager {
 
     private static StatisticQueryProcessor statisticQueryInterface;
-
-    private final ExecutorService threadPool = Executors.newSingleThreadExecutor();
-
     protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
-
+    private final ExecutorService threadPool = Executors.newSingleThreadExecutor();
+    @Getter
+    private final Map<Long, StatisticTable> entityStatistic;
+    private final Queue<Long> tablesToUpdate = new ConcurrentLinkedQueue<>();
     private int buffer = RuntimeConfig.STATISTIC_BUFFER.getInteger();
-
     @Setter
     @Getter
     private String revalId = null;
-
     private DashboardInformation dashboardInformation;
-
-    @Getter
-    private final Map<Long, StatisticTable> entityStatistic;
-
     @Getter
     private volatile Map<Long, StatisticColumn> statisticFields;
-
-    private final Queue<Long> tablesToUpdate = new ConcurrentLinkedQueue<>();
-
     private Transaction transaction;
     private Statement statement;
 
@@ -142,7 +135,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
     private Transaction getTransaction() {
         Transaction transaction;
-        transaction = statisticQueryInterface.getTransactionManager().startTransaction( Catalog.defaultUserId, Catalog.defaultNamespaceId, false, "Statistic Manager" );
+        transaction = statisticQueryInterface.getTransactionManager().startTransaction( Catalog.defaultUserId, Catalog.defaultNamespaceId, null, "Statistic Manager" );
         return transaction;
     }
 
@@ -215,12 +208,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
             log.debug( "Finished resetting StatisticManager." );
             statisticQueryInterface.commitTransaction( transaction, statement );
         } catch ( Exception e ) {
-            try {
-                statement.getQueryProcessor().unlock( statement );
-                statement.getTransaction().rollback();
-            } catch ( TransactionException ex ) {
-                throw new GenericRuntimeException( ex );
-            }
+            statement.getTransaction().rollback( e.getMessage() );
         }
     }
 
@@ -242,7 +230,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
 
     /**
-     * Gets a columns of a table and reevaluates them.
+     * Gets the columns of a table and reevaluates them.
      *
      * @param entityId id of table
      */
@@ -250,19 +238,13 @@ public class StatisticsManagerImpl extends StatisticsManager {
     public void reevaluateEntity( long entityId ) {
         transaction = getTransaction();
         statement = transaction.createStatement();
-        statement.getQueryProcessor().lock( statement );
+        statement.getQueryProcessor().lock( transaction );
 
         if ( statisticQueryInterface == null ) {
+            statement.getTransaction().releaseAllLocks(); // this is ok to do as a new transaction is created on every call to this method.
             return;
         }
         statisticQueryInterface.commitTransaction( transaction, statement );
-    }
-
-
-    private void deleteTable( LogicalTable table ) {
-        for ( long columnId : table.getColumnIds() ) {
-            this.statisticFields.remove( columnId );
-        }
     }
 
 
@@ -436,6 +418,9 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
     private StatisticQueryResult prepareNode( QueryResult queryResult, NodeType nodeType ) {
         StatisticQueryResult statisticQueryColumn = null;
+        if ( queryResult.getEntity().entityType == EntityType.SOURCE ) {
+            return null;
+        }
         if ( Catalog.snapshot().getLogicalEntity( queryResult.getEntity().id ).isPresent() ) {
             AlgNode queryNode = getQueryNode( queryResult, nodeType );
             statisticQueryColumn = statisticQueryInterface.selectOneColumnStat( queryNode, transaction, statement, queryResult );
@@ -808,7 +793,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
 
     private void handleTruncate( long tableId, Snapshot snapshot ) {
-        LogicalTable table = snapshot.getLogicalEntity( tableId ).map( e -> e.unwrap( LogicalTable.class ).orElseThrow() ).orElseThrow();
+        LogicalTable table = snapshot.getLogicalEntity( tableId ).flatMap( e -> e.unwrap( LogicalTable.class ) ).orElseThrow();
         for ( LogicalColumn column : table.getColumns() ) {
             PolyType polyType = column.type;
             QueryResult queryResult = new QueryResult( table, column );
@@ -842,7 +827,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
 
 
     private void handleInsert( long tableId, Map<Long, List<?>> changedValues, Snapshot snapshot ) {
-        LogicalTable table = snapshot.getLogicalEntity( tableId ).map( e -> e.unwrap( LogicalTable.class ).orElseThrow() ).orElseThrow();
+        LogicalTable table = snapshot.getLogicalEntity( tableId ).flatMap( e -> e.unwrap( LogicalTable.class ) ).orElseThrow();
         List<LogicalColumn> columns = table.getColumns();
         if ( changedValues.size() != columns.size() ) {
             log.debug( "non-matching statistics length" );
@@ -1046,7 +1031,7 @@ public class StatisticsManagerImpl extends StatisticsManager {
                 entityStatistic.put( tableId, statisticTable );
                 break;
             default:
-                log.warn( "Currently, only SELECT, INSERT, DELETE and UPDATE are available in Statistics." );
+                log.warn( "Currently, only SELECT, INSERT, DELETE and UPDATE are available in Statistics. Found " + kind );
         }
     }
 
@@ -1085,25 +1070,21 @@ public class StatisticsManagerImpl extends StatisticsManager {
     @Override
     public Object getEntityStatistic( long namespaceId, long entityId ) {
         StatisticTable statisticTable = entityStatistic.get( entityId );
-        List<NumericalStatisticColumn> numericInfo = new ArrayList<>();
-        List<AlphabeticStatisticColumn> alphabeticInfo = new ArrayList<>();
-        List<TemporalStatisticColumn> temporalInfo = new ArrayList<>();
-        statisticTable.setNumericalColumn( numericInfo );
-        statisticTable.setAlphabeticColumn( alphabeticInfo );
-        statisticTable.setTemporalColumn( temporalInfo );
+
+        LogicalEntity entity = Catalog.getInstance().getSnapshot().getLogicalEntity( entityId ).orElseThrow();
+        final List<Long> columnIds = new ArrayList<>();
+        if ( entity instanceof LogicalTable ) {
+            columnIds.addAll( ((LogicalTable) entity).getColumnIds() );
+        }
+
+        TableStatistics t = new TableStatistics( entityId, entity.name, statisticTable.getEntityType(), statisticTable.getNumberOfRows(), statisticTable.getCalls() );
         statisticFields.forEach( ( k, v ) -> {
-            if ( v.type.getFamily() == PolyTypeFamily.NUMERIC ) {
-                numericInfo.add( (NumericalStatisticColumn) v );
-                statisticTable.setNumericalColumn( numericInfo );
-            } else if ( v.type.getFamily() == PolyTypeFamily.CHARACTER ) {
-                alphabeticInfo.add( (AlphabeticStatisticColumn) v );
-                statisticTable.setAlphabeticColumn( alphabeticInfo );
-            } else if ( PolyType.DATETIME_TYPES.contains( Catalog.snapshot().rel().getColumn( k ).orElseThrow().type ) ) {
-                temporalInfo.add( (TemporalStatisticColumn) v );
-                statisticTable.setTemporalColumn( temporalInfo );
+            if ( columnIds.contains( k ) ) {
+                t.columns.add( v );
             }
         } );
-        return statisticTable;
+
+        return t;
     }
 
 
@@ -1121,6 +1102,50 @@ public class StatisticsManagerImpl extends StatisticsManager {
         } else {
             return null;
         }
+    }
+
+
+    @Override
+    public Map<String, StatisticColumn> getQualifiedStatisticMap() {
+        Map<String, StatisticColumn> map = new HashMap<>();
+
+        for ( StatisticColumn val : statisticFields.values() ) {
+            map.put( String.valueOf( val.columnId ), val );
+        }
+
+        return map;
+    }
+
+
+    private enum NodeType {
+        ROW_COUNT_TABLE,
+        ROW_COUNT_COLUMN,
+        MIN,
+        MAX,
+        UNIQUE_VALUE
+    }
+
+
+    @Data
+    @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+    static class TableStatistics {
+
+        long tableId;
+        String tableName;
+        EntityType entityType;
+        long numberOfRows;
+        TableCalls calls;
+        List<StatisticColumn> columns = new ArrayList<>();
+
+
+        TableStatistics( long tableId, String tableName, EntityType entityType, long numberOfRows, TableCalls calls ) {
+            this.tableId = tableId;
+            this.tableName = tableName;
+            this.entityType = entityType;
+            this.numberOfRows = numberOfRows;
+            this.calls = calls;
+        }
+
     }
 
 
@@ -1157,27 +1182,6 @@ public class StatisticsManagerImpl extends StatisticsManager {
             }
         }
 
-    }
-
-
-    private enum NodeType {
-        ROW_COUNT_TABLE,
-        ROW_COUNT_COLUMN,
-        MIN,
-        MAX,
-        UNIQUE_VALUE
-    }
-
-
-    @Override
-    public Map<String, StatisticColumn> getQualifiedStatisticMap() {
-        Map<String, StatisticColumn> map = new HashMap<>();
-
-        for ( StatisticColumn val : statisticFields.values() ) {
-            map.put( String.valueOf( val.columnId ), val );
-        }
-
-        return map;
     }
 
 }

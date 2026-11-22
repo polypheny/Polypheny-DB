@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ import java.util.Comparator;
 import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.experimental.SuperBuilder;
@@ -36,12 +35,11 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeImpl;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.schema.ColumnStrategy;
 
-@EqualsAndHashCode(callSuper = false)
+@EqualsAndHashCode(callSuper = true)
 @SuperBuilder(toBuilder = true)
 @Value
 @NonFinal
@@ -55,6 +53,22 @@ public class LogicalTable extends LogicalEntity {
     @JsonProperty
     public Long primaryKey;
 
+    @Serialize
+    @SerializeNullable
+    @JsonProperty
+    public Long synchronizedSourceEntityId;
+
+
+    public LogicalTable(
+            final long id,
+            @NonNull final String name,
+            final long namespaceId,
+            @NonNull final EntityType type,
+            final Long primaryKey,
+            boolean modifiable ) {
+        this( id, name, namespaceId, type, primaryKey, null, modifiable );
+    }
+
 
     public LogicalTable(
             @Deserialize("id") final long id,
@@ -62,13 +76,12 @@ public class LogicalTable extends LogicalEntity {
             @Deserialize("namespaceId") final long namespaceId,
             @Deserialize("entityType") @NonNull final EntityType type,
             @Deserialize("primaryKey") final Long primaryKey,
+            @Deserialize("synchronizedSourceEntityId") final Long synchronizedSourceEntityId,
             @Deserialize("modifiable") boolean modifiable ) {
         super( id, name, namespaceId, type, DataModel.RELATIONAL, modifiable );
         this.primaryKey = primaryKey;
+        this.synchronizedSourceEntityId = synchronizedSourceEntityId;
 
-        if ( type == EntityType.ENTITY && !modifiable ) {
-            throw new GenericRuntimeException( "Tables of table type TABLE must be modifiable!" );
-        }
     }
 
 
@@ -122,21 +135,9 @@ public class LogicalTable extends LogicalEntity {
     }
 
 
-    @RequiredArgsConstructor
-    public static class PrimitiveCatalogTable {
-
-        public final String tableCat;
-        public final String tableSchem;
-        public final String tableName;
-        public final String tableType;
-        public final String remarks;
-        public final String typeCat;
-        public final String typeSchem;
-        public final String typeName;
-        public final String selfReferencingColName;
-        public final String refGeneration;
-        public final String owner;
-
+    @Override
+    public ObjectType getLockableObjectType() {
+        return ObjectType.ENTITY;
     }
 
 
@@ -144,6 +145,7 @@ public class LogicalTable extends LogicalEntity {
     public String toString() {
         return "LogicalTable{" +
                 "primaryKey=" + primaryKey +
+                ", synchronizedSourceEntityId=" + synchronizedSourceEntityId +
                 ", id=" + id +
                 ", entityType=" + entityType +
                 ", namespaceType=" + dataModel +

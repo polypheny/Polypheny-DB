@@ -17,6 +17,7 @@
 package org.polypheny.db.sql.language.ddl.altermaterializedview;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -31,6 +32,8 @@ import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterMaterializedView;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -86,6 +89,12 @@ public class SqlAlterMaterializedViewRename extends SqlAlterMaterializedView {
         }
 
         DdlManager.getInstance().renameTable( catalogTable, newName.getSimple(), statement );
+    }
+
+
+    @Override
+    public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
+        return getMapOfTableLockable( oldName, context, LockType.EXCLUSIVE );
     }
 
 }

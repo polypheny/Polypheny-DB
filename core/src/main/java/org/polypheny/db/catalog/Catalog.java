@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,15 +24,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.pf4j.ExtensionPoint;
-import org.polypheny.db.adapter.AbstractAdapterSetting;
-import org.polypheny.db.adapter.Adapter;
-import org.polypheny.db.adapter.AdapterManager.Function5;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.java.AdapterTemplate;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
@@ -49,36 +43,29 @@ import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.iface.QueryInterfaceManager.QueryInterfaceTemplate;
 import org.polypheny.db.transaction.Transaction;
-import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.RunMode;
 
 public abstract class Catalog implements ExtensionPoint {
 
+    public static final Expression CATALOG_EXPRESSION = Expressions.call( Catalog.class, "getInstance" );
+    public static final Expression SNAPSHOT_EXPRESSION = Expressions.call( Catalog.class, "snapshot" );
+    public static final Function<Long, Expression> PHYSICAL_EXPRESSION = id -> Expressions.call( CATALOG_EXPRESSION, "getAdapterCatalog", Expressions.constant( id ) );
     public static String DATABASE_NAME = "APP";
     public static String USER_NAME = "pa"; // change with user management
-
     public static AdapterTemplate defaultStore;
     public static AdapterTemplate defaultSource;
     public static long defaultUserId = 0;
     public static String DEFAULT_NAMESPACE_NAME = "public";
     public static long defaultNamespaceId = 0;
     public static boolean resetDocker;
-
-    protected static List<Runnable> afterInit = new ArrayList<>();
-
-    protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
-    public boolean isPersistent = false;
-    private static Catalog INSTANCE = null;
     public static boolean resetCatalog;
     public static boolean memoryCatalog;
     public static RunMode mode;
-
-    public static final Expression CATALOG_EXPRESSION = Expressions.call( Catalog.class, "getInstance" );
-
-    public static final Expression SNAPSHOT_EXPRESSION = Expressions.call( Catalog.class, "snapshot" );
-    public static final Function<Long, Expression> PHYSICAL_EXPRESSION = id -> Expressions.call( CATALOG_EXPRESSION, "getAdapterCatalog", Expressions.constant( id ) );
+    protected static List<Runnable> afterInit = new ArrayList<>();
+    private static Catalog INSTANCE = null;
+    protected final PropertyChangeSupport listeners = new PropertyChangeSupport( this );
+    public boolean isPersistent = false;
 
 
     public static Catalog setAndGetInstance( Catalog catalog ) {
@@ -103,38 +90,55 @@ public abstract class Catalog implements ExtensionPoint {
     }
 
 
+    public static Snapshot snapshot() {
+        return INSTANCE.getSnapshot();
+    }
+
+
     public abstract void init();
+
 
     public abstract void updateSnapshot();
 
+
     public abstract void change();
+
 
     public abstract String getJson();
 
-    public abstract void executeCommitActions();
-
-    public abstract void clearCommitActions();
 
     public abstract void commit();
 
-    public abstract Pair<@NotNull Boolean, @Nullable String> checkIntegrity();
 
     public abstract void rollback();
 
+    /**
+     * Captures live catalog state while the transaction owns the catalog write lock.
+     */
+    public abstract Runnable captureRollback();
+
+
+
     public abstract LogicalRelationalCatalog getLogicalRel( long namespaceId );
 
+
     public abstract LogicalDocumentCatalog getLogicalDoc( long namespaceId );
+
 
     public abstract LogicalGraphCatalog getLogicalGraph( long namespaceId );
 
 
     public abstract AllocationRelationalCatalog getAllocRel( long namespaceId );
 
+
     public abstract AllocationDocumentCatalog getAllocDoc( long namespaceId );
+
 
     public abstract AllocationGraphCatalog getAllocGraph( long namespaceId );
 
+
     public abstract Optional<AdapterCatalog> getAdapterCatalog( long id );
+
 
     public abstract void addStoreSnapshot( AdapterCatalog snapshot );
 
@@ -192,9 +196,11 @@ public abstract class Catalog implements ExtensionPoint {
      * @param name The name of the schema
      * @param dataModel The type of this schema
      * @param caseSensitive
+     * @param hidden Whether the namespace should only be visible internally and therefore be hidden in the UI
      * @return The id of the inserted schema
      */
-    public abstract long createNamespace( String name, DataModel dataModel, boolean caseSensitive );
+    public abstract long createNamespace( String name, DataModel dataModel, boolean caseSensitive, boolean hidden );
+
 
     /**
      * Add an adapter
@@ -208,6 +214,7 @@ public abstract class Catalog implements ExtensionPoint {
      */
     public abstract long createAdapter( String uniqueName, String clazz, AdapterType type, Map<String, String> settings, DeployMode mode );
 
+
     /**
      * Update settings of an adapter
      *
@@ -215,6 +222,7 @@ public abstract class Catalog implements ExtensionPoint {
      * @param newSettings The new settings for the adapter
      */
     public abstract void updateAdapterSettings( long adapterId, Map<String, String> newSettings );
+
 
     /**
      * Delete an adapter
@@ -234,6 +242,7 @@ public abstract class Catalog implements ExtensionPoint {
      */
     public abstract long createQueryInterface( String uniqueName, String interfaceName, Map<String, String> settings );
 
+
     /**
      * Delete a query interface
      *
@@ -241,28 +250,14 @@ public abstract class Catalog implements ExtensionPoint {
      */
     public abstract void dropQueryInterface( long id );
 
-    public abstract long createAdapterTemplate( Class<? extends Adapter<?>> clazz, String adapterName, String description, List<DeployMode> modes, List<AbstractAdapterSetting> settings, Function5<Long, String, Map<String, String>, DeployMode, Adapter<?>> deployer );
-
-
-    public abstract void createInterfaceTemplate( String name, QueryInterfaceTemplate queryInterfaceTemplate );
-
-    public abstract void dropInterfaceTemplate( String name );
-
-    @NotNull
-    public abstract Map<String, QueryInterfaceTemplate> getInterfaceTemplates();
-
 
     public abstract void close();
+
 
     public abstract void clear();
 
 
     public abstract Snapshot getSnapshot();
-
-
-    public static Snapshot snapshot() {
-        return INSTANCE.getSnapshot();
-    }
 
 
     public abstract Map<Long, LogicalUser> getUsers();
@@ -271,20 +266,9 @@ public abstract class Catalog implements ExtensionPoint {
 
     public abstract Map<Long, LogicalQueryInterface> getInterfaces();
 
-    public abstract Map<Long, AdapterTemplate> getAdapterTemplates();
-
-
-    public abstract void dropAdapterTemplate( long templateId );
-
-
     public abstract PropertyChangeListener getChangeListener();
 
 
     public abstract void restore( Transaction transaction );
-
-
-    public abstract void attachCommitConstraint( Supplier<Boolean> constraintChecker, String description );
-
-    public abstract void attachCommitAction( Runnable action );
 
 }

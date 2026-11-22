@@ -16,10 +16,13 @@
 
 package org.polypheny.db.cypher;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.TestHelper.CypherConnection;
 import org.polypheny.db.cypher.helper.TestLiteral;
 import org.polypheny.db.webui.models.results.GraphResult;
 
@@ -205,6 +208,49 @@ public class OrderByTest extends CypherTestTemplate {
                 Row.of( KIRA ),
                 Row.of( KIRA ),
                 Row.of( KIRA ) );
+    }
+
+
+    @Test
+    void validatesGroupingReferencesInsideSortExpressions() {
+        execute( "CREATE (:Person {age:20})-[:KNOWS]->(:Person {age:22})-[:KNOWS]->(:Person {age:27})" );
+        String match = "MATCH (me:Person)--(you:Person) ";
+        String ambiguous = " ORDER BY me.age + you.age + count(*)";
+        for ( String projection : List.of(
+                "RETURN me.age + you.age, count(*) AS cnt" + ambiguous,
+                "WITH me.age + you.age AS age, count(*) AS cnt" + ambiguous + " RETURN age,cnt" ) ) {
+            String query = match + projection;
+            String error = CypherConnection.executeGetResponse( query ).getError();
+            assertNotNull( error, query );
+            assertTrue( error.contains( "AmbiguousAggregationExpression" ), error );
+        }
+
+        GraphResult aliased = execute( match + """
+                RETURN me.age + you.age AS age, count(*) AS cnt
+                ORDER BY age + count(*)
+                """ );
+        assertTrue( containsRows( aliased, true, true,
+                Row.of( TestLiteral.from( 42 ), TestLiteral.from( 2 ) ),
+                Row.of( TestLiteral.from( 49 ), TestLiteral.from( 2 ) ) ) );
+
+        GraphResult simple = execute( match + """
+                RETURN me.age AS age, count(you.age) AS cnt
+                ORDER BY me.age + count(you.age)
+                """ );
+        assertTrue( containsRows( simple, true, true,
+                Row.of( TestLiteral.from( 20 ), TestLiteral.from( 1 ) ),
+                Row.of( TestLiteral.from( 22 ), TestLiteral.from( 2 ) ),
+                Row.of( TestLiteral.from( 27 ), TestLiteral.from( 1 ) ) ) );
+
+        GraphResult recomputed = execute( match + """
+                RETURN me.age + you.age AS age, me.age AS first, you.age AS second, count(*) AS cnt
+                ORDER BY me.age + you.age + count(*), first
+                """ );
+        assertTrue( containsRows( recomputed, true, true,
+                Row.of( TestLiteral.from( 42 ), TestLiteral.from( 20 ), TestLiteral.from( 22 ), TestLiteral.from( 1 ) ),
+                Row.of( TestLiteral.from( 42 ), TestLiteral.from( 22 ), TestLiteral.from( 20 ), TestLiteral.from( 1 ) ),
+                Row.of( TestLiteral.from( 49 ), TestLiteral.from( 22 ), TestLiteral.from( 27 ), TestLiteral.from( 1 ) ),
+                Row.of( TestLiteral.from( 49 ), TestLiteral.from( 27 ), TestLiteral.from( 22 ), TestLiteral.from( 1 ) ) ) );
     }
 
 }

@@ -18,6 +18,7 @@ package org.polypheny.db.sql.language.ddl.altertable;
 
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.Catalog;
@@ -38,7 +39,8 @@ import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterTable;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.transaction.TransactionException;
+import org.polypheny.db.transaction.locking.Lockable;
+import org.polypheny.db.transaction.locking.Lockable.LockType;
 import org.polypheny.db.util.ImmutableNullableList;
 
 
@@ -141,28 +143,30 @@ public class SqlAlterTableAddPartitions extends SqlAlterTable {
             throw new GenericRuntimeException( "Not possible to use ALTER TABLE because %s is not a table.", table.name );
         }
 
-        try {
-            // Check if table is already partitioned
-            if ( Catalog.snapshot().alloc().getPartitionProperty( table.id ).orElseThrow().partitionType == PartitionType.NONE ) {
-                DdlManager.getInstance().createTablePartition(
-                        PartitionInformation.fromNodeLists(
-                                table,
-                                partitionType.getSimple(),
-                                partitionColumn.getSimple(),
-                                partitionGroupNamesList.stream().map( n -> (Identifier) n ).toList(),
-                                numPartitionGroups,
-                                numPartitions,
-                                partitionQualifierList.stream().map( l -> l.stream().map( e -> (Node) e ).toList() ).toList(),
-                                rawPartitionInformation ),
-                        null,
-                        statement );
+        // Check if table is already partitioned
+        if ( Catalog.snapshot().alloc().getPartitionProperty( table.id ).orElseThrow().partitionType == PartitionType.NONE ) {
+            DdlManager.getInstance().createTablePartition(
+                    PartitionInformation.fromNodeLists(
+                            table,
+                            partitionType.getSimple(),
+                            partitionColumn.getSimple(),
+                            partitionGroupNamesList.stream().map( n -> (Identifier) n ).toList(),
+                            numPartitionGroups,
+                            numPartitions,
+                            partitionQualifierList.stream().map( l -> l.stream().map( e -> (Node) e ).toList() ).toList(),
+                            rawPartitionInformation ),
+                    null,
+                    statement );
 
-            } else {
-                throw new GenericRuntimeException( "Table '%s' is already partitioned", table.name );
-            }
-        } catch ( TransactionException e ) {
-            throw new GenericRuntimeException( e );
+        } else {
+            throw new GenericRuntimeException( "Table '%s' is already partitioned", table.name );
         }
+    }
+
+
+    @Override
+    public Map<Lockable, LockType> deriveLockables( Context context, ParsedQueryContext parsedQueryContext ) {
+        return getMapOfTableLockable( table, context, LockType.EXCLUSIVE );
     }
 
 }

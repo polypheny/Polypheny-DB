@@ -16,7 +16,9 @@
 
 package org.polypheny.db.cypher.cypher2alg;
 
-public class CypherSyntaxException extends RuntimeException {
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+
+public class CypherSyntaxException extends GenericRuntimeException {
 
     public CypherSyntaxException( String message ) {
         super( message );

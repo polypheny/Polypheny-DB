@@ -50,14 +50,6 @@ public abstract class DocumentFilter extends SingleAlg implements DocumentAlg {
 
 
     @Override
-    public String algCompareString() {
-        return getClass().getSimpleName() + "$"
-                + condition.hashCode() + "$"
-                + input.algCompareString() + "&";
-    }
-
-
-    @Override
     public DocType getDocType() {
         return DocType.FILTER;
     }
@@ -85,6 +77,12 @@ public abstract class DocumentFilter extends SingleAlg implements DocumentAlg {
     @Override
     public AlgWriter explainTerms( AlgWriter pw ) {
         return super.explainTerms( pw ).item( "condition", condition );
+    }
+
+
+    @Override
+    public boolean isDataModifying() {
+        return false;
     }
 
 }

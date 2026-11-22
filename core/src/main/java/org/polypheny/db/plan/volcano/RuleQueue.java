@@ -589,7 +589,7 @@ class RuleQueue {
             double imp2 = getImportance( alg2 );
             int c = Double.compare( imp2, imp1 );
             if ( c == 0 ) {
-                c = alg1.getId() - alg2.getId();
+                c = Integer.compare( alg1.getId(), alg2.getId() );
             }
             return c;
         }

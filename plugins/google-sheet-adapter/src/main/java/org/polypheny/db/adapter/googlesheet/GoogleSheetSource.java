@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.Setter;
@@ -47,6 +48,7 @@ import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.RelationalDataSource;
 import org.polypheny.db.adapter.RelationalScanDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingBoolean;
@@ -59,6 +61,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationTable;
@@ -80,37 +83,33 @@ import org.polypheny.db.util.PolyphenyHomeDirManager;
         description = "Which length (number of characters including whitespace) should be used for the varchar columns. Make sure this is equal or larger than the longest string in any of the columns.")
 @AdapterSettingInteger(name = "querySize", defaultValue = 1000, position = 3,
         description = "How many rows should be queried per network call. Can be larger than number of rows.")
-@AdapterSettingBoolean(name = "resetRefreshToken", defaultValue = false, position = 4, description = "If you want to change the current email used to access the Google Sheet, input \"YES\".")
+@AdapterSettingBoolean(name = "resetRefreshToken", defaultValue = false, position = 4, description = "If you want to change the current email used to access the Google Sheet, input \"TRUE\".")
 @AdapterSettingString(name = "oAuth-Client-ID", description = "Authentication credentials used for GoogleSheets API. Not the account credentials.", defaultValue = "", position = 5)
 @AdapterSettingString(name = "oAuth-Client-Key", description = "Authentication credentials used for GoogleSheets API. Not the account credentials.", defaultValue = "")
 @AdapterSettingString(name = "sheetName", description = "Name of sheet to use.", defaultValue = "")
-public class GoogleSheetSource extends DataSource<RelAdapterCatalog> {
+public class GoogleSheetSource extends DataSource<RelAdapterCatalog> implements RelationalDataSource {
 
-    @Delegate(excludes = Excludes.class)
-    private final RelationalScanDelegate delegate;
-
+    public static final File TOKENS_PATH = PolyphenyHomeDirManager.getInstance().registerNewFolder( "tokens" );
     static final String APPLICATION_NAME = "POLYPHENY GOOGLE SHEET";
     static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
     static final List<String> SCOPES = Collections.singletonList( SheetsScopes.SPREADSHEETS_READONLY );
     public final String clientId;
     public final String clientKey;
-
-    public static final File TOKENS_PATH = PolyphenyHomeDirManager.getInstance().registerNewFolder( "tokens" );
     public final String sheet;
-    private URL sheetsUrl;
+    @Delegate(excludes = Excludes.class)
+    private final RelationalScanDelegate delegate;
     private final int querySize;
-
-    @Getter
-    private GoogleSheetNamespace currentNamespace;
     private final int maxStringLength;
-
     @Getter
     @Setter
     Credential credentials;
+    private URL sheetsUrl;
+    @Getter
+    private GoogleSheetNamespace currentNamespace;
 
 
     public GoogleSheetSource( final long storeId, final String uniqueName, final Map<String, String> settings, DeployMode mode ) {
-        super( storeId, uniqueName, settings, mode, true, new RelAdapterCatalog( storeId ) );
+        super( storeId, uniqueName, settings, mode, true, new RelAdapterCatalog( storeId ), Set.of( DataModel.RELATIONAL ) );
 
         this.clientId = getSettingOrFail( "oAuth-Client-ID", settings );
         this.clientKey = getSettingOrFail( "oAuth-Client-Key", settings );
@@ -127,7 +126,7 @@ public class GoogleSheetSource extends DataSource<RelAdapterCatalog> {
 
         createInformationPage();
         enableInformationPage();
-        if ( settings.get( "resetRefreshToken" ).equalsIgnoreCase( "yes" ) ) {
+        if ( Boolean.parseBoolean( settings.get( "resetRefreshToken" ) ) ) {
             GoogleSheetReader r = new GoogleSheetReader( sheetsUrl, querySize, this );
             r.deleteToken();
         }
@@ -200,19 +199,19 @@ public class GoogleSheetSource extends DataSource<RelAdapterCatalog> {
         for ( Map.Entry<String, List<ExportedColumn>> entry : getExportedColumns().entrySet() ) {
             InformationGroup group = new InformationGroup(
                     informationPage,
-                    entry.getValue().get( 0 ).physicalSchemaName + "." + entry.getValue().get( 0 ).physicalTableName );
+                    entry.getValue().get( 0 ).physicalSchemaName() + "." + entry.getValue().get( 0 ).physicalTableName() );
 
             InformationTable table = new InformationTable(
                     group,
                     Arrays.asList( "Position", "Column Name", "Type", "Nullable", "Filename", "Primary" ) );
             for ( ExportedColumn exportedColumn : entry.getValue() ) {
                 table.addRow(
-                        exportedColumn.physicalPosition,
-                        exportedColumn.name,
+                        exportedColumn.physicalPosition(),
+                        exportedColumn.name(),
                         exportedColumn.getDisplayType(),
-                        exportedColumn.nullable ? "✔" : "",
-                        exportedColumn.physicalSchemaName,
-                        exportedColumn.primary ? "✔" : ""
+                        exportedColumn.nullable() ? "✔" : "",
+                        exportedColumn.physicalSchemaName(),
+                        exportedColumn.primary() ? "✔" : ""
                 );
             }
             informationElements.add( table );
@@ -293,6 +292,7 @@ public class GoogleSheetSource extends DataSource<RelAdapterCatalog> {
                         null,
                         null,
                         false,
+                        true,
                         "public",
                         tableName,
                         col.toString(),
@@ -378,6 +378,12 @@ public class GoogleSheetSource extends DataSource<RelAdapterCatalog> {
     @Override
     public void rollback( PolyXid xid ) {
         log.debug( "Google Sheet adapter does not support rollback()." );
+    }
+
+
+    @Override
+    public RelationalDataSource asRelationalDataSource() {
+        return this;
     }
 
 

@@ -88,7 +88,7 @@ public class RoutingPlanSelector {
             throw new GenericRuntimeException( "Plan selection strategy not found, result still null." );
         }
 
-        if ( statement.getTransaction().isAnalyze() ) {
+        if ( statement.isAnalyze() ) {
             UiRoutingPageUtil.addRoutingAndPlanPage(
                     approximatedCosts,
                     preCosts,

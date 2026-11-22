@@ -41,6 +41,7 @@ import org.polypheny.db.algebra.convert.ConverterRule;
 import org.polypheny.db.algebra.metadata.AlgMetadataProvider;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.metadata.CachingAlgMetadataProvider;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.volcano.VolcanoPlannerPhase;
 import org.polypheny.db.rex.RexExecutor;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
@@ -273,7 +274,7 @@ public interface AlgPlanner {
     /**
      * Thrown by {@link AlgPlanner#findBestExp()}.
      */
-    class CannotPlanException extends RuntimeException {
+    class CannotPlanException extends GenericRuntimeException {
 
         public CannotPlanException( String message ) {
             super( message );

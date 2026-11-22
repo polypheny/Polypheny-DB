@@ -54,6 +54,7 @@ import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
@@ -105,6 +106,11 @@ public abstract class FilterJoinRule extends AlgOptRule {
 
 
     protected void perform( AlgOptRuleCall call, Filter filter, Join join ) {
+        // MATCH predicates must only run on matching graph candidates. A predicate pushed
+        // into one input may raise an error even when the graph pattern cannot match.
+        if ( join.getTraitSet().contains( ModelTrait.GRAPH ) ) {
+            return;
+        }
         final List<RexNode> joinFilters = AlgOptUtil.conjunctions( join.getCondition() );
         final List<RexNode> origJoinFilters = ImmutableList.copyOf( joinFilters );
 

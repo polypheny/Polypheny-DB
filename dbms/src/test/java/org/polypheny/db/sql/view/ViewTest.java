@@ -438,4 +438,42 @@ public class ViewTest {
     }
 
 
+    @Test
+    public void testViewRollback() throws SQLException {
+        try ( JdbcConnection polyphenyDbConnection = new JdbcConnection( false ) ) {
+            Connection connection = polyphenyDbConnection.getConnection();
+            try ( Statement statement = connection.createStatement() ) {
+                statement.executeUpdate( VIEW_TEST_EMP_TABLE_SQL );
+
+                try {
+                    statement.executeUpdate( "CREATE VIEW viewTestEmp AS SELECT * FROM viewTestEmpTable" );
+                    statement.executeUpdate( "CREATE VIEW viewTestEmp1 AS SELECT * FROM viewTestEmpTable" );
+
+                    statement.executeUpdate( VIEW_TEST_EMP_TABLE_DATA_SQL );
+                    // Rollback the catalog to test that views are correctly restored
+                    connection.rollback();
+
+                    statement.executeUpdate( VIEW_TEST_EMP_TABLE_DATA_SQL );
+                    connection.commit();
+
+                    TestHelper.checkResultSet(
+                            statement.executeQuery( "SELECT empId,firstName,lastName,depId FROM viewTestEmp ORDER BY empid" ),
+                            ImmutableList.of(
+                                    new Object[]{ 1, "Max", "Muster", 1 },
+                                    new Object[]{ 2, "Ernst", "Walter", 2 },
+                                    new Object[]{ 3, "Elsa", "Kuster", 3 }
+                            )
+                    );
+
+                    // Drop the materialized views
+                    statement.executeUpdate( "DROP VIEW viewTestEmp" );
+                    statement.executeUpdate( "DROP VIEW viewTestEmp1" );
+                } finally {
+                    statement.executeUpdate( "DROP TABLE viewTestEmpTable" );
+                }
+            }
+        }
+    }
+
+
 }

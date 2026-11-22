@@ -43,6 +43,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
@@ -796,41 +797,41 @@ public class FunctionsTest {
     public void testMultiset() {
         final List<String> abacee = Arrays.asList( "a", "b", "a", "c", "e", "e" );
         final List<String> adaa = Arrays.asList( "a", "d", "a", "a" );
-        final List<String> addc = Arrays.asList( "a", "d", "c", "d", "c" );
+        final List<String> adcdc = Arrays.asList( "a", "d", "c", "d", "c" );
         final List<String> z = Collections.emptyList();
-        assertThat( Functions.multisetExceptAll( abacee, addc ), is( Arrays.asList( "b", "a", "e", "e" ) ) );
+        assertThat( Functions.multisetExceptAll( abacee, adcdc ), is( Arrays.asList( "b", "a", "e", "e" ) ) );
         assertThat( Functions.multisetExceptAll( abacee, z ), is( abacee ) );
         assertThat( Functions.multisetExceptAll( z, z ), is( z ) );
-        assertThat( Functions.multisetExceptAll( z, addc ), is( z ) );
+        assertThat( Functions.multisetExceptAll( z, adcdc ), is( z ) );
 
-        assertThat( Functions.multisetExceptDistinct( abacee, addc ), is( Arrays.asList( "b", "e" ) ) );
-        assertThat( Functions.multisetExceptDistinct( abacee, z ), is( Arrays.asList( "a", "b", "c", "e" ) ) );
-        assertThat( Functions.multisetExceptDistinct( z, z ), is( z ) );
-        assertThat( Functions.multisetExceptDistinct( z, addc ), is( z ) );
+        assertThat( Functions.multisetExceptDistinct( abacee, adcdc ), is( Set.of( "b", "e" ) ) );
+        assertThat( Functions.multisetExceptDistinct( abacee, z ), is( Set.of( "a", "b", "c", "e" ) ) );
+        assertThat( Functions.multisetExceptDistinct( z, z ), is( Set.of() ) );
+        assertThat( Functions.multisetExceptDistinct( z, adcdc ), is( Set.of() ) );
 
-        assertThat( Functions.multisetIntersectAll( abacee, addc ), is( Arrays.asList( "a", "c" ) ) );
+        assertThat( Functions.multisetIntersectAll( abacee, adcdc ), is( Arrays.asList( "a", "c" ) ) );
         assertThat( Functions.multisetIntersectAll( abacee, adaa ), is( Arrays.asList( "a", "a" ) ) );
         assertThat( Functions.multisetIntersectAll( adaa, abacee ), is( Arrays.asList( "a", "a" ) ) );
         assertThat( Functions.multisetIntersectAll( abacee, z ), is( z ) );
         assertThat( Functions.multisetIntersectAll( z, z ), is( z ) );
-        assertThat( Functions.multisetIntersectAll( z, addc ), is( z ) );
+        assertThat( Functions.multisetIntersectAll( z, adcdc ), is( z ) );
 
-        assertThat( Functions.multisetIntersectDistinct( abacee, addc ), is( Arrays.asList( "a", "c" ) ) );
-        assertThat( Functions.multisetIntersectDistinct( abacee, adaa ), is( Collections.singletonList( "a" ) ) );
-        assertThat( Functions.multisetIntersectDistinct( adaa, abacee ), is( Collections.singletonList( "a" ) ) );
-        assertThat( Functions.multisetIntersectDistinct( abacee, z ), is( z ) );
-        assertThat( Functions.multisetIntersectDistinct( z, z ), is( z ) );
-        assertThat( Functions.multisetIntersectDistinct( z, addc ), is( z ) );
+        assertThat( Functions.multisetIntersectDistinct( abacee, adcdc ), is( Set.of( "a", "c" ) ) );
+        assertThat( Functions.multisetIntersectDistinct( abacee, adaa ), is( Set.of( "a" ) ) );
+        assertThat( Functions.multisetIntersectDistinct( adaa, abacee ), is( Set.of( "a" ) ) );
+        assertThat( Functions.multisetIntersectDistinct( abacee, z ), is( Set.of() ) );
+        assertThat( Functions.multisetIntersectDistinct( z, z ), is( Set.of() ) );
+        assertThat( Functions.multisetIntersectDistinct( z, adcdc ), is( Set.of() ) );
 
-        assertThat( Functions.multisetUnionAll( abacee, addc ), is( Arrays.asList( "a", "b", "a", "c", "e", "e", "a", "d", "c", "d", "c" ) ) );
+        assertThat( Functions.multisetUnionAll( abacee, adcdc ), is( Arrays.asList( "a", "b", "a", "c", "e", "e", "a", "d", "c", "d", "c" ) ) );
         assertThat( Functions.multisetUnionAll( abacee, z ), is( abacee ) );
         assertThat( Functions.multisetUnionAll( z, z ), is( z ) );
-        assertThat( Functions.multisetUnionAll( z, addc ), is( addc ) );
+        assertThat( Functions.multisetUnionAll( z, adcdc ), is( adcdc ) );
 
-        assertThat( Functions.multisetUnionDistinct( abacee, addc ), is( Arrays.asList( "a", "b", "c", "d", "e" ) ) );
-        assertThat( Functions.multisetUnionDistinct( abacee, z ), is( Arrays.asList( "a", "b", "c", "e" ) ) );
-        assertThat( Functions.multisetUnionDistinct( z, z ), is( z ) );
-        assertThat( Functions.multisetUnionDistinct( z, addc ), is( Arrays.asList( "a", "c", "d" ) ) );
+        assertThat( Functions.multisetUnionDistinct( abacee, adcdc ), is( Set.of( "a", "b", "c", "d", "e" ) ) );
+        assertThat( Functions.multisetUnionDistinct( abacee, z ), is( Set.of( "a", "b", "c", "e" ) ) );
+        assertThat( Functions.multisetUnionDistinct( z, z ), is( Set.of() ) );
+        assertThat( Functions.multisetUnionDistinct( z, adcdc ), is( Set.of( "a", "c", "d" ) ) );
     }
 
 }

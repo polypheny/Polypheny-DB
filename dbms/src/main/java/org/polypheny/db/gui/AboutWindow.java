@@ -103,7 +103,7 @@ public class AboutWindow {
             add( ossButton );
 
             JTextPane txtpnCopyright = new JTextPane();
-            txtpnCopyright.setText( "Copyright 2019-2023 The Polypheny Project\n"
+            txtpnCopyright.setText( "Copyright 2019-2025 The Polypheny Project\n"
                     + "Polypheny is powered by " );
             txtpnCopyright.setFont( new Font( "Verdana", Font.PLAIN, 14 ) );
             txtpnCopyright.setBackground( lblIcon.getBackground() );

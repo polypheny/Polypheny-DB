@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2025 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,12 +38,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
@@ -215,20 +212,6 @@ public final class MultiJoin extends AbstractAlgNode {
     }
 
 
-    @Override
-    public String algCompareString() {
-        return "MultiJoin$" +
-                inputs.stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) ) + "$" +
-                (joinFilter != null ? joinFilter.hashCode() : "") + "$" +
-                rowType.toString() + "$" +
-                isFullOuterJoin + "$" +
-                (outerJoinConditions != null ? outerJoinConditions.stream().map( RexNode::hashCode ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
-                (joinTypes != null ? joinTypes.stream().map( t -> Arrays.toString( JoinAlgType.values() ) ).collect( Collectors.joining( "$" ) ) : "") + "$" +
-                (projFields != null ? projFields.stream().map( Objects::toString ).collect( Collectors.joining( " $ " ) ) : "") + "$" +
-                (postJoinFilter != null ? postJoinFilter.hashCode() : "") + "&";
-    }
-
-
     /**
      * @return join filters associated with this MultiJoin
      */
@@ -302,5 +285,10 @@ public final class MultiJoin extends AbstractAlgNode {
         return false;
     }
 
-}
 
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
+
+}

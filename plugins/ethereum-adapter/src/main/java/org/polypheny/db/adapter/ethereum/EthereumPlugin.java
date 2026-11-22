@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.experimental.Delegate;
@@ -31,6 +32,7 @@ import org.pf4j.Extension;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
+import org.polypheny.db.adapter.RelationalDataSource;
 import org.polypheny.db.adapter.RelationalScanDelegate;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingBoolean;
@@ -42,6 +44,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.information.InformationGroup;
 import org.polypheny.db.information.InformationTable;
 import org.polypheny.db.plugins.PluginContext;
@@ -81,6 +84,18 @@ public class EthereumPlugin extends PolyPlugin {
     }
 
 
+    @SuppressWarnings("unused")
+    private interface Excludes {
+
+        void renameLogicalColumn( long id, String newColumnName );
+
+        void refreshTable( long allocId );
+
+        void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
+
+    }
+
+
     @Slf4j
     @Extension
     @AdapterProperties(
@@ -91,7 +106,7 @@ public class EthereumPlugin extends PolyPlugin {
     @AdapterSettingString(name = "ClientUrl", description = "The URL of the ethereum JSON RPC client", defaultValue = "https://mainnet.infura.io/v3/4d06589e97064040b5da99cf4051ef04", position = 1)
     @AdapterSettingInteger(name = "Blocks", description = "The number of Blocks to fetch when processing a query", defaultValue = 10, position = 2, modifiable = true)
     @AdapterSettingBoolean(name = "ExperimentalFiltering", description = "Experimentally filter Past Block", defaultValue = false, position = 3, modifiable = true)
-    public static class EthereumDataSource extends DataSource<RelAdapterCatalog> {
+    public static class EthereumDataSource extends DataSource<RelAdapterCatalog> implements RelationalDataSource {
 
         @Delegate(excludes = Excludes.class)
         private final RelationalScanDelegate delegate;
@@ -105,7 +120,7 @@ public class EthereumPlugin extends PolyPlugin {
 
 
         public EthereumDataSource( final long storeId, final String uniqueName, final Map<String, String> settings, DeployMode mode ) {
-            super( storeId, uniqueName, settings, mode, true, new RelAdapterCatalog( storeId ) );
+            super( storeId, uniqueName, settings, mode, true, new RelAdapterCatalog( storeId ), Set.of( DataModel.RELATIONAL ) );
             setClientURL( settings.get( "ClientUrl" ) );
             this.blocks = Integer.parseInt( settings.get( "Blocks" ) );
             this.experimentalFiltering = Boolean.parseBoolean( settings.get( "ExperimentalFiltering" ) );
@@ -184,6 +199,7 @@ public class EthereumPlugin extends PolyPlugin {
                         dimension,
                         cardinality,
                         false,
+                        true,
                         "public",
                         "block",
                         blockCol,
@@ -205,6 +221,7 @@ public class EthereumPlugin extends PolyPlugin {
                         dimension,
                         cardinality,
                         false,
+                        true,
                         "public",
                         "transaction",
                         transactCol,
@@ -260,17 +277,17 @@ public class EthereumPlugin extends PolyPlugin {
             for ( Map.Entry<String, List<ExportedColumn>> entry : getExportedColumns().entrySet() ) {
                 InformationGroup group = new InformationGroup(
                         informationPage,
-                        entry.getValue().get( 0 ).physicalSchemaName + "." + entry.getValue().get( 0 ).physicalTableName );
+                        entry.getValue().get( 0 ).physicalSchemaName() + "." + entry.getValue().get( 0 ).physicalTableName() );
 
                 InformationTable table = new InformationTable(
                         group,
                         Arrays.asList( "Position", "Column Name", "Type", "Primary" ) );
                 for ( ExportedColumn exportedColumn : entry.getValue() ) {
                     table.addRow(
-                            exportedColumn.physicalPosition,
-                            exportedColumn.name,
+                            exportedColumn.physicalPosition(),
+                            exportedColumn.name(),
                             exportedColumn.getDisplayType(),
-                            exportedColumn.primary ? "✔" : ""
+                            exportedColumn.primary() ? "✔" : ""
                     );
                 }
                 informationElements.add( table );
@@ -291,17 +308,11 @@ public class EthereumPlugin extends PolyPlugin {
             adapterCatalog.fields.values().stream().filter( c -> c.id == id ).forEach( c -> updateNativePhysical( c.allocId ) );
         }
 
-    }
 
-
-    @SuppressWarnings("unused")
-    private interface Excludes {
-
-        void renameLogicalColumn( long id, String newColumnName );
-
-        void refreshTable( long allocId );
-
-        void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
+        @Override
+        public RelationalDataSource asRelationalDataSource() {
+            return this;
+        }
 
     }
 

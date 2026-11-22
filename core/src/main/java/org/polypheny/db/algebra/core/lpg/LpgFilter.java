@@ -19,6 +19,7 @@ package org.polypheny.db.algebra.core.lpg;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
@@ -45,10 +46,8 @@ public abstract class LpgFilter extends SingleAlg implements LpgAlg {
 
 
     @Override
-    public String algCompareString() {
-        return getClass().getSimpleName() + "$"
-                + this.condition.hashCode() + "$"
-                + getInput().algCompareString() + "&";
+    public AlgWriter explainTerms( AlgWriter writer ) {
+        return super.explainTerms( writer ).item( "condition", condition );
     }
 
 
@@ -69,5 +68,11 @@ public abstract class LpgFilter extends SingleAlg implements LpgAlg {
 
 
     protected abstract AlgNode copy( AlgTraitSet traitSet, AlgNode input, RexNode condition );
+
+
+    @Override
+    public boolean isDataModifying() {
+        return false;
+    }
 
 }

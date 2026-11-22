@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1577,6 +1577,25 @@ public enum OperatorName {
      */
     ST_GEOMETRYN( Function.class ),
 
+    //------------------------------------------------------------
+    //                  VECTOR DISTANCE FUNCTIONS
+    //------------------------------------------------------------
+
+    L2_DISTANCE( Function.class ),
+
+    L1_DISTANCE( Function.class ),
+
+    COSINE_DISTANCE( Function.class ),
+
+    HAMMING_DISTANCE( Function.class ),
+
+    JACCARD_DISTANCE( Function.class ),
+
+    INNER_PRODUCT_DISTANCE( Function.class ),
+
+    // Cypher specific operator
+    VECTOR_DISTANCE( Function.class ),
+
     //-------------------------------------------------------------
     //                   SET OPERATORS
     //-------------------------------------------------------------
@@ -1629,17 +1648,43 @@ public enum OperatorName {
 
     MQL_MERGE( LangFunctionOperator.class ),
 
+    MQL_MERGE_ADD( LangFunctionOperator.class ),
+
     MQL_PROJECT_INCLUDES( LangFunctionOperator.class ),
 
     MQL_REPLACE_ROOT( LangFunctionOperator.class ),
 
     MQL_NOT_UNSET( LangFunctionOperator.class ),
 
+    MQL_GEO_INTERSECTS( LangFunctionOperator.class ),
+
+    MQL_GEO_WITHIN( LangFunctionOperator.class ),
+
+    MQL_GEO_DISTANCE( LangFunctionOperator.class ),
+
+    MQL_NEAR( LangFunctionOperator.class ),
+
+    MQL_NEAR_SPHERE( LangFunctionOperator.class ),
+
+    MQL_GEO_NEAR( LangFunctionOperator.class ),
+
     //-------------------------------------------------------------
     //                   OPENCYPHER OPERATORS
     //-------------------------------------------------------------
 
     REG_EQUALS( LangFunctionOperator.class ),
+
+    CYPHER_EQUALS( LangFunctionOperator.class ),
+
+    CYPHER_NOT_EQUALS( LangFunctionOperator.class ),
+
+    CYPHER_LESS_THAN( LangFunctionOperator.class ),
+
+    CYPHER_LESS_THAN_OR_EQUAL( LangFunctionOperator.class ),
+
+    CYPHER_GREATER_THAN( LangFunctionOperator.class ),
+
+    CYPHER_GREATER_THAN_OR_EQUAL( LangFunctionOperator.class ),
 
     STARTS_WITH( LangFunctionOperator.class ),
 
@@ -1671,9 +1716,21 @@ public enum OperatorName {
 
     CYPHER_EXTRACT_FROM_PATH( LangFunctionOperator.class ),
 
+    CYPHER_PATHS_DISJOINT( LangFunctionOperator.class ),
+
     CYPHER_EXTRACT_PROPERTY( LangFunctionOperator.class ),
 
     CYPHER_EXTRACT_ID( LangFunctionOperator.class ),
+
+    CYPHER_MATCH_ELEMENT_ID( LangFunctionOperator.class ),
+    CYPHER_MATCH_PROPERTIES( LangFunctionOperator.class ),
+    CYPHER_MATCH_VISIBLE_PATH( LangFunctionOperator.class ),
+    CYPHER_VALIDATE_MATCH_NODE( LangFunctionOperator.class ),
+    CYPHER_VALIDATE_MATCH_RELATIONSHIP_LIST( LangFunctionOperator.class ),
+    CYPHER_MATCH_BINDING_GUARD( LangFunctionOperator.class ),
+    CYPHER_BOOLEAN_PREDICATE( LangFunctionOperator.class ),
+    CYPHER_CASE( LangFunctionOperator.class ),
+    CYPHER_MATCH_WITH_WHERE( LangFunctionOperator.class ),
 
     CYPHER_EXTRACT_PROPERTIES( LangFunctionOperator.class ),
 
@@ -1683,7 +1740,31 @@ public enum OperatorName {
 
     CYPHER_TO_LIST( LangFunctionOperator.class ),
 
+    CYPHER_LIST_CONSTRUCTOR( LangFunctionOperator.class ),
+
+    CYPHER_IN( LangFunctionOperator.class ),
+
+    CYPHER_LAST( LangFunctionOperator.class ),
+    CYPHER_INDEX( LangFunctionOperator.class ),
+    CYPHER_SLICE( LangFunctionOperator.class ),
+    CYPHER_MAP_CONSTRUCTOR( LangFunctionOperator.class ),
+    CYPHER_NODES( LangFunctionOperator.class ),
+    CYPHER_RELATIONSHIPS( LangFunctionOperator.class ),
+    CYPHER_LENGTH( LangFunctionOperator.class ),
+    CYPHER_SIZE( LangFunctionOperator.class ),
+    CYPHER_SCALAR_FUNCTION( LangFunctionOperator.class ),
+    CYPHER_RAND( LangFunctionOperator.class ),
+    CYPHER_TEMPORAL_FUNCTION( LangFunctionOperator.class ),
+    CYPHER_RANGE( LangFunctionOperator.class ),
+    CYPHER_TYPE( LangFunctionOperator.class ),
+    CYPHER_ID( LangFunctionOperator.class ),
+    CYPHER_LABELS( LangFunctionOperator.class ),
+    CYPHER_ARITHMETIC( LangFunctionOperator.class ),
+
     CYPHER_ADJUST_EDGE( LangFunctionOperator.class ),
+    CYPHER_CREATE_NODE( LangFunctionOperator.class ),
+    CYPHER_CREATE_EDGE( LangFunctionOperator.class ),
+    CYPHER_CREATE_PATH( LangFunctionOperator.class ),
 
     CYPHER_SET_PROPERTY( LangFunctionOperator.class ),
 
@@ -1698,8 +1779,8 @@ public enum OperatorName {
     CYPHER_REMOVE_PROPERTIES( LangFunctionOperator.class ),
 
     CYPHER_LIKE( LangFunctionOperator.class ),
+    CYPHER_CONTAINS( LangFunctionOperator.class ),
 
-    CYPHER_GRAPH_ONLY_LABEL( LangFunctionOperator.class ),
 
     CYPHER_GEO_DISTANCE( LangFunctionOperator.class ),
 
@@ -1708,6 +1789,14 @@ public enum OperatorName {
     CYPHER_GEO_INTERSECTS( LangFunctionOperator.class ),
 
     CYPHER_GEO_WITHIN( LangFunctionOperator.class ),
+
+    CYPHER_POINT( LangFunctionOperator.class ),
+
+    CYPHER_WITHIN_BBOX( LangFunctionOperator.class ),
+
+    CYPHER_WITHIN_GEOMETRY( LangFunctionOperator.class ),
+
+    DISTANCE_NEO4J( LangFunctionOperator.class ),
 
     // CROSS MODEL FUNCTION
 
@@ -1722,14 +1811,6 @@ public enum OperatorName {
     EXTRACT_NAME( LangFunctionOperator.class );
 
 
-    private final Class<? extends Operator> clazz;
-
-
-    OperatorName( Class<? extends Operator> clazz ) {
-        this.clazz = clazz;
-    }
-
-
     final public static List<OperatorName> MQL_OPERATORS = Arrays.asList(
             MQL_EQUALS,
             MQL_GT,
@@ -1737,4 +1818,10 @@ public enum OperatorName {
             MQL_LT,
             MQL_LTE
     );
+    private final Class<? extends Operator> clazz;
+
+
+    OperatorName( Class<? extends Operator> clazz ) {
+        this.clazz = clazz;
+    }
 }

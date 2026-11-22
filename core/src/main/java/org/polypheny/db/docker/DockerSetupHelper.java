@@ -92,7 +92,7 @@ public final class DockerSetupHelper {
                 throw new DockerUserException( "Docker instance still in use by at least one container" );
             }
         } catch ( IOException e ) {
-            log.info( "Failed to retrieve list of docker containers " + e );
+            log.info( "Failed to retrieve list of docker containers {}", String.valueOf( e ) );
         }
 
         HandshakeManager.getInstance().cancelHandshakes( dockerInstance.getHost().hostname() );

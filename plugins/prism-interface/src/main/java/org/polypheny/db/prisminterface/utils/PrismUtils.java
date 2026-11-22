@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,13 @@
 package org.polypheny.db.prisminterface.utils;
 
 import java.util.List;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.prisminterface.statements.PIPreparedStatement;
 import org.polypheny.db.prisminterface.statements.PIStatement;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.prism.ColumnMeta;
 import org.polypheny.prism.DocumentFrame;
 import org.polypheny.prism.Frame;
+import org.polypheny.prism.GraphFrame;
 import org.polypheny.prism.PreparedStatementSignature;
 import org.polypheny.prism.ProtoDocument;
 import org.polypheny.prism.RelationalFrame;
@@ -73,22 +73,23 @@ public class PrismUtils {
     }
 
 
-    public static Row serializeToRow( List<PolyValue> row ) {
-        return Row.newBuilder()
-                .addAllValues( PolyValueSerializer.serializeList( row ) )
-                .build();
+    private static List<Row> serializeToRows( List<List<PolyValue>> rows, boolean supportsGraphValues ) {
+        PolyValueSerializer serializer = new PolyValueSerializer( supportsGraphValues );
+        return rows.stream()
+                .map( row -> Row.newBuilder().addAllValues( serializer.serializeList( row ) ).build() )
+                .toList();
     }
 
 
     public static List<Row> serializeToRows( List<List<PolyValue>> rows ) {
-        return rows.stream().map( PrismUtils::serializeToRow ).toList();
+        return serializeToRows( rows, true );
     }
 
 
-    public static Frame buildRelationalFrame( boolean isLast, List<List<PolyValue>> rows, List<ColumnMeta> metas ) {
+    public static Frame buildRelationalFrame( boolean isLast, List<List<PolyValue>> rows, List<ColumnMeta> metas, boolean supportsGraphValues ) {
         RelationalFrame relationalFrame = RelationalFrame.newBuilder()
                 .addAllColumnMeta( metas )
-                .addAllRows( serializeToRows( rows ) )
+                .addAllRows( serializeToRows( rows, supportsGraphValues ) )
                 .build();
         return Frame.newBuilder()
                 .setIsLast( isLast )
@@ -97,10 +98,11 @@ public class PrismUtils {
     }
 
 
-    public static Frame buildDocumentFrame( boolean isLast, List<PolyValue> data ) {
+    public static Frame buildDocumentFrame( boolean isLast, List<PolyValue> data, boolean supportsGraphValues ) {
+        PolyValueSerializer serializer = new PolyValueSerializer( supportsGraphValues );
         List<ProtoDocument> documents = data.stream()
                 .map( PolyValue::asDocument )
-                .map( PolyValueSerializer::buildProtoDocument )
+                .map( serializer::buildProtoDocument )
                 .toList();
         DocumentFrame documentFrame = DocumentFrame.newBuilder()
                 .addAllDocuments( documents )
@@ -112,8 +114,22 @@ public class PrismUtils {
     }
 
 
-    public static Frame buildGraphFrame() {
-        throw new GenericRuntimeException( "Feature not implemented" );
+    public static Frame buildGraphFrame( boolean isLast, List<List<PolyValue>> rows ) {
+        return buildGraphFrame( isLast, rows, true );
+    }
+
+
+    public static Frame buildGraphFrame( boolean isLast, List<List<PolyValue>> rows, boolean supportsGraphValues ) {
+        PolyValueSerializer serializer = new PolyValueSerializer( supportsGraphValues );
+        GraphFrame.Builder graph = GraphFrame.newBuilder();
+        // GraphFrame is a flat sequence. Preserve projection and traversal order within it.
+        for ( List<PolyValue> row : rows ) {
+            row.forEach( value -> serializer.addGraphElements( graph, value ) );
+        }
+        return Frame.newBuilder()
+                .setIsLast( isLast )
+                .setGraphFrame( graph )
+                .build();
     }
 
 }

@@ -85,44 +85,39 @@ public interface Modifiable extends Scannable {
     static AlgNode attachRelationalGraphUpdate( Modifiable modifiable, AlgNode provider, LogicalLpgModify alg, AlgBuilder builder, Entity nodesTable, Entity nodePropertiesTable, Entity edgesTable, Entity edgePropertiesTable ) {
         AlgNode project = new LogicalLpgProject( alg.getCluster(), alg.getTraitSet(), alg.getInput(), alg.operations, alg.ids );
 
-        List<AlgNode> inputs = new ArrayList<>();
-        List<PolyType> sequence = new ArrayList<>();
-        for ( AlgDataTypeField field : project.getTupleType().getFields() ) {
-            sequence.add( field.getType().getPolyType() );
-            if ( field.getType().getPolyType() == PolyType.EDGE ) {
-                inputs.addAll( attachPreparedGraphEdgeModifyDelete( modifiable, alg.getCluster(), edgesTable, edgePropertiesTable, builder ) );
-                inputs.addAll( attachPreparedGraphEdgeModifyInsert( modifiable, alg.getCluster(), edgesTable, edgePropertiesTable, builder ) );
-            } else if ( field.getType().getPolyType() == PolyType.NODE ) {
-                inputs.addAll( attachPreparedGraphNodeModifyDelete( modifiable, alg.getCluster(), nodesTable, nodePropertiesTable, builder ) );
-                inputs.addAll( attachPreparedGraphNodeModifyInsert( modifiable, alg.getCluster(), nodesTable, nodePropertiesTable, builder ) );
-            } else {
-                throw new GenericRuntimeException( "Graph insert of non-graph elements is not possible." );
-            }
-        }
+        List<PolyType> sequence = project.getTupleType().getFields().stream().map( field -> field.getType().getPolyType() ).toList();
+        List<AlgNode> inputs = prepareGraphUpdates( modifiable, builder, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable, sequence );
         AlgRecordType updateRowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( -1L, "ROWCOUNT", 0, alg.getCluster().getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
+        addGraphWriteLookups( builder, nodesTable, edgesTable, inputs, sequence, Operation.UPDATE );
         LogicalLpgTransformer transformer = new LogicalLpgTransformer( alg.getCluster(), alg.getTraitSet(), inputs, updateRowType, sequence, Modify.Operation.UPDATE );
         return new LogicalStreamer( alg.getCluster(), alg.getTraitSet(), project, transformer );
     }
 
 
     static AlgNode attachRelationalGraphDelete( Modifiable modifiable, AlgNode provider, LogicalLpgModify alg, AlgBuilder algBuilder, Entity nodesTable, Entity nodePropertiesTable, Entity edgesTable, Entity edgePropertiesTable ) {
-        AlgNode project = new LogicalLpgProject( alg.getCluster(), alg.getTraitSet(), alg.getInput(), alg.operations, alg.ids );
-
-        List<AlgNode> inputs = new ArrayList<>();
-        List<PolyType> sequence = new ArrayList<>();
-        for ( AlgDataTypeField field : project.getTupleType().getFields() ) {
-            sequence.add( field.getType().getPolyType() );
-            if ( field.getType().getPolyType() == PolyType.EDGE ) {
-                inputs.addAll( attachPreparedGraphEdgeModifyDelete( modifiable, alg.getCluster(), edgesTable, edgePropertiesTable, algBuilder ) );
-            } else if ( field.getType().getPolyType() == PolyType.NODE ) {
-                inputs.addAll( attachPreparedGraphNodeModifyDelete( modifiable, alg.getCluster(), nodesTable, nodePropertiesTable, algBuilder ) );
-            } else {
-                throw new GenericRuntimeException( "Graph delete of non-graph elements is not possible." );
-            }
-        }
-        AlgRecordType updateRowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( -1L, "ROWCOUNT", 0, alg.getCluster().getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
-        LogicalLpgTransformer transformer = new LogicalLpgTransformer( alg.getCluster(), alg.getTraitSet(), inputs, updateRowType, sequence, Modify.Operation.DELETE );
+        AlgNode project = new LogicalLpgProject( alg.getCluster(), alg.getTraitSet(), provider, alg.operations, alg.ids );
+        List<PolyType> sequence = project.getTupleType().getFields().stream().map( field -> field.getType().getPolyType() ).toList();
+        AlgNode transformer = prepareGraphDelete( modifiable, algBuilder, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable, sequence, alg.isDetachDelete() );
         return new LogicalStreamer( alg.getCluster(), alg.getTraitSet(), project, transformer );
+    }
+
+
+    private static AlgNode prepareGraphDelete( Modifiable modifiable, AlgBuilder builder, Entity nodesTable, Entity nodePropertiesTable,
+            Entity edgesTable, Entity edgePropertiesTable, List<PolyType> parameters, boolean detachDelete ) {
+        if ( parameters.stream().anyMatch( type -> !GraphDeleteTargets.supportsType( type ) ) ) {
+            throw new GenericRuntimeException( "Graph deletes require a node, relationship, or path binding" );
+        }
+        AlgCluster cluster = builder.getCluster();
+        List<AlgNode> inputs = new ArrayList<>( attachPreparedGraphEdgeModifyDelete( modifiable, cluster, edgesTable, edgePropertiesTable, builder ) );
+        if ( parameters.stream().anyMatch( GraphDeleteTargets::mayDeleteNodes ) ) {
+            inputs.addAll( attachPreparedGraphNodeModifyDelete( modifiable, cluster, nodesTable, nodePropertiesTable, builder ) );
+            builder.relScan( edgesTable );
+            // Scan the relationship IDs and endpoints once to validate the complete DELETE clause.
+            inputs.add( builder.project( builder.field( 0 ), builder.field( 2 ), builder.field( 3 ) ).build() );
+        }
+        AlgRecordType resultType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl(
+                -1L, "ROWCOUNT", 0, cluster.getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
+        return new LogicalLpgTransformer( cluster, cluster.traitSet(), inputs, resultType, parameters, Operation.DELETE, detachDelete );
     }
 
 
@@ -170,9 +165,54 @@ public interface Modifiable extends Scannable {
             }
         }
         AlgRecordType updateRowType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl( -1L, "ROWCOUNT", 0, alg.getCluster().getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
+        addGraphWriteLookups( algBuilder, nodesTable, edgesTable, inputs, sequence, Operation.INSERT );
         LogicalLpgTransformer transformer = new LogicalLpgTransformer( alg.getCluster(), alg.getTraitSet(), inputs, updateRowType, sequence, Modify.Operation.INSERT );
         return new LogicalStreamer( alg.getCluster(), alg.getTraitSet(), provider, transformer );
     }
+
+
+    private static void addGraphWriteLookups( AlgBuilder builder, Entity nodesTable, Entity edgesTable,
+            List<AlgNode> inputs, List<PolyType> parameters, Operation operation ) {
+        boolean writesEdges = parameters.contains( PolyType.EDGE ) || (operation == Operation.UPDATE && parameters.contains( PolyType.ANY ));
+        if ( operation == Operation.UPDATE || (operation == Operation.INSERT && writesEdges) ) {
+            inputs.add( graphElementLookup( builder, nodesTable ) );
+        }
+        if ( operation == Operation.UPDATE && writesEdges ) {
+            inputs.add( graphElementLookup( builder, edgesTable ) );
+        }
+    }
+
+
+    private static List<AlgNode> prepareGraphUpdates( Modifiable modifiable, AlgBuilder builder, Entity nodesTable, Entity nodePropertiesTable,
+            Entity edgesTable, Entity edgePropertiesTable, List<PolyType> parameters ) {
+        AlgCluster cluster = builder.getCluster();
+        List<AlgNode> inputs = new ArrayList<>();
+        for ( PolyType type : parameters ) {
+            if ( type != PolyType.NODE && type != PolyType.EDGE && type != PolyType.ANY && type != PolyType.NULL ) {
+                throw new GenericRuntimeException( "Graph writes require a node or relationship binding" );
+            }
+            // Dynamically typed slots can contain a node in one row and a relationship in another.
+            if ( type == PolyType.NODE || type == PolyType.ANY ) {
+                inputs.addAll( attachPreparedGraphNodeModifyDelete( modifiable, cluster, nodesTable, nodePropertiesTable, builder ) );
+                inputs.addAll( attachPreparedGraphNodeModifyInsert( modifiable, cluster, nodesTable, nodePropertiesTable, builder ) );
+            }
+            if ( type == PolyType.EDGE || type == PolyType.ANY ) {
+                inputs.addAll( attachPreparedGraphEdgeModifyDelete( modifiable, cluster, edgesTable, edgePropertiesTable, builder ) );
+                inputs.addAll( attachPreparedGraphEdgeModifyInsert( modifiable, cluster, edgesTable, edgePropertiesTable, builder ) );
+            }
+        }
+        return inputs;
+    }
+
+
+    private static AlgNode graphElementLookup( AlgBuilder builder, Entity table ) {
+        RexBuilder rexBuilder = builder.getCluster().getRexBuilder();
+        builder.relScan( table );
+        RexNode id = rexBuilder.makeDynamicParam( nonNullGraphId.apply( rexBuilder.getTypeFactory() ), 0 );
+        builder.filter( builder.equals( builder.field( 0 ), id ) );
+        return builder.project( builder.field( 0 ) ).build();
+    }
+
 
     static List<AlgNode> attachPreparedGraphNodeModifyInsert( Modifiable modifiable, AlgCluster cluster, Entity nodesTable, Entity nodePropertiesTable, AlgBuilder algBuilder ) {
         RexBuilder rexBuilder = algBuilder.getRexBuilder();
@@ -225,6 +265,7 @@ public interface Modifiable extends Scannable {
                                 rexBuilder.makeInputRef( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 0 ),
                                 rexBuilder.makeDynamicParam( typeFactory.createPolyType( PolyType.VARCHAR, GraphType.ID_SIZE ), 0 ) ) );
 
+        inputs.add( getModify( edgePropertiesTable, algBuilder.build(), Modify.Operation.DELETE, null, null ) );
         return inputs;
     }
 
@@ -260,7 +301,7 @@ public interface Modifiable extends Scannable {
 
 
     static Modify<?> getModify( Entity table, AlgNode input, Operation operation, List<String> updateList, List<RexNode> sourceList ) {
-        return table.unwrap( ModifiableTable.class ).orElseThrow().toModificationTable( input.getCluster(), input.getTraitSet(), table, input, operation, updateList, sourceList );
+        return table.unwrapOrThrow( ModifiableTable.class ).toModificationTable( input.getCluster(), input.getTraitSet(), table, input, operation, updateList, sourceList );
     }
 
 
@@ -349,7 +390,7 @@ public interface Modifiable extends Scannable {
 
             builder.project( DocumentType.ofRelational().getFields().stream().map( f -> new RexDynamicParam( f.getType(), f.getIndex() ) ).toList(), DocumentType.ofRelational().getFieldNames() );
 
-            AlgNode collector = oTable.orElseThrow().unwrap( ModifiableTable.class ).orElseThrow().toModificationTable(
+            AlgNode collector = oTable.orElseThrow().unwrapOrThrow( ModifiableTable.class ).toModificationTable(
                     modify.getCluster(),
                     modify.getTraitSet(),
                     oTable.get(),
@@ -367,7 +408,7 @@ public interface Modifiable extends Scannable {
             LogicalStreamer.attachFilter( oTable.get(), builder, provider.getCluster().getRexBuilder(), List.of( 0 ) );
 
             AlgNode collector = builder.build();
-            collector = oTable.get().unwrap( ModifiableTable.class ).orElseThrow().toModificationTable(
+            collector = oTable.get().unwrapOrThrow( ModifiableTable.class ).toModificationTable(
                     modify.getCluster(),
                     modify.getTraitSet(),
                     oTable.get(),
@@ -412,6 +453,44 @@ public interface Modifiable extends Scannable {
                 modify.operation,
                 modify.ids,
                 modify.operations );
+    }
+
+
+    default AlgNode getGraphRowModification( long allocationId, Operation operation, List<PolyType> parameters, AlgBuilder builder, boolean detachDelete ) {
+        List<PhysicalEntity> physicals = getCatalog().getPhysicalsFromAllocs( allocationId );
+        AlgCluster cluster = builder.getCluster();
+        Optional<ModifiableGraph> nativeGraph = physicals.get( 0 ).unwrap( ModifiableGraph.class );
+        if ( nativeGraph.isPresent() ) {
+            return nativeGraph.get().toGraphRowModification( cluster, operation, parameters, detachDelete );
+        }
+
+        Entity nodesTable = physicals.get( 0 );
+        Entity nodePropertiesTable = physicals.get( 1 );
+        Entity edgesTable = physicals.get( 2 );
+        Entity edgePropertiesTable = physicals.get( 3 );
+        if ( operation == Operation.DELETE ) {
+            return prepareGraphDelete( this, builder, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable, parameters, detachDelete );
+        }
+        List<AlgNode> modifies;
+        if ( operation == Operation.UPDATE ) {
+            modifies = prepareGraphUpdates( this, builder, nodesTable, nodePropertiesTable, edgesTable, edgePropertiesTable, parameters );
+        } else {
+            modifies = new ArrayList<>();
+            for ( PolyType type : parameters ) {
+                if ( type != PolyType.NODE && type != PolyType.EDGE ) {
+                    throw new GenericRuntimeException( "Graph writes require a node or relationship binding" );
+                }
+                if ( operation == Operation.INSERT ) {
+                    modifies.addAll( type == PolyType.NODE
+                            ? attachPreparedGraphNodeModifyInsert( this, cluster, nodesTable, nodePropertiesTable, builder )
+                            : attachPreparedGraphEdgeModifyInsert( this, cluster, edgesTable, edgePropertiesTable, builder ) );
+                }
+            }
+        }
+        AlgRecordType resultType = new AlgRecordType( List.of( new AlgDataTypeFieldImpl(
+                -1L, "ROWCOUNT", 0, cluster.getTypeFactory().createPolyType( PolyType.BIGINT ) ) ) );
+        addGraphWriteLookups( builder, nodesTable, edgesTable, modifies, parameters, operation );
+        return new LogicalLpgTransformer( cluster, cluster.traitSet(), modifies, resultType, parameters, operation );
     }
 
 
