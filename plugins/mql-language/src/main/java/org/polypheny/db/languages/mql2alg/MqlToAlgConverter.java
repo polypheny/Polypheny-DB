@@ -2352,6 +2352,28 @@ public class MqlToAlgConverter {
     }
 
 
+    private RexNode convertExpressionReference( String reference ) {
+        String path = reference.substring( 1 );
+        if ( reference.startsWith( "$$" ) ) {
+            int separator = reference.indexOf( '.', 2 );
+            String variable = separator < 0 ? reference : reference.substring( 0, separator );
+            if ( !variable.equals( "$$ROOT" ) && !variable.equals( "$$CURRENT" ) ) {
+                throw new GenericRuntimeException( "Unsupported MQL expression variable " + variable );
+            }
+            if ( separator < 0 ) {
+                return expressionFieldReference( List.of() );
+            }
+            path = reference.substring( separator + 1 );
+        }
+
+        List<String> fields = List.of( path.split( "\\.", -1 ) );
+        if ( fields.contains( "" ) ) {
+            throw new GenericRuntimeException( "Empty field name in MQL expression reference " + reference );
+        }
+        return expressionFieldReference( fields );
+    }
+
+
     private RexNode convertExpr( BsonValue bsonValue, AlgDataType rowType ) {
         if ( bsonValue instanceof BsonDocument document && document.size() == 1 && document.getFirstKey().startsWith( "$" ) ) {
             return convertExpressionCall( document, rowType );
@@ -2360,9 +2382,22 @@ public class MqlToAlgConverter {
     }
 
 
+    private RexNode expressionFieldReference( List<String> path ) {
+        if ( !usesDocumentModel ) {
+            throw new GenericRuntimeException( "The used identifier is not part of the table." );
+        }
+        if ( subElement.isPresent() ) {
+            return subElement.get();
+        }
+        AlgDataType type = DocumentType.ofDoc();
+        return new RexCall( type, OperatorRegistry.get( QueryLanguage.from( MONGO ), OperatorName.MQL_EXPR_QUERY_VALUE ),
+                new RexNameRef( path, null, type ) );
+    }
+
+
     private RexNode convertExpressionValue( BsonValue value, AlgDataType rowType ) {
         if ( value.isString() && value.asString().getValue().startsWith( "$" ) ) {
-            return getIdentifier( value.asString().getValue().substring( 1 ), rowType );
+            return convertExpressionReference( value.asString().getValue() );
         }
         if ( value instanceof BsonDocument document ) {
             if ( !document.isEmpty() && document.getFirstKey().startsWith( "$" ) ) {
@@ -2423,7 +2458,10 @@ public class MqlToAlgConverter {
 
 
     private RexNode convertExpressionLiteral( BsonValue value ) {
-        if ( value.isNull() || value.isInt64() ) {
+        if ( value.isNull() ) {
+            return builder.constantNull();
+        }
+        if ( value.isInt64() ) {
             return new RexLiteral( BsonUtil.toPolyValue( value ), DocumentType.ofDoc(), PolyType.DOCUMENT );
         }
         return convertLiteral( value );

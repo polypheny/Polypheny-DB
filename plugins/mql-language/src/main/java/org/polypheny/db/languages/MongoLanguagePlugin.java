@@ -133,6 +133,7 @@ public class MongoLanguagePlugin extends PolyPlugin {
         }
         register( OperatorName.MQL_EQUALS, new LangFunctionOperator( "MQL_EQUALS", Kind.EQUALS, PolyType.BOOLEAN ) );
         register( OperatorName.MQL_NOT_EQUALS, new LangFunctionOperator( "MQL_NOT_EQUALS", Kind.NOT_EQUALS, PolyType.BOOLEAN ) );
+        register( OperatorName.MQL_EXPR_QUERY_VALUE, new LangFunctionOperator( "MQL_EXPR_QUERY_VALUE", Kind.OTHER_FUNCTION, PolyType.DOCUMENT ) );
         register( OperatorName.MQL_EXPR_DOCUMENT, new LangFunctionOperator( "MQL_EXPR_DOCUMENT", Kind.OTHER_FUNCTION, PolyType.DOCUMENT ) );
         register( OperatorName.MQL_EXPR_ARRAY, new LangFunctionOperator( "MQL_EXPR_ARRAY", Kind.OTHER_FUNCTION, PolyType.ARRAY ) );
         register( OperatorName.MQL_EXPR_EQUALS, new LangFunctionOperator( "MQL_EXPR_EQUALS", Kind.EQUALS, PolyType.BOOLEAN ) );

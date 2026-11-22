@@ -128,6 +128,43 @@ public class MqlFunctions {
     }
 
 
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyValue docExprQueryValue( PolyValue input, List<PolyString> fields ) {
+        if ( input != null && input.isString() ) {
+            input = PolyDocument.fromTypedJson( input.asString().value, PolyDocument.class );
+        }
+        return docExprQueryValue( input, fields, 0 );
+    }
+
+
+    private static PolyValue docExprQueryValue( PolyValue value, List<PolyString> fields, int offset ) {
+        if ( value == null ) {
+            return PolyDocument.ofUnset();
+        }
+        if ( offset == fields.size() ) {
+            return value;
+        }
+        if ( value instanceof PolyDocument document ) {
+            return docExprQueryValue( document.get( fields.get( offset ) ), fields, offset + 1 );
+        }
+        if ( value instanceof PolyList<?> list && list.value != null ) {
+            // Aggregation evaluates the remaining path on each document in the array.
+            // Missing values are omitted, and arrays returned by a document remain nested.
+            List<PolyValue> values = new ArrayList<>();
+            for ( PolyValue element : list ) {
+                if ( element instanceof PolyDocument ) {
+                    PolyValue result = docExprQueryValue( element, fields, offset );
+                    if ( !isUnsetValue( result ) ) {
+                        values.add( result );
+                    }
+                }
+            }
+            return PolyList.of( values );
+        }
+        return PolyDocument.ofUnset();
+    }
+
+
     /**
      * Adds a new field to an existing object
      *

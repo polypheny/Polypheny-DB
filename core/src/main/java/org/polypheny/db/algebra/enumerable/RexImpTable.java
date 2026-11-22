@@ -994,6 +994,7 @@ public class RexImpTable {
         defineBinary( OperatorRegistry.get( mongo, OperatorName.MQL_ITEM ), ExpressionType.Parameter, NullPolicy.STRICT, "docItem" );
         defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_EQUALS ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_EQ.method ), false );
         defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_NOT_EQUALS ), NullPolicy.NONE, new MethodImplementor( BuiltInMethod.MQL_NE.method ), false );
+        defineMethod( OperatorRegistry.get( mongo, OperatorName.MQL_EXPR_QUERY_VALUE ), BuiltInMethod.MQL_EXPR_QUERY_VALUE.method, NullPolicy.NONE );
         defineImplementor( OperatorRegistry.get( mongo, OperatorName.MQL_EXPR_DOCUMENT ), NullPolicy.NONE,
                 ( translator, call, operands ) -> Expressions.call( BuiltInMethod.MQL_EXPR_DOCUMENT.method,
                         operands.get( 0 ), Expressions.newArrayInit( PolyValue.class, operands.subList( 1, operands.size() ) ) ), false );

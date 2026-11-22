@@ -499,6 +499,7 @@ public enum BuiltInMethod {
     /// MQL BUILT-IN METHODS
     MQL_EQ( MqlFunctions.class, "docEq", PolyValue.class, PolyValue.class ),
     MQL_NE( MqlFunctions.class, "docNe", PolyValue.class, PolyValue.class ),
+    MQL_EXPR_QUERY_VALUE( MqlFunctions.class, "docExprQueryValue", PolyValue.class, List.class ),
     MQL_EXPR_DOCUMENT( MqlFunctions.class, "docExprDocument", PolyValue.class, PolyValue[].class ),
     MQL_EXPR_ARRAY( MqlFunctions.class, "docExprArray", PolyValue[].class ),
     MQL_EXPR_EQ( MqlFunctions.class, "docExprEq", PolyValue.class, PolyValue.class ),

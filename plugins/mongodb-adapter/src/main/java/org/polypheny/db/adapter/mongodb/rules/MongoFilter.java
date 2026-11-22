@@ -1112,6 +1112,9 @@ public class MongoFilter extends Filter implements MongoAlg {
         private BsonValue translateExprOperand( RexNode operand ) {
             if ( operand instanceof RexCall call ) {
                 OperatorName operator = call.getOperator().getOperatorName();
+                if ( operator == OperatorName.MQL_EXPR_QUERY_VALUE ) {
+                    return new BsonString( MongoRules.translateExprFieldReference( rowType, (RexNameRef) call.operands.get( 0 ) ) );
+                }
                 if ( operator == OperatorName.MQL_EXPR_ARRAY ) {
                     return new BsonArray( call.operands.stream().map( this::translateExprOperand ).toList() );
                 }

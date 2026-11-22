@@ -45,6 +45,7 @@ import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexVisitorImpl;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
 
 /**
  * Translator from {@link RexNode} to strings in MongoDB's expression language.
@@ -144,6 +145,10 @@ public class RexToMongoTranslator extends RexVisitorImpl<String> {
 
     @Override
     public String visitCall( RexCall call ) {
+        if ( call.getOperator().getOperatorName() == OperatorName.MQL_EXPR_QUERY_VALUE ) {
+            RexNameRef field = (RexNameRef) call.operands.get( 0 );
+            return PolyString.of( MongoRules.translateExprFieldReference( implementor.getTupleType(), field ) ).toQuotedJson();
+        }
         String name = MongoRules.isItem( call );
         if ( name != null ) {
             return "'$" + name + "'";

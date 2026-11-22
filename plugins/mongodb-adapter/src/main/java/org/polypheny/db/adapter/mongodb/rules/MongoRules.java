@@ -207,6 +207,11 @@ public class MongoRules {
     }
 
 
+    public static String translateExprFieldReference( AlgDataType rowType, RexNameRef ref ) {
+        return ref.names.isEmpty() ? "$$ROOT" : "$" + translateDocValueAsKey( rowType, ref );
+    }
+
+
     public static BsonValue translateDocValue( AlgDataType rowType, RexNameRef ref ) {
         return new BsonString( ref.getIndex()
                 .map( i -> rowType.getFieldNames().get( i ) + "." + ref.getName() )
