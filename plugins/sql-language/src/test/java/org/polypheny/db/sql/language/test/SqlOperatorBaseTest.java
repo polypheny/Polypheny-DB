@@ -1356,7 +1356,7 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
         tester.checkString(
                 "{fn REPLACE('JACK and JUE','J','BL')}",
                 "BLACK and BLUE",
-                "VARCHAR(12) NOT NULL" );
+                "VARCHAR(24) NOT NULL" );
 
         // REPLACE returns NULL in Oracle but not in Postgres or in Polypheny-DB. When [POLYPHENYDB-815] is implemented and SqlConformance#emptyStringIsNull is enabled, it will return empty string as NULL.
         tester.checkString(
@@ -3371,6 +3371,9 @@ public abstract class SqlOperatorBaseTest extends SqlLanguageDependent {
         tester.setFor( OperatorRegistry.get( OperatorName.REPLACE ) );
         tester.checkString( "REPLACE('ciao', 'ciao', '')", "", "VARCHAR(4) NOT NULL" );
         tester.checkString( "REPLACE('hello world', 'o', '')", "hell wrld", "VARCHAR(11) NOT NULL" );
+        tester.checkString( "REPLACE('ciao', '', 'longer')", "ciao", "VARCHAR(4) NOT NULL" );
+        tester.checkString( "REPLACE('ciao', 'o', CAST('oo' AS VARCHAR))", "ciaoo", "VARCHAR NOT NULL" );
+        tester.checkString( "REPLACE(CAST('ciao' AS VARCHAR(65536)), 'o', 'oo')", "ciaoo", "VARCHAR NOT NULL" );
         tester.checkNull( "REPLACE(cast(null as varchar(5)), 'ciao', '')" );
         tester.checkNull( "REPLACE('ciao', cast(null as varchar(3)), 'zz')" );
         tester.checkNull( "REPLACE('ciao', 'bella', cast(null as varchar(3)))" );

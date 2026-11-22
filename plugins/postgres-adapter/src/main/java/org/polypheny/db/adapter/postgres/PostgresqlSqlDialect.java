@@ -37,12 +37,16 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgDataTypeSystemImpl;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.nodes.Call;
 import org.polypheny.db.nodes.TimeUnitRange;
+import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.sql.language.SqlBasicCall;
 import org.polypheny.db.sql.language.SqlCall;
+import org.polypheny.db.sql.language.SqlCharStringLiteral;
 import org.polypheny.db.sql.language.SqlDataTypeSpec;
 import org.polypheny.db.sql.language.SqlDbFeature;
 import org.polypheny.db.sql.language.SqlDialect;
+import org.polypheny.db.sql.language.SqlDynamicParam;
 import org.polypheny.db.sql.language.SqlFunction;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlLiteral;
@@ -50,6 +54,7 @@ import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlUtil;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.fun.SqlFloorFunction;
+import org.polypheny.db.sql.language.util.SqlShuttle;
 import org.polypheny.db.sql.language.validate.SqlType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.VectorType;
@@ -64,6 +69,11 @@ import org.polypheny.db.type.inference.ReturnTypes;
  */
 @Slf4j
 public class PostgresqlSqlDialect extends SqlDialect {
+
+    private static final SqlFunction BPCHAR_OUT = new SqlFunction(
+            new SqlIdentifier( List.of( "pg_catalog", "bpcharout" ), ParserPos.ZERO ), null, null, null, null, FunctionCategory.SYSTEM );
+    private static final SqlFunction TEXT_IN = new SqlFunction(
+            new SqlIdentifier( List.of( "pg_catalog", "textin" ), ParserPos.ZERO ), null, null, null, null, FunctionCategory.SYSTEM );
 
     /**
      * PostgreSQL type system.
@@ -195,6 +205,61 @@ public class PostgresqlSqlDialect extends SqlDialect {
             }
         }
         return super.handleRetrieval( fieldType, child, resultSet_, index );
+    }
+
+
+    @Override
+    public SqlNode getParameterCastSpec( AlgDataType type ) {
+        if ( type.getPrecision() == 0 && (type.getPolyType() == PolyType.CHAR || type.getPolyType() == PolyType.VARCHAR) ) {
+            // PostgreSQL rejects length zero and CHAR(1) pads an empty string.
+            return varcharCastSpec( 1 );
+        }
+        return super.getParameterCastSpec( type );
+    }
+
+
+    @Override
+    public SqlCall rewriteRexCall( RexCall rexCall, SqlCall sqlCall ) {
+        if ( rexCall.getOperator().getOperatorName() == OperatorName.REPLACE ) {
+            for ( int i = 0; i < rexCall.getOperands().size(); i++ ) {
+                AlgDataType operandType = rexCall.getOperands().get( i ).getType();
+                if ( operandType.getPolyType() == PolyType.CHAR && operandType.getPrecision() != 0 ) {
+                    SqlNode operand = sqlCall.operand( i );
+                    sqlCall.setOperand( i, replaceTextOperand( operand ) );
+                }
+            }
+        }
+        return sqlCall;
+    }
+
+
+    private static SqlNode replaceTextOperand( SqlNode operand ) {
+        if ( operand instanceof SqlCharStringLiteral ) {
+            return operand;
+        }
+
+        SqlNode unpadded = operand.accept( new SqlShuttle() {
+            @Override
+            public SqlNode visit( Call call ) {
+                if ( call instanceof SqlCall cast && cast.getKind() == Kind.CAST
+                        && cast.operand( 0 ) instanceof SqlDynamicParam parameter
+                        && cast.operand( 1 ) instanceof SqlDataTypeSpec type && type.getType() == PolyType.CHAR ) {
+                    // PostgreSQL counts characters while parameter widths were inferred in UTF-16 units.
+                    // An unsized bpchar preserves the value and keeps the CHAR type of nested expressions.
+                    SqlDataTypeSpec spec = new SqlDataTypeSpec( new SqlIdentifier( "_bpchar", cast.getPos() ), -1, -1, null, null, cast.getPos() );
+                    return (SqlNode) cast.getOperator().createCall( cast.getPos(), parameter, spec );
+                }
+                return super.visit( call );
+            }
+        } );
+        // The ordinary CHAR-to-TEXT cast trims trailing spaces. Preserve the stored CHAR value.
+        Call output = BPCHAR_OUT.createCall( operand.getPos(), unpadded );
+        return (SqlNode) TEXT_IN.createCall( operand.getPos(), output );
+    }
+
+
+    private static SqlDataTypeSpec varcharCastSpec( int precision ) {
+        return new SqlDataTypeSpec( new SqlIdentifier( PolyType.VARCHAR.name(), ParserPos.ZERO ), precision, -1, null, null, ParserPos.ZERO );
     }
 
 

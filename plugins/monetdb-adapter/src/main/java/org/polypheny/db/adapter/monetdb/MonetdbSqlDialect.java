@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.monetdb;
 
 
+import java.util.Objects;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -101,6 +102,16 @@ public class MonetdbSqlDialect extends SqlDialect {
 
 
     @Override
+    public SqlNode getParameterCastSpec( AlgDataType type ) {
+        if ( type.getPrecision() == 0 && (type.getPolyType() == PolyType.CHAR || type.getPolyType() == PolyType.VARCHAR) ) {
+            // MonetDB rejects character type declarations with length zero.
+            return new SqlDataTypeSpec( new SqlIdentifier( PolyType.VARCHAR.name(), ParserPos.ZERO ), 1, -1, null, null, ParserPos.ZERO );
+        }
+        return super.getParameterCastSpec( type );
+    }
+
+
+    @Override
     public SqlNode getCastSpec( AlgDataType type ) {
         String castSpec;
         switch ( type.getPolyType() ) {
@@ -143,12 +154,23 @@ public class MonetdbSqlDialect extends SqlDialect {
                         Expressions.convert_( Expressions.call( MonetdbSqlDialect.class, "toString", client ), String.class ),
                         Expressions.constant( PolyBinary.class ) );
             }
-            case TEXT, VARBINARY, GEOMETRY -> {
+            case TEXT -> super.handleRetrieval( fieldType, Expressions.call( MonetdbSqlDialect.class, "readText", child ), resultSet_, index );
+            case VARBINARY, GEOMETRY -> {
                 UnaryExpression client = Expressions.convert_( child, MonetClob.class );
                 yield super.handleRetrieval( fieldType, Expressions.call( MonetdbSqlDialect.class, "toString", client ), resultSet_, index );
             }
             default -> super.handleRetrieval( fieldType, child, resultSet_, index );
         };
+    }
+
+
+    @SuppressWarnings("unused")
+    public static @Nullable String readText( @Nullable Object value ) {
+        // Expressions such as REPLACE on a CLOB can return a JDBC String.
+        if ( value instanceof MonetClob clob ) {
+            return Objects.requireNonNullElse( toString( clob ), "" );
+        }
+        return (String) value;
     }
 
 

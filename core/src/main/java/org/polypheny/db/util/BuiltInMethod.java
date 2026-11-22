@@ -302,7 +302,7 @@ public enum BuiltInMethod {
     TRUNCATE( Functions.class, "truncate", PolyString.class, int.class ),
     TRUNCATE_OR_PAD( Functions.class, "truncateOrPad", PolyString.class, int.class ),
     TRIM( Functions.class, "trim", boolean.class, boolean.class, String.class, String.class, boolean.class ),
-    REPLACE( Functions.class, "replace", String.class, String.class, String.class ),
+    REPLACE( Functions.class, "replace", PolyString.class, PolyString.class, PolyString.class ),
     TRANSLATE3( Functions.class, "translate3", String.class, String.class, String.class ),
     LTRIM( Functions.class, "ltrim", String.class ),
     RTRIM( Functions.class, "rtrim", String.class ),

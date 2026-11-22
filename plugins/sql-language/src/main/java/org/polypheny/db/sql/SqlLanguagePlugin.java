@@ -1547,7 +1547,7 @@ public class SqlLanguagePlugin extends PolyPlugin {
                 new SqlFunction(
                         "REPLACE",
                         Kind.OTHER_FUNCTION,
-                        ReturnTypes.ARG0_NULLABLE_VARYING,
+                        ReturnTypes.STRING_REPLACE,
                         null,
                         OperandTypes.STRING_STRING_STRING,
                         FunctionCategory.STRING ) );

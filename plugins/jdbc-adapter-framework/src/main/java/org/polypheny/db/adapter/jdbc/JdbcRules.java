@@ -36,9 +36,11 @@ package org.polypheny.db.adapter.jdbc;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 import lombok.Getter;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -178,8 +180,26 @@ public class JdbcRules {
                 JdbcConvention out,
                 AlgBuilderFactory algBuilderFactory,
                 String description ) {
-            super( clazz, predicate, in, out, algBuilderFactory, description );
+            super( clazz, alg -> predicate.test( alg ) && supportsExpressions( alg, out.dialect ), in, out, algBuilderFactory, description );
             this.out = out;
+        }
+
+
+        private static boolean supportsExpressions( AlgNode alg, SqlDialect dialect ) {
+            final Stream<? extends RexNode> expressions;
+            if ( alg instanceof Calc calc ) {
+                RexProgram program = calc.getProgram();
+                expressions = Stream.concat( program.getProjectList().stream(), Stream.ofNullable( program.getCondition() ) )
+                        .map( program::expandLocalRef );
+            } else if ( alg instanceof Sort sort ) {
+                expressions = Stream.concat( sort.getChildExps().stream(), Stream.of( sort.offset, sort.fetch ).filter( Objects::nonNull ) );
+            } else if ( alg instanceof RelModify<?> modify && modify.getSourceExpressions() != null ) {
+                expressions = modify.getSourceExpressions().stream();
+            } else {
+                expressions = alg.getChildExps().stream();
+            }
+
+            return expressions.noneMatch( e -> UnsupportedRexCallVisitor.containsUnsupportedCall( e, List.of( call -> !dialect.supportsRexCall( alg, call ) ) ) );
         }
 
     }
