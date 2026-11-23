@@ -17,8 +17,10 @@
 package org.polypheny.db.cypher.expression;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -48,7 +50,7 @@ final class CypherPatternExistence {
     private final CypherContext context;
     private final RexType rexType;
     private final Set<String> names = new HashSet<>();
-    private final Set<String> boundNames = new HashSet<>();
+    private final Map<String, PolyType> bindingTypes = new HashMap<>();
     private final List<RexNode> bindings = new ArrayList<>();
     private final List<RexNode> properties = new ArrayList<>();
 
@@ -107,16 +109,21 @@ final class CypherPatternExistence {
             return;
         }
         String name = variable.getName();
+        PolyType previous = bindingTypes.putIfAbsent( name, expected );
+        if ( previous != null ) {
+            if ( previous != expected ) {
+                throw new CypherSyntaxException( "Pattern variable '%s' has conflicting types: %s and %s.".formatted( name, previous, expected ) );
+            }
+            return;
+        }
         names.add( name );
         RexNode value = variable.getRex( context, rexType ).right;
         PolyType actual = value.getType().getPolyType();
         if ( actual != expected && actual != PolyType.ANY && actual != PolyType.NULL ) {
             throw new CypherSyntaxException( "Pattern variable '%s' requires %s but has type %s.".formatted( name, expected, actual ) );
         }
-        if ( boundNames.add( name ) ) {
-            bindings.add( context.rexBuilder.makeLiteral( name ) );
-            bindings.add( value );
-        }
+        bindings.add( context.rexBuilder.makeLiteral( name ) );
+        bindings.add( value );
     }
 
 

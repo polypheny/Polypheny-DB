@@ -31,6 +31,7 @@ import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -57,18 +58,19 @@ public class CypherHasLabelOrTypes extends CypherExpression {
             throw new CypherSyntaxException( "Cypher label predicates require a NODE, got " + polyType + "." );
         }
 
-        RexNode hasLabels;
+        RexNode labelsOperand;
         if ( labels.size() == 1 ) {
-            boolean nullable = valueType.isNullable() || polyType == PolyType.ANY || polyType == PolyType.NULL;
-            hasLabels = context.rexBuilder.makeCall(
-                    context.typeFactory.createTypeWithNullability( context.booleanType, nullable ),
-                    OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_HAS_LABEL ),
-                    List.of( value, context.rexBuilder.makeLiteral( labels.get( 0 ).getImage() ) ) );
+            labelsOperand = context.rexBuilder.makeLiteral( labels.get( 0 ).getImage() );
         } else {
-            throw new UnsupportedOperationException();
+            AlgDataType stringType = context.typeFactory.createPolyType( PolyType.VARCHAR );
+            labelsOperand = context.rexBuilder.makeArray( context.typeFactory.createArrayType( stringType, -1 ),
+                    labels.stream().<PolyValue>map( label -> PolyString.of( label.getImage() ) ).toList() );
         }
-
-        return Pair.of( null, hasLabels );
+        boolean nullable = valueType.isNullable() || polyType == PolyType.ANY || polyType == PolyType.NULL;
+        return Pair.of( null, context.rexBuilder.makeCall(
+                context.typeFactory.createTypeWithNullability( context.booleanType, nullable ),
+                OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_HAS_LABEL ),
+                List.of( value, labelsOperand ) ) );
     }
 
 }

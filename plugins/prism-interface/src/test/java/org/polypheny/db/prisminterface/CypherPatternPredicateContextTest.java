@@ -146,6 +146,44 @@ class CypherPatternPredicateContextTest {
 
 
     @Test
+    void rejectsConflictingRolesForTheSamePatternVariable() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            assertPatternError( connection, """
+                    MATCH (a:Seed)
+                    WITH {value:a} AS m WITH m.value AS a
+                    RETURN NOT ((a)-[a]->()) AS present
+                    """, "Pattern variable 'a' has conflicting types: NODE and EDGE" );
+            assertPatternError( connection, """
+                    MATCH (a:Missing)
+                    WITH {value:a} AS m WITH m.value AS a
+                    RETURN exists((a)-[a]->()) AS present
+                    """, "Pattern variable 'a' has conflicting types: NODE and EDGE" );
+            assertPatternError( connection, """
+                    WITH null AS a
+                    RETURN exists((a)-[a*]->()) AS present
+                    """, "Pattern variable 'a' has conflicting types: NODE and ARRAY" );
+            assertPatternError( connection, """
+                    MATCH ()-[r:R]->()
+                    WITH {value:[r]} AS m WITH m.value AS x
+                    RETURN exists(()-[x*]->()-[x]->()) AS present
+                    """, "Pattern variable 'x' has conflicting types: ARRAY and EDGE" );
+            assertPatternError( connection, """
+                    MATCH ()-[r:R]->()
+                    WITH {value:r} AS m WITH m.value AS x
+                    RETURN exists(()-[x]->()-[x*]->()) AS present
+                    """, "Pattern variable 'x' has conflicting types: EDGE and ARRAY" );
+            assertEquals( 1, count( connection, """
+                    MATCH (a:Seed {id:1})
+                    WITH {value:a} AS m WITH m.value AS a
+                    WHERE (a)-[:R*0]->(a)
+                    RETURN count(*) AS matches
+                    """ ) );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
     void matchesRelationshipBindingsAndPreservesNulls() throws IOException {
         try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
             Frame frame = connection.execute( NAMESPACE, "cypher", """

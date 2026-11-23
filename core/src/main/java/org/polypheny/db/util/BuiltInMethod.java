@@ -559,7 +559,7 @@ public enum BuiltInMethod {
     CYPHER_CONTAINS( CypherFunctions.class, "contains", PolyValue.class, PolyValue.class ),
     CYPHER_PATH_MATCH( CypherFunctions.class, "pathMatch", PolyGraph.class, PolyPath.class ),
     CYPHER_SHORTEST_PATH_MATCH( CypherFunctions.class, "shortestPathMatch", PolyGraph.class, PolyPath.class ),
-    CYPHER_HAS_LABEL( CypherFunctions.class, "hasLabel", PolyValue.class, PolyString.class ),
+    CYPHER_HAS_LABEL( CypherFunctions.class, "hasLabel", PolyValue.class, PolyValue.class ),
     CYPHER_HAS_PROPERTY( CypherFunctions.class, "hasProperty", GraphPropertyHolder.class, PolyString.class ),
     CYPHER_PROPERTY_EXISTS( CypherFunctions.class, "propertyExists", PolyValue.class, PolyString.class ),
     CYPHER_PATTERN_EXISTS( CypherFunctions.class, "patternExists", PolyGraph.class, PolyPath.class, PolyValue.class, PolyList.class ),

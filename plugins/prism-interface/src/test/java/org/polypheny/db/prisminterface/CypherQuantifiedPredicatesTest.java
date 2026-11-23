@@ -51,7 +51,7 @@ class CypherQuantifiedPredicatesTest {
             connection.execute( Catalog.DEFAULT_NAMESPACE_NAME, "sql", "CREATE GRAPH NAMESPACE " + NAMESPACE, 1 );
             connection.execute( NAMESPACE, "cypher", """
                     CREATE (a:Start)-[:R {allowed:false}]->(b:End),
-                           (a)-[:R {allowed:true}]->(:Relay {marked:true})-[:R {allowed:true}]->(b)
+                           (a)-[:R {allowed:true}]->(:Relay:Transfer:`Interchange Hub` {marked:true})-[:R {allowed:true}]->(b)
                     """, 1 );
         }
     }
@@ -117,25 +117,67 @@ class CypherQuantifiedPredicatesTest {
 
 
     @Test
+    void matchesAllRequestedLabelsWithoutDependingOnOrderOrDuplicates() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            Row result = row( connection, """
+                    MATCH (n:Relay)
+                    RETURN n:Relay:Transfer AS full, n:Relay:Missing AS partial,
+                           n:Transfer:Relay:Relay AS reordered, n:`Interchange Hub`:Relay AS quoted
+                    """, List.of( "full", "partial", "reordered", "quoted" ) );
+            assertTrue( result.getValues( 0 ).getBoolean().getBoolean() );
+            assertTrue( result.getValues( 1 ).hasBoolean() );
+            assertFalse( result.getValues( 1 ).getBoolean().getBoolean() );
+            assertTrue( result.getValues( 2 ).getBoolean().getBoolean() );
+            assertTrue( result.getValues( 3 ).getBoolean().getBoolean() );
+        }
+    }
+
+
+    @Test
+    void filtersShortestPathCandidatesByMultipleLabelsOnADynamicNode() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            Row hops = row( connection, """
+                    MATCH p=shortestPath((:Start)-[:R*]->(:End))
+                    WHERE any(n IN ({items:nodes(p)}).items WHERE n:Relay:Transfer)
+                    RETURN length(p) AS hops
+                    """, List.of( "hops" ) );
+            assertEquals( 2, integerValue( hops.getValues( 0 ) ) );
+            Row missing = row( connection, """
+                    MATCH p=shortestPath((:Start)-[:R*]->(:End))
+                    WHERE any(n IN ({items:nodes(p)}).items WHERE n:Relay:Missing)
+                    RETURN count(p) AS total
+                    """, List.of( "total" ) );
+            assertEquals( 0, integerValue( missing.getValues( 0 ) ) );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
     void preservesNullAndRejectsNonNodesInDynamicLabelPredicates() throws IOException {
         try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
             Row missing = row( connection, """
                     WITH {items:[null]} AS box
                     UNWIND box.items AS n
-                    RETURN n:Relay AS labeled, (n:Relay) IS NULL AS unknown
-                    """, List.of( "labeled", "unknown" ) );
+                    RETURN n:Relay AS labeled, (n:Relay) IS NULL AS unknown,
+                           n:Relay:Transfer AS both, (n:Relay:Transfer) IS NULL AS bothUnknown
+                    """, List.of( "labeled", "unknown", "both", "bothUnknown" ) );
             assertTrue( missing.getValues( 0 ).hasNull() );
             assertTrue( missing.getValues( 1 ).getBoolean().getBoolean() );
+            assertTrue( missing.getValues( 2 ).hasNull() );
+            assertTrue( missing.getValues( 3 ).getBoolean().getBoolean() );
 
-            Response invalid = connection.send( Request.newBuilder().setExecuteUnparameterizedStatementRequest(
-                    ExecuteUnparameterizedStatementRequest.newBuilder().setNamespaceName( NAMESPACE ).setLanguageName( "cypher" )
-                            .setStatement( """
-                                    WITH {items:[42]} AS box
-                                    RETURN any(n IN box.items WHERE n:Relay) AS labeled
-                                    """ ).setFetchSize( -1 ) ) );
-            assertEquals( Response.TypeCase.ERROR_RESPONSE, invalid.getTypeCase() );
-            String message = invalid.getErrorResponse().getMessage();
-            assertTrue( message.contains( "Cypher label predicates require a NODE" ), message );
+            for ( String predicate : List.of( "n:Relay", "n:Relay:Transfer" ) ) {
+                Response invalid = connection.send( Request.newBuilder().setExecuteUnparameterizedStatementRequest(
+                        ExecuteUnparameterizedStatementRequest.newBuilder().setNamespaceName( NAMESPACE ).setLanguageName( "cypher" )
+                                .setStatement( """
+                                        WITH {items:[42]} AS box
+                                        RETURN any(n IN box.items WHERE %s) AS labeled
+                                        """.formatted( predicate ) ).setFetchSize( -1 ) ) );
+                assertEquals( Response.TypeCase.ERROR_RESPONSE, invalid.getTypeCase() );
+                String message = invalid.getErrorResponse().getMessage();
+                assertTrue( message.contains( "Cypher label predicates require a NODE" ), message );
+            }
             connection.checkTransactions( 0 );
         }
     }

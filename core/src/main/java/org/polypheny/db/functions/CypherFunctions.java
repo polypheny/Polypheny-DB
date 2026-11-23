@@ -304,20 +304,23 @@ public class CypherFunctions {
 
 
     /**
-     * Returns if the given node has the given label.
+     * Tests whether a node has all requested labels.
      *
      * @param value the target node or null
-     * @param label the label to check
+     * @param labels a single label or a list of labels to check
      */
     @SuppressWarnings("unused")
-    public static PolyBoolean hasLabel( PolyValue value, PolyString label ) {
+    public static PolyBoolean hasLabel( PolyValue value, PolyValue labels ) {
         if ( isNull( value ) ) {
             return null;
         }
         if ( !(value instanceof PolyNode node) ) {
             throw new GenericRuntimeException( "Cypher label predicates require a NODE, got %s.", value.getType() );
         }
-        return PolyBoolean.of( node.labels.contains( label ) );
+        if ( labels instanceof PolyList<?> list ) {
+            return PolyBoolean.of( node.labels.containsAll( list ) );
+        }
+        return PolyBoolean.of( node.labels.contains( labels.asString() ) );
     }
 
 
