@@ -261,7 +261,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     public synchronized void removeSchemaMapping( long mappingId ) {
         SchemaMapping mapping = schemaMappings.get( mappingId );
         if ( mapping != null ) {
-            String reason = SchemaMappingManager.removalBlockedReason( this, schemaMappings.values(), mapping, snapshot.rel().getTable( mapping.targetEntityId() ).orElse( null ) );
+            String reason = SchemaMappingManager.removalBlockedReason( this, mapping );
             if ( reason != null ) {
                 throw MappingError.Conflict.removalBlocked( mapping.name(), reason, List.of( mapping.name() ) );
             }
@@ -567,8 +567,13 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
     @Override
     public synchronized void dropNamespace( long id ) {
+        // relational
         if ( logicalCatalogs.get( id ) instanceof LogicalRelationalCatalog rel ) {
             SchemaMappingManager.getMappingIdsForEntities( schemaMappings.values(), rel.getTables().keySet() ).forEach( schemaMappings.keySet()::remove );
+        }
+        // document
+        if ( logicalCatalogs.get( id ) instanceof LogicalDocumentCatalog doc ) {
+            SchemaMappingManager.getMappingIdsForEntities( schemaMappings.values(), doc.getCollections().keySet() ).forEach( schemaMappings.keySet()::remove );
         }
         logicalCatalogs.remove( id );
         allocationCatalogs.remove( id );

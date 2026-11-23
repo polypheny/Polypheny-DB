@@ -30,6 +30,7 @@ import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
+import org.polypheny.db.algebra.mapping.DocumentMappingBinding;
 import org.polypheny.db.algebra.mapping.RuleRepository;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -37,13 +38,17 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
+import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
+import org.polypheny.db.catalog.entity.logical.LogicalView;
 import org.polypheny.db.catalog.entity.mapping.rules.ColumnMappingRule;
 import org.polypheny.db.catalog.entity.mapping.rules.ConversionColumnMappingRule;
 import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.DocumentIdentityMappingRule;
 import org.polypheny.db.catalog.entity.mapping.rules.MappingRule;
 import org.polypheny.db.catalog.entity.mapping.rules.RuleDefinition;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
@@ -53,11 +58,13 @@ import org.polypheny.db.catalog.exceptions.MappingError;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.MappingKind;
+import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.AllocSnapshot;
+import org.polypheny.db.catalog.snapshot.LogicalDocSnapshot;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.catalog.snapshot.MappingSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.ddl.MappingUpdate.ColumnName;
+import org.polypheny.db.ddl.RelMappingUpdate.ColumnName;
 import org.polypheny.db.util.Pair;
 
 /**
@@ -65,9 +72,22 @@ import org.polypheny.db.util.Pair;
  */
 public final class SchemaMappingManager {
 
+    public static final int MAPPING_NAME_MAX_LENGTH = 255;
+    public static final int IDENTIFIER_MAX_LENGTH = 100;
+    public static final String IDENTIFIER_PATTERN = "[a-zA-Z_][a-zA-Z0-9_]*";
     public static final String LAST_SOURCE_MAPPING_REASON = "An imported source table must always have a mapping. Remove the source table or adapter instead.";
 
     private SchemaMappingManager() {
+    }
+
+
+    public static String mappingNameMessage() {
+        return "Enter a mapping name of 1–" + MAPPING_NAME_MAX_LENGTH + " characters.";
+    }
+
+
+    public static String identifierMessage() {
+        return "Use an identifier of up to " + IDENTIFIER_MAX_LENGTH + " letters, digits or underscores, starting with a letter or underscore.";
     }
 
 
@@ -114,7 +134,19 @@ public final class SchemaMappingManager {
                 .flatMap( mapping -> physicalSources( catalog, mapping ).stream() ).anyMatch( sources::contains );
     }
 
-    public static String removalBlockedReason( Catalog catalog, Collection<SchemaMapping> mappings, SchemaMapping mapping, LogicalTable table ) {
+    public static String removalBlockedReason( Catalog catalog, SchemaMapping mapping ) {
+        return switch ( mapping.targetModel() ) {
+            case RELATIONAL -> relRemovalBlockedReason( catalog, mapping );
+            case DOCUMENT -> documentRemovalBlockedReason( catalog, mapping );
+            case GRAPH -> throw MappingError.Unsupported.models( mapping.id(), mapping.sourceModel(), mapping.targetModel() );
+        };
+    }
+
+
+    private static String relRemovalBlockedReason( Catalog catalog, SchemaMapping mapping ) {
+        Snapshot snapshot = catalog.getSnapshot();
+        var mappings = snapshot.mappings().getMappings();
+        var table = snapshot.rel().getTable( mapping.targetEntityId() ).orElse( null );
         if ( mappings.stream().anyMatch( other -> other.sourceEntityId() != null && other.sourceEntityId() == mapping.targetEntityId() ) ) {
             return "The target table is used as a source by another mapping.";
         }
@@ -130,6 +162,52 @@ public final class SchemaMappingManager {
     }
 
 
+    private static String documentRemovalBlockedReason( Catalog catalog, SchemaMapping mapping ) {
+        Snapshot snapshot = catalog.getSnapshot();
+        var collection = snapshot.doc().getCollection( mapping.targetEntityId() )
+                .orElseThrow( () -> MappingError.Missing.collection( mapping.targetEntityId() ) );
+        var allocations = sourceAllocations( catalog, mapping );
+        if ( allocations.size() != 1 ) {
+            throw MappingError.Algebra.sourceBindingsAmbiguous();
+        }
+        long adapterId = allocations.get( 0 ).adapterId;
+        var adapter = snapshot.getAdapter( adapterId ).orElseThrow( () -> MappingError.Missing.adapter( adapterId ) );
+        String readOnlyReason = documentReadOnlyReason( adapter.type, collection );
+        if ( readOnlyReason != null ) {
+            return readOnlyReason;
+        }
+        if ( !documentDependencies( snapshot, collection.id ).isEmpty() ) {
+            return "Dependent objects prevent dropping this mapping's logical collection.";
+        }
+        var sources = physicalSources( catalog, mapping );
+        var adapterCatalog = catalog.getAdapterCatalog( adapterId ).orElseThrow( () -> MappingError.Missing.adapterCatalog( adapterId ) );
+        // Legacy imported collections can still own a physical source without an explicit mapping.
+        boolean otherTarget = adapterCatalog.physicals.values().stream()
+                .filter( p -> p.dataModel == DataModel.DOCUMENT && p.logicalId != collection.id )
+                .filter( p -> sources.contains( new PhysicalSource( p.adapterId, p.namespaceName, p.name ) ) )
+                .anyMatch( p -> snapshot.doc().getCollection( p.logicalId ).filter( c -> c.entityType == EntityType.SOURCE && !c.modifiable ).isPresent() );
+        return otherTarget ? null : "An imported source collection must always have a logical mapping. Remove the source collection or adapter instead.";
+    }
+
+
+    public static String documentReadOnlyReason( AdapterType adapterType, LogicalCollection collection ) {
+        return adapterType != AdapterType.SOURCE || collection.entityType != EntityType.SOURCE || collection.modifiable
+                ? "Only read-only imported document source collections can be edited here." : null;
+    }
+
+
+    public static List<String> documentDependencies( Snapshot snapshot, long collectionId ) {
+        List<String> dependencies = new ArrayList<>();
+        snapshot.mappings().getMappings().stream().filter( m -> Objects.equals( m.sourceEntityId(), collectionId ) )
+                .map( SchemaMapping::name ).forEach( dependencies::add );
+        snapshot.doc().getCollections( null, null ).stream().filter( c -> Objects.equals( c.synchronizedSourceEntityId, collectionId ) )
+                .map( c -> c.name ).forEach( dependencies::add );
+        snapshot.rel().getTables( (Pattern) null, null ).stream().filter( LogicalView.class::isInstance ).map( LogicalView.class::cast )
+                .filter( v -> v.underlyingTables.containsKey( collectionId ) ).map( v -> v.name ).forEach( dependencies::add );
+        return List.copyOf( dependencies );
+    }
+
+
     private static String mappingNameKey( String name ) {
         return name.trim().toLowerCase( Locale.ROOT );
     }
@@ -137,7 +215,8 @@ public final class SchemaMappingManager {
 
     public static SchemaMapping createMapping( String name, long logicalEntityId, DataModel dataModel, List<Long> columnIds ) {
         long id = IdBuilder.getInstance().getNewMappingId();
-        List<MappingRule> rules = columnIds.stream().map( SchemaMappingManager::defaultColumnRule ).toList();
+        List<MappingRule> rules = dataModel == DataModel.DOCUMENT ? List.of( new DocumentIdentityMappingRule() )
+                : columnIds.stream().map( SchemaMappingManager::defaultColumnRule ).toList();
 
         return new SchemaMapping( id, name, MappingKind.PHYSICAL_TO_LOGICAL, null, logicalEntityId, dataModel, dataModel, rules, null );
     }
@@ -217,7 +296,7 @@ public final class SchemaMappingManager {
      * Rebuilds a rule when we re-include a previously excluded column or update its type or nullability.
      */
     private static MappingRule restoredColumnRule( LogicalColumn target, List<PhysicalTable> physicalTables, String ruleType ) {
-        // Excluding the column removes its rule, so updateMapping needs to reconstruct it when the column is included again
+        // Excluding the column removes its rule, so updateRelMapping needs to reconstruct it when the column is included again
         Stream<PhysicalColumn> physicalColumns = physicalTables.stream().flatMap( table -> table.columns.stream() )
                 .filter( column -> column.id == target.id );
         return chooseColumnRule( target, physicalColumns, ruleType );
@@ -258,10 +337,13 @@ public final class SchemaMappingManager {
 
 
     public static boolean usesColumnTransformations( Snapshot snapshot, SchemaMapping mapping ) {
+        if ( mapping.sourceModel() != DataModel.RELATIONAL || mapping.targetModel() != DataModel.RELATIONAL ) {
+            return false;
+        }
         if ( mapping.hasRule( ConversionColumnMappingRule.class ) ) {
             return true;
         }
-        if ( mapping.sourceAllocationId() == null || mapping.sourceModel() != DataModel.RELATIONAL || mapping.targetModel() != DataModel.RELATIONAL ) {
+        if ( mapping.sourceAllocationId() == null ) {
             return false;
         }
         Set<Long> included = mappedColumnIds( mapping );
@@ -361,6 +443,9 @@ public final class SchemaMappingManager {
     public static Set<Long> getExcludedColumnIds( MappingSnapshot mappings, LogicalRelSnapshot rels ) {
         Set<Long> excluded = new HashSet<>();
         for ( SchemaMapping mapping : mappings.getMappings() ) {
+            if ( mapping.targetModel() != DataModel.RELATIONAL ) {
+                continue;
+            }
             LogicalTable table = rels.getTable( mapping.targetEntityId() )
                     .orElseThrow( () -> MappingError.Missing.target( mapping.id(), mapping.targetEntityId() ) );
             if ( table.entityType == EntityType.SOURCE && !table.modifiable ) {
@@ -374,7 +459,7 @@ public final class SchemaMappingManager {
                     throw MappingError.Conflict.foreignKeyColumnRequired( key.name );
                 }
             }
-            for ( long tableId : mappings.getMappings().stream().map( SchemaMapping::targetEntityId ).toList() ) {
+            for ( long tableId : mappings.getMappings().stream().filter( m -> m.targetModel() == DataModel.RELATIONAL ).map( SchemaMapping::targetEntityId ).toList() ) {
                 for ( var view : rels.getConnectedViews( tableId ) ) {
                     if ( view.underlyingTables.getOrDefault( tableId, List.of() ).stream().anyMatch( excluded::contains ) ) {
                         throw MappingError.Conflict.viewColumnRequired( view.name );
@@ -392,34 +477,47 @@ public final class SchemaMappingManager {
      *
      * @param mappings mapping definitions to validate
      * @param rels unfiltered relational metadata
+     * @param docs logical document metadata
      * @param alloc unfiltered allocation metadata
      * @param catalog adapter catalog lookup
      */
-    public static void validateMappings( MappingSnapshot mappings, LogicalRelSnapshot rels, AllocSnapshot alloc, Catalog catalog ) {
+    public static void validateMappings( MappingSnapshot mappings, LogicalRelSnapshot rels, LogicalDocSnapshot docs, AllocSnapshot alloc, Catalog catalog ) {
         for ( SchemaMapping mapping : mappings.getMappings() ) {
-            var siblings = mappings.getMappingsForLogicalEntity( mapping.targetEntityId() );
-            if ( siblings.size() > 1 && mapping.sourceAllocationId() == null ) {
-                throw MappingError.Missing.explicitSourceAllocation( mapping.id() );
+            if ( mapping.sourceModel() != mapping.targetModel() ) {
+                throw MappingError.Unsupported.models( mapping.id(), mapping.sourceModel(), mapping.targetModel() );
             }
-            if ( siblings.size() > 1 && siblings.stream().anyMatch( other -> other.id() != mapping.id()
-                    && Objects.equals( other.sourceAllocationId(), mapping.sourceAllocationId() ) ) ) {
-                throw MappingError.Duplicate.sourceAllocation( mapping.id(), mapping.sourceAllocationId() );
+            switch ( mapping.targetModel() ) {
+                case RELATIONAL -> validateRelMapping( mapping, mappings, rels, alloc, catalog );
+                case DOCUMENT -> validateDocumentMapping( mapping, mappings, docs, alloc, catalog );
+                case GRAPH -> throw MappingError.Unsupported.models( mapping.id(), mapping.sourceModel(), mapping.targetModel() );
             }
-            if ( siblings.size() > 1 && siblings.stream().anyMatch( other -> !mappedColumnIds( other ).equals( mappedColumnIds( mapping ) ) ) ) {
-                throw MappingError.Incompatible.sharedColumnCoverage();
-            }
-            if ( siblings.size() > 1 && alloc.getFromLogical( mapping.targetEntityId() ).stream().map( allocation -> allocation.partitionId ).distinct().count() != 1 ) {
-                throw MappingError.Unsupported.singleTargetPartitionRequired();
-            }
-            validateMappingKind( mapping );
-            LogicalTable logicalTable = validateTargetTable( mapping, rels );
-            List<AllocationEntity> allocations = validateAllocationPresence( mapping, alloc );
-            Map<Long, LogicalColumn> logicalColumns = rels.getColumns( mapping.targetEntityId() ).stream().collect( Collectors.toMap( column -> column.id, column -> column ) );
-            Map<Long, ColumnMappingRule> columnRules = validateLogicalColumnRules( mapping, logicalColumns );
-            validateLogicalColumnCoverage( mapping, logicalTable, logicalColumns, columnRules.keySet() );
-            Map<Long, Set<Long>> physicalColumnsByPartition = validatePhysicalAllocations( mapping, logicalTable, logicalColumns, columnRules, allocations, alloc, catalog );
-            validatePartitionCoverage( mapping, allocations, physicalColumnsByPartition );
         }
+    }
+
+
+    private static void validateRelMapping( SchemaMapping mapping, MappingSnapshot mappings, LogicalRelSnapshot rels, AllocSnapshot alloc, Catalog catalog ) {
+        var siblings = mappings.getMappingsForLogicalEntity( mapping.targetEntityId() );
+        if ( siblings.size() > 1 && mapping.sourceAllocationId() == null ) {
+            throw MappingError.Missing.explicitSourceAllocation( mapping.id() );
+        }
+        if ( siblings.size() > 1 && siblings.stream().anyMatch( other -> other.id() != mapping.id()
+                && Objects.equals( other.sourceAllocationId(), mapping.sourceAllocationId() ) ) ) {
+            throw MappingError.Duplicate.sourceAllocation( mapping.id(), mapping.sourceAllocationId() );
+        }
+        if ( siblings.size() > 1 && siblings.stream().anyMatch( other -> !mappedColumnIds( other ).equals( mappedColumnIds( mapping ) ) ) ) {
+            throw MappingError.Incompatible.sharedColumnCoverage();
+        }
+        if ( siblings.size() > 1 && alloc.getFromLogical( mapping.targetEntityId() ).stream().map( allocation -> allocation.partitionId ).distinct().count() != 1 ) {
+            throw MappingError.Unsupported.singleTargetPartitionRequired();
+        }
+        validateMappingKind( mapping );
+        LogicalTable logicalTable = validateTargetTable( mapping, rels );
+        List<AllocationEntity> allocations = validateAllocationPresence( mapping, alloc );
+        Map<Long, LogicalColumn> logicalColumns = rels.getColumns( mapping.targetEntityId() ).stream().collect( Collectors.toMap( column -> column.id, column -> column ) );
+        Map<Long, ColumnMappingRule> columnRules = validateLogicalColumnRules( mapping, logicalColumns );
+        validateLogicalColumnCoverage( mapping, logicalTable, logicalColumns, columnRules.keySet() );
+        Map<Long, Set<Long>> physicalColumnsByPartition = validatePhysicalAllocations( mapping, logicalTable, logicalColumns, columnRules, allocations, alloc, catalog );
+        validatePartitionCoverage( mapping, allocations, physicalColumnsByPartition );
     }
 
 
@@ -427,6 +525,30 @@ public final class SchemaMappingManager {
         if ( mapping.kind() != MappingKind.PHYSICAL_TO_LOGICAL ) {
             throw MappingError.Unsupported.kind( mapping.id(), mapping.kind() );
         }
+    }
+
+
+    private static void validateDocumentMapping( SchemaMapping mapping, MappingSnapshot mappings, LogicalDocSnapshot docs, AllocSnapshot alloc, Catalog catalog ) {
+        DocumentMappingBinding.validateIdentity( mapping );
+        var collection = docs.getCollection( mapping.targetEntityId() ).orElseThrow( () -> MappingError.Missing.collection( mapping.targetEntityId() ) );
+        if ( mappings.getMappingsForLogicalEntity( mapping.targetEntityId() ).size() != 1 ) {
+            throw MappingError.Unsupported.editor( "Multiple sources per document target are not supported yet." );
+        }
+        var allocations = validateAllocationPresence( mapping, alloc );
+        if ( allocations.size() != 1 ) {
+            throw MappingError.Algebra.sourceBindingsAmbiguous();
+        }
+        var allocation = allocations.get( 0 );
+        if ( allocation.namespaceId != collection.namespaceId ) {
+            throw MappingError.Algebra.allocationMismatch( mapping.id(), allocation.id );
+        }
+        var placement = alloc.getPlacementsFromLogical( mapping.targetEntityId() ).stream()
+                .filter( p -> p.id == allocation.placementId && p.adapterId == allocation.adapterId ).findFirst();
+        if ( placement.isEmpty() || alloc.getPartitionsFromLogical( mapping.targetEntityId() ).stream().noneMatch( p -> p.id == allocation.partitionId ) ) {
+            throw MappingError.Algebra.allocationMismatch( mapping.id(), allocation.id );
+        }
+        DocumentMappingBinding.create( mapping, allocation, catalog.getAdapterCatalog( allocation.adapterId )
+                .orElseThrow( () -> MappingError.Missing.adapterCatalog( allocation.adapterId ) ) );
     }
 
 

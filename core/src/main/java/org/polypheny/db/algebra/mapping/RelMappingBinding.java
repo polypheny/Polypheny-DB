@@ -37,14 +37,14 @@ import org.polypheny.db.util.Pair;
  * It captures the adapter, allocation and physical table IDs, plus the physical columns.
  * The planner uses this binding to resolve each target column’s source field.
  */
-public record PhysicalMappingBinding(
+public record RelMappingBinding(
         long allocationId,
         long logicalEntityId,
         long adapterId,
         long physicalEntityId,
         Map<Long, PhysicalColumn> columns ) {
 
-    public PhysicalMappingBinding {
+    public RelMappingBinding {
         columns = Map.copyOf( columns );
     }
 
@@ -52,7 +52,7 @@ public record PhysicalMappingBinding(
     /**
      * Binds the mapping’s logical target to the physical source in the selected allocation
      */
-    public static PhysicalMappingBinding create( SchemaMapping mapping, AllocationEntity allocation, AdapterCatalog adapterCatalog ) {
+    public static RelMappingBinding create( SchemaMapping mapping, AllocationEntity allocation, AdapterCatalog adapterCatalog ) {
         if ( adapterCatalog == null ) {
             throw MappingError.Missing.adapterCatalog( allocation.adapterId );
         }
@@ -85,7 +85,7 @@ public record PhysicalMappingBinding(
             }
             columns.put( column.id, registered );
         }
-        PhysicalMappingBinding binding = new PhysicalMappingBinding( allocation.id, allocation.logicalId, allocation.adapterId, table.id, columns );
+        RelMappingBinding binding = new RelMappingBinding( allocation.id, allocation.logicalId, allocation.adapterId, table.id, columns );
         binding.validate( mapping );
         return binding;
     }

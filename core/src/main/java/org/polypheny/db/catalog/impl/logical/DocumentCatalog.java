@@ -88,6 +88,7 @@ public class DocumentCatalog implements PolySerializable, LogicalDocumentCatalog
 
     @Override
     public void deleteCollection( long id ) {
+        Catalog.getInstance().removeSchemaMappingsForEntity( id );
         collections.remove( id );
         change( CatalogEvent.LOGICAL_DOC_ENTITY_DROPPED, id, null );
     }

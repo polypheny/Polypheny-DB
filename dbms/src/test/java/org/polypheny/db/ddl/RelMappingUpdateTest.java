@@ -81,7 +81,7 @@ import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.catalog.logistic.MappingKind;
 import org.polypheny.db.catalog.logistic.PlacementType;
-import org.polypheny.db.catalog.mapping.MappingState;
+import org.polypheny.db.catalog.mapping.RelMappingState;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.processing.QueryProcessor;
@@ -94,7 +94,7 @@ import org.polypheny.db.util.RunMode;
 import org.polypheny.db.webui.models.mapping.MappingModel;
 
 
-class MappingUpdateTest {
+class RelMappingUpdateTest {
 
     private PolyCatalog catalog;
     private RelAdapterCatalog physicalCatalog;
@@ -102,7 +102,7 @@ class MappingUpdateTest {
     private List<LogicalColumn> columns;
     private long adapterId;
     private long allocationId;
-    private MappingState original;
+    private RelMappingState original;
     private Adapter<?> adapter;
     private Statement statement;
     private Transaction transaction;
@@ -141,7 +141,7 @@ class MappingUpdateTest {
                 DataModel.RELATIONAL, DataModel.RELATIONAL, columns.stream().<MappingRule>map( c -> new DirectColumnMappingRule( c.id ) ).toList(), null );
         catalog.addSchemaMapping( mapping );
         catalog.commit();
-        original = MappingState.load( catalog, adapterId, mapping.id() );
+        original = RelMappingState.load( catalog, adapterId, mapping.id() );
 
         adapter = mock( Adapter.class );
         doAnswer( invocation -> {
@@ -188,7 +188,7 @@ class MappingUpdateTest {
         var column = columns.get( 1 );
         new DdlManagerImpl( catalog ).renameColumn( table, column.name, "display_name", statement );
         catalog.commit();
-        var renamed = MappingState.load( catalog, adapterId, original.mapping().id() );
+        var renamed = RelMappingState.load( catalog, adapterId, original.mapping().id() );
         assertEquals( original.mapping(), renamed.mapping() );
         assertEquals( table.id, renamed.table().id );
         assertEquals( column.id, catalog.getSnapshot().rel().getColumn( table.id, "display_name" ).orElseThrow().id );
@@ -237,7 +237,7 @@ class MappingUpdateTest {
     void rejectsStaleRemovalAndAllowsDraftForAnAlreadyMappedSource() {
         var ddl = new DdlManagerImpl( catalog );
         assertThrows( MappingRevisionException.class, () -> ddl.removeMapping( original.mapping().id(), "stale", statement ) );
-        var draft = MappingState.draft( catalog, adapterId, table.id );
+        var draft = RelMappingState.draft( catalog, adapterId, table.id );
         assertEquals( -1, draft.mapping().id() );
         assertNotEquals( table.name, draft.table().name );
         assertEquals( original.mapping(), catalog.getSnapshot().mappings().getMapping( original.mapping().id() ).orElseThrow() );
@@ -247,12 +247,12 @@ class MappingUpdateTest {
     @Test
     void failedCreationRestoresTheOriginalSourceWithoutLeavingAnotherTarget() throws Exception {
         var ddl = new DdlManagerImpl( catalog );
-        var draft = MappingState.draft( catalog, adapterId, table.id );
+        var draft = RelMappingState.draft( catalog, adapterId, table.id );
         doThrow( new RuntimeException( "Injected commit failure" ) ).when( transaction ).commit();
-        var command = new MappingUpdate( adapterId, -1, draft.revision(), "Failed", "renamed_source",
-                List.of( new MappingUpdate.ColumnName( columns.get( 0 ).id, "customer_id", true ),
-                        new MappingUpdate.ColumnName( columns.get( 1 ).id, "name", true ) ) );
-        assertThrows( RuntimeException.class, () -> ddl.createMapping( table.id, command, statement ) );
+        var command = new RelMappingUpdate( adapterId, -1, draft.revision(), "Failed", "renamed_source",
+                List.of( new RelMappingUpdate.ColumnName( columns.get( 0 ).id, "customer_id", true ),
+                        new RelMappingUpdate.ColumnName( columns.get( 1 ).id, "name", true ) ) );
+        assertThrows( RuntimeException.class, () -> ddl.createRelMapping( table.id, command, statement ) );
         assertEquals( original.mapping(), catalog.getSnapshot().mappings().getMappingsForLogicalEntity( table.id ).get( 0 ) );
         assertTrue( catalog.getSnapshot().rel().getTable( table.namespaceId, "renamed_source" ).isEmpty() );
         assertEquals( 1, physicalCatalog.physicals.size() );
@@ -264,7 +264,7 @@ class MappingUpdateTest {
     @Test
     void savesCanonicalNamesInOneCommitWhileKeepingAllIdentitiesAndPhysicalNames() {
         PhysicalTable physical = physicalCatalog.fromAllocation( allocationId );
-        var saved = new DdlManagerImpl( catalog ).updateMapping( request(), statement );
+        var saved = new DdlManagerImpl( catalog ).updateRelMapping( request(), statement );
 
         verify( statement.getQueryProcessor() ).lock( statement );
         verify( transaction ).commit();
@@ -292,10 +292,10 @@ class MappingUpdateTest {
         var snapshot = catalog.getSnapshot();
         for ( String name : List.of( "Customer import", " customer IMPORT " ) ) {
             var request = request();
-            var duplicate = new MappingUpdate( adapterId, original.mapping().id(), original.revision(), name,
+            var duplicate = new RelMappingUpdate( adapterId, original.mapping().id(), original.revision(), name,
                     request.logicalTableName(), request.columns() );
             var error = assertThrows( MappingValidationException.class,
-                    () -> new DdlManagerImpl( catalog ).updateMapping( duplicate, statement ) );
+                    () -> new DdlManagerImpl( catalog ).updateRelMapping( duplicate, statement ) );
             assertEquals( "VALIDATION", error.getCode() );
             assertEquals( "A mapping with this name already exists.", error.fieldErrors.get( "mappingName" ) );
             assertSame( snapshot, catalog.getSnapshot() );
@@ -308,45 +308,45 @@ class MappingUpdateTest {
     @Test
     void rejectsDuplicateMappingNamesOnCreationAndAllowsAUniqueName() {
         addOtherMapping( "New mapping" );
-        var draft = MappingState.draft( catalog, adapterId, table.id );
-        var columnNames = columns.stream().map( c -> new MappingUpdate.ColumnName( c.id, c.name, true ) ).toList();
+        var draft = RelMappingState.draft( catalog, adapterId, table.id );
+        var columnNames = columns.stream().map( c -> new RelMappingUpdate.ColumnName( c.id, c.name, true ) ).toList();
         var ddl = new DdlManagerImpl( catalog );
         for ( String name : List.of( "New mapping", " new MAPPING " ) ) {
-            var duplicate = new MappingUpdate( adapterId, -1, draft.revision(), name, draft.table().name, columnNames );
-            var error = assertThrows( MappingValidationException.class, () -> ddl.createMapping( table.id, duplicate, statement ) );
+            var duplicate = new RelMappingUpdate( adapterId, -1, draft.revision(), name, draft.table().name, columnNames );
+            var error = assertThrows( MappingValidationException.class, () -> ddl.createRelMapping( table.id, duplicate, statement ) );
             assertEquals( "VALIDATION", error.getCode() );
             assertEquals( "A mapping with this name already exists.", error.fieldErrors.get( "mappingName" ) );
             assertEquals( original.mapping(), catalog.getSnapshot().mappings().getMappingsForLogicalEntity( table.id ).get( 0 ) );
         }
         verify( transaction, never() ).commit();
-        var unique = new MappingUpdate( adapterId, -1, draft.revision(), " New mapping 2 ", draft.table().name, columnNames );
-        assertEquals( "New mapping 2", ddl.createMapping( table.id, unique, statement ).mapping().name() );
+        var unique = new RelMappingUpdate( adapterId, -1, draft.revision(), " New mapping 2 ", draft.table().name, columnNames );
+        assertEquals( "New mapping 2", ddl.createRelMapping( table.id, unique, statement ).mapping().name() );
     }
 
 
     @Test
     void normalizesColumnOptionsAndEditsTheSavedTarget() {
-        var draft = MappingState.draft( catalog, adapterId, table.id );
+        var draft = RelMappingState.draft( catalog, adapterId, table.id );
         var id = draft.columns().get( 0 );
         var name = draft.columns().get( 1 );
-        var conversion = new MappingUpdate.ColumnName( name.id, name.name, true, PolyType.INTEGER, false );
-        var requested = List.of( new MappingUpdate.ColumnName( id.id, id.name, true, id.type, id.nullable ), conversion );
-        var create = new MappingUpdate( adapterId, -1, draft.revision(), draft.mapping().name(), draft.table().name, requested );
-        assertEquals( List.of( new MappingUpdate.ColumnName( id.id, id.name, true ), conversion ),
+        var conversion = new RelMappingUpdate.ColumnName( name.id, name.name, true, PolyType.INTEGER, false );
+        var requested = List.of( new RelMappingUpdate.ColumnName( id.id, id.name, true, id.type, id.nullable ), conversion );
+        var create = new RelMappingUpdate( adapterId, -1, draft.revision(), draft.mapping().name(), draft.table().name, requested );
+        assertEquals( List.of( new RelMappingUpdate.ColumnName( id.id, id.name, true ), conversion ),
                 draft.validate( create, catalog.getSnapshot() ).columns() );
 
-        var edit = new MappingUpdate( adapterId, original.mapping().id(), original.revision(), original.mapping().name(), table.name, requested );
+        var edit = new RelMappingUpdate( adapterId, original.mapping().id(), original.revision(), original.mapping().name(), table.name, requested );
         var ddl = new DdlManagerImpl( catalog );
-        var saved = ddl.updateMapping( edit, statement );
+        var saved = ddl.updateRelMapping( edit, statement );
         assertEquals( PolyType.INTEGER, saved.columns().get( 1 ).type );
         assertFalse( saved.columns().get( 1 ).nullable );
         assertEquals( PolyType.VARCHAR, saved.physicalTables().get( 0 ).columns.stream()
                 .filter( column -> column.id == name.id ).findFirst().orElseThrow().type );
         assertTrue( saved.mapping().rules().stream().anyMatch( ConversionColumnMappingRule.class::isInstance ) );
 
-        var reverted = new MappingUpdate( adapterId, saved.mapping().id(), saved.revision(), saved.mapping().name(), table.name,
-                List.of( requested.get( 0 ), new MappingUpdate.ColumnName( name.id, name.name, true, PolyType.VARCHAR, true ) ) );
-        var restored = ddl.updateMapping( reverted, statement );
+        var reverted = new RelMappingUpdate( adapterId, saved.mapping().id(), saved.revision(), saved.mapping().name(), table.name,
+                List.of( requested.get( 0 ), new RelMappingUpdate.ColumnName( name.id, name.name, true, PolyType.VARCHAR, true ) ) );
+        var restored = ddl.updateRelMapping( reverted, statement );
         assertEquals( PolyType.VARCHAR, restored.columns().get( 1 ).type );
         assertEquals( 40, restored.columns().get( 1 ).length );
         assertTrue( restored.columns().get( 1 ).nullable );
@@ -358,22 +358,22 @@ class MappingUpdateTest {
     void restoresAnExplicitSameTypeConversionAfterExcludingTheColumn() {
         var ddl = new DdlManagerImpl( catalog );
         var target = original.columns().get( 1 );
-        var keepId = new MappingUpdate.ColumnName( columns.get( 0 ).id, columns.get( 0 ).name, true );
-        var convert = new MappingUpdate.ColumnName( target.id, target.name, true, null, null, null, null, ConversionColumnMappingRule.DEFINITION.id() );
-        var saved = ddl.updateMapping( new MappingUpdate( adapterId, original.mapping().id(), original.revision(),
+        var keepId = new RelMappingUpdate.ColumnName( columns.get( 0 ).id, columns.get( 0 ).name, true );
+        var convert = new RelMappingUpdate.ColumnName( target.id, target.name, true, null, null, null, null, ConversionColumnMappingRule.DEFINITION.id() );
+        var saved = ddl.updateRelMapping( new RelMappingUpdate( adapterId, original.mapping().id(), original.revision(),
                 original.mapping().name(), table.name, List.of( keepId, convert ) ), statement );
         assertTrue( saved.mapping().rules().contains( new ConversionColumnMappingRule( target.id ) ) );
         assertEquals( target.type, saved.columns().get( 1 ).type );
 
-        var excluded = ddl.updateMapping( selection( saved, true, false ), statement );
+        var excluded = ddl.updateRelMapping( selection( saved, true, false ), statement );
         assertFalse( excluded.isIncluded( target.id ) );
         assertEquals( convert.ruleType(), excluded.mapping().excludedColumnRules().get( target.id ) );
-        var restored = ddl.updateMapping( selection( excluded, true, true ), statement );
+        var restored = ddl.updateRelMapping( selection( excluded, true, true ), statement );
         assertTrue( restored.mapping().rules().contains( new ConversionColumnMappingRule( target.id ) ) );
         assertTrue( restored.mapping().excludedColumnRules().isEmpty() );
 
-        var copy = new MappingUpdate.ColumnName( target.id, target.name, true, null, false, null, null, DirectColumnMappingRule.DEFINITION.id() );
-        var copied = ddl.updateMapping( new MappingUpdate( adapterId, restored.mapping().id(), restored.revision(),
+        var copy = new RelMappingUpdate.ColumnName( target.id, target.name, true, null, false, null, null, DirectColumnMappingRule.DEFINITION.id() );
+        var copied = ddl.updateRelMapping( new RelMappingUpdate( adapterId, restored.mapping().id(), restored.revision(),
                 restored.mapping().name(), table.name, List.of( keepId, copy ) ), statement );
         assertTrue( copied.mapping().rules().contains( new DirectColumnMappingRule( target.id ) ) );
         assertFalse( copied.columns().get( 1 ).nullable );
@@ -386,15 +386,15 @@ class MappingUpdateTest {
         var ddl = new DdlManagerImpl( catalog );
         var id = original.columns().get( 0 );
         var name = original.columns().get( 1 );
-        var keepId = new MappingUpdate.ColumnName( id.id, id.name, true );
-        var convert = new MappingUpdate( adapterId, original.mapping().id(), original.revision(), original.mapping().name(), table.name,
-                List.of( keepId, new MappingUpdate.ColumnName( name.id, name.name, true, PolyType.DECIMAL, false, 10, 2 ) ) );
-        var saved = ddl.updateMapping( convert, statement );
+        var keepId = new RelMappingUpdate.ColumnName( id.id, id.name, true );
+        var convert = new RelMappingUpdate( adapterId, original.mapping().id(), original.revision(), original.mapping().name(), table.name,
+                List.of( keepId, new RelMappingUpdate.ColumnName( name.id, name.name, true, PolyType.DECIMAL, false, 10, 2 ) ) );
+        var saved = ddl.updateRelMapping( convert, statement );
         assertEquals( 2, saved.columns().get( 1 ).scale );
 
-        var restore = new MappingUpdate( adapterId, saved.mapping().id(), saved.revision(), saved.mapping().name(), table.name,
-                List.of( keepId, new MappingUpdate.ColumnName( name.id, name.name, true, PolyType.DECIMAL, null, 8, AlgDataType.SCALE_NOT_SPECIFIED ) ) );
-        var restored = ddl.updateMapping( restore, statement ).columns().get( 1 );
+        var restore = new RelMappingUpdate( adapterId, saved.mapping().id(), saved.revision(), saved.mapping().name(), table.name,
+                List.of( keepId, new RelMappingUpdate.ColumnName( name.id, name.name, true, PolyType.DECIMAL, null, 8, AlgDataType.SCALE_NOT_SPECIFIED ) ) );
+        var restored = ddl.updateRelMapping( restore, statement ).columns().get( 1 );
         assertEquals( 8, restored.length );
         assertNull( restored.scale );
         assertFalse( restored.nullable );
@@ -407,16 +407,16 @@ class MappingUpdateTest {
         logical.addPrimaryKey( table.id, List.of( columns.get( 0 ).id ), statement );
         catalog.commit();
 
-        var draft = MappingState.draft( catalog, adapterId, table.id );
-        var requested = draft.columns().stream().map( column -> new MappingUpdate.ColumnName( column.id, "target_" + column.name, true ) ).toList();
-        var created = new DdlManagerImpl( catalog ).createMapping( table.id,
-                new MappingUpdate( adapterId, -1, draft.revision(), "Renamed columns", "renamed_columns", requested ), statement );
+        var draft = RelMappingState.draft( catalog, adapterId, table.id );
+        var requested = draft.columns().stream().map( column -> new RelMappingUpdate.ColumnName( column.id, "target_" + column.name, true ) ).toList();
+        var created = new DdlManagerImpl( catalog ).createRelMapping( table.id,
+                new RelMappingUpdate( adapterId, -1, draft.revision(), "Renamed columns", "renamed_columns", requested ), statement );
         assertNotEquals( draft.columns().get( 0 ).id, created.columns().get( 0 ).id );
         assertNull( created.table().primaryKey );
 
-        var saved = MappingState.load( catalog, adapterId, created.mapping().id() );
-        for ( MappingState state : List.of( draft, saved ) ) {
-            var fields = MappingModel.Detail.from( state, catalog ).columns();
+        var saved = RelMappingState.load( catalog, adapterId, created.mapping().id() );
+        for ( RelMappingState state : List.of( draft, saved ) ) {
+            var fields = MappingModel.RelDetail.from( state, catalog ).columns();
             assertTrue( fields.get( 0 ).physicalReferences().get( 0 ).primary() );
             assertFalse( fields.get( 1 ).physicalReferences().get( 0 ).primary() );
         }
@@ -437,17 +437,17 @@ class MappingUpdateTest {
         when( adapterSource.asRelationalDataSource() ).thenReturn( relational );
         when( AdapterManager.getInstance().getSource( adapterId ) ).thenReturn( Optional.of( adapterSource ) );
 
-        var draft = MappingState.draft( catalog, adapterId, table.id );
+        var draft = RelMappingState.draft( catalog, adapterId, table.id );
         assertEquals( "files", draft.physicalTables().get( 0 ).namespaceName );
-        var fields = MappingModel.Detail.from( draft, catalog ).columns();
+        var fields = MappingModel.RelDetail.from( draft, catalog ).columns();
         assertFalse( fields.get( 0 ).physicalReferences().get( 0 ).primary() );
         assertTrue( fields.get( 1 ).physicalReferences().get( 0 ).primary() );
 
         when( relational.getExportedColumns() ).thenReturn( Map.of( "source_file", List.of( id ) ) );
-        assertFalse( MappingModel.Detail.from( draft, catalog ).columns().get( 0 ).physicalReferences().get( 0 ).primary() );
+        assertFalse( MappingModel.RelDetail.from( draft, catalog ).columns().get( 0 ).physicalReferences().get( 0 ).primary() );
 
         when( relational.getExportedColumns() ).thenReturn( Map.of() );
-        assertTrue( MappingModel.Detail.from( draft, catalog ).columns().get( 0 ).physicalReferences().get( 0 ).primary() );
+        assertTrue( MappingModel.RelDetail.from( draft, catalog ).columns().get( 0 ).physicalReferences().get( 0 ).primary() );
     }
 
 
@@ -456,23 +456,23 @@ class MappingUpdateTest {
         String base = "csv_source_source_file_mapping";
         catalog.updateSchemaMapping( SchemaMappingManager.renameMapping( original.mapping(), base ) );
         catalog.commit();
-        var draft = MappingState.draft( catalog, adapterId, table.id );
+        var draft = RelMappingState.draft( catalog, adapterId, table.id );
         assertEquals( base + "_1", draft.mapping().name() );
-        assertEquals( base + "_1", MappingState.draft( catalog, adapterId, table.id ).mapping().name() );
+        assertEquals( base + "_1", RelMappingState.draft( catalog, adapterId, table.id ).mapping().name() );
         assertEquals( 1, catalog.getSchemaMappings().size() );
-        var request = new MappingUpdate( adapterId, -1, draft.revision(), draft.mapping().name(), draft.table().name,
-                columns.stream().map( column -> new MappingUpdate.ColumnName( column.id, column.name, true ) ).toList() );
-        new DdlManagerImpl( catalog ).createMapping( table.id, request, statement );
-        assertEquals( base + "_2", MappingState.draft( catalog, adapterId, table.id ).mapping().name() );
+        var request = new RelMappingUpdate( adapterId, -1, draft.revision(), draft.mapping().name(), draft.table().name,
+                columns.stream().map( column -> new RelMappingUpdate.ColumnName( column.id, column.name, true ) ).toList() );
+        new DdlManagerImpl( catalog ).createRelMapping( table.id, request, statement );
+        assertEquals( base + "_2", RelMappingState.draft( catalog, adapterId, table.id ).mapping().name() );
     }
 
 
     @Test
     void createsIndependentTargetsAndOnlyProtectsTheLastMappingOfThePhysicalSource() {
         var ddl = new DdlManagerImpl( catalog );
-        var draft = MappingState.draft( catalog, adapterId, table.id );
-        var requested = columns.stream().map( column -> new MappingUpdate.ColumnName( column.id, "target_" + column.name, column.name.equals( "name" ) ) ).toList();
-        var created = ddl.createMapping( table.id, new MappingUpdate( adapterId, -1, draft.revision(), "Names only", "names_only", requested ), statement );
+        var draft = RelMappingState.draft( catalog, adapterId, table.id );
+        var requested = columns.stream().map( column -> new RelMappingUpdate.ColumnName( column.id, "target_" + column.name, column.name.equals( "name" ) ) ).toList();
+        var created = ddl.createRelMapping( table.id, new RelMappingUpdate( adapterId, -1, draft.revision(), "Names only", "names_only", requested ), statement );
         assertNotEquals( table.id, created.table().id );
         assertTrue( created.removable() );
         assertEquals( "source_file", created.physicalTables().get( 0 ).name );
@@ -480,22 +480,22 @@ class MappingUpdateTest {
         assertEquals( List.of( "target_name" ), catalog.getSnapshot().rel().getColumns( created.table().id ).stream().map( column -> column.name ).toList() );
         assertEquals( original.mapping(), catalog.getSnapshot().mappings().getMappingsForLogicalEntity( table.id ).get( 0 ) );
         assertTrue( created.columns().stream().noneMatch( column -> columns.stream().anyMatch( source -> source.id == column.id ) ) );
-        var changedNames = created.columns().stream().map( column -> new MappingUpdate.ColumnName( column.id,
+        var changedNames = created.columns().stream().map( column -> new RelMappingUpdate.ColumnName( column.id,
                 created.isIncluded( column.id ) ? "display_name" : column.name, created.isIncluded( column.id ) ) ).toList();
-        var changed = ddl.updateMapping( new MappingUpdate( adapterId, created.mapping().id(), created.revision(), "Display names", "display_names", changedNames ), statement );
+        var changed = ddl.updateRelMapping( new RelMappingUpdate( adapterId, created.mapping().id(), created.revision(), "Display names", "display_names", changedNames ), statement );
         assertEquals( List.of( "display_name" ), catalog.getSnapshot().rel().getColumns( changed.table().id ).stream().map( column -> column.name ).toList() );
         assertEquals( List.of( "id", "name" ), physicalCatalog.fromAllocation( allocationId ).columns.stream().map( column -> column.logicalName ).toList() );
 
-        var fromExcluded = MappingState.draft( catalog, adapterId, created.table().id );
+        var fromExcluded = RelMappingState.draft( catalog, adapterId, created.table().id );
         assertEquals( 2, fromExcluded.mapping().rules().size() );
         assertEquals( List.of( "id", "name" ), fromExcluded.columns().stream().map( column -> column.name ).toList() );
 
-        var originalNow = MappingState.load( catalog, original.mapping().id() );
+        var originalNow = RelMappingState.load( catalog, original.mapping().id() );
         assertTrue( originalNow.removable() );
         ddl.removeMapping( originalNow.mapping().id(), originalNow.revision(), statement );
         assertTrue( catalog.getSnapshot().rel().getTable( table.id ).isEmpty() );
         assertEquals( 1, physicalCatalog.physicals.size() );
-        var remaining = MappingState.load( catalog, created.mapping().id() );
+        var remaining = RelMappingState.load( catalog, created.mapping().id() );
         assertFalse( remaining.removable() );
         assertThrows( MappingConflictException.class, () -> ddl.removeMapping( remaining.mapping().id(), remaining.revision(), statement ) );
         assertEquals( created.table().id, catalog.getSnapshot().mappings().getMappings().get( 0 ).targetEntityId() );
@@ -504,10 +504,10 @@ class MappingUpdateTest {
 
     @Test
     void rejectsCreationWithAnExistingTargetTableName() {
-        var draft = MappingState.draft( catalog, adapterId, table.id );
-        var request = new MappingUpdate( adapterId, -1, draft.revision(), "Another mapping", table.name,
-                columns.stream().map( column -> new MappingUpdate.ColumnName( column.id, column.name, true ) ).toList() );
-        var error = assertThrows( MappingValidationException.class, () -> new DdlManagerImpl( catalog ).createMapping( table.id, request, statement ) );
+        var draft = RelMappingState.draft( catalog, adapterId, table.id );
+        var request = new RelMappingUpdate( adapterId, -1, draft.revision(), "Another mapping", table.name,
+                columns.stream().map( column -> new RelMappingUpdate.ColumnName( column.id, column.name, true ) ).toList() );
+        var error = assertThrows( MappingValidationException.class, () -> new DdlManagerImpl( catalog ).createRelMapping( table.id, request, statement ) );
         assertTrue( error.fieldErrors.containsKey( "logicalTableName" ) );
         verify( transaction, never() ).commit();
     }
@@ -516,22 +516,22 @@ class MappingUpdateTest {
     @Test
     void failedRemovalRestoresTheTargetAndItsPhysicalBinding() throws Exception {
         var ddl = new DdlManagerImpl( catalog );
-        var draft = MappingState.draft( catalog, adapterId, table.id );
-        var created = ddl.createMapping( table.id, new MappingUpdate( adapterId, -1, draft.revision(), "Another mapping", draft.table().name,
-                columns.stream().map( column -> new MappingUpdate.ColumnName( column.id, column.name, true ) ).toList() ), statement );
+        var draft = RelMappingState.draft( catalog, adapterId, table.id );
+        var created = ddl.createRelMapping( table.id, new RelMappingUpdate( adapterId, -1, draft.revision(), "Another mapping", draft.table().name,
+                columns.stream().map( column -> new RelMappingUpdate.ColumnName( column.id, column.name, true ) ).toList() ), statement );
         var before = catalog.getSnapshot();
         doThrow( new RuntimeException( "Injected commit failure" ) ).when( transaction ).commit();
         assertThrows( RuntimeException.class, () -> ddl.removeMapping( created.mapping().id(), created.revision(), statement ) );
         assertSame( before, catalog.getSnapshot() );
         assertEquals( created.mapping(), catalog.getSnapshot().mappings().getMapping( created.mapping().id() ).orElseThrow() );
         assertEquals( 2, physicalCatalog.physicals.size() );
-        assertEquals( created.physicalTables().get( 0 ).id, MappingState.load( catalog, created.mapping().id() ).physicalTables().get( 0 ).id );
+        assertEquals( created.physicalTables().get( 0 ).id, RelMappingState.load( catalog, created.mapping().id() ).physicalTables().get( 0 ).id );
     }
 
 
     @Test
     void allowsKeepingTheMappingsOwnUniqueName() {
-        var saved = new DdlManagerImpl( catalog ).updateMapping( selection( original, false, true ), statement );
+        var saved = new DdlManagerImpl( catalog ).updateRelMapping( selection( original, false, true ), statement );
         assertEquals( original.mapping().id(), saved.mapping().id() );
         assertEquals( original.mapping().name(), saved.mapping().name() );
         assertFalse( saved.isIncluded( columns.get( 0 ).id ) );
@@ -545,7 +545,7 @@ class MappingUpdateTest {
         catalog.change();
         catalog.commit();
         var error = assertThrows( MappingValidationException.class,
-                () -> new DdlManagerImpl( catalog ).updateMapping( selection( original, false, true ), statement ) );
+                () -> new DdlManagerImpl( catalog ).updateRelMapping( selection( original, false, true ), statement ) );
         assertEquals( "A mapping with this name already exists.", error.fieldErrors.get( "mappingName" ) );
         verify( transaction, never() ).commit();
     }
@@ -554,9 +554,9 @@ class MappingUpdateTest {
     @Test
     void allowsChangingTheCaseOfTheMappingsOwnName() {
         var current = selection( original, true, true );
-        var request = new MappingUpdate( adapterId, current.mappingId(), current.expectedRevision(), " SOURCE IMPORT ",
+        var request = new RelMappingUpdate( adapterId, current.mappingId(), current.expectedRevision(), " SOURCE IMPORT ",
                 current.logicalTableName(), current.columns() );
-        var saved = new DdlManagerImpl( catalog ).updateMapping( request, statement );
+        var saved = new DdlManagerImpl( catalog ).updateRelMapping( request, statement );
         assertEquals( "SOURCE IMPORT", saved.mapping().name() );
     }
 
@@ -569,7 +569,7 @@ class MappingUpdateTest {
                 DataModel.RELATIONAL, DataModel.RELATIONAL, mapping.rules(), null ) );
         catalog.commit();
         assertEquals( "REVISION", assertThrows( MappingRevisionException.class,
-                () -> new DdlManagerImpl( catalog ).updateMapping( request, statement ) ).getCode() );
+                () -> new DdlManagerImpl( catalog ).updateRelMapping( request, statement ) ).getCode() );
         verify( adapter, never() ).renameLogicalColumn( anyLong(), anyString() );
         verify( transaction, never() ).commit();
         assertEquals( table.name, catalog.getSnapshot().rel().getTable( table.id ).orElseThrow().name );
@@ -581,7 +581,7 @@ class MappingUpdateTest {
         PhysicalTable physical = physicalCatalog.fromAllocation( allocationId );
         doThrow( new IllegalStateException( "Injected second-column failure" ) )
                 .when( adapter ).renameLogicalColumn( columns.get( 1 ).id, "full_name" );
-        var error = assertThrows( MappingOperationException.class, () -> new DdlManagerImpl( catalog ).updateMapping( request(), statement ) );
+        var error = assertThrows( MappingOperationException.class, () -> new DdlManagerImpl( catalog ).updateRelMapping( request(), statement ) );
         assertEquals( "Injected second-column failure", error.getCause().getMessage() );
         verify( transaction, never() ).commit();
         assertRestored( physical );
@@ -592,20 +592,20 @@ class MappingUpdateTest {
     void rejectsIncompleteForeignDuplicateAndSwappedColumnsBeforeChangingAnything() {
         var first = columns.get( 0 );
         var second = columns.get( 1 );
-        List<List<MappingUpdate.ColumnName>> invalidColumns = List.of(
-                List.of( new MappingUpdate.ColumnName( first.id, "new_id" ) ),
-                List.of( new MappingUpdate.ColumnName( -1, "new_id" ), new MappingUpdate.ColumnName( second.id, "name" ) ),
-                List.of( new MappingUpdate.ColumnName( first.id, "new_id" ), new MappingUpdate.ColumnName( first.id, "name" ) ),
-                List.of( new MappingUpdate.ColumnName( first.id, "duplicate" ), new MappingUpdate.ColumnName( second.id, "DUPLICATE" ) ),
-                List.of( new MappingUpdate.ColumnName( first.id, "name" ), new MappingUpdate.ColumnName( second.id, "id" ) ) );
+        List<List<RelMappingUpdate.ColumnName>> invalidColumns = List.of(
+                List.of( new RelMappingUpdate.ColumnName( first.id, "new_id" ) ),
+                List.of( new RelMappingUpdate.ColumnName( -1, "new_id" ), new RelMappingUpdate.ColumnName( second.id, "name" ) ),
+                List.of( new RelMappingUpdate.ColumnName( first.id, "new_id" ), new RelMappingUpdate.ColumnName( first.id, "name" ) ),
+                List.of( new RelMappingUpdate.ColumnName( first.id, "duplicate" ), new RelMappingUpdate.ColumnName( second.id, "DUPLICATE" ) ),
+                List.of( new RelMappingUpdate.ColumnName( first.id, "name" ), new RelMappingUpdate.ColumnName( second.id, "id" ) ) );
         for ( var invalid : invalidColumns ) {
-            var request = new MappingUpdate( adapterId, original.mapping().id(), original.revision(), "Changed", "customers", invalid );
+            var request = new RelMappingUpdate( adapterId, original.mapping().id(), original.revision(), "Changed", "customers", invalid );
             assertEquals( "VALIDATION", assertThrows( MappingValidationException.class,
-                    () -> new DdlManagerImpl( catalog ).updateMapping( request, statement ) ).getCode() );
+                    () -> new DdlManagerImpl( catalog ).updateRelMapping( request, statement ) ).getCode() );
         }
         verify( adapter, never() ).renameLogicalColumn( anyLong(), anyString() );
         verify( transaction, never() ).commit();
-        assertEquals( original.revision(), MappingState.load( catalog, adapterId, original.mapping().id() ).revision() );
+        assertEquals( original.revision(), RelMappingState.load( catalog, adapterId, original.mapping().id() ).revision() );
     }
 
 
@@ -621,8 +621,8 @@ class MappingUpdateTest {
         var error = assertThrows( MappingConflictException.class, () -> original.validate( request(), snapshot ) );
         assertEquals( "CONFLICT", error.getCode() );
         assertEquals( List.of( "customer_view" ), error.blockingEntities );
-        var labelOnly = new MappingUpdate( adapterId, original.mapping().id(), original.revision(), "Label only", table.name,
-                columns.stream().map( c -> new MappingUpdate.ColumnName( c.id, c.name ) ).toList() );
+        var labelOnly = new RelMappingUpdate( adapterId, original.mapping().id(), original.revision(), "Label only", table.name,
+                columns.stream().map( c -> new RelMappingUpdate.ColumnName( c.id, c.name ) ).toList() );
         assertEquals( "Label only", original.validate( labelOnly, snapshot ).mappingName() );
     }
 
@@ -634,7 +634,7 @@ class MappingUpdateTest {
         var rollbackFailure = new IllegalStateException( "Injected rollback failure" );
         doThrow( commitFailure ).when( transaction ).commit();
         doThrow( rollbackFailure ).when( transaction ).rollback( "Mapping change failed" );
-        var error = assertThrows( MappingOperationException.class, () -> new DdlManagerImpl( catalog ).updateMapping( request(), statement ) );
+        var error = assertThrows( MappingOperationException.class, () -> new DdlManagerImpl( catalog ).updateRelMapping( request(), statement ) );
         assertSame( commitFailure, error.getCause() );
         assertEquals( 1, commitFailure.getSuppressed().length );
         assertSame( rollbackFailure, commitFailure.getSuppressed()[0] );
@@ -643,10 +643,10 @@ class MappingUpdateTest {
     }
 
 
-    private MappingUpdate request() {
-        return new MappingUpdate( adapterId, original.mapping().id(), original.revision(), " Customer import ", "Customers",
-                List.of( new MappingUpdate.ColumnName( columns.get( 0 ).id, "Customer_ID" ),
-                        new MappingUpdate.ColumnName( columns.get( 1 ).id, "Full_Name" ) ) );
+    private RelMappingUpdate request() {
+        return new RelMappingUpdate( adapterId, original.mapping().id(), original.revision(), " Customer import ", "Customers",
+                List.of( new RelMappingUpdate.ColumnName( columns.get( 0 ).id, "Customer_ID" ),
+                        new RelMappingUpdate.ColumnName( columns.get( 1 ).id, "Full_Name" ) ) );
     }
 
 
@@ -656,7 +656,7 @@ class MappingUpdateTest {
         var failure = MappingError.Validation.fields( Map.of( "mappingName", "A mapping with this name already exists." ) );
         doThrow( failure ).when( transaction ).commit();
         assertSame( failure, assertThrows( MappingValidationException.class,
-                () -> new DdlManagerImpl( catalog ).updateMapping( request(), statement ) ) );
+                () -> new DdlManagerImpl( catalog ).updateRelMapping( request(), statement ) ) );
         assertRestored( physical );
     }
 
@@ -666,10 +666,10 @@ class MappingUpdateTest {
         var relational = catalog.getLogicalRel( table.namespaceId );
         relational.addPrimaryKey( table.id, List.of( columns.get( 0 ).id ), statement );
         catalog.commit();
-        var initial = MappingState.load( catalog, adapterId, original.mapping().id() );
+        var initial = RelMappingState.load( catalog, adapterId, original.mapping().id() );
         Long primaryKey = initial.table().primaryKey;
         PhysicalTable physical = physicalCatalog.fromAllocation( allocationId );
-        var saved = new DdlManagerImpl( catalog ).updateMapping( selection( initial, false, true ), statement );
+        var saved = new DdlManagerImpl( catalog ).updateRelMapping( selection( initial, false, true ), statement );
 
         assertEquals( columns, saved.columns() );
         assertFalse( saved.isIncluded( columns.get( 0 ).id ) );
@@ -685,13 +685,13 @@ class MappingUpdateTest {
         assertSame( physical, physicalCatalog.fromAllocation( allocationId ) );
 
         // An older names-only client must preserve the saved selection.
-        var legacy = new MappingUpdate( adapterId, saved.mapping().id(), saved.revision(), "Legacy label", table.name,
-                saved.columns().stream().map( c -> new MappingUpdate.ColumnName( c.id, c.name ) ).toList() );
-        saved = new DdlManagerImpl( catalog ).updateMapping( legacy, statement );
+        var legacy = new RelMappingUpdate( adapterId, saved.mapping().id(), saved.revision(), "Legacy label", table.name,
+                saved.columns().stream().map( c -> new RelMappingUpdate.ColumnName( c.id, c.name ) ).toList() );
+        saved = new DdlManagerImpl( catalog ).updateRelMapping( legacy, statement );
         assertFalse( saved.isIncluded( columns.get( 0 ).id ) );
         catalog.updateSnapshot();
-        saved = MappingState.load( catalog, adapterId, saved.mapping().id() );
-        var restored = new DdlManagerImpl( catalog ).updateMapping( selection( saved, true, true ), statement );
+        saved = RelMappingState.load( catalog, adapterId, saved.mapping().id() );
+        var restored = new DdlManagerImpl( catalog ).updateRelMapping( selection( saved, true, true ), statement );
         assertEquals( columns, restored.columns() );
         assertEquals( columns, catalog.getSnapshot().rel().getColumns( table.id ) );
         assertEquals( primaryKey, restored.table().primaryKey );
@@ -703,9 +703,9 @@ class MappingUpdateTest {
     @Test
     void rejectsEmptySelectionAndBlocksInclusionChangesWithDependentViews() {
         var error = assertThrows( MappingValidationException.class,
-                () -> new DdlManagerImpl( catalog ).updateMapping( selection( original, false, false ), statement ) );
+                () -> new DdlManagerImpl( catalog ).updateRelMapping( selection( original, false, false ), statement ) );
         assertEquals( "Include at least one field in the target entity.", error.fieldErrors.get( "columns" ) );
-        assertEquals( original.revision(), MappingState.load( catalog, adapterId, original.mapping().id() ).revision() );
+        assertEquals( original.revision(), RelMappingState.load( catalog, adapterId, original.mapping().id() ).revision() );
 
         Snapshot snapshot = mock( Snapshot.class );
         when( snapshot.mappings() ).thenReturn( catalog.getSnapshot().mappings() );
@@ -723,7 +723,7 @@ class MappingUpdateTest {
         PhysicalTable physical = physicalCatalog.fromAllocation( allocationId );
         doThrow( new IllegalStateException( "Injected commit failure" ) ).when( transaction ).commit();
         assertThrows( GenericRuntimeException.class,
-                () -> new DdlManagerImpl( catalog ).updateMapping( selection( original, false, true ), statement ) );
+                () -> new DdlManagerImpl( catalog ).updateRelMapping( selection( original, false, true ), statement ) );
         assertRestored( physical );
         assertEquals( columns, catalog.getSnapshot().rel().getColumns( table.id ) );
     }
@@ -731,7 +731,7 @@ class MappingUpdateTest {
 
     @Test
     void restoresSelectedAndExcludedFieldsFromThePersistedCatalogImage() {
-        var saved = new DdlManagerImpl( catalog ).updateMapping( selection( original, false, true ), statement );
+        var saved = new DdlManagerImpl( catalog ).updateRelMapping( selection( original, false, true ), statement );
         var restored = PolySerializable.deserialize( catalog.serialize(), PolyCatalog.class );
         var savedAdapter = restored.adapterRestore.get( adapterId );
         var restoredAdapter = new RelAdapterCatalog( adapterId );
@@ -741,7 +741,7 @@ class MappingUpdateTest {
         Catalog.setAndGetInstance( restored );
         restored.updateSnapshot();
 
-        var state = MappingState.load( restored, adapterId, saved.mapping().id() );
+        var state = RelMappingState.load( restored, adapterId, saved.mapping().id() );
         assertEquals( saved.revision(), state.revision() );
         assertEquals( columns, state.columns() );
         assertFalse( state.isIncluded( columns.get( 0 ).id ) );
@@ -756,9 +756,9 @@ class MappingUpdateTest {
     void createsInTheSelectedNamespaceWithoutChangingTheImportedSource() {
         long targetNamespace = catalog.createNamespace( "reporting", DataModel.RELATIONAL, true, false );
         catalog.commit();
-        var draft = MappingState.draft( catalog, adapterId, table.id );
-        var names = columns.stream().map( column -> new MappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
-        var created = new DdlManagerImpl( catalog ).createMapping( table.id, new MappingUpdate( adapterId, -1, draft.revision(),
+        var draft = RelMappingState.draft( catalog, adapterId, table.id );
+        var names = columns.stream().map( column -> new RelMappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
+        var created = new DdlManagerImpl( catalog ).createRelMapping( table.id, new RelMappingUpdate( adapterId, -1, draft.revision(),
                 "Reporting", table.name, names, targetNamespace ), statement );
         assertEquals( targetNamespace, created.namespace().id );
         assertEquals( targetNamespace, created.table().namespaceId );
@@ -767,9 +767,9 @@ class MappingUpdateTest {
         assertEquals( "files", created.physicalTables().get( 0 ).namespaceName );
         assertEquals( "source_file", created.physicalTables().get( 0 ).name );
         assertTrue( created.removable() );
-        var moved = new DdlManagerImpl( catalog ).updateMapping( new MappingUpdate( adapterId, created.mapping().id(), created.revision(),
+        var moved = new DdlManagerImpl( catalog ).updateRelMapping( new RelMappingUpdate( adapterId, created.mapping().id(), created.revision(),
                 created.mapping().name(), "moved_source", created.columns().stream()
-                        .map( column -> new MappingUpdate.ColumnName( column.id, column.name, true ) ).toList(), table.namespaceId ), statement );
+                        .map( column -> new RelMappingUpdate.ColumnName( column.id, column.name, true ) ).toList(), table.namespaceId ), statement );
         assertEquals( created.table().id, moved.table().id );
         assertEquals( table.namespaceId, moved.namespace().id );
         assertTrue( catalog.getAllocRel( targetNamespace ).getProperties().isEmpty() );
@@ -787,11 +787,11 @@ class MappingUpdateTest {
         catalog.getLogicalRel( table.namespaceId ).addPrimaryKey( table.id, List.of( columns.get( 0 ).id ), statement );
         catalog.getLogicalRel( table.namespaceId ).addUniqueConstraint( table.id, "unique_name", List.of( columns.get( 1 ).id ), statement );
         catalog.commit();
-        var state = MappingState.load( catalog, original.mapping().id() );
+        var state = RelMappingState.load( catalog, original.mapping().id() );
         var previousTable = state.table();
         var physical = state.physicalTables().get( 0 );
-        var names = columns.stream().map( column -> new MappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
-        var moved = new DdlManagerImpl( catalog ).updateMapping( new MappingUpdate( adapterId, state.mapping().id(), state.revision(),
+        var names = columns.stream().map( column -> new RelMappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
+        var moved = new DdlManagerImpl( catalog ).updateRelMapping( new RelMappingUpdate( adapterId, state.mapping().id(), state.revision(),
                 state.mapping().name(), "reporting_source", names, targetNamespace ), statement );
         assertEquals( state.mapping(), moved.mapping() );
         assertEquals( previousTable.id, moved.table().id );
@@ -822,9 +822,9 @@ class MappingUpdateTest {
         long targetNamespace = catalog.createNamespace( "reporting", DataModel.RELATIONAL, false, false );
         catalog.commit();
         var physical = physicalCatalog.fromAllocation( allocationId );
-        var names = columns.stream().map( column -> new MappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
+        var names = columns.stream().map( column -> new RelMappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
         doThrow( new IllegalStateException( "Injected commit failure" ) ).when( transaction ).commit();
-        assertThrows( GenericRuntimeException.class, () -> new DdlManagerImpl( catalog ).updateMapping( new MappingUpdate( adapterId,
+        assertThrows( GenericRuntimeException.class, () -> new DdlManagerImpl( catalog ).updateRelMapping( new RelMappingUpdate( adapterId,
                 original.mapping().id(), original.revision(), original.mapping().name(), table.name, names, targetNamespace ), statement ) );
         assertRestored( physical );
         assertTrue( catalog.getLogicalRel( targetNamespace ).getTables().isEmpty() );
@@ -838,9 +838,9 @@ class MappingUpdateTest {
         long documentNamespace = catalog.createNamespace( "documents", DataModel.DOCUMENT, false, false );
         catalog.getLogicalRel( targetNamespace ).addTable( "SOURCE_FILE", EntityType.ENTITY, true );
         catalog.commit();
-        var names = columns.stream().map( column -> new MappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
+        var names = columns.stream().map( column -> new RelMappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
         for ( long namespaceId : List.of( -1L, documentNamespace, targetNamespace ) ) {
-            var error = assertThrows( MappingException.class, () -> original.validate( new MappingUpdate( adapterId,
+            var error = assertThrows( MappingException.class, () -> original.validate( new RelMappingUpdate( adapterId,
                     original.mapping().id(), original.revision(), original.mapping().name(), table.name, names, namespaceId ), catalog.getSnapshot() ) );
             assertEquals( namespaceId == -1 ? "MISSING" : namespaceId == documentNamespace ? "UNSUPPORTED" : "VALIDATION", error.getCode() );
             assertTrue( error.fieldErrors.containsKey( namespaceId == targetNamespace ? "logicalTableName" : "targetNamespaceId" ) );
@@ -852,9 +852,9 @@ class MappingUpdateTest {
     void attachesToAnExistingTargetAndRemovesOnlyTheSelectedContribution() {
         var incoming = addIncomingSource();
         long incomingAllocationId = incoming.physicalTables().get( 0 ).allocationId;
-        var draft = MappingState.draft( catalog, adapterId, incoming.table().id, table.id, incomingAllocationId );
-        var names = draft.columns().stream().map( column -> new MappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
-        var created = new DdlManagerImpl( catalog ).createMapping( incoming.table().id, new MappingUpdate( adapterId, -1, draft.revision(),
+        var draft = RelMappingState.draft( catalog, adapterId, incoming.table().id, table.id, incomingAllocationId );
+        var names = draft.columns().stream().map( column -> new RelMappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
+        var created = new DdlManagerImpl( catalog ).createRelMapping( incoming.table().id, new RelMappingUpdate( adapterId, -1, draft.revision(),
                 draft.mapping().name(), table.name, names, table.namespaceId, table.id, incomingAllocationId ), statement );
         assertEquals( table.id, created.table().id );
         assertNotEquals( allocationId, created.mapping().sourceAllocationId() );
@@ -864,17 +864,17 @@ class MappingUpdateTest {
         assertUnionAllPlan( created.mapping().sourceAllocationId() );
         assertEquals( 1, created.physicalTables().size() );
         assertTrue( created.removable() );
-        var originalNow = MappingState.load( catalog, original.mapping().id() );
+        var originalNow = RelMappingState.load( catalog, original.mapping().id() );
         assertEquals( allocationId, originalNow.mapping().sourceAllocationId() );
         assertFalse( originalNow.removable() );
-        assertThrows( MappingDuplicateException.class, () -> MappingState.draft( catalog, adapterId, table.id, table.id, created.mapping().sourceAllocationId() ) );
+        assertThrows( MappingDuplicateException.class, () -> RelMappingState.draft( catalog, adapterId, table.id, table.id, created.mapping().sourceAllocationId() ) );
         var restored = PolySerializable.deserialize( catalog.serialize(), PolyCatalog.class );
         assertEquals( created.mapping(), restored.getSchemaMappings().get( created.mapping().id() ) );
         new DdlManagerImpl( catalog ).removeMapping( created.mapping().id(), created.revision(), statement );
         assertEquals( table, catalog.getSnapshot().rel().getTable( table.id ).orElseThrow() );
         assertEquals( 1, catalog.getSnapshot().alloc().getFromLogical( table.id ).size() );
         assertEquals( allocationId, catalog.getSnapshot().alloc().getFromLogical( table.id ).get( 0 ).id );
-        assertFalse( MappingState.load( catalog, original.mapping().id() ).removable() );
+        assertFalse( RelMappingState.load( catalog, original.mapping().id() ).removable() );
     }
 
     @Test
@@ -884,9 +884,9 @@ class MappingUpdateTest {
         var remaining = addIncomingSource( remainingAdapterId );
         long targetId = remaining.table().id;
         var ddl = new DdlManagerImpl( catalog );
-        var draft = MappingState.draft( catalog, adapterId, table.id, targetId, allocationId );
-        var names = draft.columns().stream().map( column -> new MappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
-        ddl.createMapping( table.id, new MappingUpdate( adapterId, -1, draft.revision(), draft.mapping().name(),
+        var draft = RelMappingState.draft( catalog, adapterId, table.id, targetId, allocationId );
+        var names = draft.columns().stream().map( column -> new RelMappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
+        ddl.createRelMapping( table.id, new RelMappingUpdate( adapterId, -1, draft.revision(), draft.mapping().name(),
                 remaining.table().name, names, table.namespaceId, targetId, allocationId ), statement );
 
         var relational = catalog.getLogicalRel( table.namespaceId );
@@ -921,11 +921,11 @@ class MappingUpdateTest {
     void rejectsIncompatibleIncomingSchemaWithoutChangingTheTarget() {
         var incoming = addIncomingSource();
         long incomingAllocationId = incoming.physicalTables().get( 0 ).allocationId;
-        var draft = MappingState.draft( catalog, adapterId, incoming.table().id, table.id, incomingAllocationId );
-        var request = new MappingUpdate( adapterId, -1, draft.revision(), draft.mapping().name(), table.name,
-                List.of( new MappingUpdate.ColumnName( draft.columns().get( 0 ).id, draft.columns().get( 0 ).name, true ),
-                        new MappingUpdate.ColumnName( draft.columns().get( 1 ).id, draft.columns().get( 1 ).name, false ) ), table.namespaceId, table.id, incomingAllocationId );
-        var error = assertThrows( MappingValidationException.class, () -> new DdlManagerImpl( catalog ).createMapping( incoming.table().id, request, statement ) );
+        var draft = RelMappingState.draft( catalog, adapterId, incoming.table().id, table.id, incomingAllocationId );
+        var request = new RelMappingUpdate( adapterId, -1, draft.revision(), draft.mapping().name(), table.name,
+                List.of( new RelMappingUpdate.ColumnName( draft.columns().get( 0 ).id, draft.columns().get( 0 ).name, true ),
+                        new RelMappingUpdate.ColumnName( draft.columns().get( 1 ).id, draft.columns().get( 1 ).name, false ) ), table.namespaceId, table.id, incomingAllocationId );
+        var error = assertThrows( MappingValidationException.class, () -> new DdlManagerImpl( catalog ).createRelMapping( incoming.table().id, request, statement ) );
         assertTrue( error.fieldErrors.containsKey( "columns" ) );
         assertEquals( 2, catalog.getSnapshot().mappings().getMappings().size() );
         assertEquals( original.mapping(), catalog.getSnapshot().mappings().getMapping( original.mapping().id() ).orElseThrow() );
@@ -933,31 +933,31 @@ class MappingUpdateTest {
 
     @Test
     void rejectsDuplicateSourceTargetPairsEvenThroughAnotherLogicalTable() {
-        var draft = MappingState.draft( catalog, adapterId, table.id );
-        var names = draft.columns().stream().map( column -> new MappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
-        var alias = new DdlManagerImpl( catalog ).createMapping( table.id, new MappingUpdate( adapterId, -1, draft.revision(),
+        var draft = RelMappingState.draft( catalog, adapterId, table.id );
+        var names = draft.columns().stream().map( column -> new RelMappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
+        var alias = new DdlManagerImpl( catalog ).createRelMapping( table.id, new RelMappingUpdate( adapterId, -1, draft.revision(),
                 draft.mapping().name(), draft.table().name, names ), statement );
         String before = catalog.serialize();
         for ( var source : List.of( original, alias ) ) {
             long sourceAllocationId = source.physicalTables().get( 0 ).allocationId;
             var error = assertThrows( MappingDuplicateException.class,
-                    () -> MappingState.draft( catalog, adapterId, source.table().id, table.id, sourceAllocationId ) );
+                    () -> RelMappingState.draft( catalog, adapterId, source.table().id, table.id, sourceAllocationId ) );
             assertEquals( "DUPLICATE", error.getCode() );
             assertTrue( error.fieldErrors.containsKey( "sourceAllocationId" ) );
-            var request = new MappingUpdate( adapterId, -1, source.revision(), "Duplicate", table.name,
+            var request = new RelMappingUpdate( adapterId, -1, source.revision(), "Duplicate", table.name,
                     names, table.namespaceId, table.id, sourceAllocationId );
             assertThrows( MappingDuplicateException.class,
-                    () -> new DdlManagerImpl( catalog ).createMapping( source.table().id, request, statement ) );
+                    () -> new DdlManagerImpl( catalog ).createRelMapping( source.table().id, request, statement ) );
         }
         assertEquals( before, catalog.serialize() );
     }
 
-    private MappingState addIncomingSource() {
+    private RelMappingState addIncomingSource() {
         return addIncomingSource( adapterId );
     }
 
 
-    private MappingState addIncomingSource( long sourceAdapterId ) {
+    private RelMappingState addIncomingSource( long sourceAdapterId ) {
         var relational = catalog.getLogicalRel( table.namespaceId );
         var incoming = relational.addTable( "incoming_file", EntityType.SOURCE, false );
         var incomingColumns = columns.stream().map( column -> relational.addColumn( column.name, incoming.id, column.position,
@@ -975,7 +975,7 @@ class MappingUpdateTest {
                 incomingColumns.stream().map( column -> column.id ).toList() );
         catalog.addSchemaMapping( mapping );
         catalog.commit();
-        return MappingState.load( catalog, mapping.id() );
+        return RelMappingState.load( catalog, mapping.id() );
     }
 
     private void assertUnionAllPlan( long routedAllocationId ) {
@@ -1019,16 +1019,16 @@ class MappingUpdateTest {
     }
 
 
-    private MappingUpdate selection( MappingState state, boolean first, boolean second ) {
-        return new MappingUpdate( adapterId, state.mapping().id(), state.revision(), state.mapping().name(), state.table().name,
-                List.of( new MappingUpdate.ColumnName( columns.get( 0 ).id, columns.get( 0 ).name, first ),
-                        new MappingUpdate.ColumnName( columns.get( 1 ).id, columns.get( 1 ).name, second ) ) );
+    private RelMappingUpdate selection( RelMappingState state, boolean first, boolean second ) {
+        return new RelMappingUpdate( adapterId, state.mapping().id(), state.revision(), state.mapping().name(), state.table().name,
+                List.of( new RelMappingUpdate.ColumnName( columns.get( 0 ).id, columns.get( 0 ).name, first ),
+                        new RelMappingUpdate.ColumnName( columns.get( 1 ).id, columns.get( 1 ).name, second ) ) );
     }
 
 
     private void assertRestored( PhysicalTable physical ) {
         catalog.updateSnapshot();
-        var restored = MappingState.load( catalog, adapterId, original.mapping().id() );
+        var restored = RelMappingState.load( catalog, adapterId, original.mapping().id() );
         assertEquals( original.revision(), restored.revision() );
         assertEquals( original.mapping(), restored.mapping() );
         assertSame( physical, physicalCatalog.fromAllocation( allocationId ) );

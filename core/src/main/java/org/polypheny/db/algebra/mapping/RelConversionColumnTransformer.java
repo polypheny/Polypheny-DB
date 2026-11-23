@@ -33,7 +33,7 @@ import org.polypheny.db.type.entity.PolyValue;
 /**
  * Turns a column conversion rule into an expression the query can execute.
  */
-public final class ConversionColumnTransformer implements FieldMappingTransformer<ConversionColumnMappingRule> {
+public final class RelConversionColumnTransformer implements RelFieldMappingTransformer<ConversionColumnMappingRule> {
 
     @Override
     public Class<ConversionColumnMappingRule> ruleType() {
@@ -42,7 +42,7 @@ public final class ConversionColumnTransformer implements FieldMappingTransforme
 
 
     @Override
-    public RexNode transform( ConversionColumnMappingRule rule, AlgDataTypeField targetField, FieldMappingContext context ) {
+    public RexNode transform( ConversionColumnMappingRule rule, AlgDataTypeField targetField, RelFieldMappingContext context ) {
         AlgDataTypeField source = context.resolveSourceField( rule.targetLogicalColumnId() );
         AlgDataType targetType = targetField.getType();
         if ( !ConversionColumnMappingRule.supports( source.getType(), targetType ) ) {
@@ -52,7 +52,7 @@ public final class ConversionColumnTransformer implements FieldMappingTransforme
     }
 
 
-    static RexNode project( AlgDataTypeField source, AlgDataTypeField target, FieldMappingContext context ) {
+    static RexNode project( AlgDataTypeField source, AlgDataTypeField target, RelFieldMappingContext context ) {
         var rex = context.getRexBuilder();
         RexNode input = rex.makeInputRef( source.getType(), source.getIndex() );
         // build MAPPING_CONVERT expression, that planner adds to projection

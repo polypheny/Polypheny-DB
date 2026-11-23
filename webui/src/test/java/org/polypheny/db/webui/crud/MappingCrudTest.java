@@ -18,6 +18,7 @@ package org.polypheny.db.webui.crud;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -55,18 +56,63 @@ import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.MappingKind;
-import org.polypheny.db.catalog.mapping.MappingState;
+import org.polypheny.db.catalog.mapping.RelMappingState;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.webui.HttpServer;
 import org.polypheny.db.webui.models.mapping.MappingModel;
 import org.polypheny.db.webui.models.requests.MappingRequest.DetailRequest;
-import org.polypheny.db.webui.models.requests.MappingRequest.UpdateRequest;
-import org.polypheny.db.webui.models.requests.MappingRequest.CreateRequest;
+import org.polypheny.db.webui.models.requests.MappingRequest.DocumentCreateRequest;
+import org.polypheny.db.webui.models.requests.MappingRequest.DocumentDraftRequest;
+import org.polypheny.db.webui.models.requests.MappingRequest.DocumentUpdateRequest;
+import org.polypheny.db.webui.models.requests.MappingRequest.RelUpdateRequest;
+import org.polypheny.db.webui.models.requests.MappingRequest.RelCreateRequest;
 import org.polypheny.db.webui.models.requests.MappingRequest.MappingIdRequest;
 import org.polypheny.db.webui.models.requests.MappingRequest.RemoveRequest;
 
 
 class MappingCrudTest {
+
+    @Test
+    void exposesDocumentSourcesWithTheProductionJsonMapper() throws Exception {
+        var response = new MappingModel.DocumentSourcesResponse( List.of( new MappingModel.DocumentSource( 1, "JSON", 2, 3, "files", "customers" ) ) );
+        var json = HttpServer.mapper.readTree( HttpServer.mapper.writeValueAsString( response ) );
+        assertEquals( 1, json.get( "sources" ).size() );
+        assertEquals( "customers", json.get( "sources" ).get( 0 ).get( "physicalName" ).asText() );
+        assertEquals( 2, json.get( "sources" ).get( 0 ).get( "sourceEntityId" ).asLong() );
+    }
+
+    @Test
+    void acceptsCollectionCommandsWithoutSchemaOrColumns() {
+        var create = MappingCrud.parseRequest( """
+                {"adapterId":1,"sourceEntityId":2,"expectedRevision":"revision","mappingName":"Customers",
+                 "logicalCollectionName":"customers","targetNamespaceId":3,"sourceAllocationId":4}
+                """, DocumentCreateRequest.class );
+        assertEquals( -1, create.toCommand().mappingId() );
+        assertEquals( 4L, create.toCommand().sourceAllocationId() );
+        assertEquals( "customers", create.toCommand().logicalCollectionName() );
+
+        var update = MappingCrud.parseRequest( """
+                {"adapterId":1,"mappingId":2,"expectedRevision":"revision","mappingName":"Customers",
+                 "logicalCollectionName":"renamed"}
+                """, DocumentUpdateRequest.class );
+        assertEquals( "renamed", update.toCommand().logicalCollectionName() );
+        assertNull( update.toCommand().targetNamespaceId() );
+        assertNull( update.toCommand().sourceAllocationId() );
+    }
+
+
+    @Test
+    void rejectsMalformedCommandsAndUnsupportedFieldRules() {
+        for ( String body : new String[]{
+                "{}",
+                "{\"adapterId\":null,\"sourceEntityId\":2}",
+                "{\"adapterId\":1,\"sourceEntityId\":2,\"columns\":[]}",
+                "{\"adapterId\":1.5,\"sourceEntityId\":2}",
+                "{\"adapterId\":1,\"sourceEntityId\":2} {}"} ) {
+            assertThrows( MappingValidationException.class, () -> MappingCrud.parseRequest( body, DocumentDraftRequest.class ) );
+        }
+    }
+
 
     @Test
     void preservesMappingCategoriesAndDetailsThroughWrappedErrors() {
@@ -183,8 +229,8 @@ class MappingCrudTest {
                     }
                     return proxy;
                 } );
-        new MappingCrud( null ).getMappingSources( context );
-        var sources = (MappingModel.SourcesResponse) response.get();
+        new MappingCrud( null ).getRelMappingSources( context );
+        var sources = (MappingModel.RelSourcesResponse) response.get();
         assertEquals( 2, sources.sources().size() );
         assertEquals( "employees", sources.sources().get( 0 ).logicalTableName() );
         assertEquals( "files", sources.sources().get( 0 ).namespaceName() );
@@ -192,9 +238,9 @@ class MappingCrudTest {
         for ( String targetName : List.of( "employees", "employee_names" ) ) {
             long targetId = catalog.getSnapshot().rel().getTable( namespaceId, targetName ).orElseThrow().id;
             requestBody.set( "{\"targetEntityId\":" + targetId + "}" );
-            new MappingCrud( null ).getMappingSources( context );
-            sources = (MappingModel.SourcesResponse) response.get();
-            assertEquals( List.of( "departments" ), sources.sources().stream().map( MappingModel.Source::logicalTableName ).toList() );
+            new MappingCrud( null ).getRelMappingSources( context );
+            sources = (MappingModel.RelSourcesResponse) response.get();
+            assertEquals( List.of( "departments" ), sources.sources().stream().map( MappingModel.RelSource::logicalTableName ).toList() );
         }
         assertEquals( 3, catalog.getSchemaMappings().size() );
     }
@@ -206,7 +252,7 @@ class MappingCrudTest {
         var create = MappingCrud.parseRequest( """
                 {"adapterId":7,"targetEntityId":50,"expectedRevision":"draft","mappingName":"Created",
                  "logicalTableName":"customers","columns":[{"logicalColumnId":101,"logicalName":"id","included":true,"targetType":"INTEGER","targetNullable":false,"ruleType":"CONVERT_COLUMN"}]}
-                """, CreateRequest.class );
+                """, RelCreateRequest.class );
         assertEquals( -1, create.toCommand().mappingId() );
         assertEquals( 50, create.targetEntityId() );
         assertEquals( PolyType.INTEGER, create.toCommand().columns().get( 0 ).targetType() );
@@ -215,15 +261,15 @@ class MappingCrudTest {
         assertThrows( MappingValidationException.class, () -> MappingCrud.parseRequest( """
                 {"adapterId":7,"targetEntityId":50,"mappingId":31,"expectedRevision":"draft","mappingName":"Created",
                  "logicalTableName":"customers","columns":[]}
-                """, CreateRequest.class ) );
+                """, RelCreateRequest.class ) );
     }
 
     @Test
     void parsesTheCompleteNamesOnlyCommand() {
-        UpdateRequest request = MappingCrud.parseRequest( """
+        RelUpdateRequest request = MappingCrud.parseRequest( """
                 {"adapterId":7,"mappingId":31,"expectedRevision":"original","mappingName":"Customers",
                  "logicalTableName":"customers","columns":[{"logicalColumnId":101,"logicalName":"id"}]}
-                """, UpdateRequest.class );
+                """, RelUpdateRequest.class );
         assertEquals( 31, request.toCommand().mappingId() );
         assertEquals( 101, request.toCommand().columns().get( 0 ).logicalColumnId() );
         assertEquals( "original", request.expectedRevision() );
@@ -237,9 +283,9 @@ class MappingCrudTest {
                 {"adapterId":7,"expectedRevision":"original","mappingName":"Customers","targetNamespaceId":9,
                  "logicalTableName":"customers","columns":[{"logicalColumnId":101,"logicalName":"id"}],
                 """;
-        assertEquals( 9L, MappingCrud.parseRequest( body + "\"mappingId\":31}", UpdateRequest.class ).toCommand().targetNamespaceId() );
-        assertEquals( 9L, MappingCrud.parseRequest( body + "\"targetEntityId\":50}", CreateRequest.class ).toCommand().targetNamespaceId() );
-        assertThrows( MappingValidationException.class, () -> MappingCrud.parseRequest( (body + "\"mappingId\":31}").replace( "\"targetNamespaceId\":9", "\"targetNamespaceId\":9.5" ), UpdateRequest.class ) );
+        assertEquals( 9L, MappingCrud.parseRequest( body + "\"mappingId\":31}", RelUpdateRequest.class ).toCommand().targetNamespaceId() );
+        assertEquals( 9L, MappingCrud.parseRequest( body + "\"targetEntityId\":50}", RelCreateRequest.class ).toCommand().targetNamespaceId() );
+        assertThrows( MappingValidationException.class, () -> MappingCrud.parseRequest( (body + "\"mappingId\":31}").replace( "\"targetNamespaceId\":9", "\"targetNamespaceId\":9.5" ), RelUpdateRequest.class ) );
     }
 
 
@@ -249,10 +295,10 @@ class MappingCrudTest {
                 {"adapterId":7,"mappingId":31,"expectedRevision":"original","mappingName":"Customers",
                  "logicalTableName":"customers","columns":[{"logicalColumnId":101,"logicalName":"id","included":false}]}
                 """;
-        assertFalse( MappingCrud.parseRequest( body, UpdateRequest.class ).columns().get( 0 ).included() );
+        assertFalse( MappingCrud.parseRequest( body, RelUpdateRequest.class ).columns().get( 0 ).included() );
         for ( String removed : List.of( "\"adapterId\":7,", "\"mappingId\":31,", "\"expectedRevision\":\"original\",",
                 "\"mappingName\":\"Customers\",", "\"logicalTableName\":\"customers\",", "\"logicalColumnId\":101,", "\"logicalName\":\"id\"," ) ) {
-            assertThrows( MappingValidationException.class, () -> MappingCrud.parseRequest( body.replace( removed, "" ), UpdateRequest.class ), removed );
+            assertThrows( MappingValidationException.class, () -> MappingCrud.parseRequest( body.replace( removed, "" ), RelUpdateRequest.class ), removed );
         }
     }
 
@@ -269,7 +315,7 @@ class MappingCrudTest {
         assertThrows( MappingValidationException.class, () -> MappingCrud.parseRequest( """
                 {"adapterId":7,"mappingId":31,"expectedRevision":"original","mappingName":"Customers",
                  "logicalTableName":"customers","columns":[{"logicalColumnId":101,"logicalName":"id","physicalName":"other"}]}
-                """, UpdateRequest.class ) );
+                """, RelUpdateRequest.class ) );
     }
 
 
@@ -314,19 +360,19 @@ class MappingCrudTest {
         var mapping = new SchemaMapping( 31, "Customer import", MappingKind.PHYSICAL_TO_LOGICAL, null, 50,
                 DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( new DirectColumnMappingRule( 102 ), new DirectColumnMappingRule( 101 ),
                 new DirectColumnMappingRule( 104 ), new DirectColumnMappingRule( 103 ) ), null );
-        var state = new MappingState(
+        var state = new RelMappingState(
                 new LogicalAdapter( 7, "csv_source", "CSV", AdapterType.SOURCE, DeployMode.EMBEDDED, Map.of() ), mapping,
                 new LogicalNamespace( 1, "analytics", DataModel.RELATIONAL, true, false ),
                 new LogicalTable( 50, "customers", 1, EntityType.SOURCE, null, false ), columns,
                 List.of( new PhysicalTable( 70, 60, 50, "customers.csv", physicalColumns, 1, "files", List.of(), 7 ) ), "saved-revision", null, SchemaMappingManager.LAST_SOURCE_MAPPING_REASON );
-        var json = HttpServer.mapper.valueToTree( MappingModel.Detail.from( state, catalog ) );
+        var json = HttpServer.mapper.valueToTree( MappingModel.RelDetail.from( state, catalog ) );
         assertFalse( json.path( "removable" ).asBoolean() );
         assertEquals( SchemaMappingManager.LAST_SOURCE_MAPPING_REASON, json.path( "removalBlockedReason" ).asText() );
         var overview = HttpServer.mapper.valueToTree( new MappingModel.OverviewResponse( List.of( MappingModel.Summary.from( state ) ) ) );
         assertFalse( overview.at( "/mappings/0" ).has( "mappingMethod" ) );
         assertEquals( "saved-revision", overview.at( "/mappings/0/revision" ).asText() );
         assertEquals( "customers.csv", overview.at( "/mappings/0/physicalSources/0/physicalName" ).asText() );
-        var sources = HttpServer.mapper.valueToTree( new MappingModel.SourcesResponse( List.of( MappingModel.Source.from( state ) ) ) );
+        var sources = HttpServer.mapper.valueToTree( new MappingModel.RelSourcesResponse( List.of( MappingModel.RelSource.from( state ) ) ) );
         assertEquals( 50, sources.at( "/sources/0/targetEntityId" ).asLong() );
         assertEquals( "PHYSICAL_TO_LOGICAL", sources.at( "/sources/0/kind" ).asText() );
 
@@ -362,18 +408,18 @@ class MappingCrudTest {
         assertEquals( "Convert", json.at( "/availableRules/1/label" ).asText() );
         var selectedMapping = new SchemaMapping( mapping.id(), mapping.name(), mapping.kind(), mapping.sourceEntityId(), mapping.targetEntityId(),
                 mapping.sourceModel(), mapping.targetModel(), List.of( new DirectColumnMappingRule( 102 ) ), null );
-        var selectedState = new MappingState( state.adapter(), selectedMapping, state.namespace(), state.table(), state.columns(), state.physicalTables(), state.revision(), null, state.removalBlockedReason() );
-        var selectedJson = HttpServer.mapper.valueToTree( MappingModel.Detail.from( selectedState, catalog ) );
+        var selectedState = new RelMappingState( state.adapter(), selectedMapping, state.namespace(), state.table(), state.columns(), state.physicalTables(), state.revision(), null, state.removalBlockedReason() );
+        var selectedJson = HttpServer.mapper.valueToTree( MappingModel.RelDetail.from( selectedState, catalog ) );
         assertEquals( 4, selectedJson.path( "columns" ).size() );
         assertFalse( selectedJson.at( "/columns/0/included" ).asBoolean() );
         assertTrue( selectedJson.at( "/columns/1/included" ).asBoolean() );
 
         var validation = json.path( "validation" );
-        assertEquals( MappingState.MAPPING_NAME_MAX_LENGTH, validation.path( "mappingNameMaxLength" ).asInt() );
-        assertEquals( MappingState.IDENTIFIER_MAX_LENGTH, validation.path( "identifierMaxLength" ).asInt() );
-        assertEquals( MappingState.IDENTIFIER_PATTERN, validation.path( "identifierPattern" ).asText() );
-        assertEquals( MappingState.mappingNameMessage(), validation.path( "mappingNameMessage" ).asText() );
-        assertEquals( MappingState.identifierMessage(), validation.path( "identifierMessage" ).asText() );
+        assertEquals( SchemaMappingManager.MAPPING_NAME_MAX_LENGTH, validation.path( "mappingNameMaxLength" ).asInt() );
+        assertEquals( SchemaMappingManager.IDENTIFIER_MAX_LENGTH, validation.path( "identifierMaxLength" ).asInt() );
+        assertEquals( SchemaMappingManager.IDENTIFIER_PATTERN, validation.path( "identifierPattern" ).asText() );
+        assertEquals( SchemaMappingManager.mappingNameMessage(), validation.path( "mappingNameMessage" ).asText() );
+        assertEquals( SchemaMappingManager.identifierMessage(), validation.path( "identifierMessage" ).asText() );
     }
 
 

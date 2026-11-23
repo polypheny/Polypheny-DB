@@ -123,7 +123,7 @@ public final class AllocationScanBinder {
 
 
     private static AlgNode handleDocumentEntity( Scan<?> scan, AllocationEntity alloc, Supplier<AlgBuilder> builder ) {
-        AlgNode alg = AdapterManager.getInstance().getAdapter( alloc.adapterId ).orElseThrow().getDocumentScan( alloc.id, builder.get() );
+        AlgNode alg = new MappingScanBuilder( scan.getCluster().getSnapshot(), builder ).build( alloc );
         if ( scan.getModel() != scan.getEntity().dataModel ) {
             // cross-model queries need a transformer first, we let another rule handle that
             return builder.get().push( alg ).transform( scan.getTraitSet().getTrait( ModelTraitDef.INSTANCE ), scan.getTupleType(), true, null ).build();

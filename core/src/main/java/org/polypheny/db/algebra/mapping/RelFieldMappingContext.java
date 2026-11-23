@@ -32,22 +32,22 @@ import org.polypheny.db.rex.RexBuilder;
 /**
  * The context resolves a source field by column ID within the selected allocation’s input.
  * It uses:
- * - Allocation metadata from PhysicalMappingBinding to validate the column.
+ * - Allocation metadata from RelMappingBinding to validate the column.
  * - The actual input schema to determine the column’s position and type.
  */
-public final class FieldMappingContext {
+public final class RelFieldMappingContext {
 
     @Getter
     private final SchemaMapping mapping;
     @Getter
-    private final PhysicalMappingBinding binding;
+    private final RelMappingBinding binding;
     @Getter
     private final RexBuilder rexBuilder;
     private final Map<Long, AlgDataTypeField> inputFields;
     private final Snapshot snapshot;
 
 
-    public FieldMappingContext( SchemaMapping mapping, PhysicalMappingBinding binding, AlgDataType inputType, RexBuilder rexBuilder, Snapshot snapshot ) {
+    public RelFieldMappingContext( SchemaMapping mapping, RelMappingBinding binding, AlgDataType inputType, RexBuilder rexBuilder, Snapshot snapshot ) {
         binding.validate( mapping );
         this.mapping = mapping;
         this.binding = binding;

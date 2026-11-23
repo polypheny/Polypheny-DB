@@ -24,14 +24,14 @@ import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
-import org.polypheny.db.algebra.mapping.ConversionColumnTransformer;
+import org.polypheny.db.algebra.mapping.RelConversionColumnTransformer;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.exceptions.MappingError;
 import org.polypheny.db.catalog.exceptions.MappingException;
 import org.polypheny.db.catalog.exceptions.MappingExecutionException;
-import org.polypheny.db.catalog.mapping.MappingState;
-import org.polypheny.db.ddl.MappingUpdate.ColumnName;
+import org.polypheny.db.catalog.mapping.RelMappingState;
+import org.polypheny.db.ddl.RelMappingUpdate.ColumnName;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.type.entity.PolyString;
@@ -39,16 +39,16 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.webui.models.mapping.MappingModel;
 
 
-final class MappingConversionValidator {
+final class RelMappingConversionValidator {
 
     static final int SAMPLE_SIZE = 10;
 
 
-    private MappingConversionValidator() {
+    private RelMappingConversionValidator() {
     }
 
 
-    static MappingModel.ConversionValidation validate( MappingState state, List<ColumnName> requested, Statement statement ) {
+    static MappingModel.RelConversionValidation validate( RelMappingState state, List<ColumnName> requested, Statement statement ) {
         if ( requested == null || requested.isEmpty() || requested.stream().anyMatch( column -> column == null )
                 || new HashSet<>( requested.stream().map( ColumnName::logicalColumnId ).toList() ).size() != requested.size() ) {
             throw MappingError.Validation.fields( Map.of( "columns", "Supply unique included fields to check." ) );
@@ -73,7 +73,7 @@ final class MappingConversionValidator {
                             .findFirst().orElseThrow( () -> MappingError.Missing.logicalColumn( state.mapping().id(), target.id ) );
                     return checkColumn( state, target, source.getType(), source.getIndex(), rows, statement.getDataContext() );
                 } ).toList();
-                return new MappingModel.ConversionValidation( checks );
+                return new MappingModel.RelConversionValidation( checks );
             }
         } catch ( RuntimeException e ) {
             if ( MappingException.findCause( e ).isPresent() ) {
@@ -84,7 +84,7 @@ final class MappingConversionValidator {
     }
 
 
-    static MappingModel.ColumnCheck checkColumn( MappingState state, LogicalColumn target, AlgDataType sourceType,
+    static MappingModel.ColumnCheck checkColumn( RelMappingState state, LogicalColumn target, AlgDataType sourceType,
             int sourceIndex, List<List<PolyValue>> rows, DataContext context ) {
         var factory = context.getTypeFactory();
         // This preview checks value conversion only; target NULL constraints belong to execution.
@@ -93,7 +93,7 @@ final class MappingConversionValidator {
         int count = Math.min( rows.size(), SAMPLE_SIZE );
         for ( int i = 0; i < count; i++ ) {
             try {
-                ConversionColumnTransformer.convert( rows.get( i ).get( sourceIndex ), PolyString.of( target.name ),
+                RelConversionColumnTransformer.convert( rows.get( i ).get( sourceIndex ), PolyString.of( target.name ),
                         state.mapping().name(), state.namespace().name + "." + state.table().name, sourceType, targetType, context );
             } catch ( MappingExecutionException error ) {
                 errors.add( new MappingModel.ConversionFailure( i + 1,

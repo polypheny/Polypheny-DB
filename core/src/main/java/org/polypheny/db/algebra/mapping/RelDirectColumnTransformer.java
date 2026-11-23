@@ -27,7 +27,7 @@ import org.polypheny.db.type.PolyTypeUtil;
 /**
  * Copies an allocation's column unchanged, including an already collection-valued column.
  */
-public final class DirectColumnTransformer implements FieldMappingTransformer<DirectColumnMappingRule> {
+public final class RelDirectColumnTransformer implements RelFieldMappingTransformer<DirectColumnMappingRule> {
 
     @Override
     public Class<DirectColumnMappingRule> ruleType() {
@@ -40,7 +40,7 @@ public final class DirectColumnTransformer implements FieldMappingTransformer<Di
      * the target column receives the source column’s value for each row
      */
     @Override
-    public RexNode transform( DirectColumnMappingRule rule, AlgDataTypeField targetField, FieldMappingContext context ) {
+    public RexNode transform( DirectColumnMappingRule rule, AlgDataTypeField targetField, RelFieldMappingContext context ) {
         // get source field
         AlgDataTypeField sourceField = context.resolveSourceField( rule.targetLogicalColumnId() );
 
@@ -55,7 +55,7 @@ public final class DirectColumnTransformer implements FieldMappingTransformer<Di
         // read this column from the input row
         // this builds part of the query plan
         if ( sourceField.getType().isNullable() != targetField.getType().isNullable() ) {
-            return ConversionColumnTransformer.project( sourceField, targetField, context );
+            return RelConversionColumnTransformer.project( sourceField, targetField, context );
         }
         return context.getRexBuilder().makeInputRef( sourceField.getType(), sourceField.getIndex() );
     }

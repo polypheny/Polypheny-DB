@@ -23,6 +23,7 @@ import java.util.function.Supplier;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentMappingTransform;
 import org.polypheny.db.algebra.logical.relational.LogicalRelMappingTransform;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -38,7 +39,7 @@ import org.polypheny.db.tools.AlgBuilder;
 
 /**
  * Builds source scans from the query snapshot and attaches their mappings before combining them.
- * Physical scan dispatch is model-specific; mapped branches currently use relational bindings and UNION ALL.
+ * Relational targets can combine branches with UNION ALL. Document targets currently use one source.
  */
 public final class MappingScanBuilder {
 
@@ -53,19 +54,55 @@ public final class MappingScanBuilder {
 
 
     public AlgNode build( AllocationEntity target ) {
-        var branches = mappedBranches( target );
+        return switch ( target.dataModel ) {
+            case RELATIONAL -> buildRelScan( target );
+            case DOCUMENT -> buildDocumentScan( target );
+            case GRAPH -> createPhysicalScan( AdapterManager.getInstance().getAdapter( target.adapterId ).orElseThrow(), target );
+        };
+    }
+
+
+    private AlgNode buildRelScan( AllocationEntity target ) {
+        var branches = mappedRelBranches( target );
         if ( branches.isEmpty() ) {
             var adapter = AdapterManager.getInstance().getAdapter( target.adapterId ).orElseThrow();
             return createPhysicalScan( adapter, target );
         }
-        return branches.size() == 1 ? branches.get( 0 ) : combineScans( branches, target.getTupleType() );
+        return branches.size() == 1 ? branches.get( 0 ) : combineRelScans( branches, target.getTupleType() );
+    }
+
+
+    private AlgNode buildDocumentScan( AllocationEntity target ) {
+        var mappings = snapshot.mappings().getMappingsForLogicalEntity( target.logicalId );
+        if ( mappings.isEmpty() ) {
+            var adapter = AdapterManager.getInstance().getAdapter( target.adapterId )
+                    .orElseThrow( () -> MappingError.Missing.adapter( target.adapterId ) );
+            return createPhysicalScan( adapter, target );
+        }
+        if ( mappings.size() != 1 ) {
+            throw MappingError.Algebra.sourceBindingsAmbiguous();
+        }
+        var mapping = mappings.get( 0 );
+        var source = resolveAllocation( mapping, target, true );
+        var adapter = AdapterManager.getInstance().getAdapter( source.adapterId )
+                .orElseThrow( () -> MappingError.Missing.adapter( source.adapterId ) );
+        var binding = DocumentMappingBinding.create( mapping, source, adapter.getCatalog() );
+        try {
+            return LogicalDocumentMappingTransform.create(
+                    createPhysicalScan( adapter, source ), mapping, binding );
+        } catch ( RuntimeException e ) {
+            if ( MappingException.findCause( e ).isPresent() ) {
+                throw e;
+            }
+            throw MappingError.Operation.scanFailed( mapping.name(), source.adapterId, e );
+        }
     }
 
 
     /**
      * Builds one branch per mapping attached to the target.
      */
-    public List<LogicalRelMappingTransform> mappedBranches( AllocationEntity target ) {
+    public List<LogicalRelMappingTransform> mappedRelBranches( AllocationEntity target ) {
         // A branch is one path in the query plan that reads a physical source and applies its mapping to produce rows in the logical targets schema.
         // Find all mappings for the target
         var mappings = snapshot.mappings().getMappingsForLogicalEntity( target.logicalId );
@@ -75,7 +112,7 @@ public final class MappingScanBuilder {
         for ( SchemaMapping mapping : mappings ) {
             // Find source allocation
             AllocationEntity source = resolveAllocation( mapping, target, mappings.size() == 1 );
-            branches.add( buildMappedScan( mapping, source, target ) );
+            branches.add( buildRelMappedScan( mapping, source, target ) );
         }
         return branches;
     }
@@ -91,7 +128,7 @@ public final class MappingScanBuilder {
     }
 
 
-    private LogicalRelMappingTransform buildMappedScan( SchemaMapping mapping, AllocationEntity source, AllocationEntity target ) {
+    private LogicalRelMappingTransform buildRelMappedScan( SchemaMapping mapping, AllocationEntity source, AllocationEntity target ) {
         // Obtain source adapter physical scan
         var adapter = AdapterManager.getInstance().getAdapter( source.adapterId )
                 .orElseThrow( () -> MappingError.Missing.adapter( source.adapterId ) );
@@ -106,7 +143,7 @@ public final class MappingScanBuilder {
         }
         // transform() attaches the mapping to the plan
         return LogicalRelMappingTransform.create( input, mapping,
-                PhysicalMappingBinding.create( mapping, source, adapter.getCatalog() ), target.getTupleType() );
+                RelMappingBinding.create( mapping, source, adapter.getCatalog() ), target.getTupleType() );
     }
 
 
@@ -119,7 +156,7 @@ public final class MappingScanBuilder {
     }
 
 
-    private AlgNode combineScans( List<? extends AlgNode> branches, AlgDataType targetType ) {
+    private AlgNode combineRelScans( List<LogicalRelMappingTransform> branches, AlgDataType targetType ) {
         AlgBuilder union = builderFactory.get();
         branches.forEach( union::push );
         // Append the branches using UNION ALL

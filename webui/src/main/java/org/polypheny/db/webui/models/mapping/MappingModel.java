@@ -33,13 +33,15 @@ import org.polypheny.db.algebra.mapping.RuleRepository;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.mapping.SchemaMappingManager;
 import org.polypheny.db.catalog.entity.mapping.rules.ColumnMappingRule;
 import org.polypheny.db.catalog.entity.mapping.rules.MappingRule;
 import org.polypheny.db.catalog.entity.mapping.rules.RuleDefinition;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.MappingKind;
-import org.polypheny.db.catalog.mapping.MappingState;
+import org.polypheny.db.catalog.mapping.DocumentMappingState;
+import org.polypheny.db.catalog.mapping.RelMappingState;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.type.PolyType;
 
@@ -47,7 +49,7 @@ import org.polypheny.db.type.PolyType;
  * MappingModel defines the mapping data the backend sends to the frontend:
  * Summary - brief mapping information used by adapter cards and the sidebar.
  * ListResponse - groups summaries by adapter.
- * Detail - supplies the editor with names, fields, physical references, rules, editability, revision and validation guidance.
+ * RelDetail - supplies the editor with names, fields, physical references, rules, editability, revision and validation guidance.
  * Error - supplies error messages, field errors and blocking dependencies.
  */
 @Slf4j
@@ -58,7 +60,7 @@ public final class MappingModel {
 
 
     @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
-    public record ConversionValidation( List<ColumnCheck> columns ) {
+    public record RelConversionValidation( List<ColumnCheck> columns ) {
     }
 
 
@@ -78,7 +80,15 @@ public final class MappingModel {
                            MappingKind kind, Long sourceEntityId, long targetEntityId, DataModel sourceModel, DataModel targetModel,
                            List<PhysicalSource> physicalSources, String revision, boolean removable, String removalBlockedReason, boolean removesTarget ) {
 
-        public static Summary from( MappingState state ) {
+        public static Summary from( DocumentMappingState state ) {
+            var p = state.physical();
+            return new Summary( state.mapping().id(), state.adapter().id, state.adapter().uniqueName, state.mapping().name(),
+                    state.namespace().name, state.collection().name, state.editable(), state.readOnlyReason(),
+                    state.mapping().kind(), null, state.collection().id, DataModel.DOCUMENT, DataModel.DOCUMENT,
+                    List.of( new PhysicalSource( p.allocationId, p.id, p.namespaceName, p.name ) ), state.revision(), state.removable(), state.removalBlockedReason(), true );
+        }
+
+        public static Summary from( RelMappingState state ) {
             return new Summary( state.mapping().id(), state.adapter().id, state.adapter().uniqueName, state.mapping().name(),
                     state.namespace().name, state.table().name, state.editable(), state.readOnlyReason(),
                     state.mapping().kind(), state.mapping().sourceEntityId(), state.mapping().targetEntityId(), state.mapping().sourceModel(), state.mapping().targetModel(),
@@ -105,18 +115,18 @@ public final class MappingModel {
 
 
     @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
-    public record Source( long adapterId, String adapterName, long targetEntityId, String namespaceName, String logicalTableName, MappingKind kind, long sourceAllocationId ) {
+    public record RelSource( long adapterId, String adapterName, long targetEntityId, String namespaceName, String logicalTableName, MappingKind kind, long sourceAllocationId ) {
 
-        public static Source from( MappingState state ) {
+        public static RelSource from( RelMappingState state ) {
             var physical = state.physicalTables().get( 0 );
-            return new Source( state.adapter().id, state.adapter().uniqueName, state.table().id, physical.namespaceName, physical.name, state.mapping().kind(), physical.allocationId );
+            return new RelSource( state.adapter().id, state.adapter().uniqueName, state.table().id, physical.namespaceName, physical.name, state.mapping().kind(), physical.allocationId );
         }
 
     }
 
 
     @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
-    public record SourcesResponse( List<Source> sources ) {
+    public record RelSourcesResponse( List<RelSource> sources ) {
     }
 
 
@@ -226,15 +236,15 @@ public final class MappingModel {
                               String mappingNameMessage, String identifierMessage ) {
 
         public static Validation current() {
-            return new Validation( MappingState.MAPPING_NAME_MAX_LENGTH, MappingState.IDENTIFIER_MAX_LENGTH,
-                    MappingState.IDENTIFIER_PATTERN, MappingState.mappingNameMessage(), MappingState.identifierMessage() );
+            return new Validation( SchemaMappingManager.MAPPING_NAME_MAX_LENGTH, SchemaMappingManager.IDENTIFIER_MAX_LENGTH,
+                    SchemaMappingManager.IDENTIFIER_PATTERN, SchemaMappingManager.mappingNameMessage(), SchemaMappingManager.identifierMessage() );
         }
 
     }
 
 
     @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
-    public record Detail( long mappingId, long adapterId, String adapterName, String mappingName,
+    public record RelDetail( long mappingId, long adapterId, String adapterName, String mappingName,
                           String namespaceName, String logicalTableName, boolean editable, String readOnlyReason,
                           String revision, long namespaceId, boolean namespaceCaseSensitive, List<Column> columns,
                           List<PhysicalSource> physicalSources, MappingKind kind, Long sourceEntityId, long targetEntityId,
@@ -242,7 +252,7 @@ public final class MappingModel {
                           boolean removable, String removalBlockedReason, boolean removesTarget, Long fixedTargetEntityId, List<Column> targetColumns,
                           Map<PolyType, TypeParameters> typeParameters, Map<Long, String> excludedColumnRules ) {
 
-        public static Detail from( MappingState state, Catalog catalog ) {
+        public static RelDetail from( RelMappingState state, Catalog catalog ) {
             var snapshot = catalog.getSnapshot();
             Map<SourceTable, Set<String>> primaryColumns = new HashMap<>();
             Map<Long, Set<String>> primaryColumnsByPhysicalId = new HashMap<>();
@@ -262,13 +272,14 @@ public final class MappingModel {
             Map<PolyType, TypeParameters> typeParameters = columns.stream().flatMap( column -> column.targetTypeOptions().stream() )
                     .filter( PolyType::allowsPrec ).distinct()
                     .collect( Collectors.toMap( type -> type, TypeParameters::from ) );
-            return new Detail( state.mapping().id(), state.adapter().id, state.adapter().uniqueName, state.mapping().name(),
+            return new RelDetail( state.mapping().id(), state.adapter().id, state.adapter().uniqueName, state.mapping().name(),
                     state.namespace().name, state.table().name, state.editable(), state.readOnlyReason(), state.revision(),
                     state.namespace().id, state.namespace().caseSensitive, columns,
                     state.physicalTables().stream().map( p -> new PhysicalSource( p.allocationId, p.id, p.namespaceName, p.name ) ).toList(),
                     state.mapping().kind(), state.mapping().sourceEntityId(), state.mapping().targetEntityId(), state.mapping().sourceModel(), state.mapping().targetModel(),
                     state.mapping().rules().stream().map( Rule::from ).toList(), Validation.current(),
-                    RuleRepository.definitions().stream().map( definition -> new RuleOption( definition.id(), definition.label() ) ).toList(),
+                    RuleRepository.definitions().stream().filter( definition -> ColumnMappingRule.class.isAssignableFrom( definition.ruleClass() ) )
+                            .map( definition -> new RuleOption( definition.id(), definition.label() ) ).toList(),
                     state.removable(), state.removalBlockedReason(),
                     state.fixedTargetEntityId() == null, state.fixedTargetEntityId(),
                     state.targetColumns().stream().map( column -> new Column(
@@ -282,6 +293,37 @@ public final class MappingModel {
 
     @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
     public record Error( String code, String message, Map<String, String> fieldErrors, List<String> blockingEntities ) {
+    }
+
+
+    @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+    public record DocumentDetail( long mappingId, long adapterId, String adapterName, String mappingName, long namespaceId, String namespaceName,
+                                  boolean namespaceCaseSensitive, String logicalCollectionName, long targetEntityId, long sourceAllocationId,
+                                  DataModel sourceModel, DataModel targetModel, MappingKind kind, List<PhysicalSource> physicalSources,
+                                  List<Rule> rules, String revision, boolean editable, String readOnlyReason,
+                                  boolean removable, String removalBlockedReason, Validation validation ) {
+
+        public static DocumentDetail from( DocumentMappingState state ) {
+            var p = state.physical();
+            return new DocumentDetail( state.mapping().id(), state.adapter().id, state.adapter().uniqueName, state.mapping().name(),
+                    state.namespace().id, state.namespace().name, state.namespace().caseSensitive, state.collection().name,
+                    state.mapping().targetEntityId(), p.allocationId, DataModel.DOCUMENT, DataModel.DOCUMENT, state.mapping().kind(),
+                    List.of( new PhysicalSource( p.allocationId, p.id, p.namespaceName, p.name ) ),
+                    state.mapping().rules().stream().map( Rule::from ).toList(), state.revision(), state.editable(), state.readOnlyReason(),
+                    state.removable(), state.removalBlockedReason(), Validation.current() );
+        }
+
+    }
+
+
+    @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+    public record DocumentSource( long adapterId, String adapterName, long sourceEntityId, long sourceAllocationId,
+                                  String namespaceName, String physicalName ) {
+    }
+
+
+    @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
+    public record DocumentSourcesResponse( List<DocumentSource> sources ) {
     }
 
 }

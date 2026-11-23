@@ -34,7 +34,23 @@ import org.polypheny.db.type.entity.relational.PolyMap;
 public final class JsonToPolyConverter {
 
     public PolyDocument nodeToPolyDocument( JsonNode node ) {
-        return new PolyDocument( nodeToPolyMap( node ) );
+        Map<PolyString, PolyValue> values = new HashMap<>();
+        node.fields().forEachRemaining( entry -> values.put( PolyString.of( entry.getKey() ), nodeToDocumentValue( entry.getValue() ) ) );
+        return new PolyDocument( values );
+    }
+
+
+    /**
+     * recursively converts an already parsed JSON value.
+     */
+    private PolyValue nodeToDocumentValue( JsonNode node ) {
+        if ( node.isObject() ) {
+            return nodeToPolyDocument( node );
+        }
+        if ( node.isArray() ) {
+            return PolyList.of( StreamSupport.stream( node.spliterator(), false ).map( this::nodeToDocumentValue ).toList() );
+        }
+        return nodeToPolyValue( node );
     }
 
 

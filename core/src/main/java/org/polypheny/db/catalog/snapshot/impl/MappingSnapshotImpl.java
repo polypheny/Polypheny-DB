@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import org.jetbrains.annotations.NotNull;
+import org.polypheny.db.algebra.mapping.DocumentMappingBinding;
 import org.polypheny.db.algebra.mapping.RuleRepository;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
 import org.polypheny.db.catalog.entity.mapping.rules.ColumnMappingRule;
@@ -76,6 +77,20 @@ public final class MappingSnapshotImpl implements MappingSnapshot {
 
 
     private static void validateRules( SchemaMapping mapping ) {
+        switch ( mapping.targetModel() ) {
+            case RELATIONAL -> validateRelRules( mapping );
+            case DOCUMENT -> validateDocumentRules( mapping );
+            case GRAPH -> throw MappingError.Unsupported.models( mapping.id(), mapping.sourceModel(), mapping.targetModel() );
+        }
+    }
+
+
+    private static void validateDocumentRules( SchemaMapping mapping ) {
+        DocumentMappingBinding.validateIdentity( mapping );
+    }
+
+
+    private static void validateRelRules( SchemaMapping mapping ) {
         Set<Long> ruleColumnIds = new HashSet<>();
         for ( MappingRule rule : mapping.rules() ) {
             if ( RuleRepository.definitionFor( rule.getClass() ).isEmpty() ) {

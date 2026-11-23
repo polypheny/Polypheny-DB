@@ -53,24 +53,23 @@ import org.polypheny.db.catalog.entity.mapping.rules.MappingRule;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.MappingError;
-import org.polypheny.db.catalog.exceptions.MappingMissingException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.MappingKind;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.snapshot.Snapshot;
-import org.polypheny.db.ddl.MappingUpdate.ColumnName;
-import org.polypheny.db.ddl.MappingUpdate;
+import org.polypheny.db.ddl.RelMappingUpdate.ColumnName;
+import org.polypheny.db.ddl.RelMappingUpdate;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.ScalarConversions;
 
 
 /**
- * MappingState resolves accepted mapping metadata for the editor.
+ * RelMappingState resolves accepted mapping metadata for the editor.
  * It gathers the current catalog information needed to view or edit one mapping:
  * definition, adapter, logical target, columns, physical sources, revision, and editing/removal restrictions.
  */
-public record MappingState(
+public record RelMappingState(
         LogicalAdapter adapter,
         SchemaMapping mapping,
         LogicalNamespace namespace,
@@ -83,29 +82,9 @@ public record MappingState(
         Long fixedTargetEntityId,
         List<LogicalColumn> targetColumns ) {
 
-    public MappingState( LogicalAdapter adapter, SchemaMapping mapping, LogicalNamespace namespace, LogicalTable table,
+    public RelMappingState( LogicalAdapter adapter, SchemaMapping mapping, LogicalNamespace namespace, LogicalTable table,
             List<LogicalColumn> columns, List<PhysicalTable> physicalTables, String revision, String readOnlyReason, String removalBlockedReason ) {
         this( adapter, mapping, namespace, table, columns, physicalTables, revision, readOnlyReason, removalBlockedReason, null, List.of() );
-    }
-
-    public static final int MAPPING_NAME_MAX_LENGTH = 255;
-    public static final int IDENTIFIER_MAX_LENGTH = 100;
-    public static final String IDENTIFIER_PATTERN = "[a-zA-Z_][a-zA-Z0-9_]*";
-
-
-    /**
-     * Returns the validation message describing mapping-name requirements.
-     */
-    public static String mappingNameMessage() {
-        return "Enter a mapping name of 1–" + MAPPING_NAME_MAX_LENGTH + " characters.";
-    }
-
-
-    /**
-     * Returns the validation message describing table- and column-name requirements.
-     */
-    public static String identifierMessage() {
-        return "Use an identifier of up to " + IDENTIFIER_MAX_LENGTH + " letters, digits or underscores, starting with a letter or underscore.";
     }
 
     /**
@@ -144,17 +123,17 @@ public record MappingState(
     /**
      * Loads an existing mapping and resolves its state for the specified adapter.
      */
-    public static MappingState load( Catalog catalog, long adapterId, long mappingId ) {
-        SchemaMapping mapping = catalog.getSnapshot().mappings().getMapping( mappingId ).orElseThrow( MappingState::notFound );
+    public static RelMappingState load( Catalog catalog, long adapterId, long mappingId ) {
+        SchemaMapping mapping = catalog.getSnapshot().mappings().getMapping( mappingId ).orElseThrow( MappingError.Missing::resource );
         return resolve( catalog, adapterId, mapping );
     }
 
     /**
      * Finds the mapping’s source adapter and resolves its state.
      */
-    public static MappingState load( Catalog catalog, long mappingId ) {
+    public static RelMappingState load( Catalog catalog, long mappingId ) {
         var snapshot = catalog.getSnapshot();
-        var mapping = snapshot.mappings().getMapping( mappingId ).orElseThrow( MappingState::notFound );
+        var mapping = snapshot.mappings().getMapping( mappingId ).orElseThrow( MappingError.Missing::resource );
         long adapterId = SchemaMappingManager.sourceAllocations( catalog, mapping ).stream().min( Comparator.comparingLong( a -> a.id ) )
                 .orElseThrow( () -> MappingError.Missing.sourceAllocation( mapping.id() ) ).adapterId;
         return resolve( catalog, adapterId, mapping );
@@ -163,7 +142,7 @@ public record MappingState(
     /**
      * Prepares a new-target mapping draft from the selected source.
      */
-    public static MappingState draft( Catalog catalog, long adapterId, long targetEntityId ) {
+    public static RelMappingState draft( Catalog catalog, long adapterId, long targetEntityId ) {
         return draft( catalog, adapterId, targetEntityId, null, null );
     }
 
@@ -171,17 +150,17 @@ public record MappingState(
     /**
      * Prepares a draft using a selected source allocation and optionally an existing target.
      */
-    public static MappingState draft( Catalog catalog, long adapterId, long targetEntityId, Long existingTargetEntityId, Long sourceAllocationId ) {
+    public static RelMappingState draft( Catalog catalog, long adapterId, long targetEntityId, Long existingTargetEntityId, Long sourceAllocationId ) {
         var snapshot = catalog.getSnapshot();
-        var table = snapshot.rel().getTable( targetEntityId ).orElseThrow( MappingState::notFound );
+        var table = snapshot.rel().getTable( targetEntityId ).orElseThrow( MappingError.Missing::resource );
         var rules = catalog.getLogicalRel( table.namespaceId ).getColumns().values().stream().filter( c -> c.tableId == table.id )
                 .sorted( Comparator.comparingInt( c -> c.position ) ).<MappingRule>map( column -> new DirectColumnMappingRule( column.id ) ).toList();
         var mapping = new SchemaMapping( -1, "New mapping", MappingKind.PHYSICAL_TO_LOGICAL, null, table.id,
                 DataModel.RELATIONAL, DataModel.RELATIONAL, rules, null );
         long allocationId = snapshot.alloc().getFromLogical( table.id ).stream().filter( allocation -> allocation.adapterId == adapterId
-                && (sourceAllocationId == null || sourceAllocationId == allocation.id) ).min( Comparator.comparingLong( allocation -> allocation.id ) ).orElseThrow( MappingState::notFound ).id;
+                && (sourceAllocationId == null || sourceAllocationId == allocation.id) ).min( Comparator.comparingLong( allocation -> allocation.id ) ).orElseThrow( MappingError.Missing::resource ).id;
         mapping = mapping.withSourceAllocation( allocationId );
-        MappingState source = resolve( catalog, adapterId, mapping );
+        RelMappingState source = resolve( catalog, adapterId, mapping );
         if ( source.physicalTables().size() != 1 ) {
             throw MappingError.Unsupported.singlePhysicalSourceRequired();
         }
@@ -191,7 +170,7 @@ public record MappingState(
         if ( targetBase.isEmpty() || Character.isDigit( targetBase.charAt( 0 ) ) ) {
             targetBase = "source_" + targetBase;
         }
-        targetBase = targetBase.substring( 0, Math.min( targetBase.length(), IDENTIFIER_MAX_LENGTH - 16 ) ) + "_mapped";
+        targetBase = targetBase.substring( 0, Math.min( targetBase.length(), SchemaMappingManager.IDENTIFIER_MAX_LENGTH - 16 ) ) + "_mapped";
         String targetName = targetBase;
         for ( int suffix = 2; snapshot.rel().getTable( table.namespaceId, targetName ).isPresent(); suffix++ ) {
             targetName = targetBase + "_" + suffix;
@@ -202,23 +181,23 @@ public record MappingState(
         rules = draftColumns.stream().<MappingRule>map( column -> new DirectColumnMappingRule( column.id ) ).toList();
         mapping = new SchemaMapping( -1, mapping.name(), mapping.kind(), null, table.id, mapping.sourceModel(), mapping.targetModel(), rules, allocationId );
         if ( existingTargetEntityId != null ) {
-            var target = snapshot.rel().getTable( existingTargetEntityId ).orElseThrow( MappingState::notFound );
+            var target = snapshot.rel().getTable( existingTargetEntityId ).orElseThrow( MappingError.Missing::resource );
             validateExistingTarget( catalog, target );
             if ( SchemaMappingManager.isPhysicalSourceMappedToTarget( catalog, source.mapping(), target.id ) ) {
                 throw MappingError.Duplicate.sourceTargetPair();
             }
-            var targetNamespace = snapshot.getNamespace( target.namespaceId ).orElseThrow( MappingState::notFound );
+            var targetNamespace = snapshot.getNamespace( target.namespaceId ).orElseThrow( MappingError.Missing::resource );
             var targetColumns = snapshot.rel().getColumns( target.id );
             var proposed = draftColumns.stream().map( column -> {
                 var match = targetColumns.stream().filter( targetColumn -> targetNamespace.caseSensitive
                         ? targetColumn.name.equals( column.name ) : targetColumn.name.equalsIgnoreCase( column.name ) ).findFirst();
                 return match.<LogicalColumn>map( targetColumn -> column.toBuilder().name( targetColumn.name ).build() ).orElse( column );
             } ).toList();
-            return new MappingState( source.adapter(), new SchemaMapping( -1, name, mapping.kind(), null, target.id,
+            return new RelMappingState( source.adapter(), new SchemaMapping( -1, name, mapping.kind(), null, target.id,
                     mapping.sourceModel(), mapping.targetModel(), rules, allocationId ), targetNamespace, target, proposed,
                     source.physicalTables(), source.revision() + ":" + targetRevision( catalog, target ), source.readOnlyReason(), source.removalBlockedReason(), target.id, targetColumns );
         }
-        return new MappingState( source.adapter(), SchemaMappingManager.renameMapping( mapping, name ), source.namespace(),
+        return new RelMappingState( source.adapter(), SchemaMappingManager.renameMapping( mapping, name ), source.namespace(),
                 source.table().toBuilder().name( targetName ).build(), draftColumns, source.physicalTables(), source.revision(), source.readOnlyReason(), source.removalBlockedReason() );
     }
 
@@ -227,19 +206,19 @@ public record MappingState(
      * Revision is a fingerprint of the mapping current catalog state,
      * used to detect changes made after the editor was opened.
      */
-    private static MappingState resolve( Catalog catalog, long adapterId, SchemaMapping mapping ) {
+    private static RelMappingState resolve( Catalog catalog, long adapterId, SchemaMapping mapping ) {
         Snapshot snapshot = catalog.getSnapshot();
-        LogicalAdapter adapter = snapshot.getAdapter( adapterId ).orElseThrow( MappingState::notFound );
+        LogicalAdapter adapter = snapshot.getAdapter( adapterId ).orElseThrow( MappingError.Missing::resource );
         if ( mapping.kind() != MappingKind.PHYSICAL_TO_LOGICAL ) {
             throw MappingError.Unsupported.kind( mapping.id(), mapping.kind() );
         }
-        LogicalTable table = snapshot.rel().getTable( mapping.targetEntityId() ).orElseThrow( MappingState::notFound );
+        LogicalTable table = snapshot.rel().getTable( mapping.targetEntityId() ).orElseThrow( MappingError.Missing::resource );
         List<AllocationEntity> allocations = SchemaMappingManager.sourceAllocations( catalog, mapping ).stream()
                 .sorted( Comparator.comparingLong( a -> a.id ) ).toList();
         if ( allocations.stream().noneMatch( a -> a.adapterId == adapterId ) ) {
-            throw notFound();
+            throw MappingError.Missing.resource();
         }
-        LogicalNamespace namespace = snapshot.getNamespace( table.namespaceId ).orElseThrow( MappingState::notFound );
+        LogicalNamespace namespace = snapshot.getNamespace( table.namespaceId ).orElseThrow( MappingError.Missing::resource );
         // Keep accepted source metadata available to the editor even when a field is excluded from the published schema.
         List<LogicalColumn> columns = catalog.getLogicalRel( namespace.id ).getColumns().values().stream().filter( c -> c.tableId == table.id )
                 .sorted( Comparator.comparingInt( c -> c.position ) ).toList();
@@ -266,11 +245,11 @@ public record MappingState(
                 || !(catalog.getAdapterCatalog( adapterId ).orElse( null ) instanceof RelAdapterCatalog) ) {
             reason = "Editing is currently supported for CSV source mappings on one adapter.";
         }
-        String removalReason = SchemaMappingManager.removalBlockedReason( catalog, snapshot.mappings().getMappings(), mapping, table );
+        String removalReason = SchemaMappingManager.removalBlockedReason( catalog, mapping );
         if ( removalReason == null && snapshot.mappings().getMappingsForLogicalEntity( table.id ).size() == 1 && (!snapshot.rel().getConnectedViews( table.id ).isEmpty() || !snapshot.rel().getExportedKeys( table.id ).isEmpty()) ) {
             removalReason = "Dependent views or foreign keys prevent dropping this mapping's logical target.";
         }
-        return new MappingState( adapter, mapping, namespace, table, columns, List.copyOf( physicalTables ),
+        return new RelMappingState( adapter, mapping, namespace, table, columns, List.copyOf( physicalTables ),
                 revision( adapter, mapping, namespace, table, columns, allocations, physicalTables ), reason,
                 reason != null ? reason : removalReason, snapshot.mappings().getMappingsForLogicalEntity( table.id ).size() > 1 ? table.id : null,
                 snapshot.mappings().getMappingsForLogicalEntity( table.id ).size() > 1 ? snapshot.rel().getColumns( table.id ) : List.of() );
@@ -278,23 +257,20 @@ public record MappingState(
 
 
     private static boolean supportsRuleInEditor( SchemaMapping mapping, MappingRule rule ) {
-        if ( RuleRepository.definitionFor( rule.getClass() ).isEmpty() ) {
+        if ( mapping.sourceModel() != DataModel.RELATIONAL || mapping.targetModel() != DataModel.RELATIONAL ) {
             return false;
         }
-        return switch ( mapping.sourceModel() ) {
-            case RELATIONAL -> mapping.targetModel() == DataModel.RELATIONAL && rule instanceof ColumnMappingRule;
-            case DOCUMENT, GRAPH -> false;
-        };
+        return rule instanceof ColumnMappingRule && RuleRepository.definitionFor( rule.getClass() ).isPresent();
     }
 
 
     /**
      * Validates the proposed changes, target compatibility, and dependencies, then returns a normalized update command.
      */
-    public MappingUpdate validate( MappingUpdate update, Snapshot snapshot ) {
-        // checks that the save request refers to the same adapter and mapping that MappingState loaded
+    public RelMappingUpdate validate( RelMappingUpdate update, Snapshot snapshot ) {
+        // checks that the save request refers to the same adapter and mapping that RelMappingState loaded
         if ( update.adapterId() != adapter.id || update.mappingId() != mapping.id() ) {
-            throw notFound();
+            throw MappingError.Missing.resource();
         }
 
         // prevents a stale editor from overwriting newer changes
@@ -309,8 +285,8 @@ public record MappingState(
         }
         Map<String, String> errors = new LinkedHashMap<>();
         String label = update.mappingName() == null ? "" : update.mappingName().trim();
-        if ( label.isEmpty() || label.length() > MAPPING_NAME_MAX_LENGTH ) {
-            errors.put( "mappingName", mappingNameMessage() );
+        if ( label.isEmpty() || label.length() > SchemaMappingManager.MAPPING_NAME_MAX_LENGTH ) {
+            errors.put( "mappingName", SchemaMappingManager.mappingNameMessage() );
         } else if ( SchemaMappingManager.isMappingNameTaken( snapshot.mappings().getMappings(), label, mapping.id() ) ) {
             errors.put( "mappingName", "A mapping with this name already exists." );
         }
@@ -397,7 +373,7 @@ public record MappingState(
                 throw MappingError.Conflict.schemaChangeBlocked( !changedTypes.isEmpty(), dependencies.stream().distinct().toList() );
             }
         }
-        return new MappingUpdate( adapter.id, mapping.id(), revision, label, tableName, List.copyOf( names ), targetNamespace.id, update.existingTargetEntityId(), update.sourceAllocationId() );
+        return new RelMappingUpdate( adapter.id, mapping.id(), revision, label, tableName, List.copyOf( names ), targetNamespace.id, update.existingTargetEntityId(), update.sourceAllocationId() );
     }
 
 
@@ -597,8 +573,8 @@ public record MappingState(
         if ( name.equals( original ) ) {
             return original;
         }
-        if ( name.length() > IDENTIFIER_MAX_LENGTH || !name.matches( IDENTIFIER_PATTERN ) ) {
-            errors.put( field, identifierMessage() );
+        if ( name.length() > SchemaMappingManager.IDENTIFIER_MAX_LENGTH || !name.matches( SchemaMappingManager.IDENTIFIER_PATTERN ) ) {
+            errors.put( field, SchemaMappingManager.identifierMessage() );
         }
         return key( name, targetNamespace );
     }
@@ -689,12 +665,5 @@ public record MappingState(
         }
     }
 
-
-    /**
-     * Creates the standard exception indicating that the source adapter or mapping is unavailable.
-     */
-    public static MappingMissingException notFound() {
-        return MappingError.Missing.resource();
-    }
 
 }

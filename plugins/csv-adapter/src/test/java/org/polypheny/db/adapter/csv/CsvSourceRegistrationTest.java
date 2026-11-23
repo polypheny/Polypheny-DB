@@ -35,7 +35,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.algebra.mapping.PhysicalMappingBinding;
+import org.polypheny.db.algebra.mapping.RelMappingBinding;
 import org.polypheny.db.adapter.RelationalDataSource.ExportedColumn;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
@@ -48,8 +48,8 @@ import org.polypheny.db.catalog.impl.PolyCatalog;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.ddl.DdlManagerImpl;
-import org.polypheny.db.ddl.MappingUpdate;
-import org.polypheny.db.catalog.mapping.MappingState;
+import org.polypheny.db.ddl.RelMappingUpdate;
+import org.polypheny.db.catalog.mapping.RelMappingState;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
@@ -168,13 +168,13 @@ class CsvSourceRegistrationTest {
                         default -> null;
                     } );
             var ddl = new DdlManagerImpl( catalog );
-            var draft = MappingState.draft( catalog, adapterId, mapping.targetEntityId() );
-            var names = draft.columns().stream().map( column -> new MappingUpdate.ColumnName( column.id,
+            var draft = RelMappingState.draft( catalog, adapterId, mapping.targetEntityId() );
+            var names = draft.columns().stream().map( column -> new RelMappingUpdate.ColumnName( column.id,
                     "target_" + column.name, column.name.equals( "name" ) ) ).toList();
-            var initialTarget = ddl.createMapping( mapping.targetEntityId(), new MappingUpdate( adapterId, -1, draft.revision(),
+            var initialTarget = ddl.createRelMapping( mapping.targetEntityId(), new RelMappingUpdate( adapterId, -1, draft.revision(),
                     "Employee names", "employee_names", names ), statement );
             var initialAllocation = catalog.getSnapshot().alloc().getFromLogical( initialTarget.table().id ).get( 0 ).unwrapOrThrow( AllocationTable.class );
-            PhysicalMappingBinding binding = PhysicalMappingBinding.create( initialTarget.mapping(), initialAllocation, source.adapterCatalog );
+            RelMappingBinding binding = RelMappingBinding.create( initialTarget.mapping(), initialAllocation, source.adapterCatalog );
             assertEquals( 2, binding.columns().size() );
             assertEquals( List.of( "target_name" ), catalog.getSnapshot().rel().getColumns( initialTarget.table().id ).stream().map( column -> column.name ).toList() );
             assertEquals( mapping, catalog.getSnapshot().mappings().getMappingsForLogicalEntity( mapping.targetEntityId() ).get( 0 ) );
@@ -185,18 +185,18 @@ class CsvSourceRegistrationTest {
 
             long reportingNamespace = catalog.createNamespace( "csv_reporting", DataModel.RELATIONAL, false, false );
             catalog.commit();
-            var movedColumns = initialTarget.columns().stream().map( column -> new MappingUpdate.ColumnName(
+            var movedColumns = initialTarget.columns().stream().map( column -> new RelMappingUpdate.ColumnName(
                     column.id, column.name, initialTarget.isIncluded( column.id ) ) ).toList();
-            var created = ddl.updateMapping( new MappingUpdate( adapterId, initialTarget.mapping().id(), initialTarget.revision(),
+            var created = ddl.updateRelMapping( new RelMappingUpdate( adapterId, initialTarget.mapping().id(), initialTarget.revision(),
                     initialTarget.mapping().name(), initialTarget.table().name, movedColumns, reportingNamespace ), statement );
             var targetAllocation = catalog.getSnapshot().alloc().getFromLogical( created.table().id ).get( 0 ).unwrapOrThrow( AllocationTable.class );
             assertEquals( reportingNamespace, targetAllocation.namespaceId );
             assertEquals( initialAllocation.id, targetAllocation.id );
 
-            ddl.removeMapping( mapping.id(), MappingState.load( catalog, mapping.id() ).revision(), statement );
+            ddl.removeMapping( mapping.id(), RelMappingState.load( catalog, mapping.id() ).revision(), statement );
             assertTrue( catalog.getSnapshot().rel().getTable( mapping.targetEntityId() ).isEmpty() );
             assertTrue( source.adapterCatalog.getPhysicalsFromAllocs( allocation.id ) == null );
-            assertTrue( !MappingState.load( catalog, created.mapping().id() ).removable() );
+            assertTrue( !RelMappingState.load( catalog, created.mapping().id() ).removable() );
             DataContext context = (DataContext) Proxy.newProxyInstance( DataContext.class.getClassLoader(), new Class[]{ DataContext.class },
                     ( proxy, method, args ) -> method.getName().equals( "getStatement" ) ? statement : new AtomicBoolean( false ) );
             var scan = (CsvFilterableTable) source.adapterCatalog.fromAllocation( targetAllocation.id );
@@ -208,11 +208,11 @@ class CsvSourceRegistrationTest {
                 assertTrue( !rows.moveNext() );
             }
             assertEquals( contents, Files.readString( csvFile ) );
-            assertThrows( MappingDuplicateException.class, () -> MappingState.draft( catalog, adapterId, created.table().id, created.table().id, targetAllocation.id ) );
-            var incoming = MappingState.draft( catalog, adapterId, extraMapping.targetEntityId(), created.table().id, extraAllocationId );
-            var incomingNames = incoming.columns().stream().map( column -> new MappingUpdate.ColumnName( column.id,
+            assertThrows( MappingDuplicateException.class, () -> RelMappingState.draft( catalog, adapterId, created.table().id, created.table().id, targetAllocation.id ) );
+            var incoming = RelMappingState.draft( catalog, adapterId, extraMapping.targetEntityId(), created.table().id, extraAllocationId );
+            var incomingNames = incoming.columns().stream().map( column -> new RelMappingUpdate.ColumnName( column.id,
                     column.name.equals( "name" ) ? "target_name" : column.name, column.name.equals( "name" ) ) ).toList();
-            var attached = ddl.createMapping( extraMapping.targetEntityId(), new MappingUpdate( adapterId, -1, incoming.revision(),
+            var attached = ddl.createRelMapping( extraMapping.targetEntityId(), new RelMappingUpdate( adapterId, -1, incoming.revision(),
                     incoming.mapping().name(), created.table().name, incomingNames, created.namespace().id, created.table().id, extraAllocationId ), statement );
             assertEquals( created.table().id, attached.table().id );
             assertEquals( 2, catalog.getSnapshot().mappings().getMappingsForLogicalEntity( created.table().id ).size() );
@@ -227,10 +227,10 @@ class CsvSourceRegistrationTest {
             ddl.removeMapping( attached.mapping().id(), attached.revision(), statement );
             assertTrue( catalog.getSnapshot().rel().getTable( created.table().id ).isPresent() );
             assertEquals( 1, catalog.getSnapshot().mappings().getMappingsForLogicalEntity( created.table().id ).size() );
-            assertTrue( !MappingState.load( catalog, created.mapping().id() ).removable() );
+            assertTrue( !RelMappingState.load( catalog, created.mapping().id() ).removable() );
             // Keep two contributions to exercise adapter cleanup for a shared target as well.
-            incoming = MappingState.draft( catalog, adapterId, extraMapping.targetEntityId(), created.table().id, extraAllocationId );
-            ddl.createMapping( extraMapping.targetEntityId(), new MappingUpdate( adapterId, -1, incoming.revision(),
+            incoming = RelMappingState.draft( catalog, adapterId, extraMapping.targetEntityId(), created.table().id, extraAllocationId );
+            ddl.createRelMapping( extraMapping.targetEntityId(), new RelMappingUpdate( adapterId, -1, incoming.revision(),
                     incoming.mapping().name(), created.table().name, incomingNames, created.namespace().id, created.table().id, extraAllocationId ), statement );
             ddl.dropAdapter( "csv_registration_test", statement );
 

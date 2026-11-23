@@ -43,8 +43,8 @@ import org.polypheny.db.catalog.exceptions.MappingValidationException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.MappingKind;
-import org.polypheny.db.catalog.mapping.MappingState;
-import org.polypheny.db.ddl.MappingUpdate.ColumnName;
+import org.polypheny.db.catalog.mapping.RelMappingState;
+import org.polypheny.db.ddl.RelMappingUpdate.ColumnName;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
@@ -56,7 +56,7 @@ import org.polypheny.db.webui.models.mapping.MappingModel;
 import org.polypheny.db.webui.models.mapping.MappingModel.ConversionFailure;
 
 
-class MappingConversionValidatorTest {
+class RelMappingConversionValidatorTest {
 
     @BeforeAll
     static void initializeHome() {
@@ -72,9 +72,9 @@ class MappingConversionValidatorTest {
             null, 40, null, null, null, true, true, null, null );
 
 
-    private MappingState state() {
+    private RelMappingState state() {
         var physical = new PhysicalColumn( "source_amount", 50, 60, 7, 0, column );
-        return new MappingState( new LogicalAdapter( 7, "csv_source", "CSV", AdapterType.SOURCE, DeployMode.EMBEDDED, Map.of() ),
+        return new RelMappingState( new LogicalAdapter( 7, "csv_source", "CSV", AdapterType.SOURCE, DeployMode.EMBEDDED, Map.of() ),
                 new SchemaMapping( 31, "Import", MappingKind.PHYSICAL_TO_LOGICAL, null, 50, DataModel.RELATIONAL, DataModel.RELATIONAL,
                         List.of( new DirectColumnMappingRule( column.id ) ), 60L ),
                 new LogicalNamespace( 1, "public", DataModel.RELATIONAL, false, false ),
@@ -87,7 +87,7 @@ class MappingConversionValidatorTest {
     void serializesValidationResultsWithTheHttpServerMapper() throws Exception {
         var failure = new MappingModel.ConversionFailure( 3,
                 new MappingModel.Error( "EXECUTION", "Cannot convert the source value to INTEGER.", Map.of(), List.of() ) );
-        var response = new MappingModel.ConversionValidation( List.of(
+        var response = new MappingModel.RelConversionValidation( List.of(
                 new MappingModel.ColumnCheck( column.id, 10, List.of( failure ) ),
                 new MappingModel.ColumnCheck( 102, 4, List.of() ) ) );
         var json = HttpServer.mapper.readTree( HttpServer.mapper.writeValueAsString( response ) );
@@ -108,7 +108,7 @@ class MappingConversionValidatorTest {
         var target = state.previewColumn( new ColumnName( column.id, column.name, true, PolyType.INTEGER, true, null, null, "CONVERT_COLUMN" ) );
         List<List<PolyValue>> rows = IntStream.rangeClosed( 1, 11 ).mapToObj( i -> List.<PolyValue>of(
                 PolyString.of( i == 3 || i == 7 || i == 11 ? "bad" + i : String.valueOf( i ) ) ) ).toList();
-        var result = MappingConversionValidator.checkColumn( state, target, column.getAlgDataType( factory ), 0, rows, context );
+        var result = RelMappingConversionValidator.checkColumn( state, target, column.getAlgDataType( factory ), 0, rows, context );
         assertEquals( 10, result.checkedRecords() );
         assertEquals( List.of( 3, 7 ), result.errors().stream().map( ConversionFailure::recordNumber ).toList() );
         assertTrue( result.errors().get( 0 ).error().message().contains( "bad3" ) );
@@ -123,7 +123,7 @@ class MappingConversionValidatorTest {
         var state = state();
         var target = state.previewColumn( new ColumnName( column.id, column.name, true, PolyType.DECIMAL, false, 3, 1, "CONVERT_COLUMN" ) );
         List<List<PolyValue>> rows = List.of( Collections.singletonList( null ), List.of( PolyString.of( "1234.5" ) ), List.of( PolyString.of( "1.2" ) ) );
-        var result = MappingConversionValidator.checkColumn( state, target, column.getAlgDataType( factory ), 0, rows, context );
+        var result = RelMappingConversionValidator.checkColumn( state, target, column.getAlgDataType( factory ), 0, rows, context );
         assertEquals( 3, result.checkedRecords() );
         assertEquals( 1, result.errors().size() );
         assertEquals( 2, result.errors().get( 0 ).recordNumber() );
@@ -139,7 +139,7 @@ class MappingConversionValidatorTest {
         var sourceType = column.getAlgDataType( factory );
         for ( boolean nullable : List.of( true, false ) ) {
             var target = state.previewColumn( new ColumnName( column.id, column.name, true, PolyType.INTEGER, nullable, null, null, "CONVERT_COLUMN" ) );
-            var result = MappingConversionValidator.checkColumn( state, target, sourceType, 0,
+            var result = RelMappingConversionValidator.checkColumn( state, target, sourceType, 0,
                     List.of( Collections.singletonList( null ), List.of( PolyString.of( "42" ) ) ), context );
             assertEquals( 2, result.checkedRecords() );
             assertTrue( result.errors().isEmpty() );
@@ -153,11 +153,11 @@ class MappingConversionValidatorTest {
         var state = state();
         var target = state.previewColumn( new ColumnName( column.id, column.name, true, PolyType.INTEGER, true, null, null, "CONVERT_COLUMN" ) );
         var sourceType = column.getAlgDataType( factory );
-        var shortSample = MappingConversionValidator.checkColumn( state, target, sourceType, 0,
+        var shortSample = RelMappingConversionValidator.checkColumn( state, target, sourceType, 0,
                 List.of( List.of( PolyString.of( "42" ) ), Collections.singletonList( null ) ), context );
         assertEquals( 2, shortSample.checkedRecords() );
         assertTrue( shortSample.errors().isEmpty() );
-        var emptySample = MappingConversionValidator.checkColumn( state, target, sourceType, 0, List.of(), context );
+        var emptySample = RelMappingConversionValidator.checkColumn( state, target, sourceType, 0, List.of(), context );
         assertEquals( 0, emptySample.checkedRecords() );
         assertTrue( emptySample.errors().isEmpty() );
     }

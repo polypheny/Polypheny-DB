@@ -25,10 +25,10 @@ import org.polypheny.db.rex.RexNode;
  * Compiles one mapping rule into a value expression during planning.
  * Each transformer produces a value for one logical target column.
  */
-public interface FieldMappingTransformer<R extends MappingRule> {
+public interface RelFieldMappingTransformer<R extends MappingRule> {
 
     Class<R> ruleType();
 
-    RexNode transform( R rule, AlgDataTypeField targetField, FieldMappingContext context );
+    RexNode transform( R rule, AlgDataTypeField targetField, RelFieldMappingContext context );
 
 }

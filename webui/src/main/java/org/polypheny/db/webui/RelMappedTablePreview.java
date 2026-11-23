@@ -30,7 +30,7 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.logical.relational.LogicalRelMappingTransform;
-import org.polypheny.db.algebra.mapping.ConversionColumnTransformer;
+import org.polypheny.db.algebra.mapping.RelConversionColumnTransformer;
 import org.polypheny.db.algebra.mapping.MappingScanBuilder;
 import org.polypheny.db.algebra.rules.MappingTransformRule;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -52,9 +52,9 @@ import org.polypheny.db.webui.models.requests.UIRequest;
 /**
  * Reads a mapped table for Show Data, evaluating conversions outside the strict query plan.
  */
-final class MappedTablePreview {
+final class RelMappedTablePreview {
 
-    private MappedTablePreview() {
+    private RelMappedTablePreview() {
     }
 
 
@@ -74,7 +74,7 @@ final class MappedTablePreview {
         List<PreviewRow> selected = new ArrayList<>();
         PriorityQueue<PreviewRow> sorted = order == null ? null : new PriorityQueue<>( order.reversed() );
         long matches = 0;
-        for ( LogicalRelMappingTransform branch : scans.mappedBranches( allocation ) ) {
+        for ( LogicalRelMappingTransform branch : scans.mappedRelBranches( allocation ) ) {
             var projects = MappingTransformRule.REL_INSTANCE.projectFields( branch );
             // Compile the physical scan alone. Each returned row is still in the input order of these expressions.
             var scan = statement.getQueryProcessor().prepareQuery( AlgRoot.of( branch.getInput(), Kind.SELECT ), true, false );
@@ -129,7 +129,7 @@ final class MappedTablePreview {
                 var targetTableName = ((RexLiteral) call.getOperands().get( 3 )).getValue().asString().value;
                 var value = row.get( source.getIndex() );
                 try {
-                    values.add( ConversionColumnTransformer.convert( value, name, mappingName, targetTableName, source.getType(), call.getType(), context ) );
+                    values.add( RelConversionColumnTransformer.convert( value, name, mappingName, targetTableName, source.getType(), call.getType(), context ) );
                 } catch ( MappingExecutionException e ) {
                     errors.put( values.size(), e.getMessage() );
                     values.add( null );

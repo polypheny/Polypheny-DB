@@ -18,7 +18,8 @@ package org.polypheny.db.webui.models.requests;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
-import org.polypheny.db.ddl.MappingUpdate;
+import org.polypheny.db.ddl.DocumentMappingUpdate;
+import org.polypheny.db.ddl.RelMappingUpdate;
 
 
 public final class MappingRequest {
@@ -39,7 +40,7 @@ public final class MappingRequest {
     }
 
 
-    public record SourceRequest( @JsonProperty(value = "adapterId", required = true) long adapterId,
+    public record RelDraftRequest( @JsonProperty(value = "adapterId", required = true) long adapterId,
                                  @JsonProperty(value = "targetEntityId", required = true) long targetEntityId, Long existingTargetEntityId, Long sourceAllocationId ) {
     }
 
@@ -49,16 +50,16 @@ public final class MappingRequest {
     }
 
 
-    public record CreateRequest( @JsonProperty(value = "adapterId", required = true) long adapterId,
+    public record RelCreateRequest( @JsonProperty(value = "adapterId", required = true) long adapterId,
                                  @JsonProperty(value = "targetEntityId", required = true) long targetEntityId,
                                  @JsonProperty(value = "expectedRevision", required = true) String expectedRevision,
                                  @JsonProperty(value = "mappingName", required = true) String mappingName,
                                  @JsonProperty(value = "logicalTableName", required = true) String logicalTableName,
-                                 @JsonProperty(value = "columns", required = true) List<MappingUpdate.ColumnName> columns,
+                                 @JsonProperty(value = "columns", required = true) List<RelMappingUpdate.ColumnName> columns,
                                  Long targetNamespaceId, Long existingTargetEntityId, Long sourceAllocationId ) {
 
-        public MappingUpdate toCommand() {
-            return new MappingUpdate( adapterId, -1, expectedRevision, mappingName, logicalTableName, columns, targetNamespaceId, existingTargetEntityId, sourceAllocationId );
+        public RelMappingUpdate toCommand() {
+            return new RelMappingUpdate( adapterId, -1, expectedRevision, mappingName, logicalTableName, columns, targetNamespaceId, existingTargetEntityId, sourceAllocationId );
         }
 
     }
@@ -69,23 +70,56 @@ public final class MappingRequest {
     }
 
 
-    public record ValidationRequest( @JsonProperty(value = "adapterId", required = true) long adapterId,
+    public record RelValidationRequest( @JsonProperty(value = "adapterId", required = true) long adapterId,
                                      @JsonProperty(value = "expectedRevision", required = true) String expectedRevision,
-                                     @JsonProperty(value = "columns", required = true) List<MappingUpdate.ColumnName> columns,
+                                     @JsonProperty(value = "columns", required = true) List<RelMappingUpdate.ColumnName> columns,
                                      Long mappingId, Long targetEntityId, Long existingTargetEntityId, Long sourceAllocationId ) {
     }
 
 
-    public record UpdateRequest( @JsonProperty(value = "adapterId", required = true) long adapterId,
+    public record RelUpdateRequest( @JsonProperty(value = "adapterId", required = true) long adapterId,
                                  @JsonProperty(value = "mappingId", required = true) long mappingId,
                                  @JsonProperty(value = "expectedRevision", required = true) String expectedRevision,
                                  @JsonProperty(value = "mappingName", required = true) String mappingName,
                                  @JsonProperty(value = "logicalTableName", required = true) String logicalTableName,
-                                 @JsonProperty(value = "columns", required = true) List<MappingUpdate.ColumnName> columns,
+                                 @JsonProperty(value = "columns", required = true) List<RelMappingUpdate.ColumnName> columns,
                                  Long targetNamespaceId ) {
 
-        public MappingUpdate toCommand() {
-            return new MappingUpdate( adapterId, mappingId, expectedRevision, mappingName, logicalTableName, columns, targetNamespaceId );
+        public RelMappingUpdate toCommand() {
+            return new RelMappingUpdate( adapterId, mappingId, expectedRevision, mappingName, logicalTableName, columns, targetNamespaceId );
+        }
+
+    }
+
+
+    public record DocumentDraftRequest( @JsonProperty(value = "adapterId", required = true) long adapterId,
+                                        @JsonProperty(value = "sourceEntityId", required = true) long sourceEntityId, Long sourceAllocationId ) {
+    }
+
+
+    public record DocumentCreateRequest( @JsonProperty(value = "adapterId", required = true) long adapterId,
+                                         @JsonProperty(value = "sourceEntityId", required = true) long sourceEntityId,
+                                         @JsonProperty(value = "expectedRevision", required = true) String expectedRevision,
+                                         @JsonProperty(value = "mappingName", required = true) String mappingName,
+                                         @JsonProperty(value = "logicalCollectionName", required = true) String logicalCollectionName,
+                                         @JsonProperty(value = "targetNamespaceId", required = true) long targetNamespaceId,
+                                         Long sourceAllocationId ) {
+
+        public DocumentMappingUpdate toCommand() {
+            return new DocumentMappingUpdate( adapterId, -1, expectedRevision, mappingName, logicalCollectionName, targetNamespaceId, sourceAllocationId );
+        }
+
+    }
+
+
+    public record DocumentUpdateRequest( @JsonProperty(value = "adapterId", required = true) long adapterId,
+                                         @JsonProperty(value = "mappingId", required = true) long mappingId,
+                                         @JsonProperty(value = "expectedRevision", required = true) String expectedRevision,
+                                         @JsonProperty(value = "mappingName", required = true) String mappingName,
+                                         @JsonProperty(value = "logicalCollectionName", required = true) String logicalCollectionName ) {
+
+        public DocumentMappingUpdate toCommand() {
+            return new DocumentMappingUpdate( adapterId, mappingId, expectedRevision, mappingName, logicalCollectionName, null, null );
         }
 
     }

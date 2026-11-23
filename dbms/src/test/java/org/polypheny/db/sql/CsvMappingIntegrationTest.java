@@ -40,9 +40,9 @@ import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.adapter.DataContext;
-import org.polypheny.db.algebra.mapping.ConversionColumnTransformer;
-import org.polypheny.db.algebra.mapping.FieldMappingContext;
-import org.polypheny.db.algebra.mapping.PhysicalMappingBinding;
+import org.polypheny.db.algebra.mapping.RelConversionColumnTransformer;
+import org.polypheny.db.algebra.mapping.RelFieldMappingContext;
+import org.polypheny.db.algebra.mapping.RelMappingBinding;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
@@ -57,11 +57,11 @@ import org.polypheny.db.catalog.exceptions.MappingRevisionException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.MappingKind;
-import org.polypheny.db.catalog.mapping.MappingState;
+import org.polypheny.db.catalog.mapping.RelMappingState;
 import org.polypheny.db.catalog.snapshot.LogicalRelSnapshot;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.ddl.MappingUpdate;
+import org.polypheny.db.ddl.RelMappingUpdate;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexExecutorImpl;
@@ -105,11 +105,11 @@ class CsvMappingIntegrationTest {
             long adapterId = Catalog.snapshot().getAdapter( adapterName ).orElseThrow().id;
             var table = Catalog.snapshot().rel().getTable( Catalog.DEFAULT_NAMESPACE_NAME, sourceName ).orElseThrow();
             var mapping = Catalog.snapshot().mappings().getMappingsForLogicalEntity( table.id ).get( 0 );
-            var state = MappingState.load( Catalog.getInstance(), adapterId, mapping.id() );
+            var state = RelMappingState.load( Catalog.getInstance(), adapterId, mapping.id() );
             assertEquals( 2, Catalog.snapshot().mappings().getMappings().stream().filter( m ->
                     Catalog.snapshot().alloc().getFromLogical( m.targetEntityId() ).stream().anyMatch( a -> a.adapterId == adapterId ) ).count() );
-            var names = state.columns().stream().map( c -> new MappingUpdate.ColumnName( c.id, c.name.equals( "id" ) ? "customer_id" : "full_name" ) ).toList();
-            var request = new MappingUpdate( adapterId, mapping.id(), state.revision(), "Customer import", tableName, names );
+            var names = state.columns().stream().map( c -> new RelMappingUpdate.ColumnName( c.id, c.name.equals( "id" ) ? "customer_id" : "full_name" ) ).toList();
+            var request = new RelMappingUpdate( adapterId, mapping.id(), state.revision(), "Customer import", tableName, names );
             var saved = update( request );
             assertEquals( table.id, saved.table().id );
             assertEquals( mapping.rules(), saved.mapping().rules() );
@@ -120,9 +120,9 @@ class CsvMappingIntegrationTest {
 
             execute( "CREATE VIEW " + viewName + " AS SELECT customer_id, full_name FROM " + tableName );
             viewCreated = true;
-            var labelOnly = new MappingUpdate( adapterId, mapping.id(), saved.revision(), "Label only", tableName, names );
+            var labelOnly = new RelMappingUpdate( adapterId, mapping.id(), saved.revision(), "Label only", tableName, names );
             saved = update( labelOnly );
-            var blocked = new MappingUpdate( adapterId, mapping.id(), saved.revision(), "Label only", "blocked" + suffix, names );
+            var blocked = new RelMappingUpdate( adapterId, mapping.id(), saved.revision(), "Label only", "blocked" + suffix, names );
             assertEquals( "CONFLICT", assertThrows( MappingConflictException.class, () -> update( blocked ) ).getCode() );
             assertEquals( List.of( "1:Ada", "2:Bob" ), query( "SELECT customer_id, full_name FROM " + viewName + " ORDER BY customer_id" ) );
             assertEquals( contents, Files.readString( file ) );
@@ -137,10 +137,10 @@ class CsvMappingIntegrationTest {
     }
 
 
-    private static MappingState update( MappingUpdate request ) {
+    private static RelMappingState update( RelMappingUpdate request ) {
         var transaction = TestHelper.getInstance().getTransaction();
         try {
-            return DdlManager.getInstance().updateMapping( request, transaction.createStatement() );
+            return DdlManager.getInstance().updateRelMapping( request, transaction.createStatement() );
         } finally {
             if ( transaction.isActive() ) {
                 transaction.rollback( "Mapping integration test cleanup" );
@@ -216,17 +216,17 @@ class CsvMappingIntegrationTest {
             long adapterId = Catalog.snapshot().getAdapter( adapterName ).orElseThrow().id;
             var table = Catalog.snapshot().rel().getTable( Catalog.DEFAULT_NAMESPACE_NAME, tableName ).orElseThrow();
             var mapping = Catalog.snapshot().mappings().getMappingsForLogicalEntity( table.id ).get( 0 );
-            var state = MappingState.load( Catalog.getInstance(), adapterId, mapping.id() );
-            var selected = state.columns().stream().map( c -> new MappingUpdate.ColumnName( c.id, c.name, !c.name.equals( "id" ) ) ).toList();
-            state = update( new MappingUpdate( adapterId, mapping.id(), state.revision(), mapping.name(), tableName, selected ) );
+            var state = RelMappingState.load( Catalog.getInstance(), adapterId, mapping.id() );
+            var selected = state.columns().stream().map( c -> new RelMappingUpdate.ColumnName( c.id, c.name, !c.name.equals( "id" ) ) ).toList();
+            state = update( new RelMappingUpdate( adapterId, mapping.id(), state.revision(), mapping.name(), tableName, selected ) );
             assertEquals( 2, state.columns().size() );
             TestHelper.refreshSelectedSourcesWithDetails( List.of( adapterId ) );
             assertEquals( List.of( "Ada", "Bob" ), query( "SELECT * FROM " + tableName + " ORDER BY name" ) );
             assertThrows( java.sql.SQLException.class, () -> query( "SELECT id FROM " + tableName ) );
-            var all = state.columns().stream().map( c -> new MappingUpdate.ColumnName( c.id, c.name, true ) ).toList();
-            state = update( new MappingUpdate( adapterId, mapping.id(), state.revision(), mapping.name(), tableName, all ) );
+            var all = state.columns().stream().map( c -> new RelMappingUpdate.ColumnName( c.id, c.name, true ) ).toList();
+            state = update( new RelMappingUpdate( adapterId, mapping.id(), state.revision(), mapping.name(), tableName, all ) );
             assertEquals( List.of( "1:Ada", "2:Bob" ), query( "SELECT * FROM " + tableName + " ORDER BY id" ) );
-            update( new MappingUpdate( adapterId, mapping.id(), state.revision(), mapping.name(), tableName, selected ) );
+            update( new RelMappingUpdate( adapterId, mapping.id(), state.revision(), mapping.name(), tableName, selected ) );
             execute( "ALTER ADAPTERS DROP \"" + adapterName + "\"" );
             assertTrue( Catalog.getInstance().getLogicalRel( table.namespaceId ).getColumns().values().stream().noneMatch( c -> c.tableId == table.id ) );
             assertEquals( contents, Files.readString( file ) );
@@ -253,14 +253,14 @@ class CsvMappingIntegrationTest {
             long adapterId = Catalog.snapshot().getAdapter( adapterName ).orElseThrow().id;
             var target = Catalog.snapshot().rel().getTable( Catalog.DEFAULT_NAMESPACE_NAME, targetName ).orElseThrow();
             var incoming = Catalog.snapshot().rel().getTable( Catalog.DEFAULT_NAMESPACE_NAME, incomingName ).orElseThrow();
-            var draft = MappingState.draft( Catalog.getInstance(), adapterId, incoming.id, target.id, null );
-            var names = draft.columns().stream().map( column -> new MappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
-            var request = new MappingUpdate( adapterId, -1, draft.revision(), draft.mapping().name(), target.name,
+            var draft = RelMappingState.draft( Catalog.getInstance(), adapterId, incoming.id, target.id, null );
+            var names = draft.columns().stream().map( column -> new RelMappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
+            var request = new RelMappingUpdate( adapterId, -1, draft.revision(), draft.mapping().name(), target.name,
                     names, target.namespaceId, target.id, draft.mapping().sourceAllocationId() );
             var transaction = TestHelper.getInstance().getTransaction();
-            MappingState created;
+            RelMappingState created;
             try {
-                created = DdlManager.getInstance().createMapping( incoming.id, request, transaction.createStatement() );
+                created = DdlManager.getInstance().createRelMapping( incoming.id, request, transaction.createStatement() );
             } finally {
                 if ( transaction.isActive() ) {
                     transaction.rollback( "Mapping creation test cleanup" );
@@ -301,15 +301,15 @@ class CsvMappingIntegrationTest {
                     + "{\"method\":\"link\",\"directoryName\":\"" + escapedDirectory + "\",\"directory\":\"" + escapedDirectory + "\",\"maxStringLength\":\"40\"}'" );
             long adapterId = Catalog.snapshot().getAdapter( adapterName ).orElseThrow().id;
             var source = Catalog.snapshot().rel().getTable( Catalog.DEFAULT_NAMESPACE_NAME, sourceName ).orElseThrow();
-            var draft = MappingState.draft( Catalog.getInstance(), adapterId, source.id );
+            var draft = RelMappingState.draft( Catalog.getInstance(), adapterId, source.id );
             var columns = draft.columns().stream().map( column -> column.name.equals( "amount" )
-                    ? new MappingUpdate.ColumnName( column.id, column.name, true, PolyType.INTEGER, true )
-                    : new MappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
-            var request = new MappingUpdate( adapterId, -1, draft.revision(), draft.mapping().name(), draft.table().name, columns, draft.namespace().id );
+                    ? new RelMappingUpdate.ColumnName( column.id, column.name, true, PolyType.INTEGER, true )
+                    : new RelMappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
+            var request = new RelMappingUpdate( adapterId, -1, draft.revision(), draft.mapping().name(), draft.table().name, columns, draft.namespace().id );
             var transaction = TestHelper.getInstance().getTransaction();
-            MappingState created;
+            RelMappingState created;
             try {
-                created = DdlManager.getInstance().createMapping( source.id, request, transaction.createStatement() );
+                created = DdlManager.getInstance().createRelMapping( source.id, request, transaction.createStatement() );
             } finally {
                 if ( transaction.isActive() ) {
                     transaction.rollback( "Mapping creation test cleanup" );
@@ -333,7 +333,7 @@ class CsvMappingIntegrationTest {
                     transaction.rollback( "Mapping refresh test cleanup" );
                 }
             }
-            assertEquals( created.mapping(), MappingState.load( Catalog.getInstance(), created.mapping().id() ).mapping() );
+            assertEquals( created.mapping(), RelMappingState.load( Catalog.getInstance(), created.mapping().id() ).mapping() );
             assertEquals( List.of( "43" ), query( sql ) );
 
             Files.writeString( file, header + "1,abc\n" );
@@ -343,13 +343,13 @@ class CsvMappingIntegrationTest {
 
             Files.writeString( file, header + "1,42.125\n" );
             var decimalColumns = created.columns().stream().map( column -> column.id == amount.id
-                    ? new MappingUpdate.ColumnName( column.id, column.name, true, PolyType.DECIMAL, false, 8, 2 )
-                    : new MappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
-            var edit = new MappingUpdate( adapterId, created.mapping().id(), created.revision(), created.mapping().name(),
+                    ? new RelMappingUpdate.ColumnName( column.id, column.name, true, PolyType.DECIMAL, false, 8, 2 )
+                    : new RelMappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
+            var edit = new RelMappingUpdate( adapterId, created.mapping().id(), created.revision(), created.mapping().name(),
                     created.table().name, decimalColumns );
             transaction = TestHelper.getInstance().getTransaction();
             try {
-                DdlManager.getInstance().updateMapping( edit, transaction.createStatement() );
+                DdlManager.getInstance().updateRelMapping( edit, transaction.createStatement() );
             } finally {
                 if ( transaction.isActive() ) {
                     transaction.rollback( "Mapping edit test cleanup" );
@@ -374,20 +374,20 @@ class CsvMappingIntegrationTest {
         var rule = new ConversionColumnMappingRule( column.id );
         var mapping = new SchemaMapping( 5, "Amount conversion", MappingKind.PHYSICAL_TO_LOGICAL, null, 3,
                 DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( rule ), 2L );
-        var binding = new PhysicalMappingBinding( 2, 3, 4, 6, Map.of( column.id, column ) );
+        var binding = new RelMappingBinding( 2, 3, 4, 6, Map.of( column.id, column ) );
         var snapshot = mock( Snapshot.class );
         var relational = mock( LogicalRelSnapshot.class );
         when( snapshot.rel() ).thenReturn( relational );
         when( relational.getTable( 3 ) ).thenReturn( Optional.of( new LogicalTable( 3, "amounts", 1, EntityType.SOURCE, null, false ) ) );
         when( snapshot.getNamespace( 1 ) ).thenReturn( Optional.of( new LogicalNamespace( 1, "public", DataModel.RELATIONAL, false, false ) ) );
-        var context = new FieldMappingContext( mapping, binding, input, rex, snapshot );
+        var context = new RelFieldMappingContext( mapping, binding, input, rex, snapshot );
         var row = mock( DataContext.class );
         var executor = new RexExecutorImpl( row );
 
         for ( boolean nullable : new boolean[]{ true, false } ) {
             var type = factory.createTypeWithNullability( factory.createPolyType( PolyType.INTEGER ), nullable );
             var target = new AlgDataTypeFieldImpl( column.id, column.logicalName, null, 0, type );
-            var expression = new ConversionColumnTransformer().transform( rule, target, context );
+            var expression = new RelConversionColumnTransformer().transform( rule, target, context );
             var function = executor.getExecutable( rex, List.of( expression ), input ).getFunction();
             when( row.get( "inputRecord" ) ).thenReturn( new PolyValue[]{ PolyString.of( "42" ) } );
             assertEquals( PolyInteger.of( 42 ), function.apply( row )[0] );

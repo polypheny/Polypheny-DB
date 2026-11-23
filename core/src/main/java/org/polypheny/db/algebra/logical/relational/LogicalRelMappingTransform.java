@@ -23,8 +23,8 @@ import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.relational.RelAlg;
 import org.polypheny.db.algebra.logical.common.LogicalMappingTransform;
-import org.polypheny.db.algebra.mapping.FieldMappingContext;
-import org.polypheny.db.algebra.mapping.PhysicalMappingBinding;
+import org.polypheny.db.algebra.mapping.RelFieldMappingContext;
+import org.polypheny.db.algebra.mapping.RelMappingBinding;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.polyalg.PolyAlgMetadata;
 import org.polypheny.db.algebra.polyalg.PolyAlgUtils;
@@ -49,18 +49,18 @@ import org.polypheny.db.schema.trait.ModelTrait;
 @Getter
 public final class LogicalRelMappingTransform extends LogicalMappingTransform implements RelAlg {
 
-    private final PhysicalMappingBinding binding;
+    private final RelMappingBinding binding;
 
 
-    private LogicalRelMappingTransform( AlgNode input, AlgTraitSet traits, SchemaMapping mapping, PhysicalMappingBinding binding, AlgDataType targetType ) {
+    private LogicalRelMappingTransform( AlgNode input, AlgTraitSet traits, SchemaMapping mapping, RelMappingBinding binding, AlgDataType targetType ) {
         super( input, traits.replace( ModelTrait.RELATIONAL ), mapping, targetType );
         binding.validate( mapping );
         this.binding = binding;
     }
 
 
-    public static LogicalRelMappingTransform create( AlgNode input, SchemaMapping mapping, PhysicalMappingBinding binding, AlgDataType targetType ) {
-        new FieldMappingContext( mapping, binding, input.getTupleType(),
+    public static LogicalRelMappingTransform create( AlgNode input, SchemaMapping mapping, RelMappingBinding binding, AlgDataType targetType ) {
+        new RelFieldMappingContext( mapping, binding, input.getTupleType(),
                 input.getCluster().getRexBuilder(), input.getCluster().getSnapshot() ).validatePhysicalNames();
         // A mapping can reorder fields, so input collations must not be copied.
         return new LogicalRelMappingTransform( input, input.getCluster().traitSetOf( Convention.NONE ), mapping, binding, targetType );
@@ -88,7 +88,7 @@ public final class LogicalRelMappingTransform extends LogicalMappingTransform im
         var allocation = snapshot.alloc().getFromLogical( mapping.targetEntityId() ).stream()
                 .filter( candidate -> candidate.id == physical.allocationId ).findFirst()
                 .orElseThrow( () -> MappingError.Algebra.allocationMismatch( mappingId, physical.allocationId ) );
-        var binding = PhysicalMappingBinding.create( mapping, allocation, Catalog.getInstance().getAdapterCatalog( allocation.adapterId )
+        var binding = RelMappingBinding.create( mapping, allocation, Catalog.getInstance().getAdapterCatalog( allocation.adapterId )
                 .orElseThrow( () -> MappingError.Missing.adapterCatalog( allocation.adapterId ) ) );
         if ( binding.physicalEntityId() != physical.id ) {
             throw MappingError.Algebra.physicalSourceMismatch( mappingId, physical.id );

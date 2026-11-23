@@ -21,13 +21,15 @@ import org.polypheny.db.schema.trait.ModelTrait;
 
 /**
  * {@link ModelTrait#DOCUMENT} native node.
+ * Interface lets an algebra node identify its document operation
+ * through getDocType(), such as SCAN, FILTER, or PROJECT.
  */
 public interface DocumentAlg {
 
     DocType getDocType();
-
+    // LogicalDocumentMappingTransform returns MAPPING so the plan can identify it as a document mapping operation.
     enum DocType {
-        SCAN, FILTER, VALUES, PROJECT, AGGREGATE, SORT, UNWIND, MODIFY
+        SCAN, FILTER, VALUES, PROJECT, AGGREGATE, SORT, UNWIND, MODIFY, MAPPING
     }
 
 }

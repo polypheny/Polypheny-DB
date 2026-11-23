@@ -18,8 +18,11 @@ package org.polypheny.db.algebra.mapping;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.mapping.rules.ConversionColumnMappingRule;
 import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.DocumentIdentityMappingRule;
 import org.polypheny.db.catalog.entity.mapping.rules.MappingRule;
 import org.polypheny.db.catalog.entity.mapping.rules.RuleDefinition;
 
@@ -29,8 +32,9 @@ import org.polypheny.db.catalog.entity.mapping.rules.RuleDefinition;
 public final class RuleRepository {
 
     private static final List<Registration<?>> RULES = List.of(
-            new Registration<>( DirectColumnMappingRule.DEFINITION, new DirectColumnTransformer() ),
-            new Registration<>( ConversionColumnMappingRule.DEFINITION, new ConversionColumnTransformer() ) );
+            new Registration<>( DirectColumnMappingRule.DEFINITION, new RelDirectColumnTransformer() ),
+            new Registration<>( ConversionColumnMappingRule.DEFINITION, new RelConversionColumnTransformer() ),
+            new Registration<>( DocumentIdentityMappingRule.DEFINITION ) );
 
     private static final List<RuleDefinition<?>> DEFINITIONS = RULES.stream().<RuleDefinition<?>>map( Registration::definition ).toList();
 
@@ -54,13 +58,17 @@ public final class RuleRepository {
     }
 
 
-    public static List<FieldMappingTransformer<?>> fieldTransformers() {
-        // extracts the transformer from each registration
-        return RULES.stream().<FieldMappingTransformer<?>>map( Registration::transformer ).toList();
+    public static List<RelFieldMappingTransformer<?>> relFieldTransformers() {
+        return RULES.stream().<RelFieldMappingTransformer<?>>flatMap( rule -> Stream.ofNullable( rule.relTransformer() ) ).toList();
     }
 
 
-    private record Registration<R extends MappingRule>( RuleDefinition<R> definition, FieldMappingTransformer<R> transformer ) {
+    private record Registration<R extends MappingRule>( RuleDefinition<R> definition, @Nullable RelFieldMappingTransformer<R> relTransformer ) {
+
+        private Registration( RuleDefinition<R> definition ) {
+            this( definition, null );
+        }
+
     }
 
 }

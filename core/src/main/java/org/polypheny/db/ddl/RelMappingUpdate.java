@@ -24,7 +24,7 @@ import org.polypheny.db.type.PolyType;
 /**
  * Backend command object carrying the user’s requested mapping changes.
  * */
-public record MappingUpdate(
+public record RelMappingUpdate(
         long adapterId,
         long mappingId,
         String expectedRevision,
@@ -35,12 +35,12 @@ public record MappingUpdate(
         Long existingTargetEntityId,
         Long sourceAllocationId ) {
 
-    public MappingUpdate( long adapterId, long mappingId, String expectedRevision, String mappingName, String logicalTableName,
+    public RelMappingUpdate( long adapterId, long mappingId, String expectedRevision, String mappingName, String logicalTableName,
             List<ColumnName> columns, Long targetNamespaceId ) {
         this( adapterId, mappingId, expectedRevision, mappingName, logicalTableName, columns, targetNamespaceId, null, null );
     }
 
-    public MappingUpdate( long adapterId, long mappingId, String expectedRevision, String mappingName, String logicalTableName, List<ColumnName> columns ) {
+    public RelMappingUpdate( long adapterId, long mappingId, String expectedRevision, String mappingName, String logicalTableName, List<ColumnName> columns ) {
         this( adapterId, mappingId, expectedRevision, mappingName, logicalTableName, columns, null );
     }
 

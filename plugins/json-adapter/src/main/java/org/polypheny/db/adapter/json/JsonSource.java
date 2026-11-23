@@ -35,7 +35,6 @@ import org.polypheny.db.adapter.Scannable;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
 import org.polypheny.db.adapter.annotations.AdapterSettingList;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
-import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.catalogs.DocAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
@@ -81,8 +80,6 @@ public class JsonSource extends DataSource<DocAdapterCatalog> implements Documen
         this.connectionMethod = settings.containsKey( "method" ) ? ConnectionMethod.from( settings.get( "method" ).toUpperCase() ) : ConnectionMethod.UPLOAD;
         this.jsonFiles = getJsonFilesUrl( settings );
         this.delegate = new DocumentScanDelegate( this, getAdapterCatalog() );
-        long namespaceId = Catalog.getInstance().createNamespace( uniqueName, DataModel.DOCUMENT, true, false );
-        this.namespace = new JsonNamespace( uniqueName, namespaceId, getAdapterId() );
     }
 
 

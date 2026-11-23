@@ -35,6 +35,15 @@ public final class MappingError {
 
     public static final class Missing {
 
+        public static MappingMissingException collection( long collectionId ) {
+            return new MappingMissingException( "Document collection %d is no longer available.".formatted( collectionId ), null, Map.of(), List.of() );
+        }
+
+
+        public static MappingMissingException physicalCollection( long mappingId, long allocationId ) {
+            return new MappingMissingException( "Mapping %d requires one physical document collection for allocation %d.".formatted( mappingId, allocationId ), null, Map.of(), List.of() );
+        }
+
         private Missing() {
         }
 
@@ -246,6 +255,10 @@ public final class MappingError {
 
     public static final class Validation {
 
+        public static MappingValidationException documentIdentityRequired( long mappingId ) {
+            return new MappingValidationException( "Document mapping %d requires exactly one whole-document identity rule.".formatted( mappingId ), null, Map.of(), List.of() );
+        }
+
         private Validation() {
         }
 
@@ -298,6 +311,14 @@ public final class MappingError {
 
 
     public static final class Unsupported {
+
+        public static MappingUnsupportedException models( long mappingId, DataModel sourceModel, DataModel targetModel ) {
+            return new MappingUnsupportedException( "Mapping %d from %s to %s is not supported.".formatted( mappingId, sourceModel, targetModel ), null, Map.of(), List.of() );
+        }
+
+        public static MappingUnsupportedException documentMappingRequired( long mappingId ) {
+            return new MappingUnsupportedException( "Mapping %d requires a physical-to-logical document collection binding.".formatted( mappingId ), null, Map.of(), List.of() );
+        }
 
         public static MappingUnsupportedException relationalSourceRequired( long mappingId, long allocationId ) {
             return new MappingUnsupportedException( "Mapping %d requires a relational physical source for allocation %d.".formatted( mappingId, allocationId ), null, Map.of(), List.of() );

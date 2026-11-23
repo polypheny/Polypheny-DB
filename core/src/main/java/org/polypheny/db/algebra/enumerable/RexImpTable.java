@@ -87,7 +87,7 @@ import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.fun.TrimFunction.Flag;
 import org.polypheny.db.algebra.fun.TrimFunction.TrimFlagHolder;
 import org.polypheny.db.algebra.fun.UserDefined;
-import org.polypheny.db.algebra.mapping.ConversionColumnTransformer;
+import org.polypheny.db.algebra.mapping.RelConversionColumnTransformer;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -2421,7 +2421,7 @@ public class RexImpTable {
             AlgDataType target = call.getType();
             Expression mappingName = Expressions.field( translator.translate( call.getOperands().get( 2 ) ), "value" );
             Expression targetTableName = Expressions.field( translator.translate( call.getOperands().get( 3 ) ), "value" );
-            Expression converted = Expressions.call( ConversionColumnTransformer.class, "convert", value, column,
+            Expression converted = Expressions.call( RelConversionColumnTransformer.class, "convert", value, column,
                     mappingName, targetTableName,
                     Expressions.constant( input.getType().toString() ), Expressions.constant( target.toString() ),
                     Expressions.constant( input.getType().getPolyType() ), Expressions.constant( target.getPolyType() ),

@@ -48,7 +48,7 @@ public class SnapshotBuilder {
         AllocSnapshot alloc = buildAlloc( allocationCatalogs, catalog.getAdapters() );
         // Handle mappings
         MappingSnapshot mappings = new MappingSnapshotImpl( schemaMappings.values().stream().sorted( Comparator.comparingLong( SchemaMapping::id ) ).toList() );
-        SchemaMappingManager.validateMappings( mappings, rels, alloc, catalog );
+        SchemaMappingManager.validateMappings( mappings, rels, docs, alloc, catalog );
         Set<Long> excluded = SchemaMappingManager.getExcludedColumnIds( mappings, rels );
         if ( !excluded.isEmpty() ) {
             rels = buildRelSnapshots( logicalCatalogs, excluded );

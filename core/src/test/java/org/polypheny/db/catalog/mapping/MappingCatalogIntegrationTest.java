@@ -48,7 +48,7 @@ import org.polypheny.db.catalog.impl.AdapterRestore;
 import org.polypheny.db.catalog.impl.PolyCatalog;
 import org.polypheny.db.catalog.impl.logical.RelationalCatalog;
 import org.polypheny.db.catalog.persistance.Persister;
-import org.polypheny.db.ddl.MappingUpdate;
+import org.polypheny.db.ddl.RelMappingUpdate;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.MappingKind;
@@ -252,21 +252,21 @@ class MappingCatalogIntegrationTest {
         var snapshot = fixture.catalog.getSnapshot();
         long adapterId = snapshot.alloc().getFromLogical( fixture.table.id ).get( 0 ).adapterId;
         var mapping = snapshot.mappings().getMappingsForLogicalEntity( fixture.table.id ).get( 0 );
-        MappingState state = MappingState.load( fixture.catalog, adapterId, mapping.id() );
+        RelMappingState state = RelMappingState.load( fixture.catalog, adapterId, mapping.id() );
         assertTrue( state.editable() );
-        var request = new MappingUpdate( adapterId, mapping.id(), state.revision(), "Renamed", "Customers",
-                List.of( new MappingUpdate.ColumnName( fixture.column.id, "Customer_ID" ) ) );
+        var request = new RelMappingUpdate( adapterId, mapping.id(), state.revision(), "Renamed", "Customers",
+                List.of( new RelMappingUpdate.ColumnName( fixture.column.id, "Customer_ID" ) ) );
         var validated = state.validate( request, snapshot );
         assertEquals( "customers", validated.logicalTableName() );
         assertEquals( "customer_id", validated.columns().get( 0 ).logicalName() );
         fixture.catalog.updateSnapshot();
-        assertEquals( state.revision(), MappingState.load( fixture.catalog, adapterId, mapping.id() ).revision() );
+        assertEquals( state.revision(), RelMappingState.load( fixture.catalog, adapterId, mapping.id() ).revision() );
         assertThrows( MappingValidationException.class, () -> state.validate(
-                new MappingUpdate( adapterId, mapping.id(), state.revision(), "Renamed", "customers", List.of() ), snapshot ) );
-        assertThrows( MappingMissingException.class, () -> MappingState.load( fixture.catalog, -1, mapping.id() ) );
+                new RelMappingUpdate( adapterId, mapping.id(), state.revision(), "Renamed", "customers", List.of() ), snapshot ) );
+        assertThrows( MappingMissingException.class, () -> RelMappingState.load( fixture.catalog, -1, mapping.id() ) );
         fixture.catalog.updateSchemaMapping( new SchemaMapping( mapping.id(), "Another user's label", MappingKind.PHYSICAL_TO_LOGICAL, null, fixture.table.id,
                 DataModel.RELATIONAL, DataModel.RELATIONAL, mapping.rules(), null ) );
-        MappingState changed = MappingState.load( fixture.catalog, adapterId, mapping.id() );
+        RelMappingState changed = RelMappingState.load( fixture.catalog, adapterId, mapping.id() );
         assertNotEquals( state.revision(), changed.revision() );
         assertEquals( "REVISION", assertThrows( MappingRevisionException.class,
                 () -> changed.validate( request, fixture.catalog.getSnapshot() ) ).getCode() );

@@ -33,16 +33,16 @@ import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.mapping.MappingState;
+import org.polypheny.db.catalog.mapping.RelMappingState;
 import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.ddl.MappingUpdate;
-import org.polypheny.db.ddl.MappingUpdate.ColumnName;
+import org.polypheny.db.ddl.RelMappingUpdate;
+import org.polypheny.db.ddl.RelMappingUpdate.ColumnName;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.webui.models.mapping.MappingModel;
 
 
 @Tag("adapter")
-class MappingConversionValidationIntegrationTest {
+class RelMappingConversionValidationIntegrationTest {
 
     @BeforeAll
     static void startDatabase() {
@@ -69,7 +69,7 @@ class MappingConversionValidationIntegrationTest {
                     + "{\"method\":\"link\",\"directoryName\":\"" + escapedDirectory + "\",\"directory\":\"" + escapedDirectory + "\",\"maxStringLength\":\"40\"}'" );
             long adapterId = Catalog.snapshot().getAdapter( adapterName ).orElseThrow().id;
             var source = Catalog.snapshot().rel().getTable( Catalog.DEFAULT_NAMESPACE_NAME, sourceName ).orElseThrow();
-            var draft = MappingState.draft( Catalog.getInstance(), adapterId, source.id );
+            var draft = RelMappingState.draft( Catalog.getInstance(), adapterId, source.id );
             var amount = draft.columns().stream().filter( column -> column.name.equals( "amount" ) ).findFirst().orElseThrow();
             var conversion = new ColumnName( amount.id, amount.name, true, PolyType.INTEGER, true, null, null, "CONVERT_COLUMN" );
             int mappingsBefore = Catalog.snapshot().mappings().getMappings().size();
@@ -77,14 +77,14 @@ class MappingConversionValidationIntegrationTest {
             assertEquals( 10, result.checkedRecords() );
             assertEquals( List.of( 3, 7 ), result.errors().stream().map( error -> error.recordNumber() ).toList() );
             assertEquals( mappingsBefore, Catalog.snapshot().mappings().getMappings().size() );
-            assertEquals( draft.revision(), MappingState.draft( Catalog.getInstance(), adapterId, source.id ).revision() );
+            assertEquals( draft.revision(), RelMappingState.draft( Catalog.getInstance(), adapterId, source.id ).revision() );
 
             var columns = draft.columns().stream().map( column -> column.id == amount.id ? conversion : new ColumnName( column.id, column.name, true ) ).toList();
-            var command = new MappingUpdate( adapterId, -1, draft.revision(), draft.mapping().name(), draft.table().name, columns, draft.namespace().id );
+            var command = new RelMappingUpdate( adapterId, -1, draft.revision(), draft.mapping().name(), draft.table().name, columns, draft.namespace().id );
             var transaction = TestHelper.getInstance().getTransaction();
-            MappingState saved;
+            RelMappingState saved;
             try {
-                saved = DdlManager.getInstance().createMapping( source.id, command, transaction.createStatement() );
+                saved = DdlManager.getInstance().createRelMapping( source.id, command, transaction.createStatement() );
             } finally {
                 if ( transaction.isActive() ) {
                     transaction.rollback( "Conversion validation test cleanup" );
@@ -96,7 +96,7 @@ class MappingConversionValidationIntegrationTest {
             var repaired = check( saved, new ColumnName( savedAmount.id, savedAmount.name, true, PolyType.VARCHAR, true, 40, null, "CONVERT_COLUMN" ) );
             assertEquals( 10, repaired.checkedRecords() );
             assertTrue( repaired.errors().isEmpty() );
-            assertEquals( saved.revision(), MappingState.load( Catalog.getInstance(), saved.mapping().id() ).revision() );
+            assertEquals( saved.revision(), RelMappingState.load( Catalog.getInstance(), saved.mapping().id() ).revision() );
         } finally {
             if ( Catalog.snapshot().getAdapter( adapterName ).isPresent() ) {
                 execute( "ALTER ADAPTERS DROP \"" + adapterName + "\"" );
@@ -105,10 +105,10 @@ class MappingConversionValidationIntegrationTest {
     }
 
 
-    private static MappingModel.ColumnCheck check( MappingState state, ColumnName column ) {
+    private static MappingModel.ColumnCheck check( RelMappingState state, ColumnName column ) {
         var transaction = TestHelper.getInstance().getTransaction();
         try {
-            return MappingConversionValidator.validate( state, List.of( column ), transaction.createStatement() ).columns().get( 0 );
+            return RelMappingConversionValidator.validate( state, List.of( column ), transaction.createStatement() ).columns().get( 0 );
         } finally {
             if ( transaction.isActive() ) {
                 transaction.rollback( "Conversion validation test finished" );

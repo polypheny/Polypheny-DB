@@ -126,6 +126,7 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     AllocationToPhysicalScanRule.DOC_INSTANCE,
                     AllocationToPhysicalScanRule.GRAPH_INSTANCE,
                     MappingTransformRule.REL_INSTANCE,
+                    MappingTransformRule.DOC_INSTANCE,
                     AllocationToPhysicalModifyRule.REL_INSTANCE,
                     AllocationToPhysicalModifyRule.DOC_INSTANCE,
                     AllocationToPhysicalModifyRule.GRAPH_INSTANCE,

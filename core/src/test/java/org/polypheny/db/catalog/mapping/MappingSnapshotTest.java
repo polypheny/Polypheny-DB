@@ -147,6 +147,15 @@ class MappingSnapshotTest {
 
 
     @Test
+    void rejectsDocumentMappingWithoutRules() {
+        SchemaMapping mapping = new SchemaMapping( 101, "mapping_101", MappingKind.PHYSICAL_TO_LOGICAL, null, 201,
+                DataModel.DOCUMENT, DataModel.DOCUMENT, List.of(), null );
+
+        assertInvalid( () -> new MappingSnapshotImpl( List.of( mapping ) ), "requires exactly one whole-document identity rule" );
+    }
+
+
+    @Test
     void rejectsNullInputs() {
         assertThrows( NullPointerException.class, () -> new MappingSnapshotImpl( null ) );
         assertThrows( NullPointerException.class, () -> new MappingSnapshotImpl( Arrays.asList( MAPPING_A, null ) ) );

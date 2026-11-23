@@ -961,7 +961,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     private RelationalResult previewMappedTable( Transaction transaction, LogicalTable table, UIRequest request ) {
         try {
             int pageSize = getPageSize();
-            var preview = MappedTablePreview.read( transaction.createStatement(), table, request, pageSize );
+            var preview = RelMappedTablePreview.read( transaction.createStatement(), table, request, pageSize );
             var header = tableHeaders( transaction.getSnapshot(), table, request );
             var data = LanguageCrud.computeResultData( preview.rows(), header, transaction );
             var result = RelationalResult.builder().dataModel( DataModel.RELATIONAL ).namespace( request.namespace ).table( table.name )

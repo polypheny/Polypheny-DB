@@ -28,17 +28,17 @@ import org.polypheny.db.rex.RexNode;
 /**
  * Register a transformer for each supported field-rule type.
  */
-public final class FieldMappingTransformers {
+public final class RelFieldMappingTransformers {
 
     // Get transformers from rule repository
-    public static final FieldMappingTransformers DEFAULT = new FieldMappingTransformers( RuleRepository.fieldTransformers() );
+    public static final RelFieldMappingTransformers DEFAULT = new RelFieldMappingTransformers( RuleRepository.relFieldTransformers() );
 
-    private final Map<Class<? extends MappingRule>, FieldMappingTransformer<?>> transformers;
+    private final Map<Class<? extends MappingRule>, RelFieldMappingTransformer<?>> transformers;
 
 
-    public FieldMappingTransformers( List<? extends FieldMappingTransformer<?>> implementations ) {
-        Map<Class<? extends MappingRule>, FieldMappingTransformer<?>> registered = new HashMap<>();
-        for ( FieldMappingTransformer<?> transformer : implementations ) {
+    public RelFieldMappingTransformers( List<? extends RelFieldMappingTransformer<?>> implementations ) {
+        Map<Class<? extends MappingRule>, RelFieldMappingTransformer<?>> registered = new HashMap<>();
+        for ( RelFieldMappingTransformer<?> transformer : implementations ) {
             if ( registered.putIfAbsent( transformer.ruleType(), transformer ) != null ) {
                 throw MappingError.Duplicate.transformer( transformer.ruleType().getName() );
             }
@@ -60,7 +60,7 @@ public final class FieldMappingTransformers {
     /**
      * Create expression for planner node
      */
-    public RexNode transform( MappingRule rule, AlgDataTypeField targetField, FieldMappingContext context ) {
+    public RexNode transform( MappingRule rule, AlgDataTypeField targetField, RelFieldMappingContext context ) {
         requireSupported( rule );
         RexNode expression = apply( transformers.get( rule.getClass() ), rule, targetField, context );
         if ( expression == null || !targetField.getType().equals( expression.getType() ) ) {
@@ -73,7 +73,7 @@ public final class FieldMappingTransformers {
     /**
      * Create planner node
      */
-    private static <R extends MappingRule> RexNode apply(FieldMappingTransformer<R> transformer, MappingRule rule, AlgDataTypeField targetField, FieldMappingContext context ) {
+    private static <R extends MappingRule> RexNode apply(RelFieldMappingTransformer<R> transformer, MappingRule rule, AlgDataTypeField targetField, RelFieldMappingContext context ) {
         return transformer.transform( transformer.ruleType().cast( rule ), targetField, context );
     }
 

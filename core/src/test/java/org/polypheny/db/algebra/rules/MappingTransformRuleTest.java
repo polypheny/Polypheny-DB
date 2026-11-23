@@ -34,11 +34,11 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelMappingTransform;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
-import org.polypheny.db.algebra.mapping.DirectColumnTransformer;
-import org.polypheny.db.algebra.mapping.FieldMappingContext;
-import org.polypheny.db.algebra.mapping.FieldMappingTransformer;
-import org.polypheny.db.algebra.mapping.FieldMappingTransformers;
-import org.polypheny.db.algebra.mapping.PhysicalMappingBinding;
+import org.polypheny.db.algebra.mapping.RelDirectColumnTransformer;
+import org.polypheny.db.algebra.mapping.RelFieldMappingContext;
+import org.polypheny.db.algebra.mapping.RelFieldMappingTransformer;
+import org.polypheny.db.algebra.mapping.RelFieldMappingTransformers;
+import org.polypheny.db.algebra.mapping.RelMappingBinding;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -104,9 +104,9 @@ class MappingTransformRuleTest {
         Fixture fixture = fixture( 120, false );
         SchemaMapping mapping = mapping( FIRST_ID );
         fixture.catalog.physicals.clear();
-        assertThrows( MappingMissingException.class, () -> PhysicalMappingBinding.create( mapping, fixture.allocation, fixture.catalog ) );
+        assertThrows( MappingMissingException.class, () -> RelMappingBinding.create( mapping, fixture.allocation, fixture.catalog ) );
         fixture.catalog.physicals.put( fixture.table.id, fixture.table.toBuilder().allocationId( 999 ).build() );
-        assertThrows( MappingAlgebraException.class, () -> PhysicalMappingBinding.create( mapping, fixture.allocation, fixture.catalog ) );
+        assertThrows( MappingAlgebraException.class, () -> RelMappingBinding.create( mapping, fixture.allocation, fixture.catalog ) );
     }
 
 
@@ -202,7 +202,7 @@ class MappingTransformRuleTest {
 
     private static LogicalRelMappingTransform transform( Fixture fixture, AlgNode input, AlgDataType targetType, SchemaMapping mapping ) {
         return LogicalRelMappingTransform.create( input, mapping,
-                PhysicalMappingBinding.create( mapping, fixture.allocation, fixture.catalog ), targetType );
+                RelMappingBinding.create( mapping, fixture.allocation, fixture.catalog ), targetType );
     }
 
 
@@ -233,7 +233,7 @@ class MappingTransformRuleTest {
         AlgNode input = LogicalRelScan.create( cluster, fixture.table );
         SchemaMapping mapping = mapping( SECOND_ID, FIRST_ID );
         AlgNode mapped = AlgFactories.LOGICAL_BUILDER.create( cluster, null ).push( input )
-                .transform( mapping, PhysicalMappingBinding.create( mapping, fixture.allocation, fixture.catalog ), logicalType( FIRST_ID, SECOND_ID ) ).build();
+                .transform( mapping, RelMappingBinding.create( mapping, fixture.allocation, fixture.catalog ), logicalType( FIRST_ID, SECOND_ID ) ).build();
 
         assertInstanceOf( LogicalRelMappingTransform.class, mapped );
         planner.setRoot( mapped );
@@ -265,7 +265,7 @@ class MappingTransformRuleTest {
         AlgCluster cluster = AlgCluster.create( planner, new RexBuilder( AlgDataTypeFactory.DEFAULT ), null, null );
         SchemaMapping mapping = mapping( FIRST_ID, SECOND_ID );
         AlgNode plan = AlgFactories.LOGICAL_BUILDER.create( cluster, null ).push( LogicalRelScan.create( cluster, fixture.table ) )
-                .transform( mapping, PhysicalMappingBinding.create( mapping, fixture.allocation, fixture.catalog ), logicalType( FIRST_ID, SECOND_ID ) )
+                .transform( mapping, RelMappingBinding.create( mapping, fixture.allocation, fixture.catalog ), logicalType( FIRST_ID, SECOND_ID ) )
                 .transform( ModelTrait.DOCUMENT, DocumentType.ofId(), true, null ).build();
 
         assertInstanceOf( LogicalRelMappingTransform.class, plan.getInput( 0 ) );
@@ -328,11 +328,11 @@ class MappingTransformRuleTest {
         AlgNode input = LogicalRelScan.create( cluster(), fixture.table );
         SchemaMapping mixed = mapping( List.of( new DirectColumnMappingRule( FIRST_ID ), new SourceColumnRule( SECOND_ID, FIRST_ID ) ) );
         LogicalRelMappingTransform transform = transform( fixture, input, logicalType( FIRST_ID, SECOND_ID ), mixed );
-        MappingTransformRule rule = new MappingTransformRule( LogicalRelMappingTransform.class, new FieldMappingTransformers( List.of( new DirectColumnTransformer(), new SourceColumnTransformer() ) ) );
+        MappingTransformRule rule = new MappingTransformRule( LogicalRelMappingTransform.class, new RelFieldMappingTransformers( List.of( new RelDirectColumnTransformer(), new SourceColumnTransformer() ) ) );
 
         assertEquals( List.of( 1, 1 ), indexes( assertInstanceOf( LogicalRelProject.class, rule.apply( transform ) ) ) );
         assertThrows( GenericRuntimeException.class, () -> MappingTransformRule.REL_INSTANCE.apply( transform ) );
-        assertThrows( MappingDuplicateException.class, () -> new FieldMappingTransformers( List.of( new DirectColumnTransformer(), new DirectColumnTransformer() ) ) );
+        assertThrows( MappingDuplicateException.class, () -> new RelFieldMappingTransformers( List.of( new RelDirectColumnTransformer(), new RelDirectColumnTransformer() ) ) );
 
         LogicalRelMappingTransform direct = transform( fixture, input, transform.getTupleType(), mapping( FIRST_ID, SECOND_ID ) );
         assertNotEquals( direct.algCompareString(), transform.algCompareString() );
@@ -348,16 +348,16 @@ class MappingTransformRuleTest {
         AlgNode input = LogicalRelScan.create( cluster(), fixture.table );
         SourceFieldRule rule = new SourceFieldRule( FIRST_ID );
         SchemaMapping mapping = mapping( List.of( rule ) );
-        FieldMappingContext context = new FieldMappingContext( mapping,
-                PhysicalMappingBinding.create( mapping, fixture.allocation, fixture.catalog ), input.getTupleType(),
+        RelFieldMappingContext context = new RelFieldMappingContext( mapping,
+                RelMappingBinding.create( mapping, fixture.allocation, fixture.catalog ), input.getTupleType(),
                 input.getCluster().getRexBuilder(), input.getCluster().getSnapshot() );
-        FieldMappingTransformers transformers = new FieldMappingTransformers( List.of( new SourceFieldTransformer() ) );
+        RelFieldMappingTransformers transformers = new RelFieldMappingTransformers( List.of( new SourceFieldTransformer() ) );
         AlgDataTypeField targetField = logicalType( SECOND_ID ).getFields().get( 0 );
 
         RexIndexRef expression = assertInstanceOf( RexIndexRef.class, transformers.transform( rule, targetField, context ) );
         assertEquals( 1, expression.getIndex() );
         assertEquals( targetField.getType(), expression.getType() );
-        assertThrows( GenericRuntimeException.class, () -> FieldMappingTransformers.DEFAULT.transform( rule, targetField, context ) );
+        assertThrows( GenericRuntimeException.class, () -> RelFieldMappingTransformers.DEFAULT.transform( rule, targetField, context ) );
 
         AlgDataTypeField incompatibleTarget = AlgDataTypeFactory.DEFAULT.builder()
                 .add( null, "target", null, AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.VARCHAR ) ).build().getFields().get( 0 );
@@ -372,7 +372,7 @@ class MappingTransformRuleTest {
         AlgNode input = LogicalRelScan.create( cluster(), fixture.table );
         SchemaMapping mapping = mapping( List.of( new SourceFieldRule( FIRST_ID ) ) );
         MappingTransformRule rule = new MappingTransformRule( LogicalRelMappingTransform.class,
-                new FieldMappingTransformers( List.of( new SourceFieldTransformer() ) ) );
+                new RelFieldMappingTransformers( List.of( new SourceFieldTransformer() ) ) );
 
         GenericRuntimeException error = assertThrows( GenericRuntimeException.class, () -> rule.apply(
                 transform( fixture, input, logicalType( FIRST_ID ), mapping ) ) );
@@ -384,13 +384,13 @@ class MappingTransformRuleTest {
     void rejectsIncompatibleTransformerResult() {
         Fixture fixture = fixture( 112, false );
         SchemaMapping mapping = mapping( List.of( new SourceColumnRule( FIRST_ID, FIRST_ID ) ) );
-        FieldMappingTransformer<SourceColumnRule> wrongType = new SourceColumnTransformer() {
+        RelFieldMappingTransformer<SourceColumnRule> wrongType = new SourceColumnTransformer() {
             @Override
-            public RexNode transform( SourceColumnRule rule, AlgDataTypeField targetField, FieldMappingContext context ) {
+            public RexNode transform( SourceColumnRule rule, AlgDataTypeField targetField, RelFieldMappingContext context ) {
                 return context.getRexBuilder().makeLiteral( true );
             }
         };
-        MappingTransformRule rule = new MappingTransformRule( LogicalRelMappingTransform.class, new FieldMappingTransformers( List.of( wrongType ) ) );
+        MappingTransformRule rule = new MappingTransformRule( LogicalRelMappingTransform.class, new RelFieldMappingTransformers( List.of( wrongType ) ) );
         assertThrows( GenericRuntimeException.class, () -> rule.apply( transform( fixture,
                 LogicalRelScan.create( cluster(), fixture.table ), logicalType( FIRST_ID ), mapping ) ) );
     }
@@ -404,7 +404,7 @@ class MappingTransformRuleTest {
         AlgDataType targetType = AlgDataTypeFactory.DEFAULT.builder()
                 .add( targetId, "first", "first_csv", input.getTupleType().getFields().get( 0 ).getType() ).build();
         SchemaMapping mapping = mapping( List.of( new SourceColumnRule( targetId, FIRST_ID ) ) );
-        MappingTransformRule rule = new MappingTransformRule( LogicalRelMappingTransform.class, new FieldMappingTransformers( List.of( new SourceColumnTransformer() ) ) );
+        MappingTransformRule rule = new MappingTransformRule( LogicalRelMappingTransform.class, new RelFieldMappingTransformers( List.of( new SourceColumnTransformer() ) ) );
 
         LogicalRelProject result = assertInstanceOf( LogicalRelProject.class, rule.apply( transform( fixture, input, targetType, mapping ) ) );
         assertEquals( List.of( targetId ), result.getTupleType().getFieldIds() );
@@ -445,7 +445,7 @@ class MappingTransformRuleTest {
         }
         SchemaMapping wrongEntity = new SchemaMapping( 1, "wrong", MappingKind.PHYSICAL_TO_LOGICAL, null, LOGICAL_ID + 1,
                 DataModel.RELATIONAL, DataModel.RELATIONAL, mapping( FIRST_ID ).rules(), null );
-        assertThrows( GenericRuntimeException.class, () -> PhysicalMappingBinding.create( wrongEntity, fixture.allocation, fixture.catalog ) );
+        assertThrows( GenericRuntimeException.class, () -> RelMappingBinding.create( wrongEntity, fixture.allocation, fixture.catalog ) );
     }
 
 
@@ -453,7 +453,7 @@ class MappingTransformRuleTest {
     }
 
 
-    private static class SourceFieldTransformer implements FieldMappingTransformer<SourceFieldRule> {
+    private static class SourceFieldTransformer implements RelFieldMappingTransformer<SourceFieldRule> {
 
         @Override
         public Class<SourceFieldRule> ruleType() {
@@ -462,7 +462,7 @@ class MappingTransformRuleTest {
 
 
         @Override
-        public RexNode transform( SourceFieldRule rule, AlgDataTypeField targetField, FieldMappingContext context ) {
+        public RexNode transform( SourceFieldRule rule, AlgDataTypeField targetField, RelFieldMappingContext context ) {
             AlgDataTypeField source = context.resolveSourceField( rule.sourceColumnId() );
             return context.getRexBuilder().makeInputRef( source.getType(), source.getIndex() );
         }
@@ -473,7 +473,7 @@ class MappingTransformRuleTest {
     }
 
 
-    private static class SourceColumnTransformer implements FieldMappingTransformer<SourceColumnRule> {
+    private static class SourceColumnTransformer implements RelFieldMappingTransformer<SourceColumnRule> {
 
         @Override
         public Class<SourceColumnRule> ruleType() {
@@ -482,7 +482,7 @@ class MappingTransformRuleTest {
 
 
         @Override
-        public RexNode transform( SourceColumnRule rule, AlgDataTypeField targetField, FieldMappingContext context ) {
+        public RexNode transform( SourceColumnRule rule, AlgDataTypeField targetField, RelFieldMappingContext context ) {
             AlgDataTypeField source = context.resolveSourceField( rule.sourceColumnId() );
             return context.getRexBuilder().makeInputRef( source.getType(), source.getIndex() );
         }

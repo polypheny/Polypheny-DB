@@ -37,9 +37,9 @@ import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
-import org.polypheny.db.catalog.mapping.MappingState;
+import org.polypheny.db.catalog.mapping.RelMappingState;
 import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.ddl.MappingUpdate;
+import org.polypheny.db.ddl.RelMappingUpdate;
 import org.polypheny.db.information.InformationPolyAlg;
 import org.polypheny.db.information.InformationPolyAlg.PlanType;
 import org.polypheny.db.languages.LanguageManager;
@@ -55,7 +55,7 @@ import org.polypheny.db.webui.models.results.Result;
 
 
 @Tag("adapter")
-class MappedTablePreviewIntegrationTest {
+class RelMappedTablePreviewIntegrationTest {
 
     @BeforeAll
     static void startDatabase() {
@@ -88,15 +88,15 @@ class MappedTablePreviewIntegrationTest {
                     + "{\"method\":\"link\",\"directoryName\":\"" + location + "\",\"directory\":\"" + location + "\",\"maxStringLength\":\"40\"}'" ).error );
             long adapterId = Catalog.snapshot().getAdapter( adapter ).orElseThrow().id;
             var source = Catalog.snapshot().rel().getTable( Catalog.DEFAULT_NAMESPACE_NAME, table ).orElseThrow();
-            var draft = MappingState.draft( Catalog.getInstance(), adapterId, source.id );
+            var draft = RelMappingState.draft( Catalog.getInstance(), adapterId, source.id );
             var columns = draft.columns().stream().map( column -> switch ( column.name ) {
-                case "amount" -> new MappingUpdate.ColumnName( column.id, column.name, true, PolyType.INTEGER, true );
-                case "optional" -> new MappingUpdate.ColumnName( column.id, column.name, true, null, true, null, null, DirectColumnMappingRule.DEFINITION.id() );
-                default -> new MappingUpdate.ColumnName( column.id, column.name, true );
+                case "amount" -> new RelMappingUpdate.ColumnName( column.id, column.name, true, PolyType.INTEGER, true );
+                case "optional" -> new RelMappingUpdate.ColumnName( column.id, column.name, true, null, true, null, null, DirectColumnMappingRule.DEFINITION.id() );
+                default -> new RelMappingUpdate.ColumnName( column.id, column.name, true );
             } ).toList();
-            var update = new MappingUpdate( adapterId, -1, draft.revision(), draft.mapping().name(), draft.table().name, columns, draft.namespace().id );
+            var update = new RelMappingUpdate( adapterId, -1, draft.revision(), draft.mapping().name(), draft.table().name, columns, draft.namespace().id );
             var transaction = TestHelper.getInstance().getTransaction();
-            var mapped = DdlManager.getInstance().createMapping( source.id, update, transaction.createStatement() );
+            var mapped = DdlManager.getInstance().createRelMapping( source.id, update, transaction.createStatement() );
             var optional = mapped.columns().stream().filter( column -> column.name.equals( "optional" ) ).findFirst().orElseThrow();
             assertTrue( optional.nullable );
             assertTrue( mapped.mapping().rules().contains( new DirectColumnMappingRule( optional.id ) ) );
@@ -151,12 +151,12 @@ class MappedTablePreviewIntegrationTest {
                     + "{\"method\":\"link\",\"directoryName\":\"" + location + "\",\"directory\":\"" + location + "\",\"maxStringLength\":\"40\"}'" ).error );
             long adapterId = Catalog.snapshot().getAdapter( adapter ).orElseThrow().id;
             var source = Catalog.snapshot().rel().getTable( Catalog.DEFAULT_NAMESPACE_NAME, table ).orElseThrow();
-            var draft = MappingState.draft( Catalog.getInstance(), adapterId, source.id );
+            var draft = RelMappingState.draft( Catalog.getInstance(), adapterId, source.id );
             var columns = draft.columns().stream().map( column -> column.name.equals( "gender" )
-                    ? new MappingUpdate.ColumnName( column.id, "date1", true, PolyType.TIMESTAMP, null )
-                    : new MappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
-            var update = new MappingUpdate( adapterId, -1, draft.revision(), draft.mapping().name(), draft.table().name, columns, draft.namespace().id );
-            var mapped = DdlManager.getInstance().createMapping( source.id, update, TestHelper.getInstance().getTransaction().createStatement() );
+                    ? new RelMappingUpdate.ColumnName( column.id, "date1", true, PolyType.TIMESTAMP, null )
+                    : new RelMappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
+            var update = new RelMappingUpdate( adapterId, -1, draft.revision(), draft.mapping().name(), draft.table().name, columns, draft.namespace().id );
+            var mapped = DdlManager.getInstance().createRelMapping( source.id, update, TestHelper.getInstance().getTransaction().createStatement() );
 
             var request = UIRequest.builder().entityId( mapped.table().id ).namespace( Catalog.DEFAULT_NAMESPACE_NAME ).currentPage( 1 ).build();
             var preview = crud.getTable( request );
@@ -182,13 +182,13 @@ class MappedTablePreviewIntegrationTest {
 
 
     private static void verifyAnalyzedMappingPlans( Crud crud, long adapterId, long sourceId, String target ) throws Exception {
-        var draft = MappingState.draft( Catalog.getInstance(), adapterId, sourceId );
+        var draft = RelMappingState.draft( Catalog.getInstance(), adapterId, sourceId );
         var columns = draft.columns().stream().map( column -> column.name.equals( "id" )
-                ? new MappingUpdate.ColumnName( column.id, column.name, true, PolyType.DOUBLE, false )
-                : new MappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
-        var update = new MappingUpdate( adapterId, -1, draft.revision(), target, target, columns, draft.namespace().id );
+                ? new RelMappingUpdate.ColumnName( column.id, column.name, true, PolyType.DOUBLE, false )
+                : new RelMappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
+        var update = new RelMappingUpdate( adapterId, -1, draft.revision(), target, target, columns, draft.namespace().id );
         var manager = crud.getTransactionManager();
-        DdlManager.getInstance().createMapping( sourceId, update, TestHelper.getInstance().getTransaction().createStatement() );
+        DdlManager.getInstance().createRelMapping( sourceId, update, TestHelper.getInstance().getTransaction().createStatement() );
 
         String sql = "SELECT amount, id FROM " + target;
         String origin = "PolyAlgParsingTest";

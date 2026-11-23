@@ -25,7 +25,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.polypheny.db.TestHelper;
 import org.polypheny.db.adapter.json.JsonToPolyConverter;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyNull;
@@ -33,6 +32,8 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.relational.PolyMap;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
+import org.polypheny.db.util.RunMode;
 
 public class JsonToPolyConverterTest {
 
@@ -42,7 +43,9 @@ public class JsonToPolyConverterTest {
 
     @BeforeAll
     public static void setup() {
-        TestHelper testHelper = TestHelper.getInstance();
+        if ( PolyphenyHomeDirManager.getMode() == null ) {
+            PolyphenyHomeDirManager.setModeAndGetInstance( RunMode.TEST );
+        }
         mapper = new ObjectMapper();
         builder = new JsonToPolyConverter();
 
@@ -51,6 +54,19 @@ public class JsonToPolyConverterTest {
 
     private JsonNode getNodesFromJson( String json ) throws JsonProcessingException {
         return mapper.readTree( json );
+    }
+
+
+    @Test
+    public void preservesDocumentObjectsInsideNestedArrays() throws JsonProcessingException {
+        PolyDocument document = builder.nodeToPolyDocument( getNodesFromJson( """
+                {"items":[{"customer":{"name":"Ada"}},[{"name":"Bob"}]],"optional":null}
+                """ ) );
+        var items = document.get( PolyString.of( "items" ) ).asList();
+        assertTrue( items.get( 0 ).isDocument() );
+        assertTrue( items.get( 0 ).asDocument().get( PolyString.of( "customer" ) ).isDocument() );
+        assertTrue( items.get( 1 ).asList().get( 0 ).isDocument() );
+        assertTrue( document.get( PolyString.of( "optional" ) ).isNull() );
     }
 
 
@@ -158,7 +174,7 @@ public class JsonToPolyConverterTest {
         assertEquals( new PolyNull(), doc.get( new PolyString( "null" ) ).asNull() );
 
         // check nested object
-        assertTrue( doc.get( new PolyString( "object" ) ).isMap() );
+        assertTrue( doc.get( new PolyString( "object" ) ).isDocument() );
         PolyMap<PolyValue, PolyValue> nestedObject = doc.get( new PolyString( "object" ) ).asMap();
         assertEquals( "Inside JSON", nestedObject.get( new PolyString( "nestedString" ) ).asString().getValue() );
         assertEquals( 9876, nestedObject.get( new PolyString( "nestedNumber" ) ).asLong().getValue() );

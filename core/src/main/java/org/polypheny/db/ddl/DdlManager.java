@@ -38,7 +38,8 @@ import org.polypheny.db.catalog.logistic.ConstraintType;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.ForeignKeyOption;
 import org.polypheny.db.catalog.logistic.PlacementType;
-import org.polypheny.db.catalog.mapping.MappingState;
+import org.polypheny.db.catalog.mapping.DocumentMappingState;
+import org.polypheny.db.catalog.mapping.RelMappingState;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.DataTypeSpec;
 import org.polypheny.db.nodes.Identifier;
@@ -518,11 +519,15 @@ public abstract class DdlManager {
      */
     public abstract void renameTable( LogicalTable table, String newTableName, Statement statement );
 
-    public abstract MappingState updateMapping( MappingUpdate update, Statement statement );
+    public abstract RelMappingState updateRelMapping( RelMappingUpdate update, Statement statement );
 
-    public abstract MappingState createMapping( long targetEntityId, MappingUpdate draft, Statement statement );
+    public abstract RelMappingState createRelMapping( long targetEntityId, RelMappingUpdate draft, Statement statement );
 
     public abstract void removeMapping( long mappingId, String expectedRevision, Statement statement );
+
+    public abstract DocumentMappingState createDocumentMapping( long sourceEntityId, DocumentMappingUpdate update, Statement statement );
+
+    public abstract DocumentMappingState updateDocumentMapping( DocumentMappingUpdate update, Statement statement );
 
     public abstract void renameCollection( LogicalCollection collection, String newName, Statement statement );
 

@@ -101,7 +101,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
 import org.polypheny.db.algebra.logical.relational.LogicalRelMappingTransform;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelSort;
-import org.polypheny.db.algebra.mapping.PhysicalMappingBinding;
+import org.polypheny.db.algebra.mapping.RelMappingBinding;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -2493,7 +2493,7 @@ public class AlgBuilder {
     /**
      * Applies a schema mapping even when the input and output have the same data model.
      */
-    public AlgBuilder transform( SchemaMapping mapping, PhysicalMappingBinding binding, AlgDataType rowType ) {
+    public AlgBuilder transform( SchemaMapping mapping, RelMappingBinding binding, AlgDataType rowType ) {
         return push( LogicalRelMappingTransform.create( build(), mapping, binding, rowType ) );
     }
 

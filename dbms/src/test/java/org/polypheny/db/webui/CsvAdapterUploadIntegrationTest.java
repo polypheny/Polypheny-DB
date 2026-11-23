@@ -44,9 +44,9 @@ import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.mapping.MappingState;
+import org.polypheny.db.catalog.mapping.RelMappingState;
 import org.polypheny.db.ddl.DdlManager;
-import org.polypheny.db.ddl.MappingUpdate;
+import org.polypheny.db.ddl.RelMappingUpdate;
 import org.polypheny.db.webui.models.requests.QueryRequest;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.config.ConfigManager;
@@ -181,12 +181,12 @@ class CsvAdapterUploadIntegrationTest {
             assertUploaded( upload( secondAdapter, List.of( fileName ), Map.of( fileName, contents.toString() ) ) );
             var target = Catalog.snapshot().rel().getTable( Catalog.DEFAULT_NAMESPACE_NAME, sourceName ).orElseThrow();
             var firstMapping = Catalog.snapshot().mappings().getMappingsForLogicalEntity( target.id ).get( 0 );
-            var state = MappingState.load( Catalog.getInstance(), firstMapping.id() );
-            var renamedColumns = state.columns().stream().map( column -> new MappingUpdate.ColumnName( column.id,
+            var state = RelMappingState.load( Catalog.getInstance(), firstMapping.id() );
+            var renamedColumns = state.columns().stream().map( column -> new RelMappingUpdate.ColumnName( column.id,
                     column.name.equals( "id" ) ? "customer_id" : column.name, true ) ).toList();
             var transaction = TestHelper.getInstance().getTransaction();
             try {
-                DdlManager.getInstance().updateMapping( new MappingUpdate( state.adapter().id, firstMapping.id(), state.revision(),
+                DdlManager.getInstance().updateRelMapping( new RelMappingUpdate( state.adapter().id, firstMapping.id(), state.revision(),
                         firstMapping.name(), targetName, renamedColumns ), transaction.createStatement() );
             } finally {
                 if ( transaction.isActive() ) {
@@ -195,12 +195,12 @@ class CsvAdapterUploadIntegrationTest {
             }
             long secondId = Catalog.snapshot().getAdapter( secondAdapter ).orElseThrow().id;
             var incoming = Catalog.snapshot().rel().getTable( Catalog.snapshot().alloc().getEntitiesOnAdapter( secondId ).orElseThrow().get( 0 ).logicalId ).orElseThrow();
-            var draft = MappingState.draft( Catalog.getInstance(), secondId, incoming.id, target.id, null );
-            var columns = draft.columns().stream().map( column -> new MappingUpdate.ColumnName( column.id,
+            var draft = RelMappingState.draft( Catalog.getInstance(), secondId, incoming.id, target.id, null );
+            var columns = draft.columns().stream().map( column -> new RelMappingUpdate.ColumnName( column.id,
                     column.name.equals( "id" ) ? "customer_id" : column.name, true ) ).toList();
             transaction = TestHelper.getInstance().getTransaction();
             try {
-                DdlManager.getInstance().createMapping( incoming.id, new MappingUpdate( secondId, -1, draft.revision(),
+                DdlManager.getInstance().createRelMapping( incoming.id, new RelMappingUpdate( secondId, -1, draft.revision(),
                         draft.mapping().name(), targetName, columns, target.namespaceId, target.id,
                         draft.mapping().sourceAllocationId() ), transaction.createStatement() );
             } finally {

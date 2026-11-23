@@ -23,10 +23,11 @@ import java.util.Map;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.logical.common.LogicalMappingTransform;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentMappingTransform;
 import org.polypheny.db.algebra.logical.relational.LogicalRelMappingTransform;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
-import org.polypheny.db.algebra.mapping.FieldMappingContext;
-import org.polypheny.db.algebra.mapping.FieldMappingTransformers;
+import org.polypheny.db.algebra.mapping.RelFieldMappingContext;
+import org.polypheny.db.algebra.mapping.RelFieldMappingTransformers;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.mapping.rules.ColumnMappingRule;
 import org.polypheny.db.catalog.exceptions.MappingError;
@@ -43,16 +44,17 @@ import org.polypheny.db.rex.RexNode;
 public final class MappingTransformRule extends AlgOptRule {
 
     public static final MappingTransformRule REL_INSTANCE = new MappingTransformRule( LogicalRelMappingTransform.class );
+    public static final MappingTransformRule DOC_INSTANCE = new MappingTransformRule( LogicalDocumentMappingTransform.class );
 
-    private final FieldMappingTransformers transformers;
+    private final RelFieldMappingTransformers transformers;
 
 
     public MappingTransformRule( Class<? extends LogicalMappingTransform> transformClass ) {
-        this( transformClass, FieldMappingTransformers.DEFAULT );
+        this( transformClass, RelFieldMappingTransformers.DEFAULT );
     }
 
 
-    public MappingTransformRule( Class<? extends LogicalMappingTransform> transformClass, FieldMappingTransformers transformers ) {
+    public MappingTransformRule( Class<? extends LogicalMappingTransform> transformClass, RelFieldMappingTransformers transformers ) {
         super( operand( transformClass, any() ), AlgFactories.LOGICAL_BUILDER, MappingTransformRule.class.getSimpleName() + "_" + transformClass.getSimpleName() );
         this.transformers = transformers;
     }
@@ -65,10 +67,19 @@ public final class MappingTransformRule extends AlgOptRule {
 
 
     public AlgNode apply( LogicalMappingTransform transform ) {
+        if ( transform instanceof LogicalDocumentMappingTransform document ) {
+            return applyDocument( document );
+        }
         if ( transform instanceof LogicalRelMappingTransform relational ) {
             return applyRelational( relational );
         }
         throw MappingError.Unsupported.transform( transform.getClass().getName() );
+    }
+
+
+    private AlgNode applyDocument( LogicalDocumentMappingTransform transform ) {
+        transform.getBinding().validate( transform.getMapping() );
+        return transform.getInput();
     }
 
 
@@ -93,7 +104,7 @@ public final class MappingTransformRule extends AlgOptRule {
         AlgNode input = transform.getInput();
 
         // create context
-        FieldMappingContext context = new FieldMappingContext( mapping, transform.getBinding(), input.getTupleType(),
+        RelFieldMappingContext context = new RelFieldMappingContext( mapping, transform.getBinding(), input.getTupleType(),
                 input.getCluster().getRexBuilder(), input.getCluster().getSnapshot() );
 
         // get rules

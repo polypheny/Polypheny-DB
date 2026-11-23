@@ -166,17 +166,25 @@ public class HttpServer implements Runnable {
     private static void attachCatalogMetaRoutes( Javalin webuiServer, Crud crud ) {
         webuiServer.post( "/getMappings", crud.mappingCrud::getMappings );
 
+        webuiServer.post( "/getDocumentMappingSources", crud.mappingCrud::getDocumentMappingSources );
+
+        webuiServer.post( "/getDocumentMappingDraft", crud.mappingCrud::getDocumentMappingDraft );
+
+        webuiServer.post( "/createDocumentMapping", crud.mappingCrud::createDocumentMapping );
+
+        webuiServer.post( "/updateDocumentMapping", crud.mappingCrud::updateDocumentMapping );
+
         webuiServer.post( "/getMapping", crud.mappingCrud::getMapping );
 
-        webuiServer.post( "/getMappingSources", crud.mappingCrud::getMappingSources );
+        webuiServer.post( "/getRelMappingSources", crud.mappingCrud::getRelMappingSources );
 
-        webuiServer.post( "/getMappingDraft", crud.mappingCrud::getMappingDraft );
+        webuiServer.post( "/getRelMappingDraft", crud.mappingCrud::getRelMappingDraft );
 
-        webuiServer.post( "/createMapping", crud.mappingCrud::createMapping );
+        webuiServer.post( "/createRelMapping", crud.mappingCrud::createRelMapping );
 
-        webuiServer.post( "/updateMapping", crud.mappingCrud::updateMapping );
+        webuiServer.post( "/updateRelMapping", crud.mappingCrud::updateRelMapping );
 
-        webuiServer.post( "/validateMappingConversions", crud.mappingCrud::validateMappingConversions );
+        webuiServer.post( "/validateRelMappingConversions", crud.mappingCrud::validateRelMappingConversions );
 
         webuiServer.post( "/removeMapping", crud.mappingCrud::removeMapping );
 
