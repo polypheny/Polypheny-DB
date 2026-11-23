@@ -226,7 +226,7 @@ public class MongoRules {
 
 
     private static boolean containsIncompatible( SingleAlg alg ) {
-        MongoExcludeVisitor visitor = new MongoExcludeVisitor();
+        MongoExcludeVisitor visitor = new MongoExcludeVisitor( alg instanceof LogicalRelFilter || alg instanceof LogicalRelProject );
         alg.accept( new RexShuttle() {
             @Override
             public RexNode visitCall( RexCall call ) {
@@ -473,18 +473,21 @@ public class MongoRules {
     @Getter
     public static class MongoExcludeVisitor extends RexVisitorImpl<Void> {
 
+        private final boolean relational;
         private boolean containsIncompatible = false;
 
 
-        protected MongoExcludeVisitor() {
+        protected MongoExcludeVisitor( boolean relational ) {
             super( true );
+            this.relational = relational;
         }
 
 
         @Override
         public Void visitCall( RexCall call ) {
             Operator operator = call.getOperator();
-            if ( operator.getOperatorName() == OperatorName.COALESCE
+            if ( (relational && requiresSqlNumericEvaluation( call ))
+                    || operator.getOperatorName() == OperatorName.COALESCE
                     || operator.getKind() == Kind.GEO
                     || operator.getOperatorName() == OperatorName.EXTRACT
                     || operator.getOperatorName() == OperatorName.ABS
@@ -510,6 +513,18 @@ public class MongoRules {
                 containsIncompatible = true;
             }
             return super.visitCall( call );
+        }
+
+
+        private static boolean requiresSqlNumericEvaluation( RexCall call ) {
+            return switch ( call.getOperator().getOperatorName() ) {
+                // The Mongo translation of CAST passes through the original operand.
+                case CAST -> PolyType.CHAR_TYPES.contains( call.operands.get( 0 ).getType().getPolyType() )
+                        && PolyType.NUMERIC_TYPES.contains( call.getType().getPolyType() );
+                // MongoDB's division uses different numeric and error semantics.
+                case DIVIDE, DIVIDE_INTEGER -> true;
+                default -> false;
+            };
         }
 
     }
