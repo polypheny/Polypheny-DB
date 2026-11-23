@@ -22,10 +22,14 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Getter;
@@ -50,6 +54,9 @@ import org.polypheny.db.adapter.annotations.AdapterSettingInteger;
 import org.polypheny.db.adapter.annotations.AdapterSettingString;
 import org.polypheny.db.adapter.neo4j.types.NestedSingleType;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.core.Calc;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.catalogs.GraphAdapterCatalog;
 import org.polypheny.db.catalog.entity.LogicalDefaultValue;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
@@ -74,6 +81,11 @@ import org.polypheny.db.docker.DockerManager;
 import org.polypheny.db.plugins.PluginContext;
 import org.polypheny.db.plugins.PolyPlugin;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexVisitorImpl;
+import org.polypheny.db.runtime.InvalidNumericFormatException;
+import org.polypheny.db.runtime.SqlStateException;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.util.PasswordGenerator;
@@ -607,6 +619,47 @@ public class Neo4jPlugin extends PolyPlugin {
         @Override
         public void rollback( PolyXid xid ) {
             this.transactionProvider.rollback( xid );
+        }
+
+
+        @Override
+        public RuntimeException preserveSqlErrorMessage( AlgNode plan, RuntimeException failure ) {
+            Set<Throwable> visited = Collections.newSetFromMap( new IdentityHashMap<>() );
+            for ( Throwable cause = failure; cause != null && visited.add( cause ); cause = cause.getCause() ) {
+                if ( cause instanceof InvalidNumericFormatException && hasOnlyTextToIntegerCasts( plan ) ) {
+                    return new SqlStateException( "Cannot coerce STRING to Java Number", "22018", failure );
+                }
+                if ( cause instanceof SqlStateException sqlFailure && "22012".equals( sqlFailure.getSqlState() )
+                        && sqlFailure.getCause() instanceof ArithmeticException ) {
+                    return new SqlStateException( "/ by zero", "22012", failure );
+                }
+            }
+            return failure;
+        }
+
+
+        private static boolean hasOnlyTextToIntegerCasts( AlgNode plan ) {
+            Set<PolyType> targets = EnumSet.noneOf( PolyType.class );
+            collectCastTargets( plan, new RexVisitorImpl<Void>( true ) {
+                @Override
+                public Void visitCall( RexCall call ) {
+                    if ( call.getOperator().getOperatorName() == OperatorName.CAST
+                            && PolyType.CHAR_TYPES.contains( call.getOperands().get( 0 ).getType().getPolyType() )
+                            && PolyType.NUMERIC_TYPES.contains( call.getType().getPolyType() ) ) {
+                        targets.add( call.getType().getPolyType() );
+                    }
+                    return super.visitCall( call );
+                }
+            } );
+            // Other numeric casts share this exception type but have different legacy messages.
+            return !targets.isEmpty() && targets.stream().allMatch( NeoUtil::isSqlIntegerCastTarget );
+        }
+
+
+        private static void collectCastTargets( AlgNode alg, RexVisitorImpl<Void> visitor ) {
+            List<RexNode> expressions = alg instanceof Calc calc ? calc.getProgram().getExprList() : alg.getChildExps();
+            expressions.forEach( expression -> expression.accept( visitor ) );
+            alg.getInputs().forEach( input -> collectCastTargets( input, visitor ) );
         }
 
 

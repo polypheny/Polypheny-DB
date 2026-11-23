@@ -16,14 +16,21 @@
 
 package org.polypheny.db.prisminterface.statementProcessing;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
+import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.ResultKind;
+import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.monitoring.events.MonitoringType;
+import org.polypheny.db.prepare.Prepare.PreparedResultImpl;
 import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.PIServiceException;
 import org.polypheny.db.prisminterface.relational.RelationalMetaRetriever;
@@ -86,7 +93,7 @@ final class ResultExecutor {
             return StatementResult.newBuilder().setFrame( readFrame( statement, cursor, fetchSize ) ).build();
         } catch ( RuntimeException e ) {
             discardFailedResult( statement, transaction, e );
-            throw e;
+            throw preserveSqlErrorMessage( statement, implementation, e );
         }
     }
 
@@ -103,7 +110,7 @@ final class ResultExecutor {
             return readFrame( statement, cursor, fetchSize );
         } catch ( RuntimeException e ) {
             discardFailedResult( statement, cursor.transaction(), e );
-            throw e;
+            throw preserveSqlErrorMessage( statement, cursor.iterator().getImplementation(), e );
         }
     }
 
@@ -177,7 +184,7 @@ final class ResultExecutor {
             return scalar( count );
         } catch ( RuntimeException e ) {
             discardFailedResult( statement, transaction, e );
-            throw e;
+            throw preserveSqlErrorMessage( statement, implementation, e );
         }
     }
 
@@ -196,6 +203,34 @@ final class ResultExecutor {
             throw new PIServiceException( "Can't retrieve results from an unprepared statement.", "I9002", 9002 );
         }
         return implementation;
+    }
+
+
+    private static RuntimeException preserveSqlErrorMessage( PIStatement statement, PolyImplementation implementation, RuntimeException failure ) {
+        if ( !"sql".equals( statement.getLanguage().serializedName() )
+                || !(implementation.getPreparedResult() instanceof PreparedResultImpl<?> prepared) ) {
+            return failure;
+        }
+        Set<Long> adapterIds = new HashSet<>();
+        if ( !collectPhysicalAdapters( prepared.getRootAlg(), adapterIds ) || adapterIds.size() != 1 ) {
+            return failure;
+        }
+        return AdapterManager.getInstance().getAdapter( adapterIds.iterator().next() )
+                .map( adapter -> adapter.preserveSqlErrorMessage( prepared.getRootAlg(), failure ) )
+                .orElse( failure );
+    }
+
+
+    private static boolean collectPhysicalAdapters( AlgNode node, Set<Long> adapterIds ) {
+        Entity entity = node.getEntity();
+        if ( entity != null ) {
+            if ( !(entity instanceof PhysicalEntity physical) ) {
+                return false;
+            }
+            adapterIds.add( physical.adapterId );
+        }
+        // A node can name a target entity as well as having input from other stores.
+        return node.getInputs().stream().allMatch( input -> collectPhysicalAdapters( input, adapterIds ) );
     }
 
 

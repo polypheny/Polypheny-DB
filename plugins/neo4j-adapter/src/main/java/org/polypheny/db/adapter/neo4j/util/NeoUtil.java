@@ -635,6 +635,11 @@ public interface NeoUtil {
         return visitor.supports && !UnsupportedRexCallVisitor.containsModelItem( p.getProjects() );
     }
 
+
+    public static boolean isSqlIntegerCastTarget( PolyType type ) {
+        return type == PolyType.TINYINT || type == PolyType.SMALLINT || type == PolyType.INTEGER;
+    }
+
     static Object fixParameterValue( PolyValue value, NestedPolyType type, boolean isNested ) {
         if ( value == null ) {
             return null;
@@ -704,6 +709,10 @@ public interface NeoUtil {
 
         @Override
         public Void visitCall( RexCall call ) {
+            if ( !graph && requiresRelationalEvaluation( call ) ) {
+                supports = false;
+                return null;
+            }
             if ( graph && readsEscapedGraphKey( call ) ) {
                 // Decode user keys from both legacy and escaped Neo4j records in the Enumerable engine.
                 supports = false;
@@ -732,6 +741,18 @@ public interface NeoUtil {
                 }
             }
             return super.visitCall( call );
+        }
+
+
+        private static boolean requiresRelationalEvaluation( RexCall call ) {
+            return switch ( call.op.getOperatorName() ) {
+                // The Cypher translation elides these casts and the Neo4j reader expects a number.
+                case CAST -> PolyType.CHAR_TYPES.contains( call.operands.get( 0 ).getType().getPolyType() )
+                        && isSqlIntegerCastTarget( call.type.getPolyType() );
+                // Cypher division has different numeric and failure semantics from SQL division.
+                case DIVIDE, DIVIDE_INTEGER -> true;
+                default -> false;
+            };
         }
 
 

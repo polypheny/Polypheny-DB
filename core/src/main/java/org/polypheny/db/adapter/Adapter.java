@@ -31,6 +31,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.annotations.AdapterProperties;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
@@ -169,6 +170,15 @@ public abstract class Adapter<ACatalog extends AdapterCatalog> implements Scanna
 
 
     public abstract void truncate( Context context, long allocId );
+
+
+    /**
+     * Retains an adapter's legacy diagnostic when the SQL engine evaluates an expression locally.
+     * Called only when execution identifies this adapter as the sole physical data source.
+     */
+    public RuntimeException preserveSqlErrorMessage( AlgNode plan, RuntimeException failure ) {
+        return failure;
+    }
 
 
     /**
