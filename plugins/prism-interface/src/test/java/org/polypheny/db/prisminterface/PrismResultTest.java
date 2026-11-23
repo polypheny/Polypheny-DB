@@ -204,19 +204,25 @@ class PrismResultTest {
         try ( Closeable cleanup = () -> dropFixture( "DROP TABLE IF EXISTS prismneonumeric" );
                 PrismConnection connection = new PrismConnection( false, 4 ) ) {
             connection.execute( namespace, "sql", "CREATE TABLE prismneonumeric (id INTEGER PRIMARY KEY, number_text VARCHAR(50), divisor INTEGER)", 1 );
-            connection.execute( namespace, "sql", "INSERT INTO prismneonumeric VALUES (1, '42', 2), (2, 'abc', 0)", 1 );
+            connection.execute( namespace, "sql", "INSERT INTO prismneonumeric VALUES (1, '42', 2), (2, 'abc', 0), (3, NULL, NULL)", 1 );
             Response commit = connection.send( Request.newBuilder().setCommitRequest( CommitRequest.getDefaultInstance() ) );
             assertEquals( Response.TypeCase.COMMIT_RESPONSE, commit.getTypeCase() );
 
-            sqlError( connection, "SELECT CAST('abc' AS INTEGER) FROM prismneonumeric", "22018" );
+            assertSqlError( connection, "SELECT CAST('abc' AS INTEGER) FROM prismneonumeric", "22018", "Cannot coerce STRING to Java Number" );
             Frame cast = connection.execute( namespace, "sql", "SELECT CAST(number_text AS INTEGER) AS converted FROM prismneonumeric WHERE id = 1", -1 ).getResult().getFrame();
             assertEquals( 42, integerValue( singleRow( relationalFrame( cast, true, List.of( "converted" ) ) ).getValues( 0 ) ) );
 
-            sqlError( connection, "SELECT 1/0 FROM prismneonumeric", "22012" );
-            sqlError( connection, "SELECT id FROM prismneonumeric WHERE CAST(number_text AS INTEGER) = 9", "22018" );
-            sqlError( connection, "SELECT 8/divisor FROM prismneonumeric WHERE id = 2", "22012" );
+            assertSqlError( connection, "SELECT 1/0 FROM prismneonumeric", "22012", "/ by zero" );
+            assertSqlError( connection, "SELECT id FROM prismneonumeric WHERE CAST(number_text AS INTEGER) = 9", "22018", "Cannot coerce STRING to Java Number" );
+            assertSqlError( connection, "SELECT 8/divisor FROM prismneonumeric WHERE id = 2", "22012", "/ by zero" );
             Frame divide = connection.execute( namespace, "sql", "SELECT 8/divisor AS quotient FROM prismneonumeric WHERE id = 1", -1 ).getResult().getFrame();
             assertEquals( 4, integerValue( singleRow( relationalFrame( divide, true, List.of( "quotient" ) ) ).getValues( 0 ) ) );
+
+            Frame nulls = connection.execute( namespace, "sql",
+                    "SELECT CAST(number_text AS INTEGER) AS converted, 8/divisor AS quotient FROM prismneonumeric WHERE id = 3", -1 ).getResult().getFrame();
+            for ( ProtoValue value : singleRow( relationalFrame( nulls, true, List.of( "converted", "quotient" ) ) ).getValuesList() ) {
+                assertTrue( PrismValueDeserializer.deserializeProtoValue( value ).isNull() );
+            }
         }
     }
 
