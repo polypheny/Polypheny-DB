@@ -49,8 +49,9 @@ class CypherShortestPathLazyPropertiesTest {
         try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
             connection.execute( Catalog.DEFAULT_NAMESPACE_NAME, "sql", "CREATE GRAPH NAMESPACE " + NAMESPACE, 1 );
             connection.execute( NAMESPACE, "cypher", """
-                    CREATE (a:Start {desired:2, divisor:0})-[:R {cost:1}]->(b:End {ready:true, divisor:0}),
-                           (a)-[:R {cost:2}]->(:Relay)-[:R {cost:2}]->(b),
+                    CREATE (a:Start {desired:2, divisor:0})-[:R {cost:1, allowed:true}]->(b:End {ready:true, divisor:0}),
+                           (a)-[:R {cost:2, allowed:false}]->(:Relay)-[:R {cost:2, allowed:false}]->(b),
+                           (a)-[:R {cost:2, allowed:true}]->(:First)-[:R {cost:2, allowed:true}]->(:Second)-[:R {cost:2, allowed:true}]->(b),
                            (a)-[:R {cost:1}]->(a), (:Island)
                     """, 1 );
         }
@@ -133,6 +134,46 @@ class CypherShortestPathLazyPropertiesTest {
                     MATCH (a:Start)
                     RETURN length(shortestPath((a {desired:1 / a.divisor})-[:R*0..]->(a))) AS hops
                     """ );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void keepsLiteralFiltersWhenCheckingComputedProperties() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            assertEquals( 3, integerValue( hops( connection, """
+                    MATCH (a:Start), (b:End)
+                    RETURN length(shortestPath((a)-[:R* {cost:2, allowed:b.ready}]->(b))) AS hops
+                    """ ) ) );
+            assertTrue( hops( connection, """
+                    MATCH (a:Start), (b:End)
+                    RETURN length(shortestPath((a)-[:R*2.. {cost:3, allowed:1 / a.divisor}]->(b))) AS hops
+                    """ ).hasNull() );
+            assertEquals( 2, integerValue( hops( connection, """
+                    MATCH (a:Start), (b:End)
+                    RETURN length(shortestPath((a {desired:a.desired})-[:R*2.. {cost:2}]->(b {ready:true}))) AS hops
+                    """ ) ) );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void honorsTheBoundRelationshipListBeforeComputingProperties() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            assertEquals( 0, integerValue( hops( connection, """
+                    MATCH (a:Start)-[trail:R*0]->(a)
+                    RETURN length(shortestPath((a)-[trail:R*0.. {cost:1 / a.divisor}]->(a))) AS hops
+                    """ ) ) );
+            assertPropertyError( connection, """
+                    MATCH (a:Start)-[trail:R*1]->(a)
+                    RETURN length(shortestPath((a)-[trail:R*0.. {cost:1 / a.divisor}]->(a))) AS hops
+                    """ );
+            assertTrue( hops( connection, """
+                    MATCH (a:Start)-[trail:R*1]->(a)
+                    RETURN length(shortestPath((a)-[trail:R*0.. {cost:a.desired}]->(a))) AS hops
+                    """ ).hasNull() );
             connection.checkTransactions( 0 );
         }
     }

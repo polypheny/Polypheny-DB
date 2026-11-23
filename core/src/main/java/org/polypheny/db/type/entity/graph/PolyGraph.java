@@ -170,6 +170,17 @@ public class PolyGraph extends GraphObject {
 
     /** Finds a shortest matching trail that also satisfies a path-dependent predicate. */
     public @Nullable PolyPath shortestPath( PolyPath pattern, PolyNode start, PolyNode end, @Nullable Predicate<PolyPath> condition ) {
+        return searchPath( pattern, start, end, condition, false );
+    }
+
+
+    /** Finds a matching trail between bound nodes, preferring a zero-hop trail when one matches. */
+    public @Nullable PolyPath firstPath( PolyPath pattern, PolyNode start, PolyNode end, @Nullable Predicate<PolyPath> condition ) {
+        return searchPath( pattern, start, end, condition, true );
+    }
+
+
+    private @Nullable PolyPath searchPath( PolyPath pattern, PolyNode start, PolyNode end, @Nullable Predicate<PolyPath> condition, boolean firstMatch ) {
         PolyNode source = nodes.get( start.id );
         PolyNode target = nodes.get( end.id );
         if ( source == null || target == null
@@ -184,7 +195,7 @@ public class PolyGraph extends GraphObject {
         }
         Map<PolyString, List<PolyEdge>> incident = incidentEdges();
         if ( condition != null || template.getMinLength() > 1 ) {
-            return shortestMatchingTrail( pattern, source, target, incident, condition );
+            return findMatchingTrail( pattern, source, target, incident, condition, firstMatch );
         }
         int max = template.getMaxLength() == null ? edges.size() : template.getMaxLength();
         SearchStep first = new SearchStep( source, null, null, 0 );
@@ -238,8 +249,8 @@ public class PolyGraph extends GraphObject {
     }
 
 
-    private @Nullable PolyPath shortestMatchingTrail( PolyPath pattern, PolyNode start, PolyNode end, Map<PolyString, List<PolyEdge>> incident,
-            @Nullable Predicate<PolyPath> condition ) {
+    private @Nullable PolyPath findMatchingTrail( PolyPath pattern, PolyNode start, PolyNode end, Map<PolyString, List<PolyEdge>> incident,
+            @Nullable Predicate<PolyPath> condition, boolean firstMatch ) {
         Iterator<PolyPath> matches = new PathMatches( pattern, incident, List.of( start ).iterator(), end.id );
         PolyPath best = null;
         int hops = Integer.MAX_VALUE;
@@ -248,7 +259,7 @@ public class PolyGraph extends GraphObject {
             if ( candidate.getEdges().size() < hops && (condition == null || condition.test( candidate )) ) {
                 best = candidate;
                 hops = candidate.getEdges().size();
-                if ( hops == pattern.getEdges().get( 0 ).getMinLength() ) {
+                if ( firstMatch || hops == pattern.getEdges().get( 0 ).getMinLength() ) {
                     break;
                 }
             }

@@ -33,6 +33,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
@@ -61,13 +62,17 @@ final class CypherShortestPathValue {
         Pair<PolyString, PolyNode> left = first.withMatchProperties( first.getVariable(), null ).getPolyNode();
         Pair<PolyString, PolyNode> right = last.withMatchProperties( last.getVariable(), null ).getPolyNode();
         Pair<PolyString, PolyEdge> edge = relationship.withMatchProperties( relationship.getVariable(), null ).getPolyEdge( left.right.id, right.right.id );
+        RexNode graph = context.graphValue();
+        RexNode startProperties = prepareProperties( first.getProperties(), left.right, context, type );
+        RexNode relationshipProperties = prepareProperties( relationship.getProperties(), edge.right, context, type );
+        RexNode endProperties = prepareProperties( last.getProperties(), right.right, context, type );
         PolyPath template = PolyPath.create( List.of( left, right ), List.of( edge ) );
         AlgDataType pathType = context.typeFactory.createPathType( template.getPathType( context.typeFactory ) );
         AlgDataType nullablePath = context.typeFactory.createTypeWithNullability( pathType, true );
         RexNode result = context.rexBuilder.makeCall( nullablePath,
                 OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_SHORTEST_PATH_VALUE ),
-                List.of( context.graphValue(), new RexLiteral( template, pathType, PolyType.PATH ), start, end, boundRelationship,
-                        value( first.getProperties(), context, type ), value( relationship.getProperties(), context, type ), value( last.getProperties(), context, type ) ) );
+                List.of( graph, new RexLiteral( template, pathType, PolyType.PATH ), start, end, boundRelationship,
+                        startProperties, relationshipProperties, endProperties ) );
 
         List<CypherExpression> predicates = path.getPredicates();
         if ( predicates.isEmpty() ) {
@@ -77,6 +82,13 @@ final class CypherShortestPathValue {
                 .map( predicate -> context.booleanPredicate( predicate.getRex( context, RexType.FILTER ).right ) ).toList() );
         return context.rexBuilder.makeCall( nullablePath, OperatorRegistry.get( OperatorName.CASE ),
                 List.of( condition, result, context.rexBuilder.makeNullLiteral( nullablePath ) ) );
+    }
+
+
+    private static RexNode prepareProperties( CypherExpression expression, GraphPropertyHolder element, CypherContext context, RexType type ) {
+        CypherPatternProperties properties = CypherPatternProperties.split( value( expression, context, type ) );
+        element.getProperties().putAll( properties.literals() );
+        return properties.computed() == null ? context.rexBuilder.constantNull() : properties.computed();
     }
 
 

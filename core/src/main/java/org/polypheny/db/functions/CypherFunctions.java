@@ -986,7 +986,15 @@ public class CypherFunctions {
         Predicate<PolyPath> boundPath = boundRelationship
                 ? path -> PolyBoolean.TRUE.equals( equal( path.getBinding( name ), relationship ) )
                 : null;
-        PolyPath candidate = graph.shortestPath( template, source, target, boundPath );
+        if ( startProperties == null && relationshipProperties == null && endProperties == null ) {
+            return graph.shortestPath( template, source, target, boundPath );
+        }
+        // A path predicate or a larger minimum can require enumerating trails. Stop at the first
+        // admissible trail in these cases and find the shortest path only after applying the maps.
+        boolean breadthFirst = boundPath == null && edge.getMinLength() <= 1;
+        PolyPath candidate = breadthFirst
+                ? graph.shortestPath( template, source, target )
+                : graph.firstPath( template, source, target, boundPath );
         if ( candidate == null ) {
             return null;
         }
@@ -997,20 +1005,29 @@ public class CypherFunctions {
                 || (endProperties != null && !nodes.get( nodes.size() - 1 ).matchesProperties( shortestProperties( endProperties.apply() ) )) ) {
             return null;
         }
+        // A bound relationship or list fixes the edges and length of any admissible path.
+        boolean shortest = breadthFirst || boundPath != null || candidate.getEdges().size() == edge.getMinLength();
         if ( relationshipProperties == null || candidate.getEdges().isEmpty() ) {
-            return candidate;
+            return shortest ? candidate : graph.shortestPath( template, source, target );
         }
         PolyDictionary properties = shortestProperties( relationshipProperties.apply() );
-        if ( candidate.getEdges().stream().allMatch( actual -> actual.matchesProperties( properties ) ) ) {
-            return candidate;
+        if ( shortest ) {
+            if ( candidate.getEdges().stream().allMatch( actual -> actual.matchesProperties( properties ) ) ) {
+                return candidate;
+            }
+            if ( boundPath != null ) {
+                return null;
+            }
         }
 
-        // Filter edges during the second search so ordinary shortest paths still use BFS.
-        PolyEdge edgePattern = new PolyEdge( edge.id, properties, edge.labels, edge.left, edge.right, edge.direction, name );
+        // Filter edges during traversal and retain any literal constraints on the template.
+        PolyDictionary combinedProperties = new PolyDictionary( edge.properties );
+        combinedProperties.putAll( properties );
+        PolyEdge edgePattern = new PolyEdge( edge.id, combinedProperties, edge.labels, edge.left, edge.right, edge.direction, name );
         edgePattern.fromTo( edge.fromTo() );
         PolyPath pattern = PolyPath.create( List.of( Pair.of( left.getVariableName(), left ), Pair.of( right.getVariableName(), right ) ),
                 List.of( Pair.of( name, edgePattern ) ) );
-        return graph.shortestPath( pattern, source, target, boundPath );
+        return graph.shortestPath( pattern, source, target );
     }
 
 

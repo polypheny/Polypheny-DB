@@ -40,6 +40,7 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
@@ -78,14 +79,19 @@ final class CypherPatternExistence {
 
         List<Pair<PolyString, PolyNode>> nodes = new ArrayList<>();
         for ( CypherNodePattern node : pattern.getNodes() ) {
-            CypherVariable capture = addProperties( node.getVariable(), node.getProperties() );
-            nodes.add( node.withMatchProperties( capture, null ).getPolyNode() );
+            ElementProperties checks = addProperties( node.getVariable(), node.getProperties() );
+            Pair<PolyString, PolyNode> template = node.withMatchProperties( checks.binding(), null ).getPolyNode();
+            template.right.getProperties().putAll( checks.literals() );
+            nodes.add( template );
         }
         List<Pair<PolyString, PolyEdge>> relationships = new ArrayList<>();
         for ( int i = 0; i < pattern.getEdges().size(); i++ ) {
             CypherRelPattern relationship = pattern.getEdges().get( i );
-            CypherVariable capture = addProperties( relationship.getVariable(), relationship.getProperties() );
-            relationships.add( relationship.withMatchProperties( capture, null ).getPolyEdge( nodes.get( i ).right.id, nodes.get( i + 1 ).right.id ) );
+            ElementProperties checks = addProperties( relationship.getVariable(), relationship.getProperties() );
+            Pair<PolyString, PolyEdge> template = relationship.withMatchProperties( checks.binding(), null )
+                    .getPolyEdge( nodes.get( i ).right.id, nodes.get( i + 1 ).right.id );
+            template.right.getProperties().putAll( checks.literals() );
+            relationships.add( template );
         }
         PolyPath template = PolyPath.create( nodes, relationships );
         AlgDataType pathType = context.typeFactory.createPathType( template.getPathType( context.typeFactory ) );
@@ -133,9 +139,17 @@ final class CypherPatternExistence {
     }
 
 
-    private CypherVariable addProperties( CypherVariable variable, CypherExpression expression ) {
+    private ElementProperties addProperties( CypherVariable variable, CypherExpression expression ) {
         if ( expression == null ) {
-            return variable;
+            return new ElementProperties( variable, Map.of() );
+        }
+        RexNode map = expression.getRex( context, rexType ).right;
+        if ( map.getType().getPolyType() != PolyType.MAP ) {
+            throw new CypherSyntaxException( "A pattern requires a map of property values." );
+        }
+        CypherPatternProperties split = CypherPatternProperties.split( map );
+        if ( split.computed() == null ) {
+            return new ElementProperties( variable, split.literals() );
         }
         CypherVariable capture = variable;
         if ( capture == null ) {
@@ -145,13 +159,14 @@ final class CypherPatternExistence {
             }
             capture = new CypherVariable( ParserPos.ZERO, name );
         }
-        RexNode map = expression.getRex( context, rexType ).right;
-        if ( map.getType().getPolyType() != PolyType.MAP ) {
-            throw new CypherSyntaxException( "A pattern requires a map of property values." );
-        }
         properties.add( context.rexBuilder.makeLiteral( capture.getName() ) );
-        properties.add( map );
-        return capture;
+        properties.add( split.computed() );
+        return new ElementProperties( capture, split.literals() );
+    }
+
+
+    private record ElementProperties( CypherVariable binding, Map<PolyString, PolyValue> literals ) {
+
     }
 
 

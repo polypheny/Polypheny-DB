@@ -26,11 +26,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.polypheny.db.functions.CypherFunctions;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyEdge.EdgeDirection;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.util.Pair;
@@ -97,6 +100,34 @@ class PolyGraphShortestPathTest {
     }
 
 
+    @Test
+    void probesOnlyOneTrailBeforeRejectingAComputedEndpointProperty() {
+        PolyNode a = node( "a" );
+        PolyNode b = node( "b" );
+        PolyNode c = node( "c" );
+        PolyNode d = node( "d" );
+        PolyNode e = node( "e" );
+        // Sixteen structural paths of four hops each. None reaches the lower bound of two.
+        PolyGraph graph = graph( List.of( a, b, c, d, e ), List.of(
+                edge( "ab1", a, b ), edge( "ab2", a, b ), edge( "bc1", b, c ), edge( "bc2", b, c ),
+                edge( "cd1", c, d ), edge( "cd2", c, d ), edge( "de1", d, e ), edge( "de2", d, e ) ) );
+        AtomicInteger examinedEdges = new AtomicInteger();
+        PolyDictionary counted = new PolyDictionary() {
+            @Override
+            public Set<Map.Entry<PolyString, PolyValue>> entrySet() {
+                examinedEdges.incrementAndGet();
+                return super.entrySet();
+            }
+        };
+        PolyPath pattern = pattern( EdgeDirection.LEFT_TO_RIGHT, Pair.of( 2, null ), counted, null );
+        examinedEdges.set( 0 );
+
+        assertNull( CypherFunctions.shortestPathValue( graph, pattern, a, e, null,
+                () -> PolyDictionary.ofDict( Map.of( PolyString.of( "missing" ), PolyString.of( "required" ) ) ), null, null ) );
+        assertEquals( 4, examinedEdges.get() );
+    }
+
+
     private static void assertShortestTrail( List<PolyPath> trails, PolyPath result ) {
         if ( trails == null ) {
             assertNull( result );
@@ -121,12 +152,16 @@ class PolyGraphShortestPathTest {
 
 
     private static PolyPath pattern( EdgeDirection direction, Pair<Integer, Integer> range ) {
+        return pattern( direction, range, new PolyDictionary(), PolyString.of( "route" ) );
+    }
+
+
+    private static PolyPath pattern( EdgeDirection direction, Pair<Integer, Integer> range, PolyDictionary properties, PolyString edgeName ) {
         PolyString startName = PolyString.of( "start" );
         PolyString endName = PolyString.of( "end" );
-        PolyString edgeName = PolyString.of( "route" );
         PolyNode start = node( "start" ).copyNamed( startName );
         PolyNode end = node( "end" ).copyNamed( endName );
-        PolyEdge edge = new PolyEdge( new PolyDictionary(), List.of( PolyString.of( "LINK" ) ), start.id, end.id, direction, edgeName ).fromTo( range );
+        PolyEdge edge = new PolyEdge( properties, List.of( PolyString.of( "LINK" ) ), start.id, end.id, direction, edgeName ).fromTo( range );
         return PolyPath.create( List.of( Pair.of( startName, start ), Pair.of( endName, end ) ), List.of( Pair.of( edgeName, edge ) ) );
     }
 
