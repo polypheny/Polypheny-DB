@@ -18,6 +18,8 @@ package org.polypheny.db.functions;
 
 import static org.polypheny.db.functions.spatial.GeoDistanceFunctions.EARTH_RADIUS_M;
 
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -25,8 +27,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.function.Function;
-import java.util.function.Supplier;
+import java.util.function.IntPredicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -47,8 +50,10 @@ import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.type.entity.spatial.GeometryTopologicalException;
 import org.polypheny.db.type.entity.spatial.InvalidGeometryException;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
@@ -64,6 +69,35 @@ public class MqlFunctions {
 
     private MqlFunctions() {
         // empty on purpose
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyValue docExprDocument( PolyValue fieldNames, PolyValue[] values ) {
+        PolyDocument result = new PolyDocument();
+        List<PolyString> names = fieldNames.asList();
+        for ( int i = 0; i < values.length; i++ ) {
+            PolyValue value = values[i];
+            if ( !isUnsetValue( value ) ) {
+                result.put( names.get( i ), value == null ? PolyNull.NULL : value );
+            }
+        }
+        return result;
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyValue docExprArray( PolyValue[] values ) {
+        List<PolyValue> elements = new ArrayList<>( values.length );
+        for ( PolyValue value : values ) {
+            elements.add( value == null || isUnsetValue( value ) ? PolyNull.NULL : value );
+        }
+        return PolyList.of( elements );
+    }
+
+
+    private static boolean isUnsetValue( PolyValue value ) {
+        return value instanceof PolyDocument document && document.isUnset;
     }
 
 
@@ -91,6 +125,43 @@ public class MqlFunctions {
         }
 
         return temp;
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyValue docExprQueryValue( PolyValue input, List<PolyString> fields ) {
+        if ( input != null && input.isString() ) {
+            input = PolyDocument.fromTypedJson( input.asString().value, PolyDocument.class );
+        }
+        return docExprQueryValue( input, fields, 0 );
+    }
+
+
+    private static PolyValue docExprQueryValue( PolyValue value, List<PolyString> fields, int offset ) {
+        if ( value == null ) {
+            return PolyDocument.ofUnset();
+        }
+        if ( offset == fields.size() ) {
+            return value;
+        }
+        if ( value instanceof PolyDocument document ) {
+            return docExprQueryValue( document.get( fields.get( offset ) ), fields, offset + 1 );
+        }
+        if ( value instanceof PolyList<?> list && list.value != null ) {
+            // Aggregation evaluates the remaining path on each document in the array.
+            // Missing values are omitted, and arrays returned by a document remain nested.
+            List<PolyValue> values = new ArrayList<>();
+            for ( PolyValue element : list ) {
+                if ( element instanceof PolyDocument ) {
+                    PolyValue result = docExprQueryValue( element, fields, offset );
+                    if ( !isUnsetValue( result ) ) {
+                        values.add( result );
+                    }
+                }
+            }
+            return PolyList.of( values );
+        }
+        return PolyDocument.ofUnset();
     }
 
 
@@ -517,18 +588,99 @@ public class MqlFunctions {
      */
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean docEq( PolyValue b0, PolyValue b1 ) {
-        if ( b0 instanceof List && !(b1 instanceof List) ) {
-            return PolyBoolean.of( ((List<?>) b0).contains( b1 ) );
+        if ( b0 instanceof PolyList<?> list && list.value != null ) {
+            return PolyBoolean.of( wholeValueEquals( b0, b1 )
+                    || list.stream().anyMatch( element -> wholeValueEquals( element, b1 ) ) );
         }
-        if ( b0 == null || b1 == null ) {
-            if ( b0 == null && b1 == null ) {
-                return PolyBoolean.TRUE;
-            } else {
-                return PolyBoolean.FALSE;
-            }
-        }
+        return docExprEq( b0, b1 );
+    }
 
-        return PolyBoolean.of( b0.compareTo( b1 ) == 0 );
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean docNe( PolyValue left, PolyValue right ) {
+        return PolyBoolean.of( !docEq( left, right ).value );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean docExprEq( PolyValue left, PolyValue right ) {
+        return PolyBoolean.of( wholeValueEquals( left, right ) );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean docExprNe( PolyValue left, PolyValue right ) {
+        return PolyBoolean.of( !wholeValueEquals( left, right ) );
+    }
+
+
+    private static boolean wholeValueEquals( PolyValue left, PolyValue right ) {
+        boolean leftNull = left == null || left.isNull();
+        boolean rightNull = right == null || right.isNull();
+        if ( leftNull || rightNull ) {
+            return leftNull == rightNull;
+        }
+        if ( left instanceof PolyNumber l && right instanceof PolyNumber r ) {
+            Object leftValue = l.toJava();
+            Object rightValue = r.toJava();
+            if ( leftValue == null || rightValue == null ) {
+                return leftValue == rightValue;
+            }
+            return compareNumericValues( l, r ) == 0;
+        }
+        if ( left instanceof PolyList<?> l && right instanceof PolyList<?> r ) {
+            if ( l.value == null || r.value == null ) {
+                return l.value == r.value;
+            }
+            return l.size() == r.size()
+                    && Pair.zip( l.value, r.value ).stream().allMatch( pair -> wholeValueEquals( pair.left, pair.right ) );
+        }
+        if ( left instanceof PolyDocument l && right instanceof PolyDocument r ) {
+            if ( l.isUnset != r.isUnset || l.size() != r.size() ) {
+                return false;
+            }
+            Iterator<Entry<PolyString, PolyValue>> rightEntries = r.entrySet().iterator();
+            for ( Entry<PolyString, PolyValue> leftEntry : l.entrySet() ) {
+                Entry<PolyString, PolyValue> rightEntry = rightEntries.next();
+                if ( !Objects.equals( leftEntry.getKey(), rightEntry.getKey() )
+                        || !wholeValueEquals( leftEntry.getValue(), rightEntry.getValue() ) ) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        if ( left instanceof PolyMap<?, ?> l && right instanceof PolyMap<?, ?> r && left.isSameType( right ) ) {
+            return l.keySet().equals( r.keySet() )
+                    && l.entrySet().stream().allMatch( entry -> wholeValueEquals( entry.getValue(), r.get( entry.getKey() ) ) );
+        }
+        return left.compareTo( right ) == 0;
+    }
+
+
+    private static int compareNumericValues( PolyNumber left, PolyNumber right ) {
+        boolean leftApproximate = PolyType.APPROX_TYPES.contains( left.getType() );
+        boolean rightApproximate = PolyType.APPROX_TYPES.contains( right.getType() );
+        if ( leftApproximate && rightApproximate ) {
+            double leftValue = left.doubleValue();
+            double rightValue = right.doubleValue();
+            return leftValue == rightValue ? 0 : Double.compare( leftValue, rightValue );
+        }
+        if ( leftApproximate ) {
+            return compareDoubleWithExact( left.doubleValue(), right.bigDecimalValue() );
+        }
+        if ( rightApproximate ) {
+            return -compareDoubleWithExact( right.doubleValue(), left.bigDecimalValue() );
+        }
+        return left.bigDecimalValue().compareTo( right.bigDecimalValue() );
+    }
+
+
+    private static int compareDoubleWithExact( double number, BigDecimal exact ) {
+        if ( !Double.isFinite( number ) ) {
+            return number == Double.POSITIVE_INFINITY ? 1 : -1;
+        }
+        // Compare the represented IEEE 754 value at full precision.
+        return new BigDecimal( number ).compareTo( exact );
     }
 
 
@@ -542,10 +694,7 @@ public class MqlFunctions {
      */
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean docGt( PolyValue b0, PolyValue b1 ) {
-        return compNullExecute(
-                b0,
-                b1,
-                () -> Functions.gt( b0, b1 ).value );
+        return compareNumbers( b0, b1, cmp -> cmp > 0 );
     }
 
 
@@ -559,10 +708,7 @@ public class MqlFunctions {
      */
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean docGte( PolyValue b0, PolyValue b1 ) {
-        return compNullExecute(
-                b0,
-                b1,
-                () -> (Functions.gt( b0, b1 ).value || Functions.eq( b0, b1 ).value) );
+        return compareNumbers( b0, b1, cmp -> cmp >= 0 );
     }
 
 
@@ -585,10 +731,7 @@ public class MqlFunctions {
      */
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean docLt( PolyValue b0, PolyValue b1 ) {
-        return compNullExecute(
-                b0,
-                b1,
-                () -> Functions.lt( b0, b1 ).value );
+        return compareNumbers( b0, b1, cmp -> cmp < 0 );
     }
 
 
@@ -602,30 +745,160 @@ public class MqlFunctions {
      */
     @SuppressWarnings("UnusedDeclaration")
     public static PolyBoolean docLte( PolyValue b0, PolyValue b1 ) {
-        return compNullExecute(
-                b0,
-                b1,
-                () -> (Functions.lt( b0, b1 ).value || Functions.eq( b0, b1 ).value) );
+        return compareNumbers( b0, b1, cmp -> cmp <= 0 );
     }
 
 
-    /**
-     * Helper function, which executes different provided suppliers and compares the two elements
-     *
-     * @param b0 the left element
-     * @param b1 the right element
-     * @param predicate the predicate, which returns if the condition of left and right match
-     * @return if the provided elements fit the provided condition
-     */
     @SuppressWarnings("UnusedDeclaration")
-    private static PolyBoolean compNullExecute( PolyValue b0, PolyValue b1, Supplier<Boolean> predicate ) {
-        if ( b0 == null || b1 == null ) {
+    public static PolyBoolean docExprLt( PolyValue left, PolyValue right ) {
+        return PolyBoolean.of( compareBsonValues( left, right ) < 0 );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean docExprLte( PolyValue left, PolyValue right ) {
+        return PolyBoolean.of( compareBsonValues( left, right ) <= 0 );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean docExprGt( PolyValue left, PolyValue right ) {
+        return PolyBoolean.of( compareBsonValues( left, right ) > 0 );
+    }
+
+
+    @SuppressWarnings("UnusedDeclaration")
+    public static PolyBoolean docExprGte( PolyValue left, PolyValue right ) {
+        return PolyBoolean.of( compareBsonValues( left, right ) >= 0 );
+    }
+
+
+    private static int compareBsonValues( PolyValue left, PolyValue right ) {
+        BsonComparisonType leftType = bsonComparisonType( left );
+        BsonComparisonType rightType = bsonComparisonType( right );
+        if ( leftType != rightType ) {
+            return leftType.compareTo( rightType );
+        }
+
+        return switch ( leftType ) {
+            case MISSING, NULL -> 0;
+            case NUMBER -> compareBsonNumbers( left.asNumber(), right.asNumber() );
+            case STRING -> compareBsonStrings( left.asString().value, right.asString().value );
+            case DOCUMENT -> compareBsonDocuments( left.asDocument(), right.asDocument() );
+            case ARRAY -> compareBsonArrays( left.asList(), right.asList() );
+            case BINARY -> compareBsonBinary( left.asBinary().value, right.asBinary().value );
+            case BOOLEAN -> Boolean.compare( left.asBoolean().value, right.asBoolean().value );
+            case DATE, TIMESTAMP -> Long.compare( left.asTemporal().getMillisSinceEpoch(), right.asTemporal().getMillisSinceEpoch() );
+        };
+    }
+
+
+    private static BsonComparisonType bsonComparisonType( PolyValue value ) {
+        if ( value == null || value.isNull() ) {
+            return BsonComparisonType.NULL;
+        }
+        if ( value instanceof PolyDocument document && document.isUnset ) {
+            return BsonComparisonType.MISSING;
+        }
+        return switch ( value.getType() ) {
+            case INTEGER, TINYINT, SMALLINT, BIGINT, DECIMAL, REAL, FLOAT, DOUBLE ->
+                    value.toJava() == null ? BsonComparisonType.NULL : BsonComparisonType.NUMBER;
+            case VARCHAR -> BsonComparisonType.STRING;
+            case DOCUMENT -> BsonComparisonType.DOCUMENT;
+            case ARRAY -> value.asList().value == null ? BsonComparisonType.NULL : BsonComparisonType.ARRAY;
+            case BINARY -> value.asBinary().value == null ? BsonComparisonType.NULL : BsonComparisonType.BINARY;
+            case BOOLEAN -> BsonComparisonType.BOOLEAN;
+            case DATE -> value.asTemporal().getMillisSinceEpoch() == null ? BsonComparisonType.NULL : BsonComparisonType.DATE;
+            case TIMESTAMP -> value.asTemporal().getMillisSinceEpoch() == null ? BsonComparisonType.NULL : BsonComparisonType.TIMESTAMP;
+            default -> throw new GenericRuntimeException( "Unsupported value type in MQL expression comparison: " + value.getType() );
+        };
+    }
+
+
+    private static int compareBsonNumbers( PolyNumber left, PolyNumber right ) {
+        boolean leftNaN = isNaN( left );
+        boolean rightNaN = isNaN( right );
+        if ( leftNaN || rightNaN ) {
+            // BSON places NaN before all other numbers, including negative infinity.
+            return Boolean.compare( rightNaN, leftNaN );
+        }
+        return compareNumericValues( left, right );
+    }
+
+
+    private static int compareBsonStrings( String left, String right ) {
+        return Arrays.compareUnsigned( left.getBytes( StandardCharsets.UTF_8 ), right.getBytes( StandardCharsets.UTF_8 ) );
+    }
+
+
+    private static int compareBsonDocuments( PolyDocument left, PolyDocument right ) {
+        Iterator<Entry<PolyString, PolyValue>> leftFields = left.entrySet().iterator();
+        Iterator<Entry<PolyString, PolyValue>> rightFields = right.entrySet().iterator();
+        while ( leftFields.hasNext() && rightFields.hasNext() ) {
+            Entry<PolyString, PolyValue> leftField = leftFields.next();
+            Entry<PolyString, PolyValue> rightField = rightFields.next();
+            int cmp = bsonComparisonType( leftField.getValue() ).compareTo( bsonComparisonType( rightField.getValue() ) );
+            if ( cmp == 0 ) {
+                cmp = compareBsonStrings( leftField.getKey().value, rightField.getKey().value );
+            }
+            if ( cmp == 0 ) {
+                cmp = compareBsonValues( leftField.getValue(), rightField.getValue() );
+            }
+            if ( cmp != 0 ) {
+                return cmp;
+            }
+        }
+        return Boolean.compare( leftFields.hasNext(), rightFields.hasNext() );
+    }
+
+
+    private static int compareBsonArrays( PolyList<?> left, PolyList<?> right ) {
+        Iterator<? extends PolyValue> leftElements = left.iterator();
+        Iterator<? extends PolyValue> rightElements = right.iterator();
+        while ( leftElements.hasNext() && rightElements.hasNext() ) {
+            int cmp = compareBsonValues( leftElements.next(), rightElements.next() );
+            if ( cmp != 0 ) {
+                return cmp;
+            }
+        }
+        return Boolean.compare( leftElements.hasNext(), rightElements.hasNext() );
+    }
+
+
+    private static int compareBsonBinary( byte[] left, byte[] right ) {
+        int size = Integer.compare( left.length, right.length );
+        return size == 0 ? Arrays.compareUnsigned( left, right ) : size;
+    }
+
+
+    // Declaration order follows BSON aggregation comparison order.
+    private enum BsonComparisonType {
+        MISSING, NULL, NUMBER, STRING, DOCUMENT, ARRAY, BINARY, BOOLEAN, DATE, TIMESTAMP
+    }
+
+
+    private static PolyBoolean compareNumbers( PolyValue field, PolyValue operand, IntPredicate comparison ) {
+        if ( !(operand instanceof PolyNumber right) || right.toJava() == null ) {
             return PolyBoolean.FALSE;
         }
-        if ( !(b0 instanceof PolyNumber) || !(b1 instanceof PolyNumber) ) {
-            return PolyBoolean.FALSE;
+        if ( field instanceof PolyList<?> list && list.value != null ) {
+            return PolyBoolean.of( list.stream().anyMatch( element -> matchesNumericBound( element, right, comparison ) ) );
         }
-        return PolyBoolean.of( predicate.get() );
+        return PolyBoolean.of( matchesNumericBound( field, right, comparison ) );
+    }
+
+
+    private static boolean matchesNumericBound( PolyValue value, PolyNumber bound, IntPredicate comparison ) {
+        if ( !(value instanceof PolyNumber number) || number.toJava() == null ) {
+            return false;
+        }
+        // A range with a NaN operand can match only another NaN.
+        return isNaN( number ) == isNaN( bound ) && comparison.test( compareNumericValues( number, bound ) );
+    }
+
+
+    private static boolean isNaN( PolyNumber number ) {
+        return PolyType.APPROX_TYPES.contains( number.getType() ) && Double.isNaN( number.doubleValue() );
     }
 
 

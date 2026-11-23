@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.type.entity.PolyBinary;
@@ -25,6 +26,7 @@ import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.numerical.PolyLong;
@@ -61,6 +63,41 @@ class GraphPropertyStorageTest {
             assertEquals( original.getType(), restored.getType() );
             assertEquals( original.toTypedJson(), restored.toTypedJson() );
         }
+    }
+
+
+    @Test
+    void restoresGraphPropertiesContainingDocuments() {
+        assertGraphDocumentRoundTrip( "k0", "k4" );
+        assertGraphDocumentRoundTrip( "k4", "k0" );
+        assertGraphDocumentRoundTrip( "k5", "k9" );
+        assertGraphDocumentRoundTrip( "k9", "k5" );
+    }
+
+
+    private static void assertGraphDocumentRoundTrip( String firstKey, String secondKey ) {
+        PolyDocument document = PolyDocument.ofDocument( Map.of( PolyString.of( firstKey ), PolyInteger.of( 4 ) ) );
+        document.put( PolyString.of( secondKey ), PolyBigDecimal.of( "1700000000000.99999999" ) );
+
+        for ( PolyValue original : List.of( document, PolyList.of( document ) ) ) {
+            String storage = CrossModelFunctions.graphPropertyStorageValue( original );
+            PolyValue restored = CrossModelFunctions.readGraphPropertyStorageValue( PolyString.of( storage ) );
+            assertEquals( original.getType(), restored.getType(), storage );
+            assertEquals( original.toTypedJson(), restored.toTypedJson() );
+        }
+    }
+
+
+    @Test
+    void restoresPersistedGraphDocumentFieldOrder() {
+        String storage = "~{PolyphenyGraphValue:v1}~:{\"@type\":\"DOCUMENT\",\"_ps\":[" +
+                "[\"beta\",{\"@type\":\"INTEGER\",\"value\":2}],[\"alpha\",{\"@type\":\"INTEGER\",\"value\":1}]," +
+                "[\"zeta\",{\"@type\":\"INTEGER\",\"value\":6}],[\"delta\",{\"@type\":\"INTEGER\",\"value\":4}]," +
+                "[\"gamma\",{\"@type\":\"INTEGER\",\"value\":3}],[\"epsilon\",{\"@type\":\"INTEGER\",\"value\":5}]]}";
+
+        PolyValue restored = CrossModelFunctions.readGraphPropertyStorageValue( PolyString.of( storage ) );
+        assertTrue( restored.isDocument() );
+        assertEquals( storage, CrossModelFunctions.graphPropertyStorageValue( restored ) );
     }
 
 

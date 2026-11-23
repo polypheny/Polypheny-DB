@@ -56,6 +56,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
@@ -109,10 +110,12 @@ import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.type.entity.graph.PolyPath;
@@ -2080,6 +2083,14 @@ public class Functions {
     }
 
 
+    public static PolyBinary truncateOrPad( PolyBinary s, int maxLength ) {
+        if ( s == null || s.value == null ) {
+            return null;
+        }
+        return s.length() == maxLength ? s : PolyBinary.of( truncateOrPad( new ByteString( s.value ), maxLength ) );
+    }
+
+
     /**
      * SQL {@code POSITION(seek IN string)} function.
      */
@@ -2702,6 +2713,9 @@ public class Functions {
 
     @SuppressWarnings("unused")
     public static Object jsonValueExpression( PolyValue input ) {
+        if ( input instanceof PolyMap<?, ?> || input instanceof PolyList<?> || input instanceof PolyBigDecimal ) {
+            return input;
+        }
         return jsonValueExpression( PolyString.of( input.toJson() ) );
     }
 
@@ -2776,41 +2790,100 @@ public class Functions {
             }
             PathMode mode = PathMode.valueOf( matcher.group( 1 ).toUpperCase( Locale.ROOT ) );
             String pathWff = matcher.group( 2 );
-            DocumentContext ctx = switch ( mode ) {
-                case STRICT -> JsonPath.parse(
-                        input.toJson(),
-                        Configuration
-                                .builder()
-                                .jsonProvider( JSON_PATH_JSON_PROVIDER )
-                                .mappingProvider( JSON_PATH_MAPPING_PROVIDER )
-                                .build() );
-                case LAX -> JsonPath.parse(
-                        input.toJson(),
-                        Configuration
-                                .builder()
-                                .options( Option.SUPPRESS_EXCEPTIONS )
-                                .jsonProvider( JSON_PATH_JSON_PROVIDER )
-                                .mappingProvider( JSON_PATH_MAPPING_PROVIDER )
-                                .build() );
-                default -> throw Static.RESOURCE.illegalJsonPathModeInPathSpec( mode.toString(), pathSpec.value ).ex();
-            };
+            Configuration.ConfigurationBuilder builder = Configuration.builder()
+                    .jsonProvider( JSON_PATH_JSON_PROVIDER )
+                    .mappingProvider( JSON_PATH_MAPPING_PROVIDER );
+            if ( mode == PathMode.LAX ) {
+                builder.options( Option.SUPPRESS_EXCEPTIONS );
+            }
+            Configuration configuration = builder.build();
+            Object document = input instanceof PolyMap<?, ?> || input instanceof PolyList<?> || input instanceof PolyBigDecimal
+                    ? jsonPathInput( input )
+                    : null;
+            DocumentContext ctx = document == null ? JsonPath.parse( input.toJson(), configuration ) : JsonPath.parse( document, configuration );
             try {
-                Object json = ctx.read( pathWff );
-                PolyValue val;
-                try {
-                    val = json == null ? null : PolyValue.fromJson( json.toString() );
-                } catch ( GenericRuntimeException e ) {
-                    // if the BsonParser cannot parse it we might try as string
-                    val = PolyValue.fromJson( "\"" + json + "\"" );
-                }
-
-                return PathContext.withReturned( mode, val );
+                Object result = ctx.read( pathWff );
+                return PathContext.withReturned( mode, result == null ? null : jsonPathResultToPolyValue( result ) );
             } catch ( Exception e ) {
                 return PathContext.withStrictException( e );
             }
         } catch ( Exception e ) {
             return PathContext.withUnknownException( e );
         }
+    }
+
+
+    private static Object jsonPathInput( PolyValue value ) {
+        if ( value == null || value.isNull() ) {
+            return null;
+        }
+        if ( value instanceof PolyMap<?, ?> map ) {
+            if ( map.map == null ) {
+                return null;
+            }
+            Map<String, Object> document = new LinkedHashMap<>();
+            map.forEach( ( key, element ) -> {
+                String field = key.isString() ? String.valueOf( key.asString().value ) : key.toJson();
+                document.put( field, jsonPathInput( element ) );
+            } );
+            return document;
+        }
+        if ( value instanceof PolyList<?> list ) {
+            return list.value == null ? null : list.stream().map( Functions::jsonPathInput ).collect( Collectors.toCollection( ArrayList::new ) );
+        }
+        return switch ( value.getType() ) {
+            case CHAR, VARCHAR, TEXT, BOOLEAN, TINYINT, SMALLINT, INTEGER, DECIMAL -> value.toJava();
+            case BIGINT -> {
+                Long number = value.asLong().value;
+                if ( number != null && number == number.intValue() ) {
+                    yield number.intValue();
+                }
+                yield number;
+            }
+            case DOUBLE -> {
+                Double number = value.asDouble().value;
+                yield number == null || Double.isFinite( number ) ? number : JSON_PATH_JSON_PROVIDER.parse( value.toJson() );
+            }
+            case DATE, TIME, TIMESTAMP -> value.asTemporal().getMillisSinceEpoch() == null ? null : value.toJson();
+            default -> JSON_PATH_JSON_PROVIDER.parse( value.toJson() );
+        };
+    }
+
+
+    private static PolyValue jsonPathResultToPolyValue( Object result ) {
+        if ( result == null ) {
+            return PolyNull.NULL;
+        }
+        if ( result instanceof String text ) {
+            return PolyString.of( text );
+        }
+        if ( result instanceof Boolean bool ) {
+            return PolyBoolean.of( bool );
+        }
+        if ( result instanceof Integer number ) {
+            return PolyInteger.of( number );
+        }
+        if ( result instanceof Long number ) {
+            return PolyLong.of( number );
+        }
+        if ( result instanceof BigInteger number ) {
+            return PolyBigDecimal.of( new BigDecimal( number ) );
+        }
+        if ( result instanceof BigDecimal number ) {
+            return PolyBigDecimal.of( number );
+        }
+        if ( result instanceof Number number ) {
+            return PolyDouble.of( number );
+        }
+        if ( result instanceof Collection<?> values ) {
+            return PolyList.copyOf( values.stream().map( Functions::jsonPathResultToPolyValue ).toList() );
+        }
+        if ( result instanceof Map<?, ?> values ) {
+            Map<PolyString, PolyValue> document = new HashMap<>();
+            values.forEach( ( key, value ) -> document.put( PolyString.of( (String) key ), jsonPathResultToPolyValue( value ) ) );
+            return PolyDocument.ofDocument( document );
+        }
+        throw new GenericRuntimeException( "Unsupported JSON path result type: " + result.getClass().getName() );
     }
 
 
@@ -2836,6 +2909,17 @@ public class Functions {
 
 
     public static PolyValue jsonValueAny( PolyValue input, JsonValueEmptyOrErrorBehavior emptyBehavior, PolyValue defaultValueOnEmpty, JsonValueEmptyOrErrorBehavior errorBehavior, PolyValue defaultValueOnError ) {
+        return jsonValueAny( input, emptyBehavior, defaultValueOnEmpty, errorBehavior, defaultValueOnError, value -> value );
+    }
+
+
+    public static PolyValue jsonValueAny(
+            PolyValue input,
+            JsonValueEmptyOrErrorBehavior emptyBehavior,
+            PolyValue defaultValueOnEmpty,
+            JsonValueEmptyOrErrorBehavior errorBehavior,
+            PolyValue defaultValueOnError,
+            Function1<PolyValue, PolyValue> cast ) {
         final PathContext context = (PathContext) input;
         final Exception exc;
         if ( context.exc != null ) {
@@ -2846,18 +2930,22 @@ public class Functions {
                 return switch ( emptyBehavior ) {
                     case ERROR -> throw Static.RESOURCE.emptyResultOfJsonValueFuncNotAllowed().ex();
                     case NULL -> null;
-                    case DEFAULT -> defaultValueOnEmpty;
+                    case DEFAULT -> cast.apply( defaultValueOnEmpty );
                 };
             } else if ( context.mode == PathMode.STRICT && !isScalarObject( value ) ) {
                 exc = Static.RESOURCE.scalarValueRequiredInStrictModeOfJsonValueFunc( value.toString() ).ex();
             } else {
-                return value;
+                try {
+                    return cast.apply( value );
+                } catch ( RuntimeException e ) {
+                    exc = e;
+                }
             }
         }
         return switch ( errorBehavior ) {
             case ERROR -> throw toUnchecked( exc );
             case NULL -> null;
-            case DEFAULT -> defaultValueOnError;
+            case DEFAULT -> cast.apply( defaultValueOnError );
         };
     }
 

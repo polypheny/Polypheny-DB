@@ -61,6 +61,7 @@ import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.plan.AlgOptPredicateList;
@@ -225,6 +226,10 @@ public class RexSimplify {
      * Verify adds an overhead that is only acceptable for a top-level call.
      */
     RexNode simplify( RexNode e, RexUnknownAs unknownAs ) {
+        // MQL comparisons are two-valued and may test array membership. SQL comparison rewrites do not apply.
+        if ( isMqlComparison( e ) ) {
+            return e;
+        }
         if ( strong.isNull( e ) ) {
             // Only boolean NULL (aka UNKNOWN) can be converted to FALSE. Even in unknownAs=FALSE mode, we must not convert a NULL integer (say) to FALSE
             if ( e.getType().getPolyType() == PolyType.BOOLEAN ) {
@@ -251,6 +256,11 @@ public class RexSimplify {
             case EQUALS, GREATER_THAN, GREATER_THAN_OR_EQUAL, LESS_THAN, LESS_THAN_OR_EQUAL, NOT_EQUALS -> simplifyComparison( (RexCall) e, unknownAs );
             default -> e;
         };
+    }
+
+
+    private static boolean isMqlComparison( RexNode node ) {
+        return node instanceof RexCall call && OperatorName.MQL_OPERATORS.contains( call.getOperator().getOperatorName() );
     }
 
 
@@ -399,6 +409,20 @@ public class RexSimplify {
 
     private RexNode simplifyNot( RexCall call, RexUnknownAs unknownAs ) {
         final RexNode a = call.getOperands().get( 0 );
+        if ( isMqlComparison( a ) ) {
+            final RexCall comparison = (RexCall) a;
+            final OperatorName negated = switch ( comparison.getOperator().getOperatorName() ) {
+                case MQL_EQUALS -> OperatorName.MQL_NOT_EQUALS;
+                case MQL_NOT_EQUALS -> OperatorName.MQL_EQUALS;
+                case MQL_EXPR_EQUALS -> OperatorName.MQL_EXPR_NOT_EQUALS;
+                case MQL_EXPR_NOT_EQUALS -> OperatorName.MQL_EXPR_EQUALS;
+                default -> null;
+            };
+            // Negated range comparisons can match missing fields, so keep their explicit NOT.
+            return negated == null
+                    ? call
+                    : rexBuilder.makeCall( call.getType(), OperatorRegistry.get( QueryLanguage.from( "mongo" ), negated ), comparison.getOperands() );
+        }
         switch ( a.getKind() ) {
             case NOT:
                 // NOT NOT x ==> x
@@ -1118,7 +1142,7 @@ public class RexSimplify {
                 continue;
             }
             // Simplify BOOLEAN expressions if possible
-            while ( term.getKind() == Kind.EQUALS ) {
+            while ( term.getKind() == Kind.EQUALS && !isMqlComparison( term ) ) {
                 RexCall call = (RexCall) term;
                 if ( call.getOperands().get( 0 ).isAlwaysTrue() ) {
                     term = call.getOperands().get( 1 );
@@ -1130,6 +1154,9 @@ public class RexSimplify {
                     continue;
                 }
                 break;
+            }
+            if ( isMqlComparison( term ) ) {
+                continue;
             }
             switch ( term.getKind() ) {
                 case EQUALS:
@@ -1333,6 +1360,9 @@ public class RexSimplify {
      */
     private <C extends Comparable<C>> Range<PolyValue> residue( RexNode ref, Range<PolyValue> r0, List<RexNode> predicates, Class<C> clazz ) {
         for ( RexNode predicate : predicates ) {
+            if ( isMqlComparison( predicate ) ) {
+                continue;
+            }
             switch ( predicate.getKind() ) {
                 case EQUALS:
                 case LESS_THAN:
@@ -1855,6 +1885,9 @@ public class RexSimplify {
          * Creates a comparison, or returns null.
          */
         static Comparison of( RexNode e ) {
+            if ( isMqlComparison( e ) ) {
+                return null;
+            }
             switch ( e.getKind() ) {
                 case EQUALS:
                 case NOT_EQUALS:

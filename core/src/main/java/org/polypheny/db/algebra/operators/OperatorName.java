@@ -16,8 +16,9 @@
 
 package org.polypheny.db.algebra.operators;
 
-import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Stream;
 import lombok.Getter;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.fun.TrimFunction;
@@ -1602,6 +1603,26 @@ public enum OperatorName {
 
     MQL_EQUALS( LangFunctionOperator.class ),
 
+    MQL_NOT_EQUALS( LangFunctionOperator.class ),
+
+    MQL_EXPR_QUERY_VALUE( LangFunctionOperator.class ),
+
+    MQL_EXPR_DOCUMENT( LangFunctionOperator.class ),
+
+    MQL_EXPR_ARRAY( LangFunctionOperator.class ),
+
+    MQL_EXPR_EQUALS( LangFunctionOperator.class ),
+
+    MQL_EXPR_NOT_EQUALS( LangFunctionOperator.class ),
+
+    MQL_EXPR_LT( LangFunctionOperator.class ),
+
+    MQL_EXPR_LTE( LangFunctionOperator.class ),
+
+    MQL_EXPR_GT( LangFunctionOperator.class ),
+
+    MQL_EXPR_GTE( LangFunctionOperator.class ),
+
     MQL_SIZE_MATCH( LangFunctionOperator.class ),
 
     MQL_JSON_MATCH( LangFunctionOperator.class ),
@@ -1811,13 +1832,17 @@ public enum OperatorName {
     EXTRACT_NAME( LangFunctionOperator.class );
 
 
-    final public static List<OperatorName> MQL_OPERATORS = Arrays.asList(
-            MQL_EQUALS,
-            MQL_GT,
-            MQL_GTE,
-            MQL_LT,
-            MQL_LTE
+    public static final Set<OperatorName> MQL_EXPR_COMPARISONS = Set.of(
+            MQL_EXPR_EQUALS,
+            MQL_EXPR_NOT_EQUALS,
+            MQL_EXPR_LT,
+            MQL_EXPR_LTE,
+            MQL_EXPR_GT,
+            MQL_EXPR_GTE
     );
+    public static final List<OperatorName> MQL_OPERATORS = Stream.concat(
+            Stream.of( MQL_EQUALS, MQL_NOT_EQUALS, MQL_GT, MQL_GTE, MQL_LT, MQL_LTE ),
+            MQL_EXPR_COMPARISONS.stream() ).toList();
     private final Class<? extends Operator> clazz;
 
 

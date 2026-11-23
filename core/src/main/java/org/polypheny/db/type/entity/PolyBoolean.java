@@ -35,8 +35,10 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.functions.Functions;
 import org.polypheny.db.type.PolySerializable;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
@@ -102,8 +104,12 @@ public class PolyBoolean extends PolyValue {
 
         if ( value.isBoolean() ) {
             return value.asBoolean();
+        } else if ( value instanceof PolyBigDecimal decimal ) {
+            return decimal.value == null ? null : of( decimal.integerPart().intValueExact() != 0 );
         } else if ( value.isNumber() ) {
             return value.asBoolean();
+        } else if ( value instanceof PolyString text ) {
+            return text.isNull() ? null : Functions.toBoolean( text );
         }
 
         throw new GenericRuntimeException( getConvertError( value, PolyBoolean.class ) );

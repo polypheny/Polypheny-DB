@@ -26,6 +26,7 @@ import org.bson.BsonDocument;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
 import org.polypheny.db.adapter.mongodb.MongoEntity;
 import org.polypheny.db.adapter.mongodb.bson.BsonDynamic;
+import org.polypheny.db.adapter.mongodb.bson.MongoDocumentSerializer;
 import org.polypheny.db.adapter.mongodb.rules.MongoRules.MongoDocuments;
 import org.polypheny.db.adapter.mongodb.util.RexToMongoTranslator;
 import org.polypheny.db.algebra.AlgNode;
@@ -138,7 +139,7 @@ public class MongoDocumentModify extends DocumentModify<MongoEntity> implements 
         implementor.operations = documents.documents
                 .stream()
                 .filter( PolyValue::isDocument )
-                .map( d -> BsonDocument.parse( d.toJson() ) )
+                .map( MongoDocumentSerializer::serialize )
                 .toList();
     }
 

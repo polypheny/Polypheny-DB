@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
 import lombok.Getter;
+import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.BsonValue;
 import org.polypheny.db.adapter.mongodb.MongoAlg;
@@ -207,6 +208,16 @@ public class MongoRules {
     }
 
 
+    public static BsonValue translateExprFieldReference( AlgDataType rowType, RexNameRef ref ) {
+        if ( ref.names.isEmpty() ) {
+            // MongoDB 4.4 cannot optimize a comparison with a bare root field path.
+            BsonDocument variables = new BsonDocument( "root", new BsonString( "$$ROOT" ) );
+            return new BsonDocument( "$let", new BsonDocument( "vars", variables ).append( "in", new BsonString( "$$root" ) ) );
+        }
+        return new BsonString( "$" + translateDocValueAsKey( rowType, ref ) );
+    }
+
+
     public static BsonValue translateDocValue( AlgDataType rowType, RexNameRef ref ) {
         return new BsonString( ref.getIndex()
                 .map( i -> rowType.getFieldNames().get( i ) + "." + ref.getName() )
@@ -215,7 +226,7 @@ public class MongoRules {
 
 
     private static boolean containsIncompatible( SingleAlg alg ) {
-        MongoExcludeVisitor visitor = new MongoExcludeVisitor();
+        MongoExcludeVisitor visitor = new MongoExcludeVisitor( alg instanceof LogicalRelFilter || alg instanceof LogicalRelProject );
         alg.accept( new RexShuttle() {
             @Override
             public RexNode visitCall( RexCall call ) {
@@ -462,18 +473,21 @@ public class MongoRules {
     @Getter
     public static class MongoExcludeVisitor extends RexVisitorImpl<Void> {
 
+        private final boolean relational;
         private boolean containsIncompatible = false;
 
 
-        protected MongoExcludeVisitor() {
+        protected MongoExcludeVisitor( boolean relational ) {
             super( true );
+            this.relational = relational;
         }
 
 
         @Override
         public Void visitCall( RexCall call ) {
             Operator operator = call.getOperator();
-            if ( operator.getOperatorName() == OperatorName.COALESCE
+            if ( (relational && requiresSqlNumericEvaluation( call ))
+                    || operator.getOperatorName() == OperatorName.COALESCE
                     || operator.getKind() == Kind.GEO
                     || operator.getOperatorName() == OperatorName.EXTRACT
                     || operator.getOperatorName() == OperatorName.ABS
@@ -499,6 +513,18 @@ public class MongoRules {
                 containsIncompatible = true;
             }
             return super.visitCall( call );
+        }
+
+
+        private static boolean requiresSqlNumericEvaluation( RexCall call ) {
+            return switch ( call.getOperator().getOperatorName() ) {
+                // The Mongo translation of CAST passes through the original operand.
+                case CAST -> PolyType.CHAR_TYPES.contains( call.operands.get( 0 ).getType().getPolyType() )
+                        && PolyType.NUMERIC_TYPES.contains( call.getType().getPolyType() );
+                // MongoDB's division uses different numeric and error semantics.
+                case DIVIDE, DIVIDE_INTEGER -> true;
+                default -> false;
+            };
         }
 
     }

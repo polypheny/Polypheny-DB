@@ -95,7 +95,22 @@ public class DocumentFilterToCalcRule extends ConverterRule {
 
 
         @Override
+        public RexNode visitCall( RexCall call ) {
+            if ( call.op.getOperatorName() == OperatorName.MQL_EXPR_QUERY_VALUE
+                    && call.operands.get( 0 ) instanceof RexNameRef nameRef ) {
+                return replaceNameRef( nameRef, OperatorName.MQL_EXPR_QUERY_VALUE );
+            }
+            return super.visitCall( call );
+        }
+
+
+        @Override
         public RexNode visitNameRef( RexNameRef nameRef ) {
+            return replaceNameRef( nameRef, OperatorName.MQL_QUERY_VALUE );
+        }
+
+
+        private RexNode replaceNameRef( RexNameRef nameRef, OperatorName operator ) {
             int index = 0;
             if ( input.getModel() == DataModel.RELATIONAL ) {
                 // within document model we just access the main field, if already mapped we use the data field
@@ -104,7 +119,7 @@ public class DocumentFilterToCalcRule extends ConverterRule {
 
             return new RexCall(
                     nameRef.getType(),
-                    OperatorRegistry.get( QueryLanguage.from( "mql" ), OperatorName.MQL_QUERY_VALUE ),
+                    OperatorRegistry.get( QueryLanguage.from( "mql" ), operator ),
                     RexIndexRef.of( index, input.getTupleType() ),
                     DocumentUtil.getStringArray( nameRef.names, cluster ) );
         }
