@@ -38,6 +38,7 @@ import java.util.UUID;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.IntPredicate;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerable;
@@ -91,7 +92,8 @@ public class CypherFunctions {
     }
 
 
-    public static PolyBoolean patternExists( PolyGraph graph, PolyPath template, PolyValue bindings, PolyList<PolyValue> properties ) {
+    public static PolyBoolean patternExists( PolyGraph graph, PolyPath template, PolyValue bindings,
+            PolyString[] propertyBindings, Function0<PolyValue>[] properties ) {
         Map<PolyValue, PolyValue> known = bindings.asMap();
         List<PolyNode> nodes = template.getNodes();
         for ( PolyNode node : nodes ) {
@@ -112,7 +114,7 @@ public class CypherFunctions {
         for ( PolyPath match : graph.matchPaths( template, start, end ) ) {
             boolean sameBindings = known.entrySet().stream().allMatch(
                     binding -> PolyBoolean.TRUE.equals( equal( match.getBinding( binding.getKey().asString() ), binding.getValue() ) ) );
-            if ( sameBindings && matchesExistenceProperties( match, properties ) ) {
+            if ( sameBindings && matchesExistenceProperties( match, propertyBindings, properties ) ) {
                 return PolyBoolean.TRUE;
             }
         }
@@ -120,12 +122,11 @@ public class CypherFunctions {
     }
 
 
-    private static boolean matchesExistenceProperties( PolyPath match, PolyList<PolyValue> properties ) {
-        for ( int i = 0; i < properties.size(); i += 2 ) {
+    private static boolean matchesExistenceProperties( PolyPath match, PolyString[] propertyBindings, Function0<PolyValue>[] properties ) {
+        for ( int i = 0; i < properties.length; i++ ) {
             // Preserve the property checks for each occurrence of a repeated node variable.
-            PolyValue candidate = match.getBinding( properties.get( i ).asString() );
-            PolyValue expected = properties.get( i + 1 );
-            if ( !matchProperties( candidate, () -> expected ).value ) {
+            PolyValue candidate = match.getBinding( propertyBindings[i] );
+            if ( !matchProperties( candidate, properties[i] ).value ) {
                 return false;
             }
         }
@@ -960,7 +961,7 @@ public class CypherFunctions {
 
 
     public static PolyPath shortestPathValue( PolyGraph graph, PolyPath template, PolyValue start, PolyValue end, PolyValue relationship,
-            PolyValue startProperties, PolyValue relationshipProperties, PolyValue endProperties ) {
+            Function0<PolyValue> startProperties, Function0<PolyValue> relationshipProperties, Function0<PolyValue> endProperties ) {
         if ( isNull( start ) || isNull( end ) ) {
             return null;
         }
@@ -982,19 +983,34 @@ public class CypherFunctions {
                 throw new GenericRuntimeException( "shortestPath() requires a relationship or relationship-list binding matching the pattern." );
             }
         }
-        PolyPath pattern = template;
-        if ( !isNull( startProperties ) || !isNull( relationshipProperties ) || !isNull( endProperties ) ) {
-            PolyNode leftPattern = new PolyNode( left.id, shortestProperties( startProperties ), left.labels, left.getVariableName() );
-            PolyNode rightPattern = new PolyNode( right.id, shortestProperties( endProperties ), right.labels, right.getVariableName() );
-            PolyEdge edgePattern = new PolyEdge( edge.id, shortestProperties( relationshipProperties ), edge.labels, edge.left, edge.right,
-                    edge.direction, name );
-            edgePattern.fromTo( edge.fromTo() );
-            pattern = PolyPath.create( List.of( Pair.of( left.getVariableName(), leftPattern ), Pair.of( right.getVariableName(), rightPattern ) ),
-                    List.of( Pair.of( name, edgePattern ) ) );
-        }
-        return graph.shortestPath( pattern, source, target, boundRelationship
+        Predicate<PolyPath> boundPath = boundRelationship
                 ? path -> PolyBoolean.TRUE.equals( equal( path.getBinding( name ), relationship ) )
-                : null );
+                : null;
+        PolyPath candidate = graph.shortestPath( template, source, target, boundPath );
+        if ( candidate == null ) {
+            return null;
+        }
+
+        // Every candidate shares these endpoints. Match against the nodes from the current graph.
+        List<PolyNode> nodes = candidate.getNodes();
+        if ( (startProperties != null && !nodes.get( 0 ).matchesProperties( shortestProperties( startProperties.apply() ) ))
+                || (endProperties != null && !nodes.get( nodes.size() - 1 ).matchesProperties( shortestProperties( endProperties.apply() ) )) ) {
+            return null;
+        }
+        if ( relationshipProperties == null || candidate.getEdges().isEmpty() ) {
+            return candidate;
+        }
+        PolyDictionary properties = shortestProperties( relationshipProperties.apply() );
+        if ( candidate.getEdges().stream().allMatch( actual -> actual.matchesProperties( properties ) ) ) {
+            return candidate;
+        }
+
+        // Filter edges during the second search so ordinary shortest paths still use BFS.
+        PolyEdge edgePattern = new PolyEdge( edge.id, properties, edge.labels, edge.left, edge.right, edge.direction, name );
+        edgePattern.fromTo( edge.fromTo() );
+        PolyPath pattern = PolyPath.create( List.of( Pair.of( left.getVariableName(), left ), Pair.of( right.getVariableName(), right ) ),
+                List.of( Pair.of( name, edgePattern ) ) );
+        return graph.shortestPath( pattern, source, target, boundPath );
     }
 
 

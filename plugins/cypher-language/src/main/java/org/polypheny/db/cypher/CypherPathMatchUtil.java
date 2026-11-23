@@ -20,7 +20,9 @@ import java.util.List;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.nodes.OperatorBinding;
+import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PathType;
+import org.polypheny.db.type.PolyType;
 
 public class CypherPathMatchUtil {
 
@@ -34,6 +36,15 @@ public class CypherPathMatchUtil {
             throw new GenericRuntimeException( "Could not get element to derive type for path match" );
         }
         return operandTypes.get( 1 );
+    }
+
+
+    public static boolean isRelationshipList( AlgDataType type ) {
+        if ( !(type instanceof ArrayType array) ) {
+            return false;
+        }
+        PolyType component = array.getComponentType().getPolyType();
+        return array.getCardinality() == 0 || component == PolyType.EDGE || component == PolyType.ANY || component == PolyType.NULL;
     }
 
 }

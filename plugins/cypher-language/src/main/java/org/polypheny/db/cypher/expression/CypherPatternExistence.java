@@ -16,6 +16,8 @@
 
 package org.polypheny.db.cypher.expression;
 
+import static org.polypheny.db.cypher.CypherPathMatchUtil.isRelationshipList;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -88,8 +90,10 @@ final class CypherPatternExistence {
         PolyPath template = PolyPath.create( nodes, relationships );
         AlgDataType pathType = context.typeFactory.createPathType( template.getPathType( context.typeFactory ) );
         QueryLanguage cypher = QueryLanguage.from( "cypher" );
+        List<RexNode> operands = new ArrayList<>( List.of( context.graphValue(), new RexLiteral( template, pathType, PolyType.PATH ), map( bindings ) ) );
+        operands.addAll( properties );
         RexNode exists = context.rexBuilder.makeCall( context.booleanType, OperatorRegistry.get( cypher, OperatorName.CYPHER_PATTERN_EXISTS ),
-                List.of( context.graphValue(), new RexLiteral( template, pathType, PolyType.PATH ), map( bindings ), propertyFilters() ) );
+                operands );
         if ( pattern.getPredicates().isEmpty() ) {
             return exists;
         }
@@ -119,8 +123,10 @@ final class CypherPatternExistence {
         names.add( name );
         RexNode value = variable.getRex( context, rexType ).right;
         PolyType actual = value.getType().getPolyType();
-        if ( actual != expected && actual != PolyType.ANY && actual != PolyType.NULL ) {
-            throw new CypherSyntaxException( "Pattern variable '%s' requires %s but has type %s.".formatted( name, expected, actual ) );
+        boolean compatible = expected == PolyType.ARRAY ? isRelationshipList( value.getType() ) : actual == expected;
+        if ( !compatible && actual != PolyType.ANY && actual != PolyType.NULL ) {
+            String required = expected == PolyType.ARRAY ? "a relationship list" : expected.name();
+            throw new CypherSyntaxException( "Pattern variable '%s' requires %s but has type %s.".formatted( name, required, value.getType() ) );
         }
         bindings.add( context.rexBuilder.makeLiteral( name ) );
         bindings.add( value );
@@ -146,12 +152,6 @@ final class CypherPatternExistence {
         properties.add( context.rexBuilder.makeLiteral( capture.getName() ) );
         properties.add( map );
         return capture;
-    }
-
-
-    private RexNode propertyFilters() {
-        AlgDataType type = context.typeFactory.createArrayType( context.typeFactory.createPolyType( PolyType.ANY ), -1 );
-        return context.rexBuilder.makeCall( type, OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_LIST_CONSTRUCTOR ), properties );
     }
 
 

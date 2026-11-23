@@ -16,6 +16,7 @@
 
 package org.polypheny.db.algebra.logical.lpg;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -225,8 +226,8 @@ public class LogicalLpgMergeRows extends AbstractAlgNode implements LpgAlg {
 
 
         private Expression propertiesFunction( EnumerableAlgImplementor implementor, PhysType inputType ) {
-            ParameterExpression row = Expressions.parameter( PolyValue[].class, "input" );
-            ParameterExpression graph = Expressions.parameter( PolyGraph.class, "graph" );
+            ParameterExpression row = Expressions.parameter( Modifier.FINAL, PolyValue[].class, "input" );
+            ParameterExpression graph = Expressions.parameter( Modifier.FINAL, PolyGraph.class, "graph" );
             BlockBuilder builder = new BlockBuilder();
             List<Expression> expressions = translate( implementor, inputType, row, graph, properties, builder );
             builder.add( Expressions.return_( null, Expressions.newArrayInit( PolyValue.class, expressions ) ) );
@@ -235,8 +236,8 @@ public class LogicalLpgMergeRows extends AbstractAlgNode implements LpgAlg {
 
 
         private Expression actionFunction( EnumerableAlgImplementor implementor, PhysType inputType, List<Action> actions ) {
-            ParameterExpression row = Expressions.parameter( PolyValue[].class, "bindings" );
-            ParameterExpression graph = Expressions.parameter( PolyGraph.class, "graph" );
+            ParameterExpression row = Expressions.parameter( Modifier.FINAL, PolyValue[].class, "bindings" );
+            ParameterExpression graph = Expressions.parameter( Modifier.FINAL, PolyGraph.class, "graph" );
             BlockBuilder builder = new BlockBuilder();
             Expression updates = builder.append( "updates", Expressions.newArrayBounds( PolyValue.class, 1,
                     Expressions.constant( updateTargets.size() ) ), false );

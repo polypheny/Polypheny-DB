@@ -104,6 +104,7 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.ImplementableAggFunction;
 import org.polypheny.db.schema.ImplementableFunction;
@@ -114,6 +115,8 @@ import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.type.entity.graph.PolyGraph;
+import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.util.BuiltInMethod;
@@ -849,7 +852,7 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_SLICE ), BuiltInMethod.CYPHER_SLICE.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_NODES ), BuiltInMethod.CYPHER_NODES.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_RELATIONSHIPS ), BuiltInMethod.CYPHER_RELATIONSHIPS.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_SHORTEST_PATH_VALUE ), BuiltInMethod.CYPHER_SHORTEST_PATH_VALUE.method, NullPolicy.NONE );
+        map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_SHORTEST_PATH_VALUE ), RexImpTable::implementCypherShortestPathValue );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_LENGTH ), BuiltInMethod.CYPHER_LENGTH.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_SIZE ), BuiltInMethod.CYPHER_SIZE.method, NullPolicy.NONE );
         defineImplementor( OperatorRegistry.get( cypher, OperatorName.CYPHER_SCALAR_FUNCTION ), NullPolicy.NONE,
@@ -882,7 +885,7 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_HAS_LABEL ), BuiltInMethod.CYPHER_HAS_LABEL.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_HAS_PROPERTY ), BuiltInMethod.CYPHER_HAS_PROPERTY.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_PROPERTY_EXISTS ), BuiltInMethod.CYPHER_PROPERTY_EXISTS.method, NullPolicy.NONE );
-        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_PATTERN_EXISTS ), BuiltInMethod.CYPHER_PATTERN_EXISTS.method, NullPolicy.NONE );
+        map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_PATTERN_EXISTS ), RexImpTable::implementCypherPatternExists );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_PROPERTY ), BuiltInMethod.CYPHER_EXTRACT_PROPERTY.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_PROPERTIES ), BuiltInMethod.CYPHER_EXTRACT_PROPERTIES.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_ID ), BuiltInMethod.CYPHER_EXTRACT_ID.method, NullPolicy.NONE );
@@ -977,15 +980,51 @@ public class RexImpTable {
     }
 
 
+    private static Expression implementCypherPatternExists( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
+        List<RexNode> operands = call.getOperands();
+        Expression graph = translator.translate( operands.get( 0 ), NullAs.NULL );
+        Expression template = translator.translate( operands.get( 1 ), NullAs.NULL );
+        Expression bindings = translator.translate( operands.get( 2 ), NullAs.NULL, PolyValue.class );
+        List<Expression> propertyBindings = new ArrayList<>();
+        List<Expression> properties = new ArrayList<>();
+        for ( int i = 3; i < operands.size(); i += 2 ) {
+            propertyBindings.add( translator.translate( operands.get( i ), NullAs.NULL, PolyString.class ) );
+            properties.add( deferredCypherValue( translator, operands.get( i + 1 ) ) );
+        }
+        return nullAs.handle( Expressions.call( BuiltInMethod.CYPHER_PATTERN_EXISTS.method, graph, template, bindings,
+                Expressions.newArrayInit( PolyString.class, propertyBindings ), Expressions.newArrayInit( Function0.class, properties ) ) );
+    }
+
+
     private static Expression implementCypherMatchProperties( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
         List<RexNode> operands = call.getOperands();
         Expression candidate = translator.translate( operands.get( 0 ), NullAs.NULL, PolyValue.class );
         // A variable-length pattern tests each captured relationship, with no property evaluation for zero hops.
+        return nullAs.handle( Expressions.call( BuiltInMethod.CYPHER_MATCH_PROPERTIES.method, candidate, deferredCypherValue( translator, operands.get( 1 ) ) ) );
+    }
+
+
+    private static Expression deferredCypherValue( RexToLixTranslator translator, RexNode value ) {
         BlockBuilder block = new BlockBuilder( false, translator.getList() );
-        Expression properties = translator.setBlock( block ).translate( operands.get( 1 ), NullAs.NULL, PolyValue.class );
-        block.add( Expressions.return_( null, properties ) );
-        return nullAs.handle( Expressions.call( BuiltInMethod.CYPHER_MATCH_PROPERTIES.method, candidate,
-                Expressions.lambda( Function0.class, block.toBlock() ) ) );
+        block.add( Expressions.return_( null, translator.setBlock( block ).translate( value, NullAs.NULL, PolyValue.class ) ) );
+        return Expressions.lambda( Function0.class, block.toBlock() );
+    }
+
+
+    private static Expression implementCypherShortestPathValue( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
+        List<RexNode> operands = call.getOperands();
+        List<Expression> arguments = new ArrayList<>( List.of(
+                translator.translate( operands.get( 0 ), NullAs.NULL, PolyGraph.class ),
+                translator.translate( operands.get( 1 ), NullAs.NULL, PolyPath.class ),
+                translator.translate( operands.get( 2 ), NullAs.NULL, PolyValue.class ),
+                translator.translate( operands.get( 3 ), NullAs.NULL, PolyValue.class ),
+                translator.translate( operands.get( 4 ), NullAs.NULL, PolyValue.class ) ) );
+        for ( RexNode properties : operands.subList( 5, operands.size() ) ) {
+            arguments.add( RexUtil.isNullLiteral( translator.deref( properties ), false )
+                    ? Expressions.constant( null, Function0.class )
+                    : deferredCypherValue( translator, properties ) );
+        }
+        return nullAs.handle( Expressions.call( BuiltInMethod.CYPHER_SHORTEST_PATH_VALUE.method, arguments ) );
     }
 
 

@@ -184,6 +184,57 @@ class CypherPatternPredicateContextTest {
 
 
     @Test
+    void rejectsStaticallyIncompatibleRelationshipLists() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            for ( String binding : List.of(
+                    "WITH [42] AS r",
+                    "WITH ['R'] AS r",
+                    "MATCH (a:Seed) WITH [a] AS r",
+                    "WITH [[42]] AS r",
+                    "MATCH (a:Missing) WITH [a] AS r" ) ) {
+                assertPatternError( connection, binding + " RETURN NOT (()-[r*]->()) AS present",
+                        "Pattern variable 'r' requires a relationship list" );
+                assertPatternError( connection, binding + " MATCH ()-[r*]->() RETURN count(*) AS matches",
+                        "has incompatible bindings in MATCH" );
+            }
+            assertPatternError( connection, """
+                    WITH [42] AS r
+                    RETURN CASE WHEN false THEN exists(()-[r*]->()) ELSE true END AS present
+                    """, "Pattern variable 'r' requires a relationship list" );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void acceptsCompatibleAndDynamicallyTypedRelationshipLists() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            Frame frame = connection.execute( NAMESPACE, "cypher", """
+                    MATCH (a:Seed)-[r:R]->(b:Target)
+                    WITH a, b, [r] AS known, [r,42] AS mixed, [null] AS nullItem,
+                         [] AS empty, null AS missing, {value:[42]} AS m
+                    WITH a, b, known, mixed, nullItem, empty, missing, m.value AS dynamicList
+                    RETURN exists((a)-[known*]->(b)) AS knownMatches,
+                           exists((a)-[mixed*]->(b)) AS mixedMatches,
+                           exists((a)-[nullItem*]->(b)) AS nullItemMatches,
+                           exists((a)-[empty*0]->(a)) AS emptyMatches,
+                           exists((a)-[missing*]->(b)) AS missingMatches,
+                           exists((a)-[dynamicList*]->(b)) AS dynamicMatches
+                    """, -1 ).getResult().getFrame();
+            Row row = singleRow( relationalFrame( frame, true, List.of( "knownMatches", "mixedMatches", "nullItemMatches",
+                    "emptyMatches", "missingMatches", "dynamicMatches" ) ) );
+            List<Boolean> expected = List.of( true, false, false, true, false, false );
+            assertEquals( expected.size(), row.getValuesCount() );
+            for ( int i = 0; i < expected.size(); i++ ) {
+                assertTrue( row.getValues( i ).hasBoolean() );
+                assertEquals( expected.get( i ), row.getValues( i ).getBoolean().getBoolean() );
+            }
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
     void matchesRelationshipBindingsAndPreservesNulls() throws IOException {
         try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
             Frame frame = connection.execute( NAMESPACE, "cypher", """

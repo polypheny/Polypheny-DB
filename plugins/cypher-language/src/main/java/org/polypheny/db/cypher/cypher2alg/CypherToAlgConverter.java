@@ -16,6 +16,8 @@
 
 package org.polypheny.db.cypher.cypher2alg;
 
+import static org.polypheny.db.cypher.CypherPathMatchUtil.isRelationshipList;
+
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -137,7 +139,6 @@ import org.polypheny.db.rex.RexSimplify;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
-import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
@@ -1562,15 +1563,6 @@ public class CypherToAlgConverter {
             return OperatorName.CYPHER_VALIDATE_MATCH_NODE;
         }
         return isRelationshipList( patternType ) ? OperatorName.CYPHER_VALIDATE_MATCH_RELATIONSHIP_LIST : null;
-    }
-
-
-    private static boolean isRelationshipList( AlgDataType type ) {
-        if ( !(type instanceof ArrayType array) ) {
-            return false;
-        }
-        PolyType component = array.getComponentType().getPolyType();
-        return array.getCardinality() == 0 || component == PolyType.EDGE || isDynamicBinding( component );
     }
 
 
