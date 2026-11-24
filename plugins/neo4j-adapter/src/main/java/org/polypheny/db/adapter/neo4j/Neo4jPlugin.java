@@ -39,9 +39,7 @@ import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
-import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
-import org.neo4j.driver.Transaction;
 import org.pf4j.Extension;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataStore;
@@ -319,27 +317,6 @@ public class Neo4jPlugin extends PolyPlugin {
         }
 
 
-        public void executeDdlTrx( PolyXid xid, List<String> queries ) {
-            Transaction trx = transactionProvider.getDdlTransaction();
-            try {
-                for ( String query : queries ) {
-                    Result result = trx.run( query );
-                    result.consume();
-                }
-
-                transactionProvider.commitDdlTransaction();
-            } catch ( Exception e ) {
-                transactionProvider.rollbackDdlTransaction();
-                throw new GenericRuntimeException( e );
-            }
-        }
-
-
-        public void executeDdlTrx( PolyXid session, String query ) {
-            executeDdlTrx( session, List.of( query ) );
-        }
-
-
         @Override
         public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
             if ( this.currentNamespace == null ) {
@@ -373,26 +350,23 @@ public class Neo4jPlugin extends PolyPlugin {
 
         @Override
         public void dropTable( Context context, long allocId ) {
-            transactionProvider.commitAll();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             PhysicalEntity physical = adapterCatalog.fromAllocation( allocId, PhysicalEntity.class );
 
-            executeDdlTrx(
-                    context.getStatement().getTransaction().getXid(),
+            transactionProvider.executeDdl(
                     String.format( "MATCH (n:%s) DELETE n", physical.name ) );
         }
 
 
         @Override
         public void addColumn( Context context, long allocId, LogicalColumn logicalColumn ) {
-            transactionProvider.commitAll();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             NeoEntity physical = adapterCatalog.fromAllocation( allocId, NeoEntity.class );
             String physicalName = getPhysicalFieldName( logicalColumn.id );
             PhysicalColumn column = adapterCatalog.createColumn( physicalName, allocId, physical.getFields().size() - 1, logicalColumn );
 
             if ( logicalColumn.defaultValue != null ) {
-                executeDdlTrx( context.getStatement().getTransaction().getXid(), String.format(
+                transactionProvider.executeDdl( String.format(
                         "MATCH (n:%s) SET n += {%s:%s}",
                         getPhysicalEntityName( logicalColumn.namespaceId, allocId ),
                         getPhysicalFieldName( logicalColumn.id ),
@@ -427,8 +401,7 @@ public class Neo4jPlugin extends PolyPlugin {
                 adapterCatalog.dropColumn( f.allocId, f.id );
             } );
 
-            executeDdlTrx(
-                    context.getStatement().getTransaction().getXid(),
+            transactionProvider.executeDdl(
                     String.format( "MATCH (n:%s) REMOVE n.%s", physical.name, column.name ) );
 
             adapterCatalog.replacePhysical(
@@ -449,7 +422,6 @@ public class Neo4jPlugin extends PolyPlugin {
                 case DEFAULT:
                 case COMPOSITE:
                     addCompositeIndex(
-                            context.getStatement().getTransaction().getXid(),
                             index,
                             columns,
                             physical,
@@ -461,12 +433,12 @@ public class Neo4jPlugin extends PolyPlugin {
         }
 
 
-        private void addCompositeIndex( PolyXid xid, LogicalIndex index, List<Long> columnIds, NeoEntity physical, String physicalIndexName ) {
+        private void addCompositeIndex( LogicalIndex index, List<Long> columnIds, NeoEntity physical, String physicalIndexName ) {
             String fields = columnIds.stream()
                     .map( id -> String.format( "n.%s", getPhysicalFieldName( id ) ) )
                     .collect( Collectors.joining( ", " ) );
 
-            executeDdlTrx( xid, String.format(
+            transactionProvider.executeDdl( String.format(
                     "CREATE INDEX %s IF NOT EXISTS FOR (n:%s) on (%s)",
                     physicalIndexName + "_" + physical.id + "_" + index.id,
                     getPhysicalEntityName( index.key.namespaceId, physical.id ),
@@ -505,8 +477,7 @@ public class Neo4jPlugin extends PolyPlugin {
         public void dropIndex( Context context, LogicalIndex index, long allocId ) {
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
 
-            executeDdlTrx(
-                    context.getStatement().getTransaction().getXid(),
+            transactionProvider.executeDdl(
                     String.format( "DROP INDEX %s IF EXISTS", index.physicalName + "_" + allocId + "_" + index.id ) );
 
         }
@@ -553,12 +524,10 @@ public class Neo4jPlugin extends PolyPlugin {
 
         @Override
         public void truncate( Context context, long allocId ) {
-            transactionProvider.commitAll();
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
 
             NeoEntity physical = adapterCatalog.fromAllocation( allocId, NeoEntity.class );
-            executeDdlTrx(
-                    context.getStatement().getTransaction().getXid(),
+            transactionProvider.executeDdl(
                     String.format( "MATCH (n:%s) DETACH DELETE n", physical.name ) );
 
         }
@@ -587,8 +556,7 @@ public class Neo4jPlugin extends PolyPlugin {
         public void dropGraph( Context context, AllocationGraph allocation ) {
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             PhysicalGraph physical = adapterCatalog.fromAllocation( allocation.id, PhysicalGraph.class );
-            executeDdlTrx(
-                    context.getStatement().getTransaction().getXid(),
+            transactionProvider.executeDdl(
                     String.format( "MATCH (n:%s) DETACH DELETE n", getMappingLabel( physical.id ) ) );
         }
 

@@ -43,13 +43,16 @@ def wait_for_fixture(process, path, log, timeout):
     raise RuntimeError(f"Polypheny did not start within {timeout}s. See {log}")
 
 
-def bootstrap(socket_path, port, web_port, store):
+def bootstrap(socket_path, port, web_port, store, release_default_ports):
     import polypheny
 
     try:
         with closing(polypheny.connect(str(socket_path), transport="unix", username="pa", password="")) as connection:
             with closing(connection.cursor()) as cursor:
                 cursor.execute(f"""ALTER INTERFACES ADD 'm23_tcp' USING 'Prism Interface (Plain transport)' WITH '{{"port":"{port}"}}'""")
+                if release_default_ports:
+                    for interface in ("http interface", "rest interface", "prism interface (plain transport)"):
+                        cursor.execute(f"ALTER INTERFACES DROP '{interface}'")
     except polypheny.Error as error:
         raise RuntimeError(f"Could not configure the Prism test port: {error}") from error
     request = Request(f"http://127.0.0.1:{web_port}/getSnapshot", data=b"-1",
@@ -81,6 +84,18 @@ def verify_store_image(home, adapter, expected):
 
 
 @contextmanager
+def startup_lock(path):
+    if path is None:
+        yield
+        return
+    from fcntl import LOCK_EX, flock
+
+    with path.open("ab") as lock:
+        flock(lock, LOCK_EX)
+        yield
+
+
+@contextmanager
 def fixture(args, jar, store, store_version, logs):
     with ZipFile(jar) as archive:
         settings = dict(line.split("=", 1) for line in archive.read("version.properties").decode().splitlines() if "=" in line)
@@ -96,17 +111,19 @@ def fixture(args, jar, store, store_version, logs):
         if store in EMBEDDED:
             command.append("-noAutoDocker")
         environment = dict(os.environ, POLYPHENY_HOME=temporary, TZ="UTC")
-        with server_log.open("w", encoding="utf-8") as output, subprocess.Popen(
-            command, cwd=home, env=environment, stdout=output, stderr=subprocess.STDOUT
-        ) as process:
+        with server_log.open("w", encoding="utf-8") as output:
+            process = None
             try:
-                wait_for_fixture(process, socket_path, server_log, args.startup_timeout)
-                adapter = bootstrap(socket_path, args.prism_port, args.web_port, store)
-                if store not in EMBEDDED:
-                    adapter.update(verify_store_image(home, adapter, store_version))
+                with startup_lock(args.startup_lock):
+                    process = subprocess.Popen(command, cwd=home, env=environment,
+                                               stdout=output, stderr=subprocess.STDOUT)
+                    wait_for_fixture(process, socket_path, server_log, args.startup_timeout)
+                    adapter = bootstrap(socket_path, args.prism_port, args.web_port, store, args.startup_lock is not None)
+                    if store not in EMBEDDED:
+                        adapter.update(verify_store_image(home, adapter, store_version))
                 yield adapter
             finally:
-                if process.poll() is None:
+                if process is not None and process.poll() is None:
                     process.terminate()
                     try:
                         process.wait(timeout=20)
@@ -163,6 +180,7 @@ def main():
     parser.add_argument("--prism-port", type=int, default=32928)
     parser.add_argument("--web-port", type=int, default=37659)
     parser.add_argument("--startup-timeout", type=int, default=180)
+    parser.add_argument("--startup-lock", type=Path, help="Shared lock for concurrent fixtures using distinct Prism and web ports")
     parser.add_argument("--driver-timeout", type=int, default=1200)
     parser.add_argument("--parallel-drivers", type=int, default=2)
     args = parser.parse_args()

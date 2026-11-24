@@ -17,7 +17,6 @@
 package org.polypheny.db.adapter.neo4j;
 
 import java.util.concurrent.ConcurrentHashMap;
-import lombok.extern.slf4j.Slf4j;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.Transaction;
@@ -26,16 +25,11 @@ import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.util.Pair;
 
 
-@Slf4j
 public class TransactionProvider {
 
     private final Driver db;
 
     private final ConcurrentHashMap<PolyXid, Pair<Session, Transaction>> register = new ConcurrentHashMap<>();
-
-    private Session ddlSession;
-    private Transaction ddlTransaction;
-
 
     /**
      * Handler class, which abstract the transaction logic of the neo4j driver.
@@ -114,42 +108,15 @@ public class TransactionProvider {
     }
 
 
-    public Transaction getDdlTransaction() {
-        if ( ddlSession == null || ddlTransaction == null ) {
-            ddlSession = db.session();
-            ddlTransaction = ddlSession.beginTransaction();
+    void executeDdl( String query ) {
+        // Neo4j schema commands use a dedicated transaction. Closing it must leave
+        // all registered user transactions and their result cursors open.
+        try ( Session session = db.session(); Transaction transaction = session.beginTransaction() ) {
+            transaction.run( query ).consume();
+            transaction.commit();
+        } catch ( Exception e ) {
+            throw new GenericRuntimeException( e );
         }
-        return ddlTransaction;
-    }
-
-
-    public void commitDdlTransaction() {
-        commitAll();
-    }
-
-
-    public void rollbackDdlTransaction() {
-        if ( !ddlTransaction.isOpen() ) {
-            throw new GenericRuntimeException( "There is no ongoing DDL transaction!" );
-        }
-        ddlTransaction.rollback();
-        ddlTransaction.close();
-        ddlSession.close();
-        ddlTransaction = null;
-        ddlSession = null;
-    }
-
-
-    public void commitAll() {
-        if ( ddlSession != null && ddlTransaction != null ) {
-            ddlTransaction.commit();
-            ddlTransaction.close();
-            ddlSession.close();
-            ddlTransaction = null;
-            ddlSession = null;
-        }
-
-        register.keySet().forEach( this::commit );
     }
 
 }

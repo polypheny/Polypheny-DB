@@ -553,7 +553,8 @@ public class CypherToAlgConverter {
                 List.of( rexBuilder.makeInputRef( nodes, 0 ) ) );
         AlgNode arrays = LogicalLpgProject.create( nodes, List.of( labels ), List.of( PolyString.of( "$call$labels" ) ) );
         AlgNode values = LogicalLpgUnwind.create( arrays, 0, "label" );
-        AlgNode distinct = LogicalLpgAggregate.create( values, List.of( RexNameRef.create( "label", 0, stringType ) ), List.of() );
+        AlgDataType labelType = values.getTupleType().getFields().get( 0 ).getType();
+        AlgNode distinct = LogicalLpgAggregate.create( values, List.of( RexNameRef.create( "label", 0, labelType ) ), List.of() );
         RexNode label = rexBuilder.makeInputRef( distinct, 0 );
         AlgNode result = LogicalLpgProject.create( distinct, names.stream().map( name -> label ).toList(), names );
         appendCallRows( context, outer, result, cluster.createCorrel(), ImmutableBitSet.of() );
@@ -1110,7 +1111,7 @@ public class CypherToAlgConverter {
 
     private static void validatePathVariable( @Nullable CypherVariable path, @Nullable CypherVariable element ) {
         if ( path != null && element != null && path.getName().equals( element.getName() ) ) {
-            throw new CypherSyntaxException( "VariableAlreadyBound: Path variable '" + path.getName() + "' is already bound." );
+            throw new CypherSyntaxException( "VariableAlreadyBound: Variable '" + path.getName() + "' has conflicting uses as a path and an element of that path." );
         }
     }
 

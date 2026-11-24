@@ -84,4 +84,7 @@ the upstream path and the scenario and example line numbers. The aggregated
 pass. Use a dedicated host or CI worker with the regular Polypheny HTTP
 and REST ports free. Prism clients use the launcher port, configurable via
 `--prism-port`. If the host requires a shorter temporary directory for
-Unix sockets, set `--fixture-root` accordingly.
+Unix sockets, set `--fixture-root` accordingly. To run several store groups
+on the same Unix host, give each runner distinct `--prism-port` and
+`--web-port` values and pass the same `--startup-lock` file. The fixture
+then releases the default query interfaces after configuring its test port.

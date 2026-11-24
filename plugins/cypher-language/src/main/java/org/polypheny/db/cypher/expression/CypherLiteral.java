@@ -215,9 +215,18 @@ public class CypherLiteral extends CypherExpression {
             case NULL -> context.rexBuilder.constantNull();
             case LIST -> {
                 List<RexNode> list = listValue.stream().map( e -> e.getRex( context, type ).right ).toList();
-                AlgDataType dataType = list.isEmpty()
-                        ? context.typeFactory.createPolyType( PolyType.ANY )
-                        : PolyTypeUtil.commonDynamicType( context.typeFactory, list.stream().map( RexNode::getType ).toList() );
+                AlgDataType dataType = context.typeFactory.createPolyType( PolyType.ANY );
+                if ( !list.isEmpty() ) {
+                    List<AlgDataType> elementTypes = list.stream().map( RexNode::getType ).toList();
+                    AlgDataType first = elementTypes.get( 0 );
+                    if ( elementTypes.stream().allMatch( element -> PolyTypeUtil.equalSansNullability( context.typeFactory, element, first ) ) ) {
+                        dataType = first;
+                    } else if ( PolyType.CHAR_TYPES.contains( first.getPolyType() )
+                            && elementTypes.stream().allMatch( element -> element.getPolyType() == first.getPolyType() ) ) {
+                        // String precision can vary within a homogeneous list of strings.
+                        dataType = PolyTypeUtil.commonDynamicType( context.typeFactory, elementTypes );
+                    }
+                }
                 if ( list.stream().allMatch( RexLiteral.class::isInstance ) ) {
                     AlgDataType literalType = context.typeFactory.createArrayType( dataType, list.isEmpty() ? 0 : -1 );
                     yield context.rexBuilder.makeArray( literalType, list.stream().map( e -> ((RexLiteral) e).value ).toList() );
