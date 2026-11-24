@@ -104,6 +104,36 @@ class IdentityWebUiTest {
 
 
     @Test
+    void insertIntoQuotedIdentityTable() throws Exception {
+        String name = "webui\"identity";
+        String table = "\"webui\"\"identity\"";
+        try ( JdbcConnection jdbc = new JdbcConnection( true );
+                Statement statement = jdbc.getConnection().createStatement() ) {
+            statement.executeUpdate( "CREATE TABLE " + table + " (id BIGSERIAL PRIMARY KEY)" );
+            try {
+                LogicalColumn id = Catalog.snapshot().rel().getColumn( Catalog.defaultNamespaceId, name, "id" ).orElseThrow();
+                ObjectNode target = HttpServer.mapper.createObjectNode().put( "entityId", id.tableId ).put( "columnId", id.id );
+                assertNoError( postJson( "/restartIdentitySequence", target.put( "nextValue", "24" ) ) );
+                assertNoError( json( post( "/insertTuple" ).multiPartContent().field( "entityId", Long.toString( id.tableId ) ).asString() ) );
+
+                statement.executeUpdate( "ALTER TABLE " + table + " ADD COLUMN \"quoted\"\"note\" VARCHAR(20)" );
+                assertNoError( json( post( "/insertTuple" ).multiPartContent().field( "entityId", Long.toString( id.tableId ) ).asString() ) );
+
+                try ( ResultSet rows = statement.executeQuery( "SELECT id FROM " + table + " ORDER BY id" ) ) {
+                    assertTrue( rows.next() );
+                    assertEquals( 24L, rows.getLong( 1 ) );
+                    assertTrue( rows.next() );
+                    assertEquals( 25L, rows.getLong( 1 ) );
+                    assertFalse( rows.next() );
+                }
+            } finally {
+                statement.executeUpdate( "DROP TABLE " + table );
+            }
+        }
+    }
+
+
+    @Test
     void updateWithCompositeKeyAndAlwaysIdentity() throws Exception {
         String table = "webui_identity_update_test";
         String key = "9007199254740993";
@@ -145,6 +175,67 @@ class IdentityWebUiTest {
                 statement.executeUpdate( "DROP TABLE " + table );
             }
         }
+    }
+
+
+    @Test
+    void scriptReadsEarlierWritesBeforeMaterializingDml() throws Exception {
+        try ( JdbcConnection jdbc = new JdbcConnection( true );
+                Statement statement = jdbc.getConnection().createStatement() ) {
+            try {
+                statement.executeUpdate( "CREATE TABLE webui_identity_script (id BIGSERIAL PRIMARY KEY, note BIGINT)" );
+                statement.executeUpdate( "CREATE TABLE webui_returning_script (id BIGINT PRIMARY KEY, note BIGINT)" );
+
+                JsonNode insert = postSql( """
+                        INSERT INTO webui_identity_script (note) VALUES (1);
+                        INSERT INTO webui_identity_script (note) SELECT note + 1 FROM webui_identity_script;
+                        SELECT note FROM webui_identity_script ORDER BY note
+                        """ );
+                assertEquals( 3, insert.size() );
+                insert.forEach( IdentityWebUiTest::assertNoError );
+                assertEquals( HttpServer.mapper.readTree( "[[\"1\"],[\"2\"]]" ), insert.get( 2 ).get( "data" ) );
+
+                JsonNode update = postSql( """
+                        INSERT INTO webui_identity_script (note) VALUES (7);
+                        UPDATE webui_identity_script SET id = DEFAULT WHERE note = 7;
+                        SELECT id FROM webui_identity_script WHERE note = 7
+                        """ );
+                assertEquals( 3, update.size() );
+                update.forEach( IdentityWebUiTest::assertNoError );
+                assertEquals( HttpServer.mapper.readTree( "[[\"4\"]]" ), update.get( 2 ).get( "data" ) );
+
+                JsonNode returning = postSql( """
+                        INSERT INTO webui_returning_script VALUES (1, 7);
+                        INSERT INTO webui_returning_script SELECT id + 1, note + 1 FROM webui_returning_script RETURNING id;
+                        SELECT note FROM webui_returning_script ORDER BY note
+                        """ );
+                assertEquals( 3, returning.size() );
+                returning.forEach( IdentityWebUiTest::assertNoError );
+                assertEquals( HttpServer.mapper.readTree( "[[\"2\"]]" ), returning.get( 1 ).get( "data" ) );
+                assertEquals( HttpServer.mapper.readTree( "[[\"7\"],[\"8\"]]" ), returning.get( 2 ).get( "data" ) );
+
+                JsonNode failure = postSql( """
+                        INSERT INTO webui_returning_script VALUES (3, 9);
+                        SELECT missing_column FROM webui_returning_script;
+                        INSERT INTO webui_returning_script VALUES (4, 10)
+                        """ );
+                assertEquals( 2, failure.size() );
+                assertTrue( failure.get( 0 ).get( "isRolledBack" ).booleanValue() );
+                assertTrue( failure.get( 1 ).hasNonNull( "error" ) );
+                try ( ResultSet rows = statement.executeQuery( "SELECT COUNT(*) FROM webui_returning_script" ) ) {
+                    assertTrue( rows.next() );
+                    assertEquals( 2, rows.getInt( 1 ) );
+                }
+            } finally {
+                statement.executeUpdate( "DROP TABLE IF EXISTS webui_identity_script" );
+                statement.executeUpdate( "DROP TABLE IF EXISTS webui_returning_script" );
+            }
+        }
+    }
+
+
+    private static JsonNode postSql( String sql ) throws Exception {
+        return postJson( "/anyQuery", HttpServer.mapper.createObjectNode().put( "language", "sql" ).put( "query", sql ) );
     }
 
 

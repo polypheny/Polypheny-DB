@@ -1044,7 +1044,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     private String getFullEntityName( long entityId ) {
         LogicalTable table = Catalog.snapshot().rel().getTable( entityId ).orElseThrow();
         LogicalNamespace namespace = Catalog.snapshot().getNamespace( table.namespaceId ).orElseThrow();
-        return String.format( "\"%s\".\"%s\"", namespace.name, table.name );
+        return quoteQualified( namespace.name, table.name );
     }
 
 
@@ -1943,7 +1943,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
         LogicalTable table = Catalog.snapshot().rel().getTable( entityId ).orElseThrow();
         LogicalNamespace namespace = Catalog.snapshot().getNamespace( table.namespaceId ).orElseThrow();
-        String entityName = String.format( "\"%s\".\"%s\"", namespace.name, table.name );
+        String entityName = quoteQualified( namespace.name, table.name );
 
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
@@ -1960,10 +1960,10 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                     //don't add if default value is set
                     if ( logicalColumn.getLiteralDefaultValue() == null && logicalColumn.getIdentity() == null ) {
                         values.add( "NULL" );
-                        columns.add( "\"" + logicalColumn.name + "\"" );
+                        columns.add( quoteIdentifier( logicalColumn.name ) );
                     }
                 } else {
-                    columns.add( "\"" + logicalColumn.name + "\"" );
+                    columns.add( quoteIdentifier( logicalColumn.name ) );
                     if ( part.getSubmittedFileName() == null ) {
                         String value = new BufferedReader( new InputStreamReader( part.getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
                         if ( logicalColumn.getIdentity() != null ) {

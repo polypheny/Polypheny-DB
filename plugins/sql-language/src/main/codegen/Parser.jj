@@ -241,6 +241,7 @@ public class SqlParserImpl extends SqlAbstractParserImpl
     private Casing quotedCasing;
     private int identifierMaxLength;
     private Conformance conformance;
+    private boolean parsingInsertSource;
 
     /**
      * {@link ParserFactory} implementation for creating parser.
@@ -322,6 +323,55 @@ public class SqlParserImpl extends SqlAbstractParserImpl
     private SqlNode extend(SqlNode table, SqlNodeList extendList) {
         return (SqlNode) OperatorRegistry.get( OperatorName.EXTEND ).createCall(Span.of(table, extendList).pos(), table, extendList);
     }
+
+    private boolean canReadSourceAlias(boolean tableAlias) {
+        if (!parsingInsertSource || getToken(1).kind != RETURNING) {
+            return true;
+        }
+        int next = getToken(2).kind;
+        if (next == RETURNING) {
+            // An alias can itself be followed by a RETURNING clause.
+            return !endsSourceAlias(getToken(3).kind);
+        }
+        return endsSourceAlias(next) || (tableAlias && next == LPAREN);
+    }
+
+    private boolean endsSourceAlias(int kind) {
+        switch (kind) {
+            case EOF:
+            case SEMICOLON:
+            case RPAREN:
+            case COMMA:
+            case FROM:
+            case WHERE:
+            case GROUP:
+            case HAVING:
+            case WINDOW:
+            case ORDER:
+            case LIMIT:
+            case OFFSET:
+            case FETCH:
+            case UNION:
+            case INTERSECT:
+            case EXCEPT:
+            case SET_MINUS:
+            case JOIN:
+            case INNER:
+            case LEFT:
+            case RIGHT:
+            case FULL:
+            case CROSS:
+            case NATURAL:
+            case OUTER:
+            case ON:
+            case USING:
+            case TABLESAMPLE:
+                return true;
+            default:
+                return false;
+        }
+    }
+
     private SqlIdentitySpec mergeIdentityClauses(SqlIdentitySpec first, SqlIdentitySpec second, boolean explicitlyNullable, SqlNode defaultValue)
             throws ParseException {
         if (first != null && second != null) {
@@ -2987,7 +3037,7 @@ SqlNode SqlInsert() :
             source = (SqlNode) OperatorRegistry.get(OperatorName.VALUES).createCall(getPos(), emptyRow);
         }
     |
-        source = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
+        source = SqlInsertSource()
     )
     [
         <RETURNING> returningItems = SelectList() {
@@ -2996,6 +3046,21 @@ SqlNode SqlInsert() :
     ]
     {
         return new SqlInsert(s.end(this), keywordList, table, source, columnList, overrideMode, returning);
+    }
+}
+
+SqlNode SqlInsertSource() :
+{
+    SqlNode source;
+    boolean previouslyParsingInsertSource;
+}
+{
+    { previouslyParsingInsertSource = parsingInsertSource; parsingInsertSource = true; }
+    try {
+        source = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
+        { return source; }
+    } finally {
+        parsingInsertSource = previouslyParsingInsertSource;
     }
 }
 
@@ -3229,6 +3294,7 @@ SqlNode SelectItem() :
 {
     e = SelectExpression()
     [
+        LOOKAHEAD(2, [ <AS> ] SimpleIdentifier(), { canReadSourceAlias(false) })
         [ <AS> ]
         id = SimpleIdentifier() {
             e = (SqlCall) OperatorRegistry.get( OperatorName.AS ).createCall(span().end(e), e, id);
@@ -3558,6 +3624,7 @@ SqlNode TableRef2(boolean lateral) :
         tableRef = ExtendedTableRef()
     )
     [
+        LOOKAHEAD(2, [ <AS> ] Identifier(), { canReadSourceAlias(true) })
         [ <AS> ] alias = Identifier() {
             id = new SqlIdentifier(alias, getPos());
         }
@@ -8712,6 +8779,7 @@ void NonReservedKeyWord2of3() :
     |    <RETURNED_LENGTH>
     |    <RETURNED_OCTET_LENGTH>
     |    <RETURNED_SQLSTATE>
+    |    <RETURNING>
     |    <ROLE>
     |    <ROUTINE>
     |    <ROUTINE_CATALOG>

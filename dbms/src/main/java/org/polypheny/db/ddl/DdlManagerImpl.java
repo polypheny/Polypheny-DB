@@ -2790,7 +2790,7 @@ public class DdlManagerImpl extends DdlManager {
         if ( identity.cycle() ) {
             return identity.restart( identity.increment() > 0 ? identity.min() : identity.max() );
         }
-        return identity.withOptions( type, OptionalLong.empty(), null, null, null, null, null );
+        return identity.withOptions( type, OptionalLong.empty(), boundary, null, null, null, null, null );
     }
 
 

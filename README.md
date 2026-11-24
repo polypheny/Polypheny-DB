@@ -52,7 +52,7 @@ POLYPHENY_HOME="$(mktemp -d)" ./gradlew -Dmaven.repo.local="$maven_dir" -Ppolyph
   :plugins:prism-interface:test --tests '*PrismIdentityKeysTest'
 ```
 
-The Identity integration pull request workflow builds the tagged Prism and JDBC sources and the UI from `master` in an empty local Maven repository. For coordinated changes before release, set `IDENTITY_PRISM_REF`, `IDENTITY_JDBC_REF`, and `IDENTITY_UI_REF` in the DB repository's Actions variables to the corresponding branch, tag, commit, or upstream pull request ref. Manual runs accept the refs as workflow inputs once the workflow is available on the DB default branch. Use a UI build that advertises identity support to manage identity columns in Entity Settings.
+The Identity integration workflow runs on draft and ready pull requests. It builds Prism 2.5 and the pinned JDBC and UI companion commits in an empty local Maven repository. Set `IDENTITY_PRISM_REF`, `IDENTITY_JDBC_REF`, and `IDENTITY_UI_REF` in the DB repository's Actions variables to verify other branches, tags, commits, or upstream pull request refs. Manual runs accept the refs as workflow inputs once the workflow is available on the DB default branch. Use a DB server that advertises identity support to manage identity columns in Entity Settings.
 
 ## Roadmap ##
 See the [open issues](https://github.com/polypheny/Polypheny-DB/issues) for a list of proposed features (and known issues).

@@ -174,20 +174,21 @@ public class LanguageCrud {
         if ( context.getTransactions().isEmpty() ) {
             context.addTransaction( transaction );
         }
-        List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context );
-
         List<Result<?, ?>> results = new ArrayList<>();
         TriFunction<ExecutedContext, UIRequest, Statement, ResultBuilder<?, ?, ?, ?>> builder = REGISTER.get( context.getLanguage() );
 
-        for ( ExecutedContext executedContext : executedContexts ) {
+        List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context, executedContext -> {
             if ( executedContext.getException().isPresent() ) {
-                log.warn( "Caught exception", executedContext.getException().get() );
-                results.add( buildErrorResult( executedContext.getStatement().getTransaction(), executedContext, executedContext.getException().get() ).build() );
-                break;
+                Throwable error = executedContext.getException().get();
+                log.warn( "Caught exception", error );
+                results.add( buildErrorResult( executedContext.getStatement().getTransaction(), executedContext, error ).build() );
+                return false;
             }
 
-            results.add( builder.apply( executedContext, request, executedContext.getStatement() ).build() );
-        }
+            Result<?, ?> result = builder.apply( executedContext, request, executedContext.getStatement() ).build();
+            results.add( result );
+            return result.error == null;
+        } );
 
         commitAndFinish( executedContexts, queryAnalyzer, results, executedContexts.stream().map( ExecutedContext::getExecutionTime ).reduce( Long::sum ).orElse( -1L ) );
 

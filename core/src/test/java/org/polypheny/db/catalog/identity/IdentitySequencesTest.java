@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import io.activej.codegen.DefiningClassLoader;
 import io.activej.serializer.BinarySerializer;
 import io.activej.serializer.SerializerFactory;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -132,8 +133,48 @@ class IdentitySequencesTest {
         assertEquals( OptionalLong.empty(), sequences.peek( changed ) );
 
         IdentityColumn expanded = sequences.reconfigure( PolyType.SMALLINT, changed, null, null, -5L, null, true );
-        assertEquals( OptionalLong.empty(), sequences.peek( expanded ) );
+        assertEquals( List.of( -5L, -1L ), sequences.reserve( expanded, 2 ) );
         assertEquals( -1L, sequences.next( expanded.restart( null ) ) );
+    }
+
+
+    @Test
+    void reconfiguringBoundsRecoversLastValueAfterReload() {
+        IdentityColumn identity = IdentityColumn.create( PolyType.INTEGER, Mode.BY_DEFAULT, 2L, 3L, 1L, 8L, false );
+        IdentitySequences sequences = new IdentitySequences( directory );
+        assertEquals( List.of( 2L, 5L, 8L ), sequences.reserve( identity, 3 ) );
+
+        IdentitySequences reloaded = new IdentitySequences( directory );
+        IdentityColumn expanded = reloaded.reconfigure( PolyType.INTEGER, identity, null, null, null, 13L, null );
+        assertEquals( OptionalLong.of( 11 ), reloaded.peek( expanded ) );
+        IdentityColumn reduced = new IdentitySequences( directory ).reconfigure( PolyType.INTEGER, expanded, null, null, null, 8L, true );
+        assertEquals( OptionalLong.of( 1 ), reloaded.peek( reduced ) );
+        IdentityColumn noCycle = reloaded.reconfigure( PolyType.INTEGER, reduced, null, null, null, null, false );
+        assertEquals( OptionalLong.empty(), reloaded.peek( noCycle ) );
+
+        IdentityColumn restarted = identity.restart( 7L );
+        IdentityColumn changed = reloaded.reconfigure( PolyType.INTEGER, restarted, null, 1L, null, null, true );
+        assertEquals( List.of( 7L, 8L, 1L ), reloaded.reserve( changed, 3 ) );
+        assertThrows( GenericRuntimeException.class,
+                () -> reloaded.reconfigure( PolyType.INTEGER, restarted, null, null, null, 6L, true ) );
+    }
+
+
+    @Test
+    void legacyCheckpointsRecoverPendingAndLastValues() throws Exception {
+        IdentityColumn identity = IdentityColumn.create( PolyType.INTEGER, Mode.BY_DEFAULT, 2L, 3L, 1L, 9L, false );
+        Path checkpoint = directory.resolve( "identity-" + identity.id() + ".sequence" );
+        Files.write( checkpoint, ByteBuffer.allocate( 2 + Long.BYTES ).put( (byte) 1 ).put( (byte) 1 ).putLong( 8L ).array() );
+        IdentitySequences pending = new IdentitySequences( directory );
+        assertEquals( OptionalLong.of( 8L ), pending.peek( identity ) );
+        IdentityColumn reduced = pending.reconfigure( PolyType.INTEGER, identity, null, null, null, 5L, true );
+        assertEquals( 1L, pending.next( reduced ) );
+
+        Files.write( checkpoint, ByteBuffer.allocate( 2 + Long.BYTES ).put( (byte) 1 ).put( (byte) 0 ).putLong( 0L ).array() );
+        IdentitySequences exhausted = new IdentitySequences( directory );
+        assertEquals( OptionalLong.empty(), exhausted.peek( identity ) );
+        IdentityColumn expanded = exhausted.reconfigure( PolyType.INTEGER, identity, null, null, null, 12L, null );
+        assertEquals( 11L, exhausted.next( expanded ) );
     }
 
 
@@ -152,7 +193,8 @@ class IdentitySequencesTest {
 
     @Test
     void generatedDefaultRoundTripsThroughCatalogCodec() {
-        IdentityColumn identity = IdentityColumn.create( PolyType.INTEGER, Mode.ALWAYS, 7L, 4L, null, 123L, true ).restart( 101L );
+        IdentityColumn original = IdentityColumn.create( PolyType.INTEGER, Mode.ALWAYS, 7L, 4L, null, 123L, true ).restart( 101L );
+        IdentityColumn identity = original.withOptions( PolyType.INTEGER, OptionalLong.of( 105 ), 101L, null, null, null, null, null );
         BinarySerializer<LogicalDefaultValue> codec = SerializerFactory.defaultInstance()
                 .create( DefiningClassLoader.create(), LogicalDefaultValue.class );
         byte[] bytes = new byte[1024];
@@ -161,6 +203,16 @@ class IdentitySequencesTest {
         LogicalDefaultValue restored = codec.decode( bytes, 0 );
         assertEquals( identity, restored.identity );
         assertNull( restored.value );
+    }
+
+
+    @Test
+    void catalogCodecAcceptsIdentityDefinitionsWithoutLastValue() {
+        IdentityColumn identity = IdentityColumn.create( PolyType.INTEGER, Mode.ALWAYS, 7L, 4L, null, 123L, true ).restart( 101L );
+        LogicalDefaultValue withLastField = LogicalDefaultValue.forIdentity( 8, PolyType.INTEGER, identity );
+        String legacy = withLastField.typedJson.substring( 0, withLastField.typedJson.lastIndexOf( ',' ) );
+        LogicalDefaultValue restored = new LogicalDefaultValue( 8, PolyType.INTEGER, legacy, withLastField.functionName );
+        assertEquals( identity, restored.identity );
     }
 
 }

@@ -622,21 +622,21 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         RoutedAlgBuilder builder = context.getRoutedAlgBuilder();
         builder = RoutingManager.getInstance().getFallbackRouter().routeFirst( constraint.getRight(), builder, context );
 
+        AlgNode action;
         if ( constraint.getLeft() instanceof LogicalRelModify logicalRelModify ) {
-            return LogicalConstraintEnforcer.create(
-                    routeRelationalDml( logicalRelModify, context.getStatement() ),
-                    builder.build(),
-                    constraint.getExceptionClasses(),
-                    constraint.getExceptionMessages() );
+            action = routeRelationalDml( logicalRelModify, context.getStatement() );
+        } else if ( constraint.getLeft() instanceof LogicalModifyCollect collect ) {
+            List<AlgNode> writes = collect.getInputs().stream()
+                    .map( LogicalRelModify.class::cast )
+                    .map( modify -> routeRelationalDml( modify, context.getStatement() ) )
+                    .toList();
+            action = LogicalModifyCollect.create( writes, collect.all );
         } else if ( constraint.getLeft() instanceof LogicalBatchIterator logicalBatchIterator ) {
-            return LogicalConstraintEnforcer.create(
-                    handleBatchIterator( logicalBatchIterator, context ),
-                    builder.build(),
-                    constraint.getExceptionClasses(),
-                    constraint.getExceptionMessages() );
+            action = handleBatchIterator( logicalBatchIterator, context );
         } else {
             throw new GenericRuntimeException( "The provided modify query for the ConstraintEnforcer was not recognized!" );
         }
+        return LogicalConstraintEnforcer.create( action, builder.build(), constraint.getExceptionClasses(), constraint.getExceptionMessages() );
     }
 
 

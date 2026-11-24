@@ -90,7 +90,8 @@ public class LogicalDefaultValue implements Serializable {
                 Long.toString( identity.max() ),
                 Boolean.toString( identity.cycle() ),
                 Long.toString( identity.initialNext() ),
-                Boolean.toString( identity.initiallyExhausted() ) );
+                Boolean.toString( identity.initiallyExhausted() ),
+                identity.initialLast() == null ? "" : identity.initialLast().toString() );
         return new LogicalDefaultValue( fieldId, type, encoded, IDENTITY );
     }
 
@@ -106,7 +107,8 @@ public class LogicalDefaultValue implements Serializable {
                 Long.parseLong( fields[5] ),
                 Boolean.parseBoolean( fields[6] ),
                 Long.parseLong( fields[7] ),
-                Boolean.parseBoolean( fields[8] ) );
+                Boolean.parseBoolean( fields[8] ),
+                fields.length < 10 || fields[9].isEmpty() ? null : Long.valueOf( fields[9] ) );
     }
 
 }

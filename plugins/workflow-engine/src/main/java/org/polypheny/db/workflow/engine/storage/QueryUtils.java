@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -37,12 +36,12 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
-import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph.SubstitutionGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
@@ -64,6 +63,7 @@ import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.crud.LanguageCrud;
 import org.polypheny.db.webui.models.SortState;
+import org.polypheny.db.webui.models.catalog.IdentityColumnModel;
 import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
 import org.polypheny.db.webui.models.catalog.UiColumnDefinition.UiColumnDefinitionBuilder;
 import org.polypheny.db.webui.models.requests.UIRequest;
@@ -237,7 +237,6 @@ public class QueryUtils {
             return LanguageCrud.buildErrorResult( statement.getTransaction(), context, context.getException().get() ).build();
         }
 
-        Catalog catalog = Catalog.getInstance();
         ResultIterator iterator = context.getIterator();
         List<List<PolyValue>> rows;
         try {
@@ -246,10 +245,8 @@ public class QueryUtils {
             return LanguageCrud.buildErrorResult( statement.getTransaction(), context, e ).build();
         }
 
-        LogicalTable table = null;
-        if ( request.entityId != null ) {
-            table = Catalog.snapshot().rel().getTable( request.entityId ).orElseThrow();
-        }
+        Snapshot snapshot = Catalog.snapshot();
+        LogicalTable table = request.entityId == null ? null : snapshot.rel().getTable( request.entityId ).orElseThrow();
 
         List<UiColumnDefinition> header = new ArrayList<>();
         for ( AlgDataTypeField field : context.getIterator().getImplementation().tupleType.getFields() ) {
@@ -263,14 +260,10 @@ public class QueryUtils {
                     .sort( new SortState() )
                     .filter( "" );
 
-            // Get column default values
             if ( table != null ) {
-                Optional<LogicalColumn> optional = catalog.getSnapshot().rel().getColumn( table.id, columnName );
-                if ( optional.isPresent() ) {
-                    if ( optional.get().defaultValue != null ) {
-                        dbCol.defaultValue( optional.get().defaultValue.value.toJson() );
-                    }
-                }
+                snapshot.rel().getColumn( table.id, columnName ).ifPresent( column -> dbCol
+                        .defaultValue( IdentityColumnModel.dataHeaderDefault( column ) )
+                        .identity( IdentityColumnModel.from( column.getIdentity() ) ) );
             }
             header.add( dbCol.build() );
         }

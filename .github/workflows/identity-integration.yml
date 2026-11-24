@@ -20,7 +20,6 @@ permissions:
 
 jobs:
   identity:
-    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -35,12 +34,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: polypheny/Polypheny-JDBC-Driver
-          ref: ${{ inputs.jdbc_ref || vars.IDENTITY_JDBC_REF || 'refs/tags/v3.3' }}
+          # Polypheny-JDBC-Driver #24, including the generated-key client.
+          ref: ${{ inputs.jdbc_ref || vars.IDENTITY_JDBC_REF || '729ed79e495441f6960812de5c2488c39431ee2a' }}
           path: jdbc
       - uses: actions/checkout@v4
         with:
           repository: polypheny/Polypheny-UI
-          ref: ${{ inputs.ui_ref || vars.IDENTITY_UI_REF || 'master' }}
+          # Polypheny-UI #114, including the Entity Settings controls and tests.
+          ref: ${{ inputs.ui_ref || vars.IDENTITY_UI_REF || '45b6385da2b40eeb64d865e3eacd89920a157545' }}
           path: ui
 
       - uses: actions/setup-java@v4
@@ -57,7 +58,7 @@ jobs:
       - name: Prepare isolated repositories
         run: |
           maven_dir="$(mktemp -d "$RUNNER_TEMP/identity-maven.XXXXXX")"
-          mkdir -p "$RUNNER_TEMP/identity-db-home" "$RUNNER_TEMP/identity-prism-home"
+          mkdir -p "$RUNNER_TEMP/identity-db-home" "$RUNNER_TEMP/identity-prism-home" "$RUNNER_TEMP/identity-sql-home" "$RUNNER_TEMP/identity-workflow-home"
           echo "MAVEN_DIR=$maven_dir" >> "$GITHUB_ENV"
           echo "UI_ARCHIVE=$RUNNER_TEMP/polypheny-ui.zip" >> "$GITHUB_ENV"
 
@@ -92,6 +93,14 @@ jobs:
               :dbms:test --tests '*Identity*' --tests '*JdbcStatementTest' \
               --tests '*JdbcPreparedStatementsTest' --tests '*CatalogTransactionTest'
 
+          POLYPHENY_HOME="$RUNNER_TEMP/identity-sql-home" \
+            ./gradlew "-Dmaven.repo.local=$MAVEN_DIR" "-PpolyphenyUiZip=$UI_ARCHIVE" \
+              :plugins:sql-language:test --tests '*SqlParserTest.testInsertReturningIsAContextualKeyword'
+
           POLYPHENY_HOME="$RUNNER_TEMP/identity-prism-home" \
             ./gradlew "-Dmaven.repo.local=$MAVEN_DIR" "-PpolyphenyUiZip=$UI_ARCHIVE" \
               :plugins:prism-interface:test --tests '*PrismIdentityKeysTest' --tests '*PreparedIndexedStatementTest'
+
+          POLYPHENY_HOME="$RUNNER_TEMP/identity-workflow-home" \
+            ./gradlew "-Dmaven.repo.local=$MAVEN_DIR" "-PpolyphenyUiZip=$UI_ARCHIVE" \
+              :plugins:workflow-engine:test --tests '*StorageManagerTest.previewIdentityColumnAndLiteralDefault'

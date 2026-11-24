@@ -2765,8 +2765,9 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                 boolean generate = expression == null || call.getOverrideMode() == SqlInsert.OverrideMode.USER;
                 identityDefaults.add( rexBuilder.makeLiteral( generate ) );
                 identityNames.add( LogicalRelModify.identityDefaultFieldName( column.id ) );
-                // A typed placeholder keeps all branches of a mixed VALUES list type-compatible.
-                if ( generate ) {
+                // Keep SELECT-supplied values until the coordinator replaces them. They may
+                // distinguish rows in a source set operation even though they are not inserted.
+                if ( expression == null ) {
                     expression = rexBuilder.makeZeroLiteral( field.getType() );
                 }
             }

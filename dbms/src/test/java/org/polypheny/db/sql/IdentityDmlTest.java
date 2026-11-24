@@ -18,6 +18,7 @@ package org.polypheny.db.sql;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -29,6 +30,7 @@ import java.sql.Statement;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -39,6 +41,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
+import org.polypheny.db.processing.ConstraintStrategy;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryContext;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
@@ -109,6 +112,40 @@ class IdentityDmlTest {
 
 
     @Test
+    void overridingUserValuePreservesDistinctSourceRows() throws SQLException {
+        try ( JdbcConnection jdbc = new JdbcConnection( true );
+                Statement statement = jdbc.getConnection().createStatement() ) {
+            try {
+                statement.executeUpdate( "CREATE TABLE identity_union (id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY, label VARCHAR(40))" );
+                try ( ResultSet rows = statement.executeQuery( "INSERT INTO identity_union (id, label) OVERRIDING USER VALUE "
+                        + "SELECT 100, 'same' UNION SELECT 200, 'same' RETURNING id, label" ) ) {
+                    assertTrue( rows.next() );
+                    assertEquals( 1, rows.getInt( 1 ) );
+                    assertEquals( "same", rows.getString( 2 ) );
+                    assertTrue( rows.next() );
+                    assertEquals( 2, rows.getInt( 1 ) );
+                    assertEquals( "same", rows.getString( 2 ) );
+                    assertFalse( rows.next() );
+                }
+                assertEquals( 1, statement.executeUpdate( "INSERT INTO identity_union (id, label) OVERRIDING USER VALUE SELECT NULL, 'null supplied'" ) );
+                assertEquals( 3L, readRows( statement, "identity_union" ).get( "null supplied" ) );
+                try ( ResultSet rows = statement.executeQuery( "INSERT INTO identity_union (id, label) OVERRIDING USER VALUE "
+                        + "SELECT s.id, s.label FROM (SELECT 300 AS id, 'nested' AS label, 1 AS ordinal "
+                        + "UNION SELECT 300, 'nested', 2) AS s RETURNING id" ) ) {
+                    assertTrue( rows.next() );
+                    assertEquals( 4, rows.getInt( 1 ) );
+                    assertTrue( rows.next() );
+                    assertEquals( 5, rows.getInt( 1 ) );
+                    assertFalse( rows.next() );
+                }
+            } finally {
+                statement.executeUpdate( "DROP TABLE IF EXISTS identity_union" );
+            }
+        }
+    }
+
+
+    @Test
     void writesSameIdentityValuesToEveryPlacementAndRoutesByGeneratedPrimaryKey() throws SQLException {
         try ( JdbcConnection jdbc = new JdbcConnection( true );
                 Statement statement = jdbc.getConnection().createStatement() ) {
@@ -156,6 +193,76 @@ class IdentityDmlTest {
             } finally {
                 statement.executeUpdate( "DROP TABLE IF EXISTS identity_update" );
             }
+        }
+    }
+
+
+    @Test
+    void multirowIdentityUpdateChecksUniquenessAtStatementBoundary() throws SQLException {
+        boolean uniqueConstraints = RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean();
+        Enum<?> strategy = RuntimeConfig.CONSTRAINT_ENFORCEMENT_STRATEGY.getEnum();
+        RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.setBoolean( true );
+        RuntimeConfig.CONSTRAINT_ENFORCEMENT_STRATEGY.setEnum( ConstraintStrategy.AFTER_QUERY_EXECUTION );
+        try ( JdbcConnection jdbc = new JdbcConnection( true );
+                Statement statement = jdbc.getConnection().createStatement() ) {
+            try {
+                statement.executeUpdate( "CREATE TABLE identity_unique_update (pk INTEGER PRIMARY KEY, seq SERIAL, u INTEGER, CONSTRAINT identity_u UNIQUE (u))" );
+                assertEquals( 2, statement.executeUpdate( "INSERT INTO identity_unique_update (pk, u) VALUES (1, 1), (2, 2)" ) );
+                assertEquals( 2, statement.executeUpdate( "UPDATE identity_unique_update SET seq = DEFAULT" ) );
+                assertEquals( 2, statement.executeUpdate( "UPDATE identity_unique_update SET seq = DEFAULT, u = CASE u WHEN 1 THEN 2 ELSE 1 END" ) );
+                assertThrows( SQLException.class, () -> statement.executeUpdate( "UPDATE identity_unique_update SET seq = DEFAULT, u = 1" ) );
+                try ( ResultSet rows = statement.executeQuery( "SELECT pk, seq, u FROM identity_unique_update ORDER BY pk" ) ) {
+                    assertTrue( rows.next() );
+                    assertEquals( 1, rows.getInt( 1 ) );
+                    int firstSequence = rows.getInt( 2 );
+                    assertEquals( 2, rows.getInt( 3 ) );
+                    assertTrue( rows.next() );
+                    assertEquals( 2, rows.getInt( 1 ) );
+                    assertEquals( Set.of( 5, 6 ), Set.of( firstSequence, rows.getInt( 2 ) ) );
+                    assertEquals( 1, rows.getInt( 3 ) );
+                    assertFalse( rows.next() );
+                }
+            } finally {
+                statement.executeUpdate( "DROP TABLE IF EXISTS identity_unique_update" );
+            }
+        } finally {
+            RuntimeConfig.CONSTRAINT_ENFORCEMENT_STRATEGY.setEnum( strategy );
+            RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.setBoolean( uniqueConstraints );
+        }
+    }
+
+
+    @Test
+    void beforeExecutionChecksValidateAllMaterializedAssignments() throws SQLException {
+        boolean uniqueConstraints = RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean();
+        Enum<?> strategy = RuntimeConfig.CONSTRAINT_ENFORCEMENT_STRATEGY.getEnum();
+        RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.setBoolean( true );
+        RuntimeConfig.CONSTRAINT_ENFORCEMENT_STRATEGY.setEnum( ConstraintStrategy.BEFORE_QUERY_EXECUTION );
+        try ( JdbcConnection jdbc = new JdbcConnection( true );
+                Statement statement = jdbc.getConnection().createStatement() ) {
+            try {
+                statement.executeUpdate( "CREATE TABLE identity_before_update (pk INTEGER PRIMARY KEY, seq SERIAL, u INTEGER, CONSTRAINT identity_before_u UNIQUE (u))" );
+                assertEquals( 2, statement.executeUpdate( "INSERT INTO identity_before_update (pk, u) VALUES (1, 1), (2, 2)" ) );
+                assertEquals( 2, statement.executeUpdate( "UPDATE identity_before_update SET seq = DEFAULT, u = CASE u WHEN 1 THEN 11 ELSE 12 END WHERE pk > 0" ) );
+                SQLException violation = assertThrows( SQLException.class, () -> statement.executeUpdate( "UPDATE identity_before_update SET seq = DEFAULT, u = 99" ) );
+                assertTrue( violation.getMessage().contains( "identity_before_u" ), violation.getMessage() );
+                try ( ResultSet rows = statement.executeQuery( "SELECT pk, seq, u FROM identity_before_update ORDER BY pk" ) ) {
+                    assertTrue( rows.next() );
+                    assertEquals( 1, rows.getInt( 1 ) );
+                    int firstSequence = rows.getInt( 2 );
+                    assertEquals( 11, rows.getInt( 3 ) );
+                    assertTrue( rows.next() );
+                    assertEquals( 2, rows.getInt( 1 ) );
+                    assertEquals( Set.of( 3, 4 ), Set.of( firstSequence, rows.getInt( 2 ) ) );
+                    assertEquals( 12, rows.getInt( 3 ) );
+                    assertFalse( rows.next() );
+                }
+            } finally {
+                statement.executeUpdate( "DROP TABLE IF EXISTS identity_before_update" );
+            }
+        } finally {
+            RuntimeConfig.CONSTRAINT_ENFORCEMENT_STRATEGY.setEnum( strategy );
+            RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.setBoolean( uniqueConstraints );
         }
     }
 

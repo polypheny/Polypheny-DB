@@ -372,7 +372,10 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 IndexManager.getInstance().barrier( statement.getTransaction().getXid() );
             }
             boolean materializedUpdate = IdentityDmlMaterializer.usesIdentityUpdate( logicalRoot );
-            AlgRoot materializedRoot = IdentityDmlMaterializer.materialize( logicalRoot, statement, parameterRowType );
+            boolean enforceConstraints = RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() || RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean();
+            boolean validateBeforeRouting = materializedUpdate && enforceConstraints
+                    && RuntimeConfig.CONSTRAINT_ENFORCEMENT_STRATEGY.getEnum() == ConstraintStrategy.BEFORE_QUERY_EXECUTION;
+            AlgRoot materializedRoot = IdentityDmlMaterializer.materialize( logicalRoot, statement, parameterRowType, validateBeforeRouting );
             boolean materializedWrite = materializedRoot != logicalRoot;
             logicalRoot = materializedRoot;
             AlgRoot indexUpdateRoot = logicalRoot;
@@ -388,16 +391,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
             AlgRoot constraintsRoot = indexUpdateRoot;
 
-            if ( constraintsRoot.kind.belongsTo( Kind.DML ) && (RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() || RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean()) ) {
-                if ( materializedUpdate && constraintsRoot.alg instanceof LogicalModifyCollect collect ) {
-                    AlgRoot updateRoot = constraintsRoot;
-                    List<AlgNode> checkedUpdates = collect.getInputs().stream()
-                            .map( update -> ConstraintEnforceAttacher.handleConstraints( updateRoot.withAlg( update ), statement ).alg )
-                            .toList();
-                    constraintsRoot = constraintsRoot.withAlg( LogicalModifyCollect.create( checkedUpdates, true ) );
-                } else {
-                    constraintsRoot = ConstraintEnforceAttacher.handleConstraints( constraintsRoot, statement );
-                }
+            if ( enforceConstraints && !validateBeforeRouting && constraintsRoot.kind.belongsTo( Kind.DML ) ) {
+                // Check the final state of a SQL statement once all of its writes have finished.
+                constraintsRoot = ConstraintEnforceAttacher.handleConstraints( constraintsRoot, statement );
             }
 
             //

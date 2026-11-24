@@ -53,6 +53,7 @@ import org.polypheny.db.algebra.AlgProducingVisitor.AlgProducingVisitor3;
 import org.polypheny.db.algebra.AlgProducingVisitor.Function3;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.CorrelationId;
@@ -592,9 +593,11 @@ public class AlgFieldTrimmer implements AlgProducingVisitor3<TrimResult, Immutab
         final int fieldCount = rowType.getFieldCount();
         int changeCount = 0;
 
-        // Fennel abhors an empty row type, so pretend that the parent alg wants the last field. (The last field is the least likely to be a system field.)
-        if ( fieldsUsed.isEmpty() ) {
-            fieldsUsed = ImmutableBitSet.of( rowType.getFieldCount() - 1 );
+        // Only UNION ALL can drop a field before combining its inputs. All other set operations compare complete rows.
+        if ( setOp.kind != Kind.UNION || !setOp.all ) {
+            fieldsUsed = ImmutableBitSet.range( fieldCount );
+        } else if ( fieldsUsed.isEmpty() ) {
+            fieldsUsed = ImmutableBitSet.of( fieldCount - 1 );
         }
 
         // Compute the desired field mapping. Give the consumer the fields they want, in the order that they appear in the bitset.

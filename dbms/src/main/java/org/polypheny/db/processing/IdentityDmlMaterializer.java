@@ -33,6 +33,8 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
+import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
+import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
@@ -73,7 +75,7 @@ final class IdentityDmlMaterializer {
     }
 
 
-    static AlgRoot materialize( AlgRoot root, Statement statement, AlgDataType parameterRowType ) {
+    static AlgRoot materialize( AlgRoot root, Statement statement, AlgDataType parameterRowType, boolean validateBeforeRouting ) {
         if ( root.alg instanceof LogicalRelModify modify && modify.getEntity() instanceof LogicalTable table ) {
             if ( modify.isInsert() || modify.isUpdate() ) {
                 validateIdentityLayout( modify, table, statement );
@@ -82,7 +84,7 @@ final class IdentityDmlMaterializer {
                 return materializeInsert( root, modify, table, statement, parameterRowType );
             }
             if ( usesIdentityUpdate( root ) ) {
-                return materializeUpdate( root, modify, table, statement, parameterRowType );
+                return materializeUpdate( root, modify, table, statement, parameterRowType, validateBeforeRouting );
             }
         }
         return root;
@@ -196,7 +198,8 @@ final class IdentityDmlMaterializer {
     }
 
 
-    private static AlgRoot materializeUpdate( AlgRoot root, LogicalRelModify modify, LogicalTable table, Statement statement, AlgDataType parameterRowType ) {
+    private static AlgRoot materializeUpdate( AlgRoot root, LogicalRelModify modify, LogicalTable table,
+            Statement statement, AlgDataType parameterRowType, boolean validateBeforeRouting ) {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
         AlgDataType rowType = table.getTupleType();
         List<AlgDataTypeField> targetFields = rowType.getFields();
@@ -254,12 +257,53 @@ final class IdentityDmlMaterializer {
         } else {
             List<AlgDataTypeField> primaryFields = targetFields.stream().filter( field -> primaryKey.contains( field.getId() ) ).toList();
             validateUpdateKeys( modify, table, statement, parameterRowType, primaryFields, sourceRows, replacementRows );
+            if ( validateBeforeRouting ) {
+                validateBeforeRouting( root, modify, statement, parameterRowType, targetFields, updateFields, sourceRows, replacementRows );
+            }
             if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() ) {
                 updateIndexes( table, statement, targetFields, sourceRows, replacementRows );
             }
         }
         statement.setMaterializedDmlRowCount( sourceRows.size() );
         return root.withAlg( updates.size() == 1 ? updates.get( 0 ) : LogicalModifyCollect.create( updates, true ) );
+    }
+
+
+    /** Runs the strategy's prechecks for the whole input while the old values are still visible. */
+    private static void validateBeforeRouting(
+            AlgRoot root, LogicalRelModify modify, Statement statement, AlgDataType parameterRowType,
+            List<AlgDataTypeField> targetFields, List<AlgDataTypeField> updateFields,
+            List<List<PolyValue>> sourceRows, List<List<PolyValue>> replacementRows ) {
+        AlgDataTypeFactory.Builder inputType = modify.getCluster().getTypeFactory().builder();
+        targetFields.forEach( inputType::add );
+        List<String> sourceNames = modify.getInput().getTupleType().getFieldNames();
+        for ( int i = 0; i < updateFields.size(); i++ ) {
+            inputType.add( null, sourceNames.get( targetFields.size() + i ), null, updateFields.get( i ).getType() );
+        }
+        ImmutableList.Builder<ImmutableList<RexLiteral>> tuples = ImmutableList.builder();
+        for ( int i = 0; i < sourceRows.size(); i++ ) {
+            ImmutableList.Builder<RexLiteral> tuple = ImmutableList.builder();
+            List<PolyValue> previous = sourceRows.get( i );
+            List<PolyValue> replacement = replacementRows.get( i );
+            targetFields.forEach( field -> tuple.add( toLiteral( previous.get( field.getIndex() ), field ) ) );
+            updateFields.forEach( field -> tuple.add( toLiteral( replacement.get( field.getIndex() ), field ) ) );
+            tuples.add( tuple.build() );
+        }
+        AlgNode input = LogicalRelValues.create( modify.getCluster(), inputType.build(), tuples.build() );
+        RexBuilder rex = modify.getCluster().getRexBuilder();
+        List<RexNode> assignments = new ArrayList<>();
+        for ( int i = 0; i < updateFields.size(); i++ ) {
+            assignments.add( rex.makeInputRef( input, targetFields.size() + i ) );
+        }
+        LogicalRelModify validation = LogicalRelModify.create( modify.getEntity(), input, Operation.UPDATE,
+                modify.getUpdateColumns(), assignments, modify.isFlattened() );
+        AlgNode checks = ConstraintEnforceAttacher.enforceConstraintBeforeQuery( root.withAlg( validation ), statement ).alg;
+        while ( checks instanceof LogicalConditionalExecute check ) {
+            if ( !readRows( check.getLeft(), statement, parameterRowType ).isEmpty() ) {
+                throw new ConstraintViolationException( check.getExceptionMessage() );
+            }
+            checks = check.getRight();
+        }
     }
 
 

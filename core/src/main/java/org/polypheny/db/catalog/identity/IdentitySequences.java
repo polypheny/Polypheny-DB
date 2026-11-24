@@ -48,13 +48,18 @@ public final class IdentitySequences {
 
     private static final String PREFIX = "identity-";
     private static final String SUFFIX = ".sequence";
-    private static final byte VERSION = 1;
-    private static final int STATE_SIZE = 2 + Long.BYTES;
+    private static final byte LEGACY_STATE_VERSION = 1;
+    private static final byte STATE_VERSION = 2;
+    private static final int LEGACY_STATE_SIZE = 2 + Long.BYTES;
+    private static final int STATE_SIZE = 2 + 2 * Long.BYTES;
+    private static final byte NEXT_AVAILABLE = 1;
+    private static final byte LAST_AVAILABLE = 2;
     private static final String FIELD_ID_FLOOR_FILE = "identity-field-id.floor";
+    private static final byte FIELD_ID_FLOOR_VERSION = 1;
     private static final int FIELD_ID_FLOOR_SIZE = 1 + Long.BYTES;
 
     private final Path directory;
-    private final Map<UUID, OptionalLong> states = new HashMap<>();
+    private final Map<UUID, SequenceState> states = new HashMap<>();
 
 
     /** Uses transient sequence state, like an in-memory catalog. */
@@ -82,7 +87,7 @@ public final class IdentitySequences {
         if ( floor <= getFieldIdFloor() ) {
             return;
         }
-        byte[] encoded = ByteBuffer.allocate( FIELD_ID_FLOOR_SIZE ).put( VERSION ).putLong( floor ).array();
+        byte[] encoded = ByteBuffer.allocate( FIELD_ID_FLOOR_SIZE ).put( FIELD_ID_FLOOR_VERSION ).putLong( floor ).array();
         try {
             DurableFile.replace( directory.resolve( FIELD_ID_FLOOR_FILE ), encoded );
         } catch ( IOException e ) {
@@ -97,7 +102,7 @@ public final class IdentitySequences {
         }
         try {
             byte[] bytes = Files.readAllBytes( directory.resolve( FIELD_ID_FLOOR_FILE ) );
-            if ( bytes.length == FIELD_ID_FLOOR_SIZE && bytes[0] == VERSION ) {
+            if ( bytes.length == FIELD_ID_FLOOR_SIZE && bytes[0] == FIELD_ID_FLOOR_VERSION ) {
                 long floor = ByteBuffer.wrap( bytes ).getLong( 1 );
                 if ( floor > 0 ) {
                     return floor;
@@ -113,6 +118,11 @@ public final class IdentitySequences {
 
 
     public synchronized OptionalLong peek( IdentityColumn identity ) {
+        return state( identity ).next();
+    }
+
+
+    private SequenceState state( IdentityColumn identity ) {
         return states.computeIfAbsent( identity.id(), ignored -> read( identity ) );
     }
 
@@ -130,7 +140,7 @@ public final class IdentitySequences {
             return List.of();
         }
 
-        OptionalLong next = peek( identity );
+        OptionalLong next = state( identity ).next();
         List<Long> values = new ArrayList<>( count );
         for ( int i = 0; i < count; i++ ) {
             if ( next.isEmpty() ) {
@@ -138,13 +148,15 @@ public final class IdentitySequences {
             }
             long value = next.getAsLong();
             values.add( value );
-            next = successor( identity, value );
+            next = successor( value, identity.increment(), identity.min(), identity.max(), identity.cycle() );
         }
+        long last = values.get( values.size() - 1 );
         if ( directory != null ) {
             byte[] state = ByteBuffer.allocate( STATE_SIZE )
-                    .put( VERSION )
-                    .put( (byte) (next.isPresent() ? 1 : 0) )
+                    .put( STATE_VERSION )
+                    .put( (byte) (LAST_AVAILABLE | (next.isPresent() ? NEXT_AVAILABLE : 0)) )
                     .putLong( next.orElse( 0 ) )
+                    .putLong( last )
                     .array();
             try {
                 DurableFile.replace( path( identity.id() ), state );
@@ -153,7 +165,7 @@ public final class IdentitySequences {
                 throw new GenericRuntimeException( "Cannot persist identity sequence " + identity.id(), e );
             }
         }
-        states.put( identity.id(), next );
+        states.put( identity.id(), new SequenceState( next, last ) );
         return values;
     }
 
@@ -192,7 +204,18 @@ public final class IdentitySequences {
 
 
     public synchronized IdentityColumn reconfigure( PolyType type, IdentityColumn identity, Long start, Long increment, Long min, Long max, Boolean cycle ) {
-        return identity.withOptions( type, peek( identity ), start, increment, min, max, cycle );
+        SequenceState state = state( identity );
+        OptionalLong next = state.next();
+        Long last = state.last();
+        long lower = min == null ? identity.min() : min;
+        long upper = max == null ? identity.max() : max;
+        boolean hasWrapped = last != null && next.isPresent() && identity.cycle()
+                && next.getAsLong() == (identity.increment() > 0 ? identity.min() : identity.max())
+                && successor( last, identity.increment(), identity.min(), identity.max(), false ).isEmpty();
+        if ( last != null && (hasWrapped || next.isEmpty() || !withinBounds( next.getAsLong(), lower, upper )) ) {
+            next = successor( last, increment == null ? identity.increment() : increment, lower, upper, cycle == null ? identity.cycle() : cycle );
+        }
+        return identity.withOptions( type, next, last, start, increment, min, max, cycle );
     }
 
 
@@ -224,20 +247,31 @@ public final class IdentitySequences {
     }
 
 
-    private OptionalLong read( IdentityColumn identity ) {
+    private SequenceState read( IdentityColumn identity ) {
         if ( directory != null ) {
             try {
                 byte[] bytes = Files.readAllBytes( path( identity.id() ) );
-                if ( bytes.length == STATE_SIZE ) {
+                if ( bytes.length == STATE_SIZE && bytes[0] == STATE_VERSION ) {
                     ByteBuffer state = ByteBuffer.wrap( bytes );
-                    byte version = state.get();
-                    byte available = state.get();
-                    long next = state.getLong();
-                    if ( version == VERSION && available == 0 ) {
-                        return OptionalLong.empty();
+                    byte flags = state.get( 1 );
+                    long next = state.getLong( 2 );
+                    if ( (flags & LAST_AVAILABLE) != 0 && (flags & ~(NEXT_AVAILABLE | LAST_AVAILABLE)) == 0 ) {
+                        long last = state.getLong( 2 + Long.BYTES );
+                        if ( (flags & NEXT_AVAILABLE) == 0 ) {
+                            return new SequenceState( OptionalLong.empty(), last );
+                        }
+                        if ( withinBounds( next, identity.min(), identity.max() ) ) {
+                            return new SequenceState( OptionalLong.of( next ), last );
+                        }
                     }
-                    if ( version == VERSION && available == 1 && next >= identity.min() && next <= identity.max() ) {
-                        return OptionalLong.of( next );
+                } else if ( bytes.length == LEGACY_STATE_SIZE && bytes[0] == LEGACY_STATE_VERSION ) {
+                    byte available = bytes[1];
+                    long next = ByteBuffer.wrap( bytes ).getLong( 2 );
+                    if ( available == 0 ) {
+                        return new SequenceState( OptionalLong.empty(), lastReachable( identity, identity.initialNext() ) );
+                    }
+                    if ( available == NEXT_AVAILABLE && withinBounds( next, identity.min(), identity.max() ) ) {
+                        return new SequenceState( OptionalLong.of( next ), inferLegacyLast( identity, next ) );
                     }
                 }
                 throw new GenericRuntimeException( "Invalid stored identity sequence " + identity.id() );
@@ -247,29 +281,63 @@ public final class IdentitySequences {
                 throw new GenericRuntimeException( "Cannot read identity sequence " + identity.id(), e );
             }
         }
-        return identity.initiallyExhausted() ? OptionalLong.empty() : OptionalLong.of( identity.initialNext() );
+        return new SequenceState( identity.initiallyExhausted() ? OptionalLong.empty() : OptionalLong.of( identity.initialNext() ), identity.initialLast() );
     }
 
 
-    private static OptionalLong successor( IdentityColumn identity, long value ) {
-        long increment = identity.increment();
+    private static Long inferLegacyLast( IdentityColumn identity, long next ) {
+        long first = identity.increment() > 0 ? identity.min() : identity.max();
+        if ( identity.cycle() && next == first ) {
+            // A legacy wrapped value can follow either the initial or a later cycle.
+            long initialLast = lastReachable( identity, identity.initialNext() );
+            long cycleLast = lastReachable( identity, first );
+            return initialLast == cycleLast ? cycleLast : null;
+        }
+        try {
+            long last = Math.subtractExact( next, identity.increment() );
+            return withinBounds( last, identity.min(), identity.max() ) ? last : null;
+        } catch ( ArithmeticException ignored ) {
+            return null;
+        }
+    }
+
+
+    private static long lastReachable( IdentityColumn identity, long firstValue ) {
+        BigInteger first = BigInteger.valueOf( firstValue );
+        BigInteger step = BigInteger.valueOf( identity.increment() );
+        BigInteger limit = BigInteger.valueOf( identity.increment() > 0 ? identity.max() : identity.min() );
+        return first.add( limit.subtract( first ).divide( step ).multiply( step ) ).longValueExact();
+    }
+
+
+    private static boolean withinBounds( long value, long min, long max ) {
+        return value >= min && value <= max;
+    }
+
+
+    private static OptionalLong successor( long value, long increment, long min, long max, boolean cycle ) {
         boolean ascending = increment > 0;
         boolean overflows = ascending ? value > Long.MAX_VALUE - increment : value < Long.MIN_VALUE - increment;
         if ( !overflows ) {
             long next = value + increment;
-            if ( next >= identity.min() && next <= identity.max() ) {
+            if ( withinBounds( next, min, max ) ) {
                 return OptionalLong.of( next );
             }
         }
-        if ( !identity.cycle() ) {
+        if ( !cycle ) {
             return OptionalLong.empty();
         }
-        return OptionalLong.of( ascending ? identity.min() : identity.max() );
+        return OptionalLong.of( ascending ? min : max );
     }
 
 
     private Path path( UUID id ) {
         return directory.resolve( PREFIX + id + SUFFIX );
+    }
+
+
+    private record SequenceState(OptionalLong next, Long last) {
+
     }
 
 }

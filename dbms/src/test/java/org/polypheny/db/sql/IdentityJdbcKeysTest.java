@@ -114,6 +114,19 @@ class IdentityJdbcKeysTest {
                     assertFalse( rows.getMetaData().isAutoIncrement( 2 ) );
                     assertFalse( rows.getMetaData().isAutoIncrement( 3 ) );
                 }
+                try ( ResultSet rows = sql.executeQuery( "SELECT q.key_id FROM (SELECT id AS key_id FROM identity_jdbc_keys WHERE id = 1 "
+                        + "UNION ALL SELECT CAST(99 AS BIGINT)) AS q ORDER BY q.key_id" ) ) {
+                    assertFalse( rows.getMetaData().isAutoIncrement( 1 ) );
+                    assertTrue( rows.next() );
+                    assertEquals( 1, rows.getLong( 1 ) );
+                    assertTrue( rows.next() );
+                    assertEquals( 99, rows.getLong( 1 ) );
+                }
+                try ( ResultSet rows = sql.executeQuery( "SELECT id FROM identity_jdbc_keys WHERE id = 1 "
+                        + "UNION ALL SELECT id FROM identity_jdbc_keys WHERE id = 2" ) ) {
+                    assertTrue( rows.getMetaData().isAutoIncrement( 1 ) );
+                    assertTrue( rows.next() );
+                }
                 assertEquals( List.of(), readKeys( sql ) );
             } finally {
                 sql.executeUpdate( "DROP TABLE IF EXISTS identity_jdbc_keys" );

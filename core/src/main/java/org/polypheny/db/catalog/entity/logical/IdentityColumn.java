@@ -37,7 +37,8 @@ public record IdentityColumn(
         long max,
         boolean cycle,
         long initialNext,
-        boolean initiallyExhausted ) implements Serializable {
+        boolean initiallyExhausted,
+        Long initialLast ) implements Serializable {
 
     public enum Mode {
         ALWAYS,
@@ -66,23 +67,23 @@ public record IdentityColumn(
         long lower = min == null ? defaultMin( type, step ) : min;
         long upper = max == null ? defaultMax( type, step ) : max;
         long first = start == null ? (step > 0 ? lower : upper) : start;
-        IdentityColumn identity = new IdentityColumn( UUID.randomUUID(), mode, first, step, lower, upper, cycle, first, false );
+        IdentityColumn identity = new IdentityColumn( UUID.randomUUID(), mode, first, step, lower, upper, cycle, first, false, null );
         identity.validateType( type );
         return identity;
     }
 
 
     public IdentityColumn restart( Long next ) {
-        return new IdentityColumn( UUID.randomUUID(), mode, start, increment, min, max, cycle, next == null ? start : next, false );
+        return new IdentityColumn( UUID.randomUUID(), mode, start, increment, min, max, cycle, next == null ? start : next, false, null );
     }
 
 
     public IdentityColumn withMode( Mode newMode ) {
-        return new IdentityColumn( id, newMode, start, increment, min, max, cycle, initialNext, initiallyExhausted );
+        return new IdentityColumn( id, newMode, start, increment, min, max, cycle, initialNext, initiallyExhausted, initialLast );
     }
 
 
-    public IdentityColumn withOptions( PolyType type, OptionalLong next, Long newStart, Long newIncrement, Long newMin, Long newMax, Boolean newCycle ) {
+    public IdentityColumn withOptions( PolyType type, OptionalLong next, Long last, Long newStart, Long newIncrement, Long newMin, Long newMax, Boolean newCycle ) {
         long configuredStart = newStart == null ? start : newStart;
         IdentityColumn identity = new IdentityColumn(
                 UUID.randomUUID(), mode,
@@ -91,7 +92,7 @@ public record IdentityColumn(
                 newMin == null ? min : newMin,
                 newMax == null ? max : newMax,
                 newCycle == null ? cycle : newCycle,
-                next.orElse( configuredStart ), next.isEmpty() );
+                next.orElse( configuredStart ), next.isEmpty(), last );
         identity.validateType( type );
         return identity;
     }
