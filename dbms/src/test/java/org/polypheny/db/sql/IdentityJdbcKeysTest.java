@@ -19,6 +19,7 @@ package org.polypheny.db.sql;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -32,9 +33,16 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
@@ -178,6 +186,59 @@ class IdentityJdbcKeysTest {
                 sql.executeUpdate( "DROP TABLE IF EXISTS qualified_identity_keys.identity_scoped_keys" );
                 sql.executeUpdate( "DROP SCHEMA qualified_identity_keys" );
             }
+        }
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void generatedKeysInsertHonorsNetworkTimeoutBehindWriteLock( boolean prepared ) throws Exception {
+        try ( JdbcConnection admin = new JdbcConnection( true ); Statement sql = admin.getConnection().createStatement() ) {
+            sql.executeUpdate( "CREATE TABLE identity_jdbc_deadline (id BIGSERIAL PRIMARY KEY, label INTEGER NOT NULL)" );
+            try {
+                sql.executeUpdate( "INSERT INTO identity_jdbc_deadline (label) VALUES (0)" );
+                assertBlockedInsertTimesOut( prepared );
+            } finally {
+                sql.executeUpdate( "DROP TABLE identity_jdbc_deadline" );
+            }
+        }
+    }
+
+
+    private static void assertBlockedInsertTimesOut( boolean prepared ) throws Exception {
+        String insert = "INSERT INTO identity_jdbc_deadline (label) VALUES (" + (prepared ? "?" : "1") + ")";
+        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        try ( JdbcConnection blocking = new JdbcConnection( false ); JdbcConnection jdbc = new JdbcConnection( true );
+                Statement writer = blocking.getConnection().createStatement();
+                Statement statement = prepared ? jdbc.getConnection().prepareStatement( insert, Statement.RETURN_GENERATED_KEYS )
+                        : jdbc.getConnection().createStatement() ) {
+            if ( prepared ) {
+                ((PreparedStatement) statement).setInt( 1, 2 );
+            }
+            Connection connection = jdbc.getConnection();
+            connection.setNetworkTimeout( Runnable::run, 250 );
+            writer.executeUpdate( "UPDATE identity_jdbc_deadline SET label = 3 WHERE id = 1" );
+            Future<?> release = executor.schedule( () -> {
+                blocking.getConnection().rollback();
+                return null;
+            }, 2, TimeUnit.SECONDS );
+            try {
+                SQLException failure = assertThrows( SQLException.class, () -> {
+                    if ( prepared ) {
+                        ((PreparedStatement) statement).executeUpdate();
+                    } else {
+                        statement.executeUpdate( insert, Statement.RETURN_GENERATED_KEYS );
+                    }
+                } );
+                assertEquals( "08003", failure.getSQLState() );
+                assertInstanceOf( TimeoutException.class, failure.getCause() );
+                assertTrue( connection.isClosed() );
+                assertTrue( statement.isClosed() );
+            } finally {
+                release.get( 10, TimeUnit.SECONDS );
+            }
+        } finally {
+            executor.shutdownNow();
         }
     }
 
