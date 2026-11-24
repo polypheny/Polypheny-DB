@@ -72,7 +72,7 @@ class IdentityDmlTest {
                     insert.addBatch();
                     insert.setString( 1, "batch second" );
                     insert.addBatch();
-                    assertArrayEquals( new int[]{ 2 }, insert.executeBatch() );
+                    assertArrayEquals( new int[]{ Statement.SUCCESS_NO_INFO, Statement.SUCCESS_NO_INFO }, insert.executeBatch() );
                     insert.setString( 1, "after batch" );
                     assertEquals( 1, insert.executeUpdate() );
                 }
