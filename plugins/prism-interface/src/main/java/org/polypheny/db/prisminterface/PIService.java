@@ -468,9 +468,17 @@ class PIService {
         PIClient client = getClient();
         PIUnparameterizedStatementBatch batch = client.getStatementManager().createUnparameterizedStatementBatch( request.getStatementsList() );
         BatchProgress progress = new BatchProgress( batch.getBatchId() );
+        boolean reportsProgress = client.supportsPartialBatchResults();
+        Response acknowledgment = responseObserver.makeResponse( PrismUtils.createStatementBatchStatus( batch.getBatchId() ), false );
         try {
+            if ( reportsProgress ) {
+                // The ID acknowledgment precedes progress, even if validation fails before the first member.
+                sendOneMessage( acknowledgment );
+            }
             List<Node> parsedStatements = batch.validate();
-            sendOneMessage( responseObserver.makeResponse( PrismUtils.createStatementBatchStatus( batch.getBatchId() ), false ) );
+            if ( !reportsProgress ) {
+                sendOneMessage( acknowledgment );
+            }
             return responseObserver.makeResponse( batch.executeBatch( parsedStatements, progress ) );
         } catch ( Throwable failure ) {
             try {
@@ -508,11 +516,11 @@ class PIService {
             return resultObserver.makeResponse( PrismUtils.createStatementBatchStatus( statement.getId(), List.of() ) );
         }
         if ( statement.getGeneratedKeySelection() != null || statement.isSequentialBatchExecution() ) {
-            List<List<PolyValue>> bindings = request.getParametersList().stream()
-                    .map( binding -> PrismValueDeserializer.deserializeParameterList( binding.getParametersList() ) )
-                    .toList();
             BatchProgress progress = new BatchProgress( statement.getId() );
             try {
+                List<List<PolyValue>> bindings = request.getParametersList().stream()
+                        .map( binding -> PrismValueDeserializer.deserializeParameterList( binding.getParametersList() ) )
+                        .toList();
                 return resultObserver.makeResponse( statement.executeSequentialBatch( bindings, progress ) );
             } catch ( Throwable failure ) {
                 sendBatchProgressOnFailure( client, resultObserver, progress, failure );
@@ -527,13 +535,11 @@ class PIService {
 
     private void sendBatchProgressOnFailure( PIClient client, ResponseMaker<StatementBatchResponse> observer, BatchProgress progress, Throwable failure ) {
         if ( client.supportsPartialBatchResults() ) {
-            StatementBatchResponse partial = progress.partialResponse();
-            if ( partial.getScalarsCount() > 0 ) {
-                try {
-                    sendOneMessage( observer.makeResponse( partial, false ) );
-                } catch ( IOException sendFailure ) {
-                    failure.addSuppressed( sendFailure );
-                }
+            // A received empty response means that no member survived, even if legacy clients receive no frame.
+            try {
+                sendOneMessage( observer.makeResponse( progress.partialResponse(), false ) );
+            } catch ( IOException sendFailure ) {
+                failure.addSuppressed( sendFailure );
             }
         }
     }

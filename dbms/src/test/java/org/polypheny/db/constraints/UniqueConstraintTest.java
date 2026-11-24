@@ -350,7 +350,7 @@ public class UniqueConstraintTest {
                             preparedStatement::executeBatch,
                             "Insert violates unique constraint"
                     );
-                    Assertions.assertArrayEquals( new int[0], duplicate.getUpdateCounts() );
+                    Assertions.assertNull( duplicate.getUpdateCounts() );
                     connection.rollback();
 
                     // This should work
@@ -374,7 +374,7 @@ public class UniqueConstraintTest {
                     }
                     BatchUpdateException conflictingInsert = Assertions.assertThrows( BatchUpdateException.class, preparedStatement::executeBatch );
                     Assertions.assertTrue( conflictingInsert.getMessage().contains( "Insert violates unique constraint" ), conflictingInsert::getMessage );
-                    Assertions.assertArrayEquals( new int[0], conflictingInsert.getUpdateCounts() );
+                    Assertions.assertNull( conflictingInsert.getUpdateCounts() );
                     connection.rollback();
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM constraint_test ORDER BY ctid" ),
@@ -424,7 +424,7 @@ public class UniqueConstraintTest {
                     preparedStatement.addBatch();
                     BatchUpdateException conflictingUpdate = Assertions.assertThrows( BatchUpdateException.class, preparedStatement::executeBatch );
                     Assertions.assertTrue( conflictingUpdate.getMessage().contains( "Update violates unique constraint" ), conflictingUpdate::getMessage );
-                    Assertions.assertArrayEquals( new int[0], conflictingUpdate.getUpdateCounts() );
+                    Assertions.assertNull( conflictingUpdate.getUpdateCounts() );
                     connection.rollback();
 
                     // This should work
@@ -460,7 +460,7 @@ public class UniqueConstraintTest {
                     preparedStatement.addBatch();
                     BatchUpdateException repeatedConflict = Assertions.assertThrows( BatchUpdateException.class, preparedStatement::executeBatch );
                     Assertions.assertTrue( repeatedConflict.getMessage().contains( "Update violates unique constraint" ), repeatedConflict::getMessage );
-                    Assertions.assertArrayEquals( new int[0], repeatedConflict.getUpdateCounts() );
+                    Assertions.assertNull( repeatedConflict.getUpdateCounts() );
                     connection.rollback();
                 } catch ( Exception e ) {
                     log.error( "Exception", e );
