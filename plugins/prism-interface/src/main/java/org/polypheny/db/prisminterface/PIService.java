@@ -331,7 +331,8 @@ class PIService {
         }
         Builder responseBuilder = ConnectionResponse.newBuilder()
                 .setMajorApiVersion( VersionUtils.getMAJOR_API_VERSION() )
-                .setMinorApiVersion( VersionUtils.getMINOR_API_VERSION() );
+                .setMinorApiVersion( VersionUtils.getMINOR_API_VERSION() )
+                .setSupportsGeneratedKeys( true );
         boolean isCompatible = checkApiVersion( request );
         responseBuilder.setIsCompatible( isCompatible );
         ConnectionResponse ConnectionResponse = responseBuilder.build();
@@ -468,8 +469,7 @@ class PIService {
         try {
             List<Node> parsedStatements = batch.validate();
             sendOneMessage( responseObserver.makeResponse( PrismUtils.createStatementBatchStatus( batch.getBatchId() ), false ) );
-            List<Long> updateCounts = batch.executeBatch( parsedStatements );
-            return responseObserver.makeResponse( PrismUtils.createStatementBatchStatus( batch.getBatchId(), updateCounts ) );
+            return responseObserver.makeResponse( batch.executeBatch( parsedStatements ) );
         } catch ( Throwable failure ) {
             try {
                 client.getStatementManager().closeStatementOrBatch( batch.getBatchId() );
@@ -501,6 +501,15 @@ class PIService {
     private Response executeIndexedStatementBatch( ExecuteIndexedStatementBatchRequest request, ResponseMaker<StatementBatchResponse> resultObserver ) {
         PIClient client = getClient();
         PIPreparedIndexedStatement statement = client.getStatementManager().getIndexedPreparedStatement( request.getStatementId() );
+        if ( request.getParametersCount() == 0 ) {
+            return resultObserver.makeResponse( PrismUtils.createStatementBatchStatus( statement.getId(), List.of() ) );
+        }
+        if ( statement.getGeneratedKeySelection() != null || statement.isSequentialBatchExecution() ) {
+            List<List<PolyValue>> bindings = request.getParametersList().stream()
+                    .map( binding -> PrismValueDeserializer.deserializeParameterList( binding.getParametersList() ) )
+                    .toList();
+            return resultObserver.makeResponse( statement.executeSequentialBatch( bindings ) );
+        }
         List<List<PolyValue>> valuesList = PrismValueDeserializer.deserializeParameterLists( request.getParametersList() );
         List<Long> updateCounts = statement.executeBatch( valuesList );
         return resultObserver.makeResponse( PrismUtils.createStatementBatchStatus( statement.getId(), updateCounts ) );

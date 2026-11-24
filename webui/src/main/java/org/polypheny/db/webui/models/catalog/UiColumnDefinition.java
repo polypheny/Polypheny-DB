@@ -57,6 +57,8 @@ public class UiColumnDefinition extends FieldDefinition {
     @JsonProperty
     public String defaultValue;
     @JsonProperty
+    public IdentityColumnModel identity;
+    @JsonProperty
     public Integer dimension;
     @JsonProperty
     public Integer cardinality;

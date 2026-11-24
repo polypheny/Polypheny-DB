@@ -64,16 +64,26 @@ compileJava {
 }
 
 
+def localUiZip = providers.gradleProperty('polyphenyUiZip').map { project.file(it) }
+if (localUiZip.isPresent() && !localUiZip.get().isFile()) {
+    throw new GradleException("Polypheny UI archive not found: ${localUiZip.get()}")
+}
+
+
 processResources {
     setDuplicatesStrategy(DuplicatesStrategy.WARN)
-    if (!project.hasProperty('withoutpullingUi')) {
+    if (localUiZip.isPresent()) {
+        from(localUiZip) {
+            rename { 'polypheny-ui.zip' }
+        }
+    } else if (!project.hasProperty('withoutpullingUi')) {
         dependsOn(":webui:downloadUiZip")
     }
 }
 
 
 gradle.taskGraph.whenReady { taskGraph ->
-    if (!project.hasProperty('withoutpullingUi')
+    if (!localUiZip.isPresent() && !project.hasProperty('withoutpullingUi')
         && !layout.buildDirectory.get().file("polypheny-ui.zip").asFile.exists()) {
         println("Pulling UI files")
         handleUi.dependsOn downloadUiZip
@@ -110,7 +120,7 @@ task handleUi() {
     // empty on purpose due to gradle weirdness
 }
 
-if (!project.hasProperty('withoutpullingUi')) {
+if (!localUiZip.isPresent() && !project.hasProperty('withoutpullingUi')) {
     handleUi.finalizedBy downloadUiZip
 }
 

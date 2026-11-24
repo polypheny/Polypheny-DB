@@ -69,16 +69,19 @@ import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
+import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
+import org.polypheny.db.algebra.metadata.AlgColumnOrigin;
 import org.polypheny.db.algebra.polyalg.PolyAlgMetadata.GlobalStats;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
@@ -222,6 +225,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     @Override
     public PolyImplementation prepareQuery( AlgRoot root, AlgDataType parameterRowType, boolean isRouted, boolean isPhysical, boolean isSubquery, boolean withMonitoring ) {
+        if ( !isSubquery && root.kind.belongsTo( Kind.DML ) ) {
+            statement.setMaterializedDmlRowCount( null );
+        }
         if ( isPhysical ) {
             return implementPhysicalPlan( root, parameterRowType );
         }
@@ -249,7 +255,23 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             this.monitorResult( selectedPlan.right );
         }
 
-        return selectedPlan.left;
+        PolyImplementation implementation = selectedPlan.left;
+        if ( !isSubquery && implementation.getDataModel() == DataModel.RELATIONAL
+                && implementation.getResultKind() == ResultKind.ROWS && root.kind.belongsTo( Kind.QUERY ) ) {
+            implementation.setIdentityFields( root.fields.stream().map( field -> isIdentityField( root, field.left ) ).toList() );
+        }
+        return implementation;
+    }
+
+
+    private boolean isIdentityField( AlgRoot root, int ordinal ) {
+        AlgColumnOrigin origin = root.alg.getCluster().getMetadataQuery().getColumnOrigin( root.alg, ordinal );
+        if ( origin == null || origin.isDerived() || !(origin.getOriginTable() instanceof LogicalTable table) ) {
+            return false;
+        }
+        List<LogicalColumn> columns = root.alg.getCluster().getSnapshot().rel().getColumns( table.id );
+        int sourceOrdinal = origin.getOriginColumnOrdinal();
+        return sourceOrdinal >= 0 && sourceOrdinal < columns.size() && columns.get( sourceOrdinal ).getIdentity() != null;
     }
 
 
@@ -345,9 +367,16 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 statement.getProcessingDuration().stop( "Locking" );
                 statement.getProcessingDuration().start( "Index Update" );
             }
-            AlgRoot indexUpdateRoot = logicalRoot;
-            if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() ) {
+            boolean usePolystoreIndexes = RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean();
+            if ( usePolystoreIndexes ) {
                 IndexManager.getInstance().barrier( statement.getTransaction().getXid() );
+            }
+            boolean materializedUpdate = IdentityDmlMaterializer.usesIdentityUpdate( logicalRoot );
+            AlgRoot materializedRoot = IdentityDmlMaterializer.materialize( logicalRoot, statement, parameterRowType );
+            boolean materializedWrite = materializedRoot != logicalRoot;
+            logicalRoot = materializedRoot;
+            AlgRoot indexUpdateRoot = logicalRoot;
+            if ( usePolystoreIndexes && !materializedUpdate ) {
                 indexUpdateRoot = indexUpdate( indexUpdateRoot, statement, parameterRowType );
             }
 
@@ -360,7 +389,15 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             AlgRoot constraintsRoot = indexUpdateRoot;
 
             if ( constraintsRoot.kind.belongsTo( Kind.DML ) && (RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() || RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean()) ) {
-                constraintsRoot = ConstraintEnforceAttacher.handleConstraints( constraintsRoot, statement );
+                if ( materializedUpdate && constraintsRoot.alg instanceof LogicalModifyCollect collect ) {
+                    AlgRoot updateRoot = constraintsRoot;
+                    List<AlgNode> checkedUpdates = collect.getInputs().stream()
+                            .map( update -> ConstraintEnforceAttacher.handleConstraints( updateRoot.withAlg( update ), statement ).alg )
+                            .toList();
+                    constraintsRoot = constraintsRoot.withAlg( LogicalModifyCollect.create( checkedUpdates, true ) );
+                } else {
+                    constraintsRoot = ConstraintEnforceAttacher.handleConstraints( constraintsRoot, statement );
+                }
             }
 
             //
@@ -371,8 +408,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
 
             AlgRoot indexLookupRoot = constraintsRoot;
-            if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() && RuntimeConfig.POLYSTORE_INDEXES_SIMPLIFY.getBoolean() ) {
+            if ( usePolystoreIndexes && RuntimeConfig.POLYSTORE_INDEXES_SIMPLIFY.getBoolean() ) {
                 indexLookupRoot = indexLookup( indexLookupRoot, statement );
+            }
+            if ( usePolystoreIndexes && materializedWrite ) {
+                // Validate staged unique index entries before the physical write. Any
+                // index-derived checks above still read the pre-statement contents.
+                IndexManager.getInstance().barrier( statement.getTransaction().getXid() );
             }
             if ( isAnalyze ) {
                 statement.getProcessingDuration().stop( "Index Lookup Rewrite" );
@@ -906,6 +948,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             return routeGraph( logicalRoot, queryInformation, dmlRouter );
         } else if ( logicalRoot.getModel() == ModelTrait.DOCUMENT ) {
             return routeDocument( logicalRoot, queryInformation, dmlRouter );
+        } else if ( logicalRoot.alg instanceof LogicalModifyCollect collect && logicalRoot.kind.belongsTo( Kind.DML ) ) {
+            List<AlgNode> routedWrites = collect.getInputs().stream()
+                    .map( write -> route( logicalRoot.withAlg( write ), statement, queryInformation, isAnalyze ).get( 0 ).getRoutedRoot().alg )
+                    .toList();
+            AlgNode routedDml = LogicalModifyCollect.create( routedWrites, collect.all );
+            return List.of( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryHash() ) );
         } else if ( logicalRoot.alg instanceof LogicalRelModify logicalRelModify ) {
             AlgNode routedDml = dmlRouter.routeRelationalDml( logicalRelModify, statement );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryHash() ) );

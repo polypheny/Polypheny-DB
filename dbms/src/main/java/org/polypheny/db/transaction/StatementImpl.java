@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.Getter;
+import lombok.Setter;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.RuntimeConfig;
@@ -35,6 +36,7 @@ import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.processing.QueryProviderImpl;
 import org.polypheny.db.processing.VolcanoQueryProcessor;
 import org.polypheny.db.transaction.QueryAnalyzer.StatementAnalyzer;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.FileInputHandle;
 
@@ -54,6 +56,23 @@ public class StatementImpl implements Statement {
     private ContextImpl prepareContext;
 
     private StatementEvent statementEvent;
+
+    @Getter
+    @Setter
+    private Integer materializedDmlRowCount;
+
+    @Getter
+    @Setter
+    private InsertReturning insertReturning;
+    @Getter
+    @Setter
+    private GeneratedKeySelection generatedKeySelection;
+    @Getter
+    @Setter
+    private InsertReturning generatedKeysProjection;
+    @Getter
+    @Setter
+    private List<List<PolyValue>> insertedRows = List.of();
 
     @Getter
     private final StatementAnalyzer analyzer;

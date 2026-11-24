@@ -72,6 +72,8 @@ import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.algebra.type.DynamicRecordType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.logical.IdentityColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -1443,7 +1445,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         for ( SqlNode exp : call.getSourceExpressionList().getSqlList() ) {
             // Force unique aliases to avoid a duplicate for Y with SET X=Y
             String alias = CoreUtil.deriveAliasFromOrdinal( ordinal );
-            selectList.add( SqlValidatorUtil.addAlias( exp, alias ) );
+            SqlNode selectExpression = exp.getKind() == Kind.DEFAULT ? SqlLiteral.createNull( exp.getPos() ) : exp;
+            selectList.add( SqlValidatorUtil.addAlias( selectExpression, alias ) );
             ++ordinal;
         }
         SqlNode sourceTable = call.getTargetTable();
@@ -3806,8 +3809,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         final Set<String> aliases = new HashSet<>();
         final List<AlgDataTypeField> fieldList = new ArrayList<>();
 
-        for ( int i = 0; i < selectItems.size(); i++ ) {
-            Node selectItem = selectItems.get( i );
+        for ( Node selectItem : selectItems ) {
             if ( selectItem instanceof SqlSelect ) {
                 handleScalarSubQuery(
                         select,
@@ -3816,11 +3818,13 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                         aliases,
                         fieldList );
             } else {
+                // A preceding star can expand to several target fields.
+                int targetIndex = expandedSelectItems.size();
                 expandSelectItem(
                         (SqlNode) selectItem,
                         select,
-                        targetRowType.isStruct() && targetRowType.getFieldCount() >= i
-                                ? targetRowType.getFields().get( i ).getType()
+                        targetRowType.isStruct() && targetIndex < targetRowType.getFieldCount()
+                                ? targetRowType.getFields().get( targetIndex ).getType()
                                 : unknownType,
                         expandedSelectItems,
                         aliases,
@@ -3976,11 +3980,28 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
         final AlgDataType targetRowType = createTargetRowType( table, insert.getTargetColumnList(), false, allowDynamic );
 
         final SqlNode source = insert.getSource();
+        if ( insert.isDefaultValues() ) {
+            setValidatedNodeType( insert, targetRowType );
+            checkFieldCount( insert.getTargetTable(), table, source, targetRowType, targetRowType );
+            validateAccess( insert.getTargetTable(), table, AccessEnum.INSERT );
+            return;
+        }
+        AlgDataType sourceTargetType = targetRowType;
+        if ( insert.getOverrideMode() == SqlInsert.OverrideMode.USER ) {
+            AlgDataTypeFactory.Builder builder = typeFactory.builder();
+            for ( AlgDataTypeField field : targetRowType.getFields() ) {
+                boolean overridden = field.getId() != null && snapshot.rel().getColumn( field.getId() )
+                        .map( column -> column.getIdentity() != null )
+                        .orElse( false );
+                builder.add( field ).nullable( field.getType().isNullable() || overridden );
+            }
+            sourceTargetType = builder.build();
+        }
         if ( source instanceof SqlSelect sqlSelect ) {
-            validateSelect( sqlSelect, targetRowType );
+            validateSelect( sqlSelect, sourceTargetType );
         } else {
             final SqlValidatorScope scope = scopes.get( source );
-            validateQuery( source, scope, targetRowType );
+            validateQuery( source, scope, sourceTargetType );
         }
 
         // REVIEW jvs: In FRG-365, this namespace row type is discarding the type inferred by inferUnknownTypes (which was invoked from validateSelect above).
@@ -4001,11 +4022,26 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                 logicalSourceRowType,
                 logicalTargetRowType,
                 insert );
+        validateInsertIdentity( insert, table.unwrapOrThrow( LogicalTable.class ), logicalTargetRowType );
 
         validateAccess(
                 insert.getTargetTable(),
                 table,
                 AccessEnum.INSERT );
+    }
+
+
+    private void validateInsertIdentity( SqlInsert insert, LogicalTable table, AlgDataType targetRowType ) {
+        for ( LogicalColumn column : snapshot.rel().getColumns( table.id ) ) {
+            IdentityColumn identity = column.getIdentity();
+            if ( identity == null || identity.mode() != IdentityColumn.Mode.ALWAYS || insert.getOverrideMode() != SqlInsert.OverrideMode.NONE ) {
+                continue;
+            }
+            AlgDataTypeField field = targetRowType.getField( column.name, true, false );
+            if ( field != null && !isValuesWithDefault( insert.getSource(), field.getIndex() ) ) {
+                throw newValidationError( insert, RESOURCE.insertIntoAlwaysGenerated( column.name ) );
+            }
+        }
     }
 
 
@@ -4016,14 +4052,21 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
             throw newValidationError( node, RESOURCE.unmatchInsertColumn( targetFieldCount, sourceFieldCount ) );
         }
         // Ensure that non-nullable fields are targeted.
-        final List<ColumnStrategy> strategies = table.unwrap( LogicalTable.class ).orElseThrow().getColumnStrategies();
+        final LogicalTable logicalTable = table.unwrapOrThrow( LogicalTable.class );
+        final List<ColumnStrategy> strategies = logicalTable.getColumnStrategies();
+        final boolean hasIdentity = snapshot.rel().getColumns( logicalTable.id ).stream().anyMatch( column -> column.getIdentity() != null );
         for ( final AlgDataTypeField field : table.getTupleType().getFields() ) {
             final AlgDataTypeField targetField = logicalTargetRowType.getField( field.getName(), true, false );
             switch ( strategies.get( field.getIndex() ) ) {
                 case NOT_NULLABLE:
                     assert !field.getType().isNullable();
                     if ( targetField == null ) {
-                        throw newValidationError( node, RESOURCE.columnNotNullable( field.getName() ) );
+                        boolean hasDefault = snapshot.rel().getColumn( logicalTable.id, field.getName() )
+                                .map( column -> column.getIdentity() != null || ((hasIdentity || logicalTargetRowType.getFieldCount() == 0) && column.defaultValue != null) )
+                                .orElse( false );
+                        if ( !hasDefault ) {
+                            throw newValidationError( node, RESOURCE.columnNotNullable( field.getName() ) );
+                        }
                     }
                     break;
                 case NULLABLE:
@@ -4058,7 +4101,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     private boolean isRowWithDefault( SqlNode operand, int column ) {
         if ( Objects.requireNonNull( operand.getKind() ) == Kind.ROW ) {
             final SqlCall row = (SqlCall) operand;
-            return row.getOperandList().size() >= column && row.getOperandList().get( column ).getKind() == Kind.DEFAULT;
+            return row.getOperandList().size() > column && row.getOperandList().get( column ).getKind() == Kind.DEFAULT;
         }
         return false;
     }
@@ -4233,6 +4276,22 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
                         call.getTargetColumnList(),
                         true );
 
+        final LogicalTable logicalTable = table.unwrapOrThrow( LogicalTable.class );
+        final List<SqlNode> sourceExpressions = call.getSourceExpressionList().getSqlList();
+        final List<AlgDataTypeField> targetFields = targetRowType.getFields();
+        int tableFieldCount = table.getTupleType().getFieldCount();
+        for ( int i = 0; i < sourceExpressions.size(); i++ ) {
+            AlgDataTypeField target = targetFields.get( tableFieldCount + i );
+            LogicalColumn column = snapshot.rel().getColumn( logicalTable.id, target.getName() ).orElseThrow();
+            SqlNode expression = sourceExpressions.get( i );
+            if ( expression.getKind() == Kind.DEFAULT ) {
+                if ( column.getIdentity() == null && column.defaultValue == null && !column.nullable ) {
+                    throw newValidationError( expression, RESOURCE.columnNotNullable( column.name ) );
+                }
+            } else if ( column.getIdentity() != null && column.getIdentity().mode() == IdentityColumn.Mode.ALWAYS ) {
+                throw newValidationError( expression, RESOURCE.insertIntoAlwaysGenerated( column.name ) );
+            }
+        }
         final SqlSelect select = call.getSourceSelect();
         validateSelect( select, targetRowType );
 
@@ -4329,6 +4388,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
             if ( targetRowType.isStruct() ) {
                 for ( Pair<Node, AlgDataTypeField> pair : Pair.zip( rowConstructor.getOperandList(), targetRowType.getFields() ) ) {
+                    if ( pair.left.getKind() == Kind.DEFAULT ) {
+                        setValidatedNodeType( (SqlNode) pair.left, pair.right.getType() );
+                    }
                     if ( !pair.right.getType().isNullable() && CoreUtil.isNullLiteral( pair.left, false ) ) {
                         throw newValidationError( node, RESOURCE.columnNotNullable( pair.right.getName() ) );
                     }

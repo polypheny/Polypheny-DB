@@ -57,6 +57,7 @@ PARSER_BEGIN(SqlParserImpl)
 
 package org.polypheny.db.languages.sql.parser.impl;
 
+import org.polypheny.db.catalog.entity.logical.IdentityColumn.Mode;
 import org.polypheny.db.schema.ColumnStrategy;
 import org.polypheny.db.sql.language.SqlAlter;
 import org.polypheny.db.sql.language.SqlBasicCall;
@@ -109,6 +110,8 @@ import org.polypheny.db.sql.language.ddl.SqlAlterNamespace;
 import org.polypheny.db.sql.language.ddl.SqlAlterTable;
 import org.polypheny.db.sql.language.ddl.SqlAlterView;
 import org.polypheny.db.sql.language.ddl.SqlDdlNodes;
+import org.polypheny.db.sql.language.ddl.SqlIdentitySpec;
+import org.polypheny.db.sql.language.ddl.SqlIdentitySpec.Options;
 import org.polypheny.db.sql.language.ddl.SqlTruncate;
 import org.polypheny.db.sql.language.ddl.altermaterializedview.SqlAlterMaterializedViewAddIndex;
 import org.polypheny.db.sql.language.ddl.altermaterializedview.SqlAlterMaterializedViewDropIndex;
@@ -131,6 +134,8 @@ import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableDropForeignKey;
 import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableDropIndex;
 import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableDropPlacement;
 import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableDropPrimaryKey;
+import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableIdentity;
+import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableIdentity.Action;
 import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableMergePartitions;
 import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableModifyColumn;
 import org.polypheny.db.sql.language.ddl.altertable.SqlAlterTableModifyPartitions;
@@ -317,6 +322,18 @@ public class SqlParserImpl extends SqlAbstractParserImpl
     private SqlNode extend(SqlNode table, SqlNodeList extendList) {
         return (SqlNode) OperatorRegistry.get( OperatorName.EXTEND ).createCall(Span.of(table, extendList).pos(), table, extendList);
     }
+    private SqlIdentitySpec mergeIdentityClauses(SqlIdentitySpec first, SqlIdentitySpec second, boolean explicitlyNullable, SqlNode defaultValue)
+            throws ParseException {
+        if (first != null && second != null) {
+            throw new ParseException("A column can have only one identity definition.");
+        }
+        SqlIdentitySpec identity = first == null ? second : first;
+        if (identity != null && (explicitlyNullable || defaultValue != null)) {
+            throw new ParseException("An identity column cannot specify NULL or a separate default or generated expression.");
+        }
+        return identity;
+    }
+
 }
 
 PARSER_END(SqlParserImpl)
@@ -1087,12 +1104,18 @@ SqlTruncate SqlTruncateTable() :
 {
     final Span s;
     final SqlIdentifier entity;
+    boolean restartIdentity = false;
 }
 {
     <TRUNCATE> { s = span(); }
     <TABLE> entity = CompoundIdentifier()
+    [
+        <RESTART> <IDENTITY> { restartIdentity = true; }
+    |
+        <CONTINUE> <IDENTITY>
+    ]
     {
-        return new SqlTruncate(s.end(this), entity);
+        return new SqlTruncate(s.end(this), entity, restartIdentity);
     }
 }
 
@@ -1293,6 +1316,9 @@ SqlAlterTable SqlAlterTable(Span s) :
     SqlIdentifier tmpIdent = null;
     int tmpInt = 0;
     RawPartitionInformation rawPartitionInfo;
+    SqlIdentitySpec identity = null;
+    SqlIdentitySpec identityClause = null;
+    boolean explicitNull = false;
 }
 {
     <TABLE>
@@ -1321,14 +1347,20 @@ SqlAlterTable SqlAlterTable(Span s) :
         <ADD> <COLUMN>
         name = SimpleIdentifier()
         (
-            type = DataType()
             (
-                <NULL> { nullable = true; }
+                LOOKAHEAD(1) type = SerialColumnType() { identity = SqlIdentitySpec.SERIAL; }
+            |
+                type = DataType()
+            )
+            [ LOOKAHEAD(4) identityClause = ColumnIdentityClause() { identity = mergeIdentityClauses(identity, identityClause, false, null); identityClause = null; } ]
+            (
+                <NULL> { nullable = true; explicitNull = true; }
             |
                 <NOT> <NULL> { nullable = false; }
             |
                 { nullable = true; }
             )
+            [ LOOKAHEAD(4) identityClause = ColumnIdentityClause() { identity = mergeIdentityClauses(identity, identityClause, false, null); identityClause = null; } ]
             (
                 <DEFAULT_>
                 defaultValue = Literal()
@@ -1345,7 +1377,8 @@ SqlAlterTable SqlAlterTable(Span s) :
                 { afterColumn = null; beforeColumn = null; }
             )
             {
-                return new SqlAlterTableAddColumn(s.end(this), entity, name, type, nullable, defaultValue, beforeColumn, afterColumn);
+                identity = mergeIdentityClauses(identity, identityClause, explicitNull, defaultValue);
+                return new SqlAlterTableAddColumn(s.end(this), entity, name, type, nullable && identity == null, defaultValue, beforeColumn, afterColumn, identity);
             }
         |
             <AS>
@@ -1369,6 +1402,12 @@ SqlAlterTable SqlAlterTable(Span s) :
                 return new SqlAlterSourceTableAddColumn(s.end(this), entity, name, physicalName, defaultValue, beforeColumn, afterColumn);
             }
         )
+    |
+        <ALTER> [ <COLUMN> ] column = SimpleIdentifier()
+        statement = AlterTableIdentity(s, entity, column)
+        {
+            return statement;
+        }
     |
         <DROP> <COLUMN>
         column = SimpleIdentifier()
@@ -1994,6 +2033,132 @@ SqlNodeList TableElementList() :
     }
 }
 
+SqlDataTypeSpec SerialColumnType() :
+{
+    final PolyType type;
+}
+{
+    (
+        <SMALLSERIAL> { type = PolyType.SMALLINT; }
+    |
+        <SERIAL> { type = PolyType.INTEGER; }
+    |
+        <BIGSERIAL> { type = PolyType.BIGINT; }
+    )
+    {
+        return new SqlDataTypeSpec(new SqlIdentifier(type.name(), getPos()), -1, -1, null, null, getPos());
+    }
+}
+
+SqlIdentitySpec ColumnIdentityClause() :
+{
+    final Mode mode;
+    Options sequenceOptions = Options.EMPTY;
+}
+{
+    <AUTO_INCREMENT> { return SqlIdentitySpec.SERIAL; }
+|
+    <GENERATED> mode = IdentityMode() <AS> <IDENTITY>
+    [ <LPAREN> sequenceOptions = IdentitySequenceOptions() <RPAREN> ]
+    { return new SqlIdentitySpec(mode, sequenceOptions); }
+}
+
+Mode IdentityMode() :
+{
+}
+{
+    <ALWAYS> { return Mode.ALWAYS; }
+|
+    <BY> <DEFAULT_> { return Mode.BY_DEFAULT; }
+}
+
+SqlAlterTable AlterTableIdentity(Span s, SqlIdentifier entity, SqlIdentifier column) :
+{
+    Mode mode;
+    Options sequenceOptions = Options.EMPTY;
+    Long next = null;
+    boolean ifExists = false;
+}
+{
+    <ADD> <GENERATED> mode = IdentityMode() <AS> <IDENTITY>
+    [ <LPAREN> sequenceOptions = IdentitySequenceOptions() <RPAREN> ]
+    { return new SqlAlterTableIdentity(s.end(this), entity, column, Action.ADD, mode, sequenceOptions, null, false); }
+|
+    <RESTART> [ <WITH> next = IdentityLong() ]
+    { return new SqlAlterTableIdentity(s.end(this), entity, column, Action.RESTART, null, null, next, false); }
+|
+    <SET>
+    (
+        <GENERATED> mode = IdentityMode()
+        { return new SqlAlterTableIdentity(s.end(this), entity, column, Action.SET_MODE, mode, null, null, false); }
+    |
+        ( <LPAREN> sequenceOptions = IdentitySequenceOptions() <RPAREN> | sequenceOptions = IdentitySequenceOptions() )
+        { return new SqlAlterTableIdentity(s.end(this), entity, column, Action.SET_OPTIONS, null, sequenceOptions, null, false); }
+    )
+|
+    <DROP> <IDENTITY> [ <IF> <EXISTS> { ifExists = true; } ]
+    { return new SqlAlterTableIdentity(s.end(this), entity, column, Action.DROP, null, null, null, ifExists); }
+}
+
+Options IdentitySequenceOptions() :
+{
+    Map<String, Long> sequenceOptions = new HashMap<String, Long>();
+    String key;
+    Long value;
+}
+{
+    (
+        (
+            <START> [ <WITH> ] value = IdentityLong() { key = "START"; }
+        |
+            <INCREMENT> [ <BY> ] value = IdentityLong() { key = "INCREMENT"; }
+        |
+            <MINVALUE> value = IdentityLong() { key = "MINVALUE"; }
+        |
+            <MAXVALUE> value = IdentityLong() { key = "MAXVALUE"; }
+        |
+            <CYCLE> { key = "CYCLE"; value = 1L; }
+        |
+            <NO> (
+                <MINVALUE> { key = "MINVALUE"; value = null; }
+            |
+                <MAXVALUE> { key = "MAXVALUE"; value = null; }
+            |
+                <CYCLE> { key = "CYCLE"; value = 0L; }
+            )
+        )
+        {
+            if ( sequenceOptions.containsKey(key) ) {
+                throw new ParseException("Duplicate identity option: " + key);
+            }
+            sequenceOptions.put(key, value);
+        }
+    )+
+    {
+        return new Options(sequenceOptions.get("START"), sequenceOptions.get("INCREMENT"), sequenceOptions.get("MINVALUE"), sequenceOptions.get("MAXVALUE"),
+                sequenceOptions.containsKey("CYCLE") ? sequenceOptions.get("CYCLE") != 0 : null,
+                sequenceOptions.containsKey("MINVALUE") && sequenceOptions.get("MINVALUE") == null,
+                sequenceOptions.containsKey("MAXVALUE") && sequenceOptions.get("MAXVALUE") == null);
+    }
+}
+
+long IdentityLong() :
+{
+    String sign = "";
+    Token magnitude;
+}
+{
+    [ <PLUS> | <MINUS> { sign = "-"; } ]
+    magnitude = <UNSIGNED_INTEGER_LITERAL>
+    {
+        try {
+            return Long.parseLong(sign + magnitude.image);
+        } catch (NumberFormatException e) {
+            throw new ParseException("Identity value is outside the BIGINT range: " + sign + magnitude.image);
+        }
+    }
+}
+
 void TableElement(List<SqlNode> list) :
 {
     final SqlIdentifier id;
@@ -2009,11 +2174,19 @@ void TableElement(List<SqlNode> list) :
     SqlIdentifier refTable;
     SqlIdentifier refColumn;
     final boolean primary;
+    SqlIdentitySpec identity = null;
+    SqlIdentitySpec identityClause = null;
+    boolean explicitNull = false;
 }
 {
     id = SimpleIdentifier()
     (
-        type = DataType()
+        (
+            LOOKAHEAD(1) type = SerialColumnType() { identity = SqlIdentitySpec.SERIAL; }
+        |
+            type = DataType()
+        )
+        [ LOOKAHEAD(4) identityClause = ColumnIdentityClause() { identity = mergeIdentityClauses(identity, identityClause, false, null); identityClause = null; } ]
         (
             <PRIMARY> <KEY>
             {
@@ -2023,6 +2196,7 @@ void TableElement(List<SqlNode> list) :
             |
             <NULL> {
               primary = false;
+              explicitNull = true;
               nullable = true;
             }
             |
@@ -2036,6 +2210,7 @@ void TableElement(List<SqlNode> list) :
               primary = false;
             }
         )
+        [ LOOKAHEAD(4) identityClause = ColumnIdentityClause() { identity = mergeIdentityClauses(identity, identityClause, false, null); identityClause = null; } ]
         (
             [ <GENERATED> <ALWAYS> ]
             <AS> <LPAREN>
@@ -2071,7 +2246,8 @@ void TableElement(List<SqlNode> list) :
                 }
         )
         {
-            list.add( SqlDdlNodes.column(s.add(id).end(this), id, type.withNullable(nullable), collation, e, strategy));
+            identity = mergeIdentityClauses(identity, identityClause, explicitNull, e);
+            list.add( SqlDdlNodes.column(s.add(id).end(this), id, type.withNullable(nullable && identity == null), collation, e, strategy, identity));
             if ( primary ) {
                 list.add( SqlDdlNodes.primary( s.add(id ).end( this ), id, new SqlNodeList( List.of( id ), s.end(this) ) ) );
             }
@@ -2757,6 +2933,9 @@ SqlNode SqlInsert() :
     SqlNodeList extendList = null;
     SqlNode source;
     SqlNodeList columnList = null;
+    SqlNodeList returning = null;
+    List<SqlNode> returningItems;
+    SqlInsert.OverrideMode overrideMode = SqlInsert.OverrideMode.NONE;
     final Span s;
 }
 {
@@ -2789,8 +2968,34 @@ SqlNode SqlInsert() :
             }
         }
     ]
-    source = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY) {
-        return new SqlInsert(s.end(source), keywordList, table, source, columnList);
+    [
+        <OVERRIDING>
+        (
+            <SYSTEM> { overrideMode = SqlInsert.OverrideMode.SYSTEM; }
+        |
+            <USER> { overrideMode = SqlInsert.OverrideMode.USER; }
+        )
+        <VALUE>
+    ]
+    (
+        <DEFAULT_> <VALUES> {
+            if (columnList != null) {
+                throw new ParseException("DEFAULT VALUES cannot follow a target column list.");
+            }
+            columnList = new SqlNodeList(getPos());
+            SqlNode emptyRow = (SqlNode) OperatorRegistry.get(OperatorName.ROW).createCall(getPos());
+            source = (SqlNode) OperatorRegistry.get(OperatorName.VALUES).createCall(getPos(), emptyRow);
+        }
+    |
+        source = OrderedQueryOrExpr(ExprContext.ACCEPT_QUERY)
+    )
+    [
+        <RETURNING> returningItems = SelectList() {
+            returning = new SqlNodeList(returningItems, getPos());
+        }
+    ]
+    {
+        return new SqlInsert(s.end(this), keywordList, table, source, columnList, overrideMode, returning);
     }
 }
 
@@ -2862,8 +3067,7 @@ SqlNode SqlUpdate() :
     <SET> id = SimpleIdentifier() {
         targetColumnList.add(id);
     }
-    <EQ> exp = Expression(ExprContext.ACCEPT_SUB_QUERY) {
-        // TODO:  support DEFAULT also
+    <EQ> exp = UpdateAssignment() {
         sourceExpressionList.add(exp);
     }
     (
@@ -2872,7 +3076,7 @@ SqlNode SqlUpdate() :
         {
             targetColumnList.add(id);
         }
-        <EQ> exp = Expression(ExprContext.ACCEPT_SUB_QUERY)
+        <EQ> exp = UpdateAssignment()
         {
             sourceExpressionList.add(exp);
         }
@@ -2881,6 +3085,16 @@ SqlNode SqlUpdate() :
     {
         return new SqlUpdate(s.addAll(targetColumnList.getSqlList()).addAll(sourceExpressionList.getSqlList()).addIf(condition).pos(), table, targetColumnList, sourceExpressionList, condition, null, alias);
     }
+}
+
+SqlNode UpdateAssignment() :
+{
+    SqlNode value;
+}
+{
+    <DEFAULT_> { return (SqlNode) OperatorRegistry.get(OperatorName.DEFAULT).createCall(getPos()); }
+|
+    value = Expression(ExprContext.ACCEPT_SUB_QUERY) { return value; }
 }
 
 /**
@@ -7589,7 +7803,9 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < BEGIN_PARTITION: "BEGIN_PARTITION" >
 |   < BERNOULLI: "BERNOULLI" >
 |   < BETWEEN: "BETWEEN" >
+|   < AUTO_INCREMENT: "AUTO_INCREMENT" >
 |   < BIGINT: "BIGINT" >
+|   < BIGSERIAL: "BIGSERIAL" >
 |   < BINARY: "BINARY" >
 |   < BIT: "BIT" >
 |   < BLOB: "BLOB" >
@@ -8068,6 +8284,8 @@ SqlPostfixOperator PostfixRowOperator() :
 |   < SIZE: "SIZE" >
 |   < SKIP_: "SKIP" >
 |   < SMALLINT: "SMALLINT" >
+|   < SMALLSERIAL: "SMALLSERIAL" >
+|   < SERIAL: "SERIAL" >
 |   < SOME: "SOME" >
 |   < AUDIO: "AUDIO" >
 |   < SOURCE: "SOURCE" >
@@ -8340,6 +8558,10 @@ void NonReservedKeyWord1of3() :
     |    <CONSTRAINT_SCHEMA>
     |    <CONSTRAINTS>
     |    <CONSTRUCTOR>
+    |    <AUTO_INCREMENT>
+    |    <BIGSERIAL>
+    |    <SMALLSERIAL>
+    |    <SERIAL>
     |    <CONTINUE>
     |    <CURSOR_NAME>
     |    <DATA>
@@ -8490,7 +8712,6 @@ void NonReservedKeyWord2of3() :
     |    <RETURNED_LENGTH>
     |    <RETURNED_OCTET_LENGTH>
     |    <RETURNED_SQLSTATE>
-    |    <RETURNING>
     |    <ROLE>
     |    <ROUTINE>
     |    <ROUTINE_CATALOG>

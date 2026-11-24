@@ -26,6 +26,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -217,6 +218,9 @@ public class LanguageManager {
                         log.warn( "Transaction is not active" );
                     }
                     implementation = statement.getQueryProcessor().prepareQuery( root, true );
+                    if ( root.kind == Kind.INSERT && statement.getInsertReturning() != null ) {
+                        implementation = implementation.withInsertReturning( statement.getInsertReturning() );
+                    }
                 }
                 // queries are able to switch the context of the following queries
                 changedNamespace = parsed.getQueryNode().orElseThrow().switchesNamespace().orElse( changedNamespace );

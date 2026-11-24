@@ -318,6 +318,12 @@ public class HttpServer implements Runnable {
 
         webuiServer.post( "/updateColumn", crud::updateColumn );
 
+        webuiServer.post( "/getIdentitySequence", crud::getIdentitySequence );
+
+        webuiServer.post( "/configureIdentityColumn", crud::configureIdentityColumn );
+
+        webuiServer.post( "/restartIdentitySequence", crud::restartIdentitySequence );
+
         webuiServer.post( "/getMaterializedInfo", crud::getMaterializedInfo );
 
         webuiServer.post( "/updateMaterialized", crud::updateMaterialized );

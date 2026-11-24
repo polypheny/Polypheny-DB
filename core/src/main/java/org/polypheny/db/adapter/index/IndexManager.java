@@ -25,6 +25,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.polypheny.db.adapter.DataStore.IndexMethodModel;
 import org.polypheny.db.adapter.index.Index.IndexFactory;
@@ -69,6 +71,7 @@ public class IndexManager {
     private final Map<Long, Index> indexById = new HashMap<>();
     private final Map<String, Index> indexByName = new HashMap<>();
     private final Map<PolyXid, List<Index>> openTransactions = new HashMap<>();
+    private final Map<PolyXid, Set<Index>> pendingTruncates = new ConcurrentHashMap<>();
     private TransactionManager transactionManager = null;
 
 
@@ -113,8 +116,25 @@ public class IndexManager {
     }
 
 
+    /** Records indexes to empty when the physical truncation commits. */
+    public void stageTruncate( PolyXid xid, LogicalNamespace namespace, LogicalTable table ) {
+        List<Index> indexes = getIndices( namespace, table );
+        if ( !indexes.isEmpty() ) {
+            pendingTruncates.computeIfAbsent( xid, ignored -> ConcurrentHashMap.newKeySet() ).addAll( indexes );
+        }
+    }
+
+
     public void commit( PolyXid xid ) {
         List<Index> idxs = openTransactions.remove( xid );
+        Set<Index> truncated = pendingTruncates.remove( xid );
+        if ( truncated != null ) {
+            // Truncation supersedes index changes made earlier by this transaction.
+            truncated.forEach( Index::clear );
+            if ( idxs != null ) {
+                idxs.removeIf( truncated::contains );
+            }
+        }
         if ( idxs == null ) {
             return;
         }
@@ -128,6 +148,7 @@ public class IndexManager {
 
 
     public void rollback( PolyXid xid ) {
+        pendingTruncates.remove( xid );
         List<Index> idxs = openTransactions.remove( xid );
         if ( idxs == null ) {
             return;

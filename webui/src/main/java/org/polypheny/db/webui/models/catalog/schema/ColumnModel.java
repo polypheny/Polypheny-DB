@@ -27,6 +27,7 @@ import lombok.Value;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.webui.models.catalog.IdentityColumnModel;
 
 @EqualsAndHashCode(callSuper = true)
 @Value
@@ -48,6 +49,9 @@ public class ColumnModel extends FieldModel {
 
     @JsonProperty
     public String defaultValue;
+
+    @JsonProperty
+    public IdentityColumnModel identity;
 
     @JsonProperty
     public Integer dimension;
@@ -74,6 +78,7 @@ public class ColumnModel extends FieldModel {
             @JsonProperty("precision") Integer precision,
             @JsonProperty("scale") Integer scale,
             @JsonProperty("defaultValue") String defaultValue,
+            @JsonProperty("identity") IdentityColumnModel identity,
             @JsonProperty("dimension") Integer dimension,
             @JsonProperty("cardinality") Integer cardinality,
             @JsonProperty("nullable") boolean nullable,
@@ -88,6 +93,7 @@ public class ColumnModel extends FieldModel {
         this.precision = precision;
         this.scale = scale;
         this.defaultValue = defaultValue;
+        this.identity = identity;
         this.dimension = dimension;
         this.cardinality = cardinality;
     }
@@ -102,7 +108,8 @@ public class ColumnModel extends FieldModel {
                 column.collectionsType,
                 column.length,
                 column.scale,
-                column.defaultValue == null ? null : column.defaultValue.value.toJson(),
+                column.getLiteralDefaultValue() == null ? null : column.getLiteralDefaultValue().value.toJson(),
+                IdentityColumnModel.from( column.getIdentity() ),
                 column.dimension,
                 column.cardinality,
                 column.nullable,

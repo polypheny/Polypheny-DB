@@ -37,6 +37,13 @@ public class SqlInsert extends SqlCall {
 
     public static final SqlSpecialOperator OPERATOR = new SqlSpecialOperator( "INSERT", Kind.INSERT );
 
+    public enum OverrideMode {
+        NONE,
+        SYSTEM,
+        USER
+    }
+
+
     SqlNodeList keywords;
     @Getter
     SqlNode targetTable;
@@ -44,15 +51,45 @@ public class SqlInsert extends SqlCall {
     SqlNode source;
     @Setter
     SqlNodeList columns;
+    @Getter
+    private final OverrideMode overrideMode;
+    @Getter
+    @Nullable
+    private final SqlNodeList returningColumns;
 
 
     public SqlInsert( ParserPos pos, SqlNodeList keywords, SqlNode targetTable, SqlNode source, SqlNodeList columns ) {
+        this( pos, keywords, targetTable, source, columns, OverrideMode.NONE, null );
+    }
+
+
+    public SqlInsert( ParserPos pos, SqlNodeList keywords, SqlNode targetTable, SqlNode source, SqlNodeList columns, OverrideMode overrideMode ) {
+        this( pos, keywords, targetTable, source, columns, overrideMode, null );
+    }
+
+
+    public SqlInsert(
+            ParserPos pos, SqlNodeList keywords, SqlNode targetTable, SqlNode source, SqlNodeList columns,
+            OverrideMode overrideMode, @Nullable SqlNodeList returningColumns ) {
         super( pos );
+        this.overrideMode = overrideMode;
+        this.returningColumns = returningColumns;
         this.keywords = keywords;
         this.targetTable = targetTable;
         this.source = source;
         this.columns = columns;
         assert keywords != null;
+    }
+
+
+    @Override
+    public SqlInsert clone( ParserPos pos ) {
+        return new SqlInsert( pos, keywords, targetTable, source, columns, overrideMode, returningColumns );
+    }
+
+
+    public boolean isDefaultValues() {
+        return SqlNodeList.isEmptyList( columns );
     }
 
 
@@ -152,11 +189,22 @@ public class SqlInsert extends SqlCall {
         final int opLeft = ((SqlOperator) getOperator()).getLeftPrec();
         final int opRight = ((SqlOperator) getOperator()).getRightPrec();
         targetTable.unparse( writer, opLeft, opRight );
-        if ( columns != null ) {
+        if ( columns != null && !isDefaultValues() ) {
             columns.unparse( writer, opLeft, opRight );
         }
+        if ( overrideMode != OverrideMode.NONE ) {
+            writer.keyword( overrideMode == OverrideMode.SYSTEM ? "OVERRIDING SYSTEM VALUE" : "OVERRIDING USER VALUE" );
+        }
         writer.newlineAndIndent();
-        source.unparse( writer, 0, 0 );
+        if ( isDefaultValues() ) {
+            writer.keyword( "DEFAULT VALUES" );
+        } else {
+            source.unparse( writer, 0, 0 );
+        }
+        if ( returningColumns != null ) {
+            writer.keyword( "RETURNING" );
+            returningColumns.commaList( writer );
+        }
     }
 
 

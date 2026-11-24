@@ -82,6 +82,12 @@ public final class LogicalRelModify extends RelModify<Entity> {
     }
 
 
+    /** Name of the extra Boolean input field for a column defaulted before INSERT routing. */
+    public static String identityDefaultFieldName( long columnId ) {
+        return "$polypheny$identity$" + columnId;
+    }
+
+
     public static LogicalRelModify create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
         EntityArg entity = args.getArg( "table", EntityArg.class );
         Quadruple<Operation, List<String>, List<? extends RexNode>, Boolean> extracted = extractArgs( args );

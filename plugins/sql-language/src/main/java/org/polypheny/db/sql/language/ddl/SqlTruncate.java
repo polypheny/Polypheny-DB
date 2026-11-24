@@ -47,14 +47,16 @@ public class SqlTruncate extends SqlDdl implements ExecutableStatement {
     private static final SqlOperator OPERATOR = new SqlSpecialOperator( "TRUNCATE", Kind.TRUNCATE );
 
     protected final SqlIdentifier name;
+    private final boolean restartIdentity;
 
 
     /**
      * Creates a SqlDropTable.
      */
-    public SqlTruncate( ParserPos pos, SqlIdentifier name ) {
+    public SqlTruncate( ParserPos pos, SqlIdentifier name, boolean restartIdentity ) {
         super( OPERATOR, pos );
         this.name = name;
+        this.restartIdentity = restartIdentity;
     }
 
 
@@ -75,6 +77,9 @@ public class SqlTruncate extends SqlDdl implements ExecutableStatement {
         writer.keyword( getOperator().getName() );
         writer.keyword( "TABLE" );
         name.unparse( writer, leftPrec, rightPrec );
+        if ( restartIdentity ) {
+            writer.keyword( "RESTART IDENTITY" );
+        }
     }
 
 
@@ -82,7 +87,7 @@ public class SqlTruncate extends SqlDdl implements ExecutableStatement {
     public void execute( Context context, Statement statement, ParsedQueryContext parsedQueryContext ) {
         LogicalTable table = getTableFailOnEmpty( context, name );
 
-        DdlManager.getInstance().truncate( table, statement );
+        DdlManager.getInstance().truncate( table, restartIdentity, statement );
     }
 
 

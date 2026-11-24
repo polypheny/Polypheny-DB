@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
+import java.util.OptionalLong;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerable;
@@ -33,6 +34,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
@@ -61,6 +63,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.logical.IdentityColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
@@ -90,6 +93,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.webui.models.catalog.FieldDefinition;
 
@@ -396,6 +400,187 @@ public class DataMigratorImpl implements DataMigrator {
         } catch ( Throwable t ) {
             throw new GenericRuntimeException( t );
         }
+    }
+
+
+    @Override
+    public long countRowsForIdentity( Transaction transaction, LogicalTable table ) {
+        Snapshot snapshot = transaction.getSnapshot();
+        Statement reader = transaction.createStatement();
+        AlgBuilder builder = AlgBuilder.create( reader ).relScan( table );
+        List<Long> primaryKey = snapshot.rel().getPrimaryKey( table.primaryKey ).orElseThrow().fieldIds;
+        List<RexNode> keyFields = primaryKey.stream()
+                .<RexNode>map( id -> builder.field( snapshot.rel().getColumn( id ).orElseThrow().name ) )
+                .toList();
+        builder.aggregate( builder.groupKey( keyFields ), builder.countStar( "rows_per_identity_key" ) );
+        RexNode groupSize = builder.field( keyFields.size() );
+        AlgNode counts = builder.aggregate( builder.groupKey(), builder.countStar( "identity_keys" ), builder.sum( groupSize ) ).build();
+        List<PolyValue> row = prepareIdentityRead( reader, counts, false ).execute( reader, -1 ).getAllRowsAndClose().get( 0 );
+        PolyValue total = row.get( 1 );
+        long rowCount = total == null || total.isNull() ? 0 : total.asNumber().longValue();
+        if ( row.get( 0 ).asNumber().longValue() != rowCount ) {
+            throw new GenericRuntimeException( "Cannot backfill an identity column because table '%s' has duplicate primary keys.", table.name );
+        }
+        return rowCount;
+    }
+
+
+    @Override
+    public OptionalLong getIdentitySeedBoundary( Transaction transaction, LogicalTable table, LogicalColumn column, boolean ascending ) {
+        Snapshot snapshot = transaction.getSnapshot();
+        List<AllocationEntity> allocations = snapshot.alloc().getFromLogical( table.id ).stream()
+                .filter( allocation -> snapshot.alloc().getColumn( allocation.placementId, column.id ).isPresent() )
+                .toList();
+        var coveredPartitions = allocations.stream().map( allocation -> allocation.partitionId ).collect( Collectors.toSet() );
+        if ( snapshot.alloc().getPartitionsFromLogical( table.id ).stream().anyMatch( partition -> !coveredPartitions.contains( partition.id ) ) ) {
+            throw new GenericRuntimeException( "Column '%s' does not cover every table partition.", column.name );
+        }
+
+        int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
+        OptionalLong boundary = OptionalLong.empty();
+        for ( AllocationEntity allocation : allocations ) {
+            try ( ResultIterator rows = readPhysicalIdentityColumn( transaction, allocation, column, batchSize ) ) {
+                while ( rows.hasMoreRows() ) {
+                    for ( List<PolyValue> row : rows.getNextBatch() ) {
+                        PolyValue value = row.get( 0 );
+                        if ( value == null || value.isNull() ) {
+                            throw new GenericRuntimeException( "Column '%s' contains NULL values and cannot generate identity values.", column.name );
+                        }
+                        long number = value.asNumber().longValue();
+                        if ( boundary.isEmpty() || (ascending ? number > boundary.getAsLong() : number < boundary.getAsLong()) ) {
+                            boundary = OptionalLong.of( number );
+                        }
+                    }
+                }
+            }
+        }
+        return boundary;
+    }
+
+
+    private ResultIterator readPhysicalIdentityColumn( Transaction transaction, AllocationEntity allocation, LogicalColumn column, int batchSize ) {
+        Statement reader = transaction.createStatement();
+        AlgBuilder builder = AlgBuilder.create( reader );
+        // Read the store's type, since SET NOT NULL can change the logical type without rewriting the placement.
+        AlgNode scan = AdapterManager.getInstance().getAdapter( allocation.adapterId ).orElseThrow().getRelScan( allocation.id, builder );
+        int ordinal = scan.getTupleType().getFieldIds().indexOf( column.id );
+        if ( ordinal < 0 ) {
+            throw new GenericRuntimeException( "Column '%s' is missing from allocation %s.", column.name, allocation.id );
+        }
+        builder.push( scan );
+        AlgNode source = builder.project( builder.field( ordinal ) ).build();
+        return prepareIdentityRead( reader, source, true ).execute( reader, batchSize );
+    }
+
+
+    private PolyImplementation prepareIdentityRead( Statement reader, AlgNode node, boolean routed ) {
+        return reader.getQueryProcessor().prepareQuery(
+                AlgRoot.of( node, Kind.SELECT ), node.getCluster().getTypeFactory().builder().build(), routed, true, false );
+    }
+
+
+    @Override
+    public void backfillIdentity( Transaction transaction, LogicalTable table, LogicalColumn column, IdentityColumn identity, long expectedRows ) {
+        Snapshot snapshot = Catalog.snapshot();
+        List<Long> primaryKey = snapshot.rel().getPrimaryKey( table.primaryKey ).orElseThrow().fieldIds;
+        Map<Long, List<AllocationEntity>> byPartition = snapshot.alloc().getFromLogical( table.id ).stream()
+                .filter( allocation -> snapshot.alloc().getColumn( allocation.placementId, column.id ).isPresent() )
+                .collect( Collectors.groupingBy( allocation -> allocation.partitionId ) );
+        if ( snapshot.alloc().getPartitionsFromLogical( table.id ).stream().anyMatch( partition -> !byPartition.containsKey( partition.id ) ) ) {
+            throw new GenericRuntimeException( "Identity column '%s' does not cover every table partition.", column.name );
+        }
+        int batchSize = RuntimeConfig.DATA_MIGRATOR_BATCH_SIZE.getInteger();
+        long backfilledRows = 0;
+
+        for ( Map.Entry<Long, List<AllocationEntity>> partition : byPartition.entrySet().stream().sorted( Map.Entry.comparingByKey() ).toList() ) {
+            Statement reader = transaction.createStatement();
+            List<Long> partitions = List.of( partition.getKey() );
+            AlgRoot source = getSourceIterator( reader, new ColumnDistribution( table.id, primaryKey, partitions, partitions, List.of(), snapshot ) );
+            PolyImplementation query = reader.getQueryProcessor().prepareQuery(
+                    source, source.alg.getCluster().getTypeFactory().builder().build(), true, true, false );
+            List<AlgDataTypeField> fields = query.getTupleType().getFields();
+            Map<Long, Integer> keyOrdinals = new HashMap<>();
+            for ( long key : primaryKey ) {
+                String name = snapshot.rel().getColumn( key ).orElseThrow().name;
+                int ordinal = fields.stream().filter( f -> f.getName().equals( name ) ).findFirst().orElseThrow().getIndex();
+                keyOrdinals.put( key, ordinal );
+            }
+            List<BackfillTarget> targets = new ArrayList<>();
+            for ( AllocationEntity allocation : partition.getValue() ) {
+                Statement writer = transaction.createStatement();
+                AllocationColumn target = snapshot.alloc().getColumn( allocation.placementId, column.id ).orElseThrow();
+                targets.add( new BackfillTarget( writer, buildUpdateStatement( writer, List.of( target ), allocation ) ) );
+            }
+            long partitionRows = 0;
+            try ( ResultIterator rows = query.execute( reader, batchSize ) ) {
+                while ( rows.hasMoreRows() ) {
+                    List<List<PolyValue>> batch = rows.getNextBatch();
+                    if ( batch.isEmpty() ) {
+                        break;
+                    }
+                    List<PolyValue> values = Catalog.getInstance().getIdentitySequences().reserve( identity, batch.size() ).stream()
+                            .map( value -> column.type == PolyType.BIGINT ? PolyLong.of( value ) : PolyInteger.of( value.intValue() ) )
+                            .map( PolyValue.class::cast )
+                            .toList();
+                    for ( BackfillTarget target : targets ) {
+                        backfillIdentityBatch( column, values, keyOrdinals, fields, batch, target );
+                    }
+                    partitionRows += batch.size();
+                }
+            }
+            for ( AllocationEntity allocation : partition.getValue() ) {
+                verifyIdentityBackfill( transaction, allocation, column, partitionRows, batchSize );
+            }
+            backfilledRows += partitionRows;
+        }
+        if ( backfilledRows != expectedRows ) {
+            throw new GenericRuntimeException( "Identity backfill for '%s' read %s rows, expected %s.", column.name, backfilledRows, expectedRows );
+        }
+    }
+
+
+    private void verifyIdentityBackfill( Transaction transaction, AllocationEntity allocation, LogicalColumn column, long expectedRows, int batchSize ) {
+        long count = 0;
+        // Some adapters report the number of parameter bindings instead of affected rows.
+        // Read the generated column from this allocation to verify that every row was written.
+        try ( ResultIterator rows = readPhysicalIdentityColumn( transaction, allocation, column, batchSize ) ) {
+            while ( rows.hasMoreRows() ) {
+                List<List<PolyValue>> batch = rows.getNextBatch();
+                for ( List<PolyValue> row : batch ) {
+                    PolyValue value = row.get( 0 );
+                    if ( value == null || value.isNull() ) {
+                        throw new GenericRuntimeException( "Identity backfill of '%s' left a NULL in allocation %s.", column.name, allocation.id );
+                    }
+                }
+                count += batch.size();
+            }
+        }
+        if ( count != expectedRows ) {
+            throw new GenericRuntimeException( "Identity backfill of '%s' found %s rows in allocation %s, expected %s.", column.name, count, allocation.id, expectedRows );
+        }
+    }
+
+
+    private void backfillIdentityBatch( LogicalColumn column, List<PolyValue> values, Map<Long, Integer> keys, List<AlgDataTypeField> fields, List<List<PolyValue>> rows, BackfillTarget target ) {
+        Statement writer = target.statement();
+        try {
+            for ( Map.Entry<Long, Integer> key : keys.entrySet() ) {
+                int ordinal = key.getValue();
+                writer.getDataContext().addParameterValues( key.getKey(), fields.get( ordinal ).getType(), rows.stream().map( row -> row.get( ordinal ) ).toList() );
+            }
+            AlgRoot update = target.update();
+            AlgDataTypeFactory factory = update.alg.getCluster().getTypeFactory();
+            writer.getDataContext().addParameterValues( column.id, column.getAlgDataType( factory ), values );
+            PolyImplementation implementation = writer.getQueryProcessor().prepareQuery( update, factory.builder().build(), true, true, false );
+            implementation.execute( writer, -1 ).getAllRowsAndClose();
+        } finally {
+            writer.getDataContext().resetParameterValues();
+        }
+    }
+
+
+    private record BackfillTarget(Statement statement, AlgRoot update) {
+
     }
 
 

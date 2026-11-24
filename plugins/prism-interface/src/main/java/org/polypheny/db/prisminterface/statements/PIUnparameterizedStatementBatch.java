@@ -16,7 +16,6 @@
 
 package org.polypheny.db.prisminterface.statements;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import lombok.Getter;
@@ -27,6 +26,9 @@ import org.polypheny.db.prisminterface.PIServiceException;
 import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
 import org.polypheny.db.prisminterface.utils.PropertyUtils;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
+import org.polypheny.prism.BatchGeneratedKeys;
+import org.polypheny.prism.StatementBatchResponse;
+import org.polypheny.prism.StatementResult;
 
 @Getter
 public class PIUnparameterizedStatementBatch {
@@ -58,26 +60,30 @@ public class PIUnparameterizedStatementBatch {
     }
 
 
-    public List<Long> executeBatch( List<Node> parsedStatements ) {
+    public StatementBatchResponse executeBatch( List<Node> parsedStatements ) {
         return includesGraphStatement
                 ? prismInterfaceClient.executeAtomicBatch( () -> executeMembers( parsedStatements ) )
                 : executeMembers( parsedStatements );
     }
 
 
-    private List<Long> executeMembers( List<Node> parsedStatements ) {
+    private StatementBatchResponse executeMembers( List<Node> parsedStatements ) {
         int fetchSize = PropertyUtils.DEFAULT_FETCH_SIZE;
         List<List<ParsedQueryContext>> preParsedQueries = statements.stream()
                 .map( StatementProcessor::parseWithOpenAutocommitResult )
                 .toList();
-        List<Long> updateCounts = new ArrayList<>( statements.size() );
+        StatementBatchResponse.Builder response = StatementBatchResponse.newBuilder().setBatchId( batchId );
         for ( int i = 0; i < statements.size(); i++ ) {
             PIUnparameterizedStatement statement = statements.get( i );
-            updateCounts.add( statement.executeBatchMember( parsedStatements.get( i ), fetchSize, preParsedQueries.get( i ) ).getScalar() );
-            // The batch response exposes counts only and cannot be used to fetch a member cursor.
+            StatementResult result = statement.executeBatchMember( parsedStatements.get( i ), fetchSize, preParsedQueries.get( i ) );
+            response.addScalars( result.getScalar() );
+            if ( result.hasGeneratedKeys() ) {
+                response.addGeneratedKeys( BatchGeneratedKeys.newBuilder().setStatementIndex( i ).setKeys( result.getGeneratedKeys() ) );
+            }
+            // Batch members cannot expose a cursor.
             statement.closeResultsAndCommitIfAuto();
         }
-        return updateCounts;
+        return response.build();
     }
 
 }

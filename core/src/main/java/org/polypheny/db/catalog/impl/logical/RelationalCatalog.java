@@ -43,6 +43,7 @@ import org.polypheny.db.catalog.catalogs.LogicalRelationalCatalog;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.entity.LogicalDefaultValue;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
+import org.polypheny.db.catalog.entity.logical.IdentityColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
 import org.polypheny.db.catalog.entity.logical.LogicalGenericKey;
@@ -357,14 +358,31 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
             throw new RuntimeException( "Invalid scale! Scale can not be larger than length." );
         }
 
-        columns.put( columnId, columns.get( columnId ).toBuilder().type( type ).collectionsType( collectionsType ).length( length ).scale( scale ).dimension( dimension ).cardinality( cardinality ).elementsNullable( elementsNullable ).build() );
+        LogicalColumn column = columns.get( columnId );
+        IdentityColumn identity = column.getIdentity();
+        LogicalDefaultValue defaultValue = column.defaultValue;
+        if ( identity != null ) {
+            if ( collectionsType != null ) {
+                throw new GenericRuntimeException( "An identity column requires a scalar integer type." );
+            }
+            identity.validateType( type );
+            defaultValue = LogicalDefaultValue.forIdentity( columnId, type, identity );
+        }
+        columns.put( columnId, column.toBuilder()
+                .type( type ).collectionsType( collectionsType ).length( length ).scale( scale )
+                .dimension( dimension ).cardinality( cardinality ).elementsNullable( elementsNullable )
+                .defaultValue( defaultValue ).build() );
         change( CatalogEvent.LOGICAL_REL_FIELD_TYPE_CHANGED, columnId, type );
     }
 
 
     @Override
     public void setNullable( long columnId, boolean nullable ) {
-        columns.put( columnId, columns.get( columnId ).toBuilder().nullable( nullable ).build() );
+        LogicalColumn column = columns.get( columnId );
+        if ( nullable && column.getIdentity() != null ) {
+            throw new GenericRuntimeException( "An identity column cannot allow NULL." );
+        }
+        columns.put( columnId, column.toBuilder().nullable( nullable ).build() );
         change( CatalogEvent.LOGICAL_REL_FIELD_NULLABILITY_CHANGED, columnId, nullable );
     }
 
@@ -385,7 +403,11 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
     @Override
     public LogicalColumn setDefaultValue( long columnId, PolyType type, PolyValue defaultValue ) {
-        LogicalColumn column = columns.get( columnId ).toBuilder().defaultValue( new LogicalDefaultValue( columnId, type, defaultValue, "defaultValue" ) ).build();
+        LogicalColumn previous = columns.get( columnId );
+        if ( previous.getIdentity() != null ) {
+            throw new GenericRuntimeException( "An identity column cannot have a separate default value." );
+        }
+        LogicalColumn column = previous.toBuilder().defaultValue( new LogicalDefaultValue( columnId, type, defaultValue, "defaultValue" ) ).build();
         columns.put( columnId, column );
         change( CatalogEvent.LOGICAL_REL_FIELD_DEFAULT_VALUE_CHANGED, columnId, defaultValue );
         return column;
@@ -394,8 +416,35 @@ public class RelationalCatalog implements PolySerializable, LogicalRelationalCat
 
     @Override
     public void deleteDefaultValue( long columnId ) {
-        columns.put( columnId, columns.get( columnId ).toBuilder().defaultValue( null ).build() );
+        LogicalColumn column = columns.get( columnId );
+        if ( column.getIdentity() != null ) {
+            throw new GenericRuntimeException( "Use DROP IDENTITY to remove identity generation." );
+        }
+        columns.put( columnId, column.toBuilder().defaultValue( null ).build() );
         change( CatalogEvent.LOGICAL_REL_FIELD_DEFAULT_VALUE_DROPPED, columnId, null );
+    }
+
+
+    @Override
+    public LogicalColumn setIdentity( long columnId, IdentityColumn identity ) {
+        LogicalColumn column = columns.get( columnId );
+        if ( identity == null && column.getIdentity() == null ) {
+            return column;
+        }
+        if ( identity != null ) {
+            identity.validateType( column.type );
+            if ( column.collectionsType != null || column.nullable ) {
+                throw new GenericRuntimeException( "Identity generation requires a non-null scalar integer column." );
+            }
+            if ( column.getLiteralDefaultValue() != null ) {
+                throw new GenericRuntimeException( "An identity column cannot have a separate default value." );
+            }
+        }
+        LogicalDefaultValue generatedDefault = identity == null ? null : LogicalDefaultValue.forIdentity( column.id, column.type, identity );
+        LogicalColumn changedColumn = column.toBuilder().defaultValue( generatedDefault ).build();
+        columns.put( columnId, changedColumn );
+        change( CatalogEvent.LOGICAL_REL_FIELD_IDENTITY_CHANGED, column.getIdentity(), identity );
+        return changedColumn;
     }
 
 

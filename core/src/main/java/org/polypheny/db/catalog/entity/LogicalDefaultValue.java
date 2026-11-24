@@ -21,6 +21,9 @@ import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
 import java.io.Serializable;
+import java.util.UUID;
+import org.polypheny.db.catalog.entity.logical.IdentityColumn;
+import org.polypheny.db.catalog.entity.logical.IdentityColumn.Mode;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import org.polypheny.db.type.PolyType;
@@ -31,6 +34,8 @@ import org.polypheny.db.type.entity.PolyValue;
 public class LogicalDefaultValue implements Serializable {
 
     private static final long serialVersionUID = 6085682952587659184L;
+    // The existing default record format can carry a generated default without changing the catalog binary layout.
+    private static final String IDENTITY = "identity-v1";
 
     @Serialize
     public final long fieldId;
@@ -44,6 +49,7 @@ public class LogicalDefaultValue implements Serializable {
 
     @Serialize
     public final String functionName;
+    public final IdentityColumn identity;
 
 
     public LogicalDefaultValue(
@@ -53,7 +59,8 @@ public class LogicalDefaultValue implements Serializable {
             @Deserialize("functionName") final String functionName ) {
         this.fieldId = fieldId;
         this.type = type;
-        this.value = PolyValue.fromJson( typedJson );
+        this.identity = IDENTITY.equals( functionName ) ? parseIdentity( typedJson ) : null;
+        this.value = identity == null ? PolyValue.fromJson( typedJson ) : null;
         this.typedJson = typedJson;
         this.functionName = functionName;
     }
@@ -68,8 +75,38 @@ public class LogicalDefaultValue implements Serializable {
         this.type = type;
         this.value = value;
         this.typedJson = value.toTypedJson();
+        this.identity = null;
         this.functionName = functionName;
     }
 
+
+    public static LogicalDefaultValue forIdentity( long fieldId, PolyType type, IdentityColumn identity ) {
+        String encoded = String.join( ",",
+                identity.id().toString(),
+                identity.mode().name(),
+                Long.toString( identity.start() ),
+                Long.toString( identity.increment() ),
+                Long.toString( identity.min() ),
+                Long.toString( identity.max() ),
+                Boolean.toString( identity.cycle() ),
+                Long.toString( identity.initialNext() ),
+                Boolean.toString( identity.initiallyExhausted() ) );
+        return new LogicalDefaultValue( fieldId, type, encoded, IDENTITY );
+    }
+
+
+    private static IdentityColumn parseIdentity( String encoded ) {
+        String[] fields = encoded.split( ",", -1 );
+        return new IdentityColumn(
+                UUID.fromString( fields[0] ),
+                Mode.valueOf( fields[1] ),
+                Long.parseLong( fields[2] ),
+                Long.parseLong( fields[3] ),
+                Long.parseLong( fields[4] ),
+                Long.parseLong( fields[5] ),
+                Boolean.parseBoolean( fields[6] ),
+                Long.parseLong( fields[7] ),
+                Boolean.parseBoolean( fields[8] ) );
+    }
 
 }

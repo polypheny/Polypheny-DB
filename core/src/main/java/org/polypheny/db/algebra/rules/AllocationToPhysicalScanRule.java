@@ -34,6 +34,8 @@ import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.tools.AlgBuilder;
+import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.util.Pair;
 
 public class AllocationToPhysicalScanRule extends AlgOptRule {
 
@@ -128,6 +130,15 @@ public class AllocationToPhysicalScanRule extends AlgOptRule {
         builder.push( newAlg );
         AlgDataType originalType = original.getTupleType();
         builder.reorder( originalType );
+        AlgDataType physicalType = builder.peek().getTupleType();
+        if ( physicalType.getFieldCount() == originalType.getFieldCount() ) {
+            var fields = Pair.zip( physicalType.getFields(), originalType.getFields() );
+            if ( fields.stream().anyMatch( pair -> pair.left.getType().isNullable() != pair.right.getType().isNullable() )
+                    && fields.stream().allMatch( pair -> PolyTypeUtil.equalSansNullability( newAlg.getCluster().getTypeFactory(), pair.left.getType(), pair.right.getType() ) ) ) {
+                // A logical nullability change need not rewrite the physical table.
+                builder.convert( originalType, true );
+            }
+        }
         return builder.build();
     }
 

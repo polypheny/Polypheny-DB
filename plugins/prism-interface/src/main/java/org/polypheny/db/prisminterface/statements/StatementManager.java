@@ -34,7 +34,9 @@ import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.PIServiceException;
 import org.polypheny.db.prisminterface.statements.PIStatement.ResultCursor;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.Statement.GeneratedKeySelection;
 import org.polypheny.prism.ExecuteUnparameterizedStatementRequest;
+import org.polypheny.prism.GeneratedKeysRequest;
 import org.polypheny.prism.PrepareStatementRequest;
 
 @Slf4j
@@ -82,6 +84,9 @@ public class StatementManager {
                 namespace,
                 request.getStatement()
         );
+        if ( request.hasGeneratedKeys() ) {
+            statement.setGeneratedKeySelection( generatedKeySelection( request.getGeneratedKeys() ) );
+        }
         openStatements.put( statementId, statement );
         if ( log.isTraceEnabled() ) {
             log.trace( "created request {}", statement );
@@ -126,6 +131,9 @@ public class StatementManager {
                 namespace,
                 request.getStatement()
         );
+        if ( request.hasGeneratedKeys() ) {
+            statement.setGeneratedKeySelection( generatedKeySelection( request.getGeneratedKeys() ) );
+        }
         openStatements.put( statementId, statement );
         if ( log.isTraceEnabled() ) {
             log.trace( "created named prepared statement {}", statement );
@@ -152,11 +160,26 @@ public class StatementManager {
                 namespace,
                 request.getStatement()
         );
+        if ( request.hasGeneratedKeys() ) {
+            statement.setGeneratedKeySelection( generatedKeySelection( request.getGeneratedKeys() ) );
+        }
         openStatements.put( statementId, statement );
         if ( log.isTraceEnabled() ) {
             log.trace( "created named prepared statement {}", statement );
         }
         return statement;
+    }
+
+
+    private static GeneratedKeySelection generatedKeySelection( GeneratedKeysRequest request ) {
+        return switch ( request.getSelectionCase() ) {
+            case ALL -> request.getAll() ? new GeneratedKeySelection( List.of(), List.of() ) : null;
+            case COLUMN_NAMES -> request.getColumnNames().getNamesCount() == 0
+                    ? null : new GeneratedKeySelection( request.getColumnNames().getNamesList(), List.of() );
+            case COLUMN_INDEXES -> request.getColumnIndexes().getIndexesCount() == 0
+                    ? null : new GeneratedKeySelection( List.of(), request.getColumnIndexes().getIndexesList() );
+            case SELECTION_NOT_SET -> null;
+        };
     }
 
 

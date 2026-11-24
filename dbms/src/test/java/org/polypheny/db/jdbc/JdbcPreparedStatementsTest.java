@@ -147,7 +147,7 @@ public class JdbcPreparedStatementsTest {
 
     @Test
     public void illegalExecuteLargeUpdateTest() {
-        assertThrows( UnsupportedOperationException.class, () -> {
+        assertThrows( SQLException.class, () -> {
             try ( JdbcConnection jdbcConnection = new JdbcConnection( false );
                     Connection connection = jdbcConnection.getConnection() ) {
                 try ( Statement statement = connection.createStatement() ) {

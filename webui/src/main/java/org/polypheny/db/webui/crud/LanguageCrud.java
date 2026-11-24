@@ -86,6 +86,7 @@ import org.polypheny.db.webui.models.PlacementModel;
 import org.polypheny.db.webui.models.PlacementModel.DocumentStore;
 import org.polypheny.db.webui.models.SortState;
 import org.polypheny.db.webui.models.catalog.FieldDefinition;
+import org.polypheny.db.webui.models.catalog.IdentityColumnModel;
 import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
 import org.polypheny.db.webui.models.catalog.UiColumnDefinition.UiColumnDefinitionBuilder;
 import org.polypheny.db.webui.models.requests.QueryRequest;
@@ -469,9 +470,9 @@ public class LanguageCrud {
             if ( table != null ) {
                 Optional<LogicalColumn> optional = catalog.getSnapshot().rel().getColumn( table.id, columnName );
                 if ( optional.isPresent() ) {
-                    if ( optional.get().defaultValue != null ) {
-                        dbCol.defaultValue( optional.get().defaultValue.value.toJson() );
-                    }
+                    LogicalColumn column = optional.get();
+                    dbCol.identity( IdentityColumnModel.from( column.getIdentity() ) );
+                    dbCol.defaultValue( IdentityColumnModel.dataHeaderDefault( column ) );
                 }
             }
             header.add( dbCol.build() );

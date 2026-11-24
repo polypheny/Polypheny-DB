@@ -141,6 +141,16 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
     }
 
 
+    public IdentityColumn getIdentity() {
+        return defaultValue == null ? null : defaultValue.identity;
+    }
+
+
+    public LogicalDefaultValue getLiteralDefaultValue() {
+        return getIdentity() == null ? defaultValue : null;
+    }
+
+
     public static AlgDataType getAlgDataType( AlgDataTypeFactory typeFactory, Integer length, Integer scale, PolyType type, PolyType collectionsType, Integer cardinality, Integer dimension, boolean nullable, boolean elementsNullable ) {
         AlgDataType elementType;
         if ( length != null && scale != null && type.allowsPrecScale( true, true ) ) {

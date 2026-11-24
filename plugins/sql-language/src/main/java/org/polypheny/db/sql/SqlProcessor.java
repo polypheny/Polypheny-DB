@@ -30,6 +30,7 @@ import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalDefaultValue;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
@@ -60,6 +61,7 @@ import org.polypheny.db.sql.language.SqlInsert;
 import org.polypheny.db.sql.language.SqlLiteral;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlNodeList;
+import org.polypheny.db.sql.language.SqlUpdate;
 import org.polypheny.db.sql.language.SqlUtil;
 import org.polypheny.db.sql.language.dialect.PolyphenyDbSqlDialect;
 import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
@@ -70,6 +72,8 @@ import org.polypheny.db.sql.sql2alg.SqlToAlgConverter;
 import org.polypheny.db.sql.sql2alg.StandardConvertletTable;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Statement.GeneratedKeySelection;
+import org.polypheny.db.transaction.Statement.InsertReturning;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
 import org.polypheny.db.transaction.locking.LockablesRegistry;
@@ -148,15 +152,15 @@ public class SqlProcessor extends Processor {
         }
         stopWatch.start();
 
+        final Snapshot snapshot = transaction.getSnapshot();
         // Add default values for unset fields
         if ( addDefaultValues ) {
             if ( parsed.getKind() == Kind.INSERT ) {
-                addDefaultValues( transaction, (SqlInsert) parsed );
+                addDefaultValues( transaction, snapshot, (SqlInsert) parsed );
             }
         }
 
         final Conformance conformance = parserConfig.conformance();
-        final Snapshot snapshot = transaction.getSnapshot();
         validator = new PolyphenyDbSqlValidator( SqlStdOperatorTable.instance(), snapshot, transaction.getTypeFactory(), conformance );
         validator.setIdentifierExpansion( true );
 
@@ -165,6 +169,9 @@ public class SqlProcessor extends Processor {
         try {
             validated = validator.validate( parsed );
             type = validator.getValidatedNodeType( validated );
+            if ( validated instanceof SqlInsert insert && insert.getReturningColumns() != null ) {
+                type = insertReturning( transaction, snapshot, insert ).rowType();
+            }
         } catch ( Exception e ) {
             log.error( "Exception while validating query", e );
             String message = e.getLocalizedMessage();
@@ -193,15 +200,28 @@ public class SqlProcessor extends Processor {
         Config sqlToAlgConfig = NodeToAlgConverter.configBuilder().build();
         final RexBuilder rexBuilder = new RexBuilder( statement.getTransaction().getTypeFactory() );
 
-        final AlgCluster cluster = AlgCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder, null, statement.getDataContext().getSnapshot() );
+        final Snapshot snapshot = validator.getSnapshot();
+        final AlgCluster cluster = AlgCluster.create( statement.getQueryProcessor().getPlanner(), rexBuilder, null, snapshot );
         final Config config =
                 NodeToAlgConverter.configBuilder()
                         .config( sqlToAlgConfig )
                         .trimUnusedFields( false )
                         .convertTableAccess( false )
                         .build();
-        final SqlToAlgConverter sqlToAlgConverter = new SqlToAlgConverter( validator, statement.getTransaction().getSnapshot(), cluster, StandardConvertletTable.INSTANCE, config );
-        AlgRoot logicalRoot = sqlToAlgConverter.convertQuery( context.getQueryNode().orElseThrow(), false, true );
+        final SqlToAlgConverter sqlToAlgConverter = new SqlToAlgConverter( validator, snapshot, cluster, StandardConvertletTable.INSTANCE, config );
+        Node query = context.getQueryNode().orElseThrow();
+        if ( query instanceof SqlInsert insert ) {
+            GeneratedKeySelection keySelection = statement.getGeneratedKeySelection();
+            if ( insert.getReturningColumns() != null ) {
+                if ( keySelection != null ) {
+                    throw new GenericRuntimeException( "Use either SQL RETURNING or the generated keys request for this INSERT." );
+                }
+                statement.setInsertReturning( insertReturning( statement.getTransaction(), snapshot, insert ) );
+            } else if ( keySelection != null ) {
+                statement.setGeneratedKeysProjection( generatedKeys( statement.getTransaction(), snapshot, insert, keySelection ) );
+            }
+        }
+        AlgRoot logicalRoot = sqlToAlgConverter.convertQuery( query, false, true );
 
         // Decorrelate
         final AlgBuilder algBuilder = config.algBuilderFactory().create( cluster, null );
@@ -221,6 +241,89 @@ public class SqlProcessor extends Processor {
         }
 
         return logicalRoot;
+    }
+
+
+    @Override
+    public boolean isUpdateOnly( Node node ) {
+        return !(node instanceof SqlInsert insert && insert.getReturningColumns() != null) && super.isUpdateOnly( node );
+    }
+
+
+    @Override
+    public boolean requiresSequentialBatchExecution( Node statement, AlgDataType parameterRowType ) {
+        if ( statement instanceof SqlInsert insert && insert.getSchemaType() == DataModel.RELATIONAL ) {
+            // A zero-width parameter matrix loses its number of bindings. SELECT sources
+            // must also observe preceding writes, including when reading the target table.
+            return parameterRowType.getFieldCount() == 0 || insert.getSource().getKind() != Kind.VALUES;
+        }
+        // Identity defaults resolve the row and its other assignments before write routing.
+        return statement instanceof SqlUpdate update
+                && update.getSourceExpressionList().getSqlList().stream().anyMatch( expression -> expression.getKind() == Kind.DEFAULT );
+    }
+
+
+    private InsertReturning insertReturning( Transaction transaction, Snapshot snapshot, SqlInsert insert ) {
+        LogicalTable table = getTable( transaction, snapshot, (SqlIdentifier) insert.getTargetTable() );
+        List<LogicalColumn> columns = snapshot.rel().getColumns( table.id );
+        LogicalNamespace namespace = snapshot.getNamespace( table.namespaceId ).orElseThrow();
+        List<LogicalColumn> selected = new ArrayList<>();
+        for ( SqlNode node : insert.getReturningColumns().getSqlList() ) {
+            if ( !(node instanceof SqlIdentifier identifier) ) {
+                throw new GenericRuntimeException( "INSERT RETURNING expects target column names or *." );
+            }
+            if ( identifier.isStar() && identifier.names.size() == 1 ) {
+                selected.addAll( columns );
+            } else if ( identifier.isSimple() ) {
+                selected.add( findReturningColumn( columns, namespace, identifier.getSimple() ) );
+            } else {
+                throw new GenericRuntimeException( "INSERT RETURNING expects unqualified target column names." );
+            }
+        }
+        return returningProjection( transaction, snapshot, table, columns, selected );
+    }
+
+
+    private InsertReturning generatedKeys( Transaction transaction, Snapshot snapshot, SqlInsert insert, GeneratedKeySelection selection ) {
+        LogicalTable table = getTable( transaction, snapshot, (SqlIdentifier) insert.getTargetTable() );
+        List<LogicalColumn> columns = snapshot.rel().getColumns( table.id );
+        LogicalNamespace namespace = snapshot.getNamespace( table.namespaceId ).orElseThrow();
+        List<LogicalColumn> selected;
+        if ( !selection.names().isEmpty() ) {
+            selected = selection.names().stream().map( name -> findReturningColumn( columns, namespace, name ) ).toList();
+        } else if ( !selection.indexes().isEmpty() ) {
+            selected = selection.indexes().stream().map( index -> {
+                if ( index < 1 || index > columns.size() ) {
+                    throw new GenericRuntimeException( "Generated key column index is out of range: " + index );
+                }
+                return columns.get( index - 1 );
+            } ).toList();
+        } else {
+            selected = columns.stream().filter( column -> column.getIdentity() != null ).toList();
+        }
+        return returningProjection( transaction, snapshot, table, columns, selected );
+    }
+
+
+    private LogicalColumn findReturningColumn( List<LogicalColumn> columns, LogicalNamespace namespace, String name ) {
+        return columns.stream()
+                .filter( field -> namespace.caseSensitive ? field.name.equals( name ) : field.name.equalsIgnoreCase( name ) )
+                .findFirst().orElseThrow( () -> new GenericRuntimeException( "Unknown result column: " + name ) );
+    }
+
+
+    private InsertReturning returningProjection( Transaction transaction, Snapshot snapshot, LogicalTable table, List<LogicalColumn> columns, List<LogicalColumn> selected ) {
+        AlgDataTypeFactory factory = transaction.getTypeFactory();
+        AlgDataTypeFactory.Builder type = factory.builder();
+        List<Integer> ordinals = new ArrayList<>();
+        List<List<String>> origins = new ArrayList<>();
+        String namespace = snapshot.getNamespace( table.namespaceId ).orElseThrow().name;
+        for ( LogicalColumn column : selected ) {
+            ordinals.add( columns.indexOf( column ) );
+            type.add( column.id, column.name, null, column.getAlgDataType( factory ) );
+            origins.add( List.of( "", namespace, table.name, column.name ) );
+        }
+        return new InsertReturning( type.build(), List.copyOf( ordinals ), List.copyOf( origins ) );
     }
 
 
@@ -251,29 +354,31 @@ public class SqlProcessor extends Processor {
 
 
     // Add default values for unset fields
-    private void addDefaultValues( Transaction transaction, SqlInsert insert ) {
+    private void addDefaultValues( Transaction transaction, Snapshot snapshot, SqlInsert insert ) {
         SqlNodeList oldColumnList = insert.getTargetColumnList();
 
         if ( oldColumnList != null ) {
-            LogicalTable catalogTable = getTable( transaction, (SqlIdentifier) insert.getTargetTable() );
-            DataModel dataModel = Catalog.snapshot().getNamespace( catalogTable.namespaceId ).orElseThrow().dataModel;
+            LogicalTable catalogTable = getTable( transaction, snapshot, (SqlIdentifier) insert.getTargetTable() );
+            List<LogicalColumn> catalogColumns = snapshot.rel().getColumns( catalogTable.id );
+            DataModel dataModel = snapshot.getNamespace( catalogTable.namespaceId ).orElseThrow().dataModel;
 
-            catalogTable = getTable( transaction, (SqlIdentifier) insert.getTargetTable() );
-
-            if ( !(insert.getSource() instanceof SqlBasicCall) ) {
+            if ( insert.isDefaultValues()
+                    || catalogColumns.stream().anyMatch( column -> column.getIdentity() != null )
+                    || !(insert.getSource() instanceof SqlBasicCall values)
+                    || values.getKind() != Kind.VALUES ) {
                 return;
             }
 
             SqlNodeList newColumnList = new SqlNodeList( ParserPos.ZERO );
-            int size = catalogTable.getColumns().size();
+            int size = catalogColumns.size();
             if ( dataModel == DataModel.DOCUMENT ) {
-                List<String> columnNames = catalogTable.getColumnNames();
+                List<String> columnNames = catalogColumns.stream().map( column -> column.name ).toList();
                 size += (int) oldColumnList.getSqlList().stream().filter( column -> !columnNames.contains( ((SqlIdentifier) column).names.get( 0 ) ) ).count();
             }
 
             SqlNode[][] newValues = new SqlNode[((SqlBasicCall) insert.getSource()).getOperands().length][size];
             int pos = 0;
-            for ( LogicalColumn column : catalogTable.getColumns() ) {
+            for ( LogicalColumn column : catalogColumns ) {
 
                 // Add column
                 newColumnList.add( new SqlIdentifier( column.name, ParserPos.ZERO ) );
@@ -368,9 +473,7 @@ public class SqlProcessor extends Processor {
     }
 
 
-    private LogicalTable getTable( Transaction transaction, SqlIdentifier tableName ) {
-        LogicalTable table;
-        Snapshot snapshot = transaction.getSnapshot();
+    private LogicalTable getTable( Transaction transaction, Snapshot snapshot, SqlIdentifier tableName ) {
         long namespaceId;
         String tableOldName;
         if ( tableName.names.size() == 3 ) { // DatabaseName.SchemaName.TableName

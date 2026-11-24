@@ -391,12 +391,13 @@ public class Neo4jPlugin extends PolyPlugin {
             String physicalName = getPhysicalFieldName( logicalColumn.id );
             PhysicalColumn column = adapterCatalog.createColumn( physicalName, allocId, physical.getFields().size() - 1, logicalColumn );
 
-            if ( logicalColumn.defaultValue != null ) {
+            LogicalDefaultValue defaultValue = logicalColumn.getLiteralDefaultValue();
+            if ( defaultValue != null ) {
                 executeDdlTrx( context.getStatement().getTransaction().getXid(), String.format(
                         "MATCH (n:%s) SET n += {%s:%s}",
                         getPhysicalEntityName( logicalColumn.namespaceId, allocId ),
                         getPhysicalFieldName( logicalColumn.id ),
-                        getDefaultAsNeo( logicalColumn.defaultValue, logicalColumn.type ) ) );
+                        getDefaultAsNeo( defaultValue, logicalColumn.type ) ) );
             }
 
             List<PhysicalField> fields = new ArrayList<>( physical.getFields() );

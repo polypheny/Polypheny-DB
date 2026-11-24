@@ -1,0 +1,97 @@
+name: Identity integration
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      prism_ref:
+        description: Prism API ref with the 2.5 protocol
+        required: true
+      jdbc_ref:
+        description: JDBC Driver ref for version 3.3
+        required: true
+      ui_ref:
+        description: Polypheny UI ref to bundle and test
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  identity:
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: db
+      - uses: actions/checkout@v4
+        with:
+          repository: polypheny/Polypheny-Prism-API
+          ref: ${{ inputs.prism_ref || vars.IDENTITY_PRISM_REF || 'refs/tags/2.5' }}
+          path: prism
+      - uses: actions/checkout@v4
+        with:
+          repository: polypheny/Polypheny-JDBC-Driver
+          ref: ${{ inputs.jdbc_ref || vars.IDENTITY_JDBC_REF || 'refs/tags/v3.3' }}
+          path: jdbc
+      - uses: actions/checkout@v4
+        with:
+          repository: polypheny/Polypheny-UI
+          ref: ${{ inputs.ui_ref || vars.IDENTITY_UI_REF || 'master' }}
+          path: ui
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.11.0'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Prepare isolated repositories
+        run: |
+          maven_dir="$(mktemp -d "$RUNNER_TEMP/identity-maven.XXXXXX")"
+          mkdir -p "$RUNNER_TEMP/identity-db-home" "$RUNNER_TEMP/identity-prism-home"
+          echo "MAVEN_DIR=$maven_dir" >> "$GITHUB_ENV"
+          echo "UI_ARCHIVE=$RUNNER_TEMP/polypheny-ui.zip" >> "$GITHUB_ENV"
+
+      - name: Test and package Prism from source
+        working-directory: prism
+        run: |
+          python -m pip install -r requirements.txt
+          python -m unittest discover -s tests -v
+          ./gradlew "-Dmaven.repo.local=$MAVEN_DIR" -Pversion=2.5 publishToMavenLocal
+
+      - name: Test and package JDBC from source
+        working-directory: jdbc
+        run: |
+          ./gradlew "-Dmaven.repo.local=$MAVEN_DIR" -PdisableToolchain -PskipGraphIntegration \
+            test --tests '*GeneratedKeysTest' --tests '*DocumentMetadataTest' publishToMavenLocal
+
+      - name: Build and test the UI
+        working-directory: ui
+        run: |
+          npm ci --legacy-peer-deps
+          npm run test -- --watch=false --browsers=ChromeHeadless \
+            --include='**/identity-options/*.spec.ts' --include='**/data-view.model.spec.ts'
+          npm run build
+          (cd dist && zip -qr "$UI_ARCHIVE" .)
+
+      - name: Build DB and run identity integration tests
+        working-directory: db
+        run: |
+          POLYPHENY_HOME="$RUNNER_TEMP/identity-db-home" \
+            ./gradlew "-Dmaven.repo.local=$MAVEN_DIR" "-PpolyphenyUiZip=$UI_ARCHIVE" \
+              :dbms:assemble :core:test --tests '*Identity*' --tests '*DurableFile*' \
+              :dbms:test --tests '*Identity*' --tests '*JdbcStatementTest' \
+              --tests '*JdbcPreparedStatementsTest' --tests '*CatalogTransactionTest'
+
+          POLYPHENY_HOME="$RUNNER_TEMP/identity-prism-home" \
+            ./gradlew "-Dmaven.repo.local=$MAVEN_DIR" "-PpolyphenyUiZip=$UI_ARCHIVE" \
+              :plugins:prism-interface:test --tests '*PrismIdentityKeysTest' --tests '*PreparedIndexedStatementTest'
