@@ -35,7 +35,7 @@ jobs:
         with:
           repository: polypheny/Polypheny-JDBC-Driver
           # Polypheny-JDBC-Driver #24, including the generated-key client.
-          ref: ${{ inputs.jdbc_ref || vars.IDENTITY_JDBC_REF || 'a21231cb807972ee3b01749b94b18adb61dbe3b5' }}
+          ref: ${{ inputs.jdbc_ref || vars.IDENTITY_JDBC_REF || 'df81fda945391513d7530004e9309a4ccf383a2a' }}
           path: jdbc
       - uses: actions/checkout@v4
         with:
@@ -74,7 +74,7 @@ jobs:
           ./gradlew "-Dmaven.repo.local=$MAVEN_DIR" -PdisableToolchain -PskipGraphIntegration \
             test --tests '*GeneratedKeys*' --tests '*DocumentMetadataTest' --tests '*MetaScrollerTest' \
             --tests '*RpcServiceErrorTest' --tests '*Batch*Test' --tests '*StatementDeadlineTest' \
-            --tests '*CallbackQueueTest' publishToMavenLocal
+            --tests '*CallbackQueueTest' --tests '*PolyConnectionTest' publishToMavenLocal
 
       - name: Build and test the UI
         working-directory: ui
