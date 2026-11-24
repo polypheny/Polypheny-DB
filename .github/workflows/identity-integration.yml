@@ -35,7 +35,7 @@ jobs:
         with:
           repository: polypheny/Polypheny-JDBC-Driver
           # Polypheny-JDBC-Driver #24, including the generated-key client.
-          ref: ${{ inputs.jdbc_ref || vars.IDENTITY_JDBC_REF || '27a13d2daa5eea7ad489d5883b207cc623728887' }}
+          ref: ${{ inputs.jdbc_ref || vars.IDENTITY_JDBC_REF || '57d6d3caa3e71efd9634973d5763b1b69ee15019' }}
           path: jdbc
       - uses: actions/checkout@v4
         with:
