@@ -1724,11 +1724,15 @@ public enum OperatorName {
 
     CYPHER_SINGLE_MATCH( LangFunctionOperator.class ),
 
+    CYPHER_LIST_COMPREHENSION( LangFunctionOperator.class ),
+    CYPHER_COALESCE( LangFunctionOperator.class ),
+
     DESERIALIZE_DIRECTORY( LangFunctionOperator.class ),
 
     CYPHER_HAS_PROPERTY( LangFunctionOperator.class ),
     CYPHER_PROPERTY_EXISTS( LangFunctionOperator.class ),
     CYPHER_PATTERN_EXISTS( LangFunctionOperator.class ),
+    CYPHER_PATTERN_PATHS( LangFunctionOperator.class ),
     CYPHER_GRAPH_VALUE( LangFunctionOperator.class ),
 
     DESERIALIZE_LIST( LangFunctionOperator.class ),
@@ -1785,6 +1789,12 @@ public enum OperatorName {
     CYPHER_TYPE( LangFunctionOperator.class ),
     CYPHER_ID( LangFunctionOperator.class ),
     CYPHER_LABELS( LangFunctionOperator.class ),
+
+    CYPHER_KEYS( LangFunctionOperator.class ),
+
+    CYPHER_PROPERTIES( LangFunctionOperator.class ),
+    CYPHER_START_NODE( LangFunctionOperator.class ),
+    CYPHER_END_NODE( LangFunctionOperator.class ),
     CYPHER_ARITHMETIC( LangFunctionOperator.class ),
 
     CYPHER_ADJUST_EDGE( LangFunctionOperator.class ),

@@ -841,6 +841,8 @@ public class RexImpTable {
     private void defineCypherMethods() {
         QueryLanguage cypher = QueryLanguage.from( "cypher" );
         map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_CASE ), RexImpTable::implementCypherCase );
+        map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_COALESCE ), RexImpTable::implementCypherCoalesce );
+        map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_LIST_COMPREHENSION ), RexImpTable::implementCypherListComprehension );
         for ( OperatorName quantifier : List.of( OperatorName.CYPHER_ALL_MATCH, OperatorName.CYPHER_ANY_MATCH, OperatorName.CYPHER_NONE_MATCH, OperatorName.CYPHER_SINGLE_MATCH ) ) {
             map.put( OperatorRegistry.get( cypher, quantifier ), RexImpTable::implementCypherQuantifier );
         }
@@ -870,6 +872,10 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_TYPE ), BuiltInMethod.CYPHER_TYPE.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_ID ), BuiltInMethod.CYPHER_ID.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_LABELS ), BuiltInMethod.CYPHER_LABELS.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_KEYS ), BuiltInMethod.CYPHER_KEYS.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_PROPERTIES ), BuiltInMethod.CYPHER_PROPERTIES.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_START_NODE ), BuiltInMethod.CYPHER_START_NODE.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_END_NODE ), BuiltInMethod.CYPHER_END_NODE.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_ARITHMETIC ), BuiltInMethod.CYPHER_ARITHMETIC.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_LESS_THAN ), BuiltInMethod.CYPHER_LESS_THAN.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_LESS_THAN_OR_EQUAL ), BuiltInMethod.CYPHER_LESS_THAN_OR_EQUAL.method, NullPolicy.NONE );
@@ -886,7 +892,8 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_HAS_LABEL ), BuiltInMethod.CYPHER_HAS_LABEL.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_HAS_PROPERTY ), BuiltInMethod.CYPHER_HAS_PROPERTY.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_PROPERTY_EXISTS ), BuiltInMethod.CYPHER_PROPERTY_EXISTS.method, NullPolicy.NONE );
-        map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_PATTERN_EXISTS ), RexImpTable::implementCypherPatternExists );
+        map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_PATTERN_EXISTS ), RexImpTable::implementCypherPatternExpression );
+        map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_PATTERN_PATHS ), RexImpTable::implementCypherPatternExpression );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_PROPERTY ), BuiltInMethod.CYPHER_EXTRACT_PROPERTY.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_PROPERTIES ), BuiltInMethod.CYPHER_EXTRACT_PROPERTIES.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_ID ), BuiltInMethod.CYPHER_EXTRACT_ID.method, NullPolicy.NONE );
@@ -981,7 +988,7 @@ public class RexImpTable {
     }
 
 
-    private static Expression implementCypherPatternExists( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
+    private static Expression implementCypherPatternExpression( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
         List<RexNode> operands = call.getOperands();
         Expression graph = translator.translate( operands.get( 0 ), NullAs.NULL );
         Expression template = translator.translate( operands.get( 1 ), NullAs.NULL );
@@ -992,7 +999,9 @@ public class RexImpTable {
             propertyBindings.add( translator.translate( operands.get( i ), NullAs.NULL, PolyString.class ) );
             properties.add( deferredCypherValue( translator, operands.get( i + 1 ) ) );
         }
-        return nullAs.handle( Expressions.call( BuiltInMethod.CYPHER_PATTERN_EXISTS.method, graph, template, bindings,
+        BuiltInMethod method = call.op.getOperatorName() == OperatorName.CYPHER_PATTERN_EXISTS
+                ? BuiltInMethod.CYPHER_PATTERN_EXISTS : BuiltInMethod.CYPHER_PATTERN_PATHS;
+        return nullAs.handle( Expressions.call( method.method, graph, template, bindings,
                 Expressions.newArrayInit( PolyString.class, propertyBindings ), Expressions.newArrayInit( Function0.class, properties ) ) );
     }
 
@@ -1033,12 +1042,42 @@ public class RexImpTable {
         List<RexNode> operands = call.getOperands();
         Expression list = translator.translate( operands.get( 0 ), NullAs.NULL, PolyValue.class );
         RexNameRef variable = (RexNameRef) translator.deref( operands.get( 1 ) );
+        Expression predicate = cypherListLambda( translator, variable, operands.get( 2 ), PolyBoolean.class );
+        return nullAs.handle( Expressions.call( BuiltInMethod.CYPHER_QUANTIFY.method, Expressions.constant( call.op.getOperatorName() ), list, predicate ) );
+    }
+
+
+    private static Expression implementCypherListComprehension( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
+        List<RexNode> operands = call.getOperands();
+        Expression list = translator.translate( operands.get( 0 ), NullAs.NULL, PolyValue.class );
+        RexNameRef variable = (RexNameRef) translator.deref( operands.get( 1 ) );
+        Expression predicate = cypherListLambda( translator, variable, operands.get( 2 ), PolyBoolean.class );
+        Expression projection = cypherListLambda( translator, variable, operands.get( 3 ), PolyValue.class );
+        return nullAs.handle( Expressions.call( BuiltInMethod.CYPHER_LIST_COMPREHENSION.method, list, predicate, projection ) );
+    }
+
+
+    private static Expression cypherListLambda( RexToLixTranslator translator, RexNameRef variable, RexNode expression, Class<? extends PolyValue> resultType ) {
         ParameterExpression item = Expressions.parameter( Modifier.FINAL, PolyValue.class, variable.getName() );
         BlockBuilder body = new BlockBuilder( false, translator.getList() );
-        Expression predicate = translator.setBlock( body ).withReplacement( variable, item ).translate( operands.get( 2 ), NullAs.NULL, PolyBoolean.class );
-        body.add( Expressions.return_( null, predicate ) );
-        return nullAs.handle( Expressions.call( BuiltInMethod.CYPHER_QUANTIFY.method,
-                Expressions.constant( call.op.getOperatorName() ), list, Expressions.lambda( Function1.class, body.toBlock(), item ) ) );
+        Expression value = translator.setBlock( body ).withReplacement( variable, item ).translate( expression, NullAs.NULL, resultType );
+        body.add( Expressions.return_( null, value ) );
+        return Expressions.lambda( Function1.class, body.toBlock(), item );
+    }
+
+
+    private static Expression implementCypherCoalesce( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
+        List<RexNode> operands = call.getOperands();
+        BlockBuilder block = translator.getList();
+        ParameterExpression result = Expressions.parameter( PolyValue.class, block.newName( "coalesceResult" ) );
+        block.add( Expressions.declare( 0, result, translator.translate( operands.get( 0 ), NullAs.NULL, PolyValue.class ) ) );
+        for ( RexNode operand : operands.subList( 1, operands.size() ) ) {
+            BlockBuilder fallback = new BlockBuilder( true, block );
+            Expression value = translator.setBlock( fallback ).translate( operand, NullAs.NULL, PolyValue.class );
+            fallback.add( Expressions.statement( Expressions.assign( result, value ) ) );
+            block.add( EnumUtils.ifThen( PolyValue.isNullExpression( result ), fallback.toBlock() ) );
+        }
+        return nullAs.handle( Expressions.convert_( result, EnumUtils.javaRowClass( translator.typeFactory, call.getType() ) ) );
     }
 
 

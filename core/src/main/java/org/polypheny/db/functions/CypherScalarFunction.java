@@ -50,6 +50,8 @@ public enum CypherScalarFunction {
     TRIM( "trim", 1, PolyType.VARCHAR ),
     REPLACE( "replace", 3, PolyType.VARCHAR ),
     REVERSE( "reverse", 1, PolyType.ANY ),
+    HEAD( "head", 1, PolyType.ANY ),
+    TAIL( "tail", 1, PolyType.ARRAY ),
     SPLIT( "split", 2, PolyType.ARRAY ),
     SUBSTRING( "substring", 2, 3, PolyType.VARCHAR ),
     TO_LOWER( "toLower", 1, PolyType.VARCHAR ),
@@ -129,6 +131,11 @@ public enum CypherScalarFunction {
 
 
     public AlgDataType resultType( AlgDataTypeFactory factory, List<AlgDataType> operands ) {
+        if ( this == HEAD || this == TAIL ) {
+            AlgDataType component = operands.get( 0 ).getComponentType();
+            AlgDataType element = component == null ? factory.createPolyType( PolyType.ANY ) : component;
+            return this == HEAD ? element : factory.createArrayType( element, -1, 1 );
+        }
         if ( this == REVERSE ) {
             AlgDataType operandType = operands.get( 0 );
             if ( operandType.getPolyType() == PolyType.ARRAY ) {
@@ -184,6 +191,8 @@ public enum CypherScalarFunction {
             case TRIM -> PolyString.of( requireString( arguments[0], 1 ).value.strip() );
             case REPLACE -> isNull( arguments[1] ) || isNull( arguments[2] ) ? null : replace( arguments );
             case REVERSE -> reverse( arguments[0] );
+            case HEAD -> head( arguments[0] );
+            case TAIL -> tail( arguments[0] );
             case SPLIT -> isNull( arguments[1] ) ? null : split( arguments );
             case TO_LOWER -> Functions.lower( requireString( arguments[0], 1 ) );
             case TO_UPPER -> Functions.upper( requireString( arguments[0], 1 ) );
@@ -264,6 +273,27 @@ public enum CypherScalarFunction {
             return PolyString.of( new StringBuilder( value.asString().value ).reverse().toString() );
         }
         throw new GenericRuntimeException( "reverse() requires a string or list." );
+    }
+
+
+    private PolyValue head( PolyValue value ) {
+        PolyList<?> list = requireList( value );
+        PolyValue first = list.isEmpty() ? null : list.get( 0 );
+        return isNull( first ) ? null : first;
+    }
+
+
+    private PolyList<?> tail( PolyValue value ) {
+        PolyList<?> list = requireList( value );
+        return list.isEmpty() ? PolyList.EMPTY_LIST : PolyList.copyOf( list.subList( 1, list.size() ) );
+    }
+
+
+    private PolyList<?> requireList( PolyValue value ) {
+        if ( value instanceof PolyList<?> list ) {
+            return list;
+        }
+        throw new GenericRuntimeException( name + "() requires a list." );
     }
 
 

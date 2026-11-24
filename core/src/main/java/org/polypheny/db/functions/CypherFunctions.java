@@ -40,6 +40,7 @@ import java.util.function.Function;
 import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
@@ -94,6 +95,18 @@ public class CypherFunctions {
 
     public static PolyBoolean patternExists( PolyGraph graph, PolyPath template, PolyValue bindings,
             PolyString[] propertyBindings, Function0<PolyValue>[] properties ) {
+        return PolyBoolean.of( matchingPaths( graph, template, bindings, propertyBindings, properties ).findAny().isPresent() );
+    }
+
+
+    public static PolyList<PolyPath> patternPaths( PolyGraph graph, PolyPath template, PolyValue bindings,
+            PolyString[] propertyBindings, Function0<PolyValue>[] properties ) {
+        return PolyList.copyOf( matchingPaths( graph, template, bindings, propertyBindings, properties ).toList() );
+    }
+
+
+    private static Stream<PolyPath> matchingPaths( PolyGraph graph, PolyPath template, PolyValue bindings,
+            PolyString[] propertyBindings, Function0<PolyValue>[] properties ) {
         Map<PolyValue, PolyValue> known = bindings.asMap();
         List<PolyNode> nodes = template.getNodes();
         for ( PolyNode node : nodes ) {
@@ -105,24 +118,20 @@ public class CypherFunctions {
             }
         }
         if ( known.values().stream().anyMatch( CypherFunctions::isNull ) ) {
-            return PolyBoolean.FALSE;
+            return Stream.empty();
         }
         PolyValue first = known.get( nodes.get( 0 ).getVariableName() );
         PolyValue last = known.get( nodes.get( nodes.size() - 1 ).getVariableName() );
         PolyString start = first instanceof PolyNode source ? source.id : null;
         PolyString end = last instanceof PolyNode target ? target.id : null;
-        for ( PolyPath match : graph.matchPaths( template, start, end ) ) {
-            boolean sameBindings = known.entrySet().stream().allMatch(
-                    binding -> PolyBoolean.TRUE.equals( equal( match.getBinding( binding.getKey().asString() ), binding.getValue() ) ) );
-            if ( sameBindings && matchesExistenceProperties( match, propertyBindings, properties ) ) {
-                return PolyBoolean.TRUE;
-            }
-        }
-        return PolyBoolean.FALSE;
+        return StreamSupport.stream( graph.matchPaths( template, start, end ).spliterator(), false )
+                .filter( match -> known.entrySet().stream().allMatch(
+                        binding -> PolyBoolean.TRUE.equals( equal( match.getBinding( binding.getKey().asString() ), binding.getValue() ) ) ) )
+                .filter( match -> matchesPatternProperties( match, propertyBindings, properties ) );
     }
 
 
-    private static boolean matchesExistenceProperties( PolyPath match, PolyString[] propertyBindings, Function0<PolyValue>[] properties ) {
+    private static boolean matchesPatternProperties( PolyPath match, PolyString[] propertyBindings, Function0<PolyValue>[] properties ) {
         for ( int i = 0; i < properties.length; i++ ) {
             // Preserve the property checks for each occurrence of a repeated node variable.
             PolyValue candidate = match.getBinding( propertyBindings[i] );
@@ -392,6 +401,65 @@ public class CypherFunctions {
     }
 
 
+    public static PolyList<PolyString> keys( PolyValue value ) {
+        if ( isNull( value ) ) {
+            return null;
+        }
+        if ( value instanceof GraphPropertyHolder element ) {
+            return PolyList.copyOf( element.getProperties().entrySet().stream()
+                    .filter( entry -> !isNull( entry.getValue() ) ).map( Map.Entry::getKey ).toList() );
+        }
+        return PolyList.copyOf( requirePropertyMap( value, "keys" ).keySet().stream().map( PolyValue::asString ).toList() );
+    }
+
+
+    public static PolyMap<?, ?> properties( PolyValue value ) {
+        if ( isNull( value ) ) {
+            return null;
+        }
+        if ( value instanceof GraphPropertyHolder element ) {
+            PolyDictionary result = new PolyDictionary();
+            element.getProperties().forEach( (key, property) -> {
+                if ( !isNull( property ) ) {
+                    result.put( key, property );
+                }
+            } );
+            return result;
+        }
+        return requirePropertyMap( value, "properties" );
+    }
+
+
+    private static PolyMap<PolyValue, PolyValue> requirePropertyMap( PolyValue value, String function ) {
+        if ( !value.isMap() ) {
+            throw new GenericRuntimeException( "%s() requires a node, relationship, or map.", function );
+        }
+        return value.asMap();
+    }
+
+
+    public static PolyNode startNode( PolyGraph graph, PolyValue value ) {
+        return relationshipEndpoint( graph, value, true );
+    }
+
+
+    public static PolyNode endNode( PolyGraph graph, PolyValue value ) {
+        return relationshipEndpoint( graph, value, false );
+    }
+
+
+    private static PolyNode relationshipEndpoint( PolyGraph graph, PolyValue value, boolean start ) {
+        if ( isNull( value ) ) {
+            return null;
+        }
+        if ( !(value instanceof PolyEdge edge) ) {
+            throw new GenericRuntimeException( "%s() requires a relationship.", start ? "startNode" : "endNode" );
+        }
+        boolean left = start != (edge.getDirection() == EdgeDirection.RIGHT_TO_LEFT);
+        return graph.getNodes().get( left ? edge.getLeft() : edge.getRight() );
+    }
+
+
     @SuppressWarnings("unused")
     public static PolyString extractId( GraphPropertyHolder holder ) {
         return holder == null ? null : holder.getId();
@@ -487,6 +555,24 @@ public class CypherFunctions {
 
     public static PolyBoolean matchWithWhere( PolyBoolean patternPredicate, PolyBoolean wherePredicate ) {
         return PolyBoolean.of( PolyBoolean.TRUE.equals( patternPredicate ) && PolyBoolean.TRUE.equals( wherePredicate ) );
+    }
+
+
+    public static PolyList<PolyValue> listComprehension( PolyValue value, Function1<PolyValue, PolyBoolean> predicate, Function1<PolyValue, PolyValue> projection ) {
+        if ( isNull( value ) ) {
+            return null;
+        }
+        if ( !(value instanceof PolyList<?> items) ) {
+            throw new GenericRuntimeException( "List comprehension requires a list, got %s.", value.getType() );
+        }
+        List<PolyValue> result = new ArrayList<>();
+        for ( PolyValue item : items ) {
+            PolyValue element = isNull( item ) ? null : item;
+            if ( PolyBoolean.TRUE.equals( predicate.apply( element ) ) ) {
+                result.add( projection.apply( element ) );
+            }
+        }
+        return PolyList.copyOf( result );
     }
 
 

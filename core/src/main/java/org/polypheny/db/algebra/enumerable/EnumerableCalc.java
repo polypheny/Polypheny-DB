@@ -58,6 +58,7 @@ import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMdDistribution;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPredicateList;
@@ -221,6 +222,9 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
                                 EnumUtils.NO_PARAMS,
                                 currentBody ) ) );
 
+        Expression enumerator = getModel() == DataModel.GRAPH && program.getExprList().stream().anyMatch( expression -> !RexUtil.isDeterministic( expression ) )
+                ? Expressions.call( EnumerableCalc.class, "memoizeCurrent", body )
+                : body;
         builder.add(
                 Expressions.return_(
                         null,
@@ -229,8 +233,54 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
                                 // TODO: generics
                                 //   Collections.singletonList(inputRowType),
                                 EnumUtils.NO_EXPRS,
-                                ImmutableList.<MemberDeclaration>of( Expressions.methodDecl( Modifier.PUBLIC, enumeratorType, BuiltInMethod.ENUMERABLE_ENUMERATOR.method.getName(), EnumUtils.NO_PARAMS, Blocks.toFunctionBlock( body ) ) ) ) ) );
+                                ImmutableList.<MemberDeclaration>of( Expressions.methodDecl( Modifier.PUBLIC, enumeratorType, BuiltInMethod.ENUMERABLE_ENUMERATOR.method.getName(), EnumUtils.NO_PARAMS, Blocks.toFunctionBlock( enumerator ) ) ) ) ) );
         return implementor.result( physType, builder.toBlock() );
+    }
+
+
+    /** Ensures that repeated reads of a row containing a volatile Cypher projection see the same values. */
+    public static <T> Enumerator<T> memoizeCurrent( Enumerator<T> input ) {
+        return new Enumerator<>() {
+            private T row;
+            private boolean computed;
+
+
+            @Override
+            public T current() {
+                if ( !computed ) {
+                    row = input.current();
+                    computed = true;
+                }
+                return row;
+            }
+
+
+            @Override
+            public boolean moveNext() {
+                clear();
+                return input.moveNext();
+            }
+
+
+            @Override
+            public void reset() {
+                clear();
+                input.reset();
+            }
+
+
+            @Override
+            public void close() {
+                clear();
+                input.close();
+            }
+
+
+            private void clear() {
+                row = null;
+                computed = false;
+            }
+        };
     }
 
 

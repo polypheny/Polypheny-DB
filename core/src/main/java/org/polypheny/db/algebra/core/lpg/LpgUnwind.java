@@ -54,7 +54,8 @@ public abstract class LpgUnwind extends SingleAlg implements LpgAlg {
         }
         AlgDataType value = fields.get( index ).getType();
         AlgDataType element = value.getComponentType();
-        return builder.add( alias, null, element == null ? value : element ).build();
+        AlgDataType nullableElement = getCluster().getTypeFactory().createTypeWithNullability( element == null ? value : element, true );
+        return builder.add( alias, null, nullableElement ).build();
     }
 
 

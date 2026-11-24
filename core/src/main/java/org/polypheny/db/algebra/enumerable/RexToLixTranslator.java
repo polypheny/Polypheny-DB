@@ -98,7 +98,6 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
 import org.polypheny.db.type.entity.document.PolyDocument;
-import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
@@ -815,8 +814,8 @@ public class RexToLixTranslator {
         }
         if ( Types.isAssignableFrom( PolyValue.class, toType ) ) {
             operand = Expressions.convert_( operand, PolyValue.class );
-            if ( toType == PolyNumber.class && !Types.isAssignableFrom( toType, operand.type ) ) {
-                return Expressions.call( PolyBigDecimal.class, "convert", operand );
+            if ( toType == PolyNumber.class ) {
+                return Expressions.call( PolyNumber.class, "convert", operand );
             } else if ( toType == PolyString.class ) {
                 return Expressions.call( PolyString.class, "convert", operand );
             } else if ( toType == PolyBoolean.class ) {
@@ -827,8 +826,6 @@ public class RexToLixTranslator {
                 return Expressions.call( PolyDocument.class, "convert", operand );
             } else if ( toType == PolyValue.class ) {
                 return Expressions.convert_( operand, toType ); // document
-            } else if ( toType == PolyNumber.class ) {
-                return Expressions.convert_( operand, toType ); // number
             } else if ( toType == PolyDate.class ) {
                 return Expressions.call( PolyDate.class, "convert", operand );
             } else if ( toType == PolyTimestamp.class ) {

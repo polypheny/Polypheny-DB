@@ -20,9 +20,7 @@ import javax.annotation.Nullable;
 import lombok.Getter;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
-import org.polypheny.db.cypher.expression.CypherAggregate;
 import org.polypheny.db.cypher.expression.CypherExpression;
-import org.polypheny.db.cypher.expression.CypherExpression.ExpressionType;
 import org.polypheny.db.cypher.expression.CypherProperty;
 import org.polypheny.db.cypher.expression.CypherVariable;
 import org.polypheny.db.languages.ParserPos;
@@ -88,9 +86,6 @@ public class CypherReturnItem extends CypherReturn {
     @Nullable
     public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
         String name = columnName();
-        if ( expression.getType() == ExpressionType.AGGREGATE ) {
-            return ((CypherAggregate) expression).getAggregate( context, name );
-        }
         Pair<PolyString, RexNode> rex = expression.getRex( context, type );
         return name == null ? rex : Pair.of( PolyString.of( name ), rex.right );
     }

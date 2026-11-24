@@ -26,6 +26,7 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
 
@@ -67,7 +68,7 @@ public class CypherGate extends CypherExpression {
                 : List.of( lhs, context.booleanPredicate( right.getRex( context, RexType.FILTER ).right ) );
         boolean nullable = operands.stream().anyMatch( operand -> operand.getType().isNullable() );
         AlgDataType resultType = context.typeFactory.createTypeWithNullability( context.booleanType, nullable );
-        return Pair.of( null, new RexCall( resultType, OperatorRegistry.get( operatorName ), operands ) );
+        return Pair.of( null, RexUtil.flatten( context.rexBuilder, new RexCall( resultType, OperatorRegistry.get( operatorName ), operands ) ) );
     }
 
 

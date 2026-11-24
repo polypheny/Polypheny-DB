@@ -32,12 +32,12 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.Stack;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.AlgShuttleImpl;
@@ -587,13 +587,19 @@ public class CypherToAlgConverter {
 
 
     private void convertWith( CypherWith clause, CypherContext context ) {
+        CypherReturnClause projection = clause.getReturnClause();
+        boolean orderedAggregation = projection.getOrder() != null && !projection.getOrder().isEmpty()
+                && projection.getReturnItems().stream().anyMatch(
+                        item -> item instanceof CypherReturnItem expression && expression.getExpression() instanceof CypherAggregate );
         for ( CypherReturn item : clause.getReturnClause().getReturnItems() ) {
             if ( item instanceof CypherReturnItem expression && expression.getVariable() == null
                     && !(expression.getExpression() instanceof CypherVariable) ) {
-                throw new CypherSyntaxException( "An expression in WITH must have an alias (use AS)." );
+                String detail = orderedAggregation && !(expression.getExpression() instanceof CypherAggregate)
+                        ? "AmbiguousAggregationExpression: " : "UnexpectedSyntax: ";
+                throw new CypherSyntaxException( detail + "An expression in WITH must have an alias (use AS)." );
             }
         }
-        convertProjection( clause.getReturnClause(), clause.getWhere(), context, true );
+        convertProjection( projection, clause.getWhere(), context, true );
         // A projected path is a value. Its original node and relationship variables are out of scope.
         context.implicitPathBindings.clear();
     }
@@ -655,12 +661,14 @@ public class CypherToAlgConverter {
 
         List<Integer> sortFields = new ArrayList<>();
         if ( !order.isEmpty() ) {
-            boolean grouped = clause.getReturnItems().stream().anyMatch(
-                    item -> item instanceof CypherReturnItem projected && projected.getExpression() instanceof CypherAggregate );
+            AlgNode aggregationInput = projection instanceof LogicalLpgProject projected ? projected.getInput() : projection;
+            boolean grouped = aggregationInput instanceof LogicalLpgAggregate aggregate && !aggregate.aggCalls.isEmpty();
             Function<String, RexNode> sortBindings = name -> {
                 RexNode binding = outputValues.getOrDefault( name, original.get( name ) );
                 if ( binding == null && grouped && sourceBindings.containsKey( name ) ) {
-                    throw new CypherSyntaxException( "AmbiguousAggregationExpression: '%s' is not available as a grouping key in ORDER BY.".formatted( name ) );
+                    String detail = ((LogicalLpgAggregate) aggregationInput).groups.isEmpty()
+                            ? "UndefinedVariable" : "AmbiguousAggregationExpression";
+                    throw new CypherSyntaxException( "%s: '%s' is not available as a grouping key in ORDER BY.".formatted( detail, name ) );
                 }
                 return binding;
             };
@@ -683,13 +691,14 @@ public class CypherToAlgConverter {
                             RexNode projected = projectedExpression( part, projectedExpressions,
                                     aggregate ? sourceBindings : unshadowedBindings, outputValues, context );
                             if ( aggregate && projected == null ) {
-                                throw new CypherSyntaxException( "The aggregation used to order rows must also be projected." );
+                                String detail = grouped ? "UndefinedVariable" : "InvalidAggregation";
+                                throw new CypherSyntaxException( detail + ": The aggregation used to order rows must also be projected." );
                             }
                             return projected;
                         } );
                     }
                 } catch ( CypherSyntaxException ex ) {
-                    if ( grouped ) {
+                    if ( grouped || ex.getMessage().startsWith( "InvalidAggregation:" ) ) {
                         throw ex;
                     }
                     String name = expression instanceof CypherVariable || expression instanceof CypherProperty property && property.getSubject() instanceof CypherVariable
@@ -726,9 +735,7 @@ public class CypherToAlgConverter {
         if ( values.size() > width ) {
             List<RexNode> visible = result.getTupleType().getFields().subList( 0, width ).stream()
                     .map( field -> (RexNode) rexBuilder.makeInputRef( field.getType(), field.getIndex() ) ).toList();
-            // The sort still orders the rows, but its keys can refer to columns removed here.
-            result = new LogicalLpgProject( cluster, result.getTraitSet().replace( AlgCollations.EMPTY ),
-                    result, visible, names.subList( 0, width ) );
+            result = LogicalLpgProject.create( result, visible, names.subList( 0, width ) );
         }
         context.add( result );
     }
@@ -1075,16 +1082,20 @@ public class CypherToAlgConverter {
         Map<String, PolyType> bindings = new HashMap<>();
         Set<String> fixedRelationships = new HashSet<>();
         for ( CypherPattern pattern : patterns ) {
+            CypherVariable pathVariable = null;
             if ( pattern instanceof CypherNamedPattern named ) {
-                registerMatchBinding( bindings, named.getVariable(), PolyType.PATH );
+                pathVariable = named.getVariable();
+                registerMatchBinding( bindings, pathVariable, PolyType.PATH );
                 pattern = named.getAnonymousPattern();
             }
             if ( pattern instanceof CypherEveryPathPattern path ) {
                 for ( CypherNodePattern node : path.getNodes() ) {
+                    validatePathVariable( pathVariable, node.getVariable() );
                     registerMatchBinding( bindings, node.getVariable(), PolyType.NODE );
                 }
                 for ( CypherRelPattern edge : path.getEdges() ) {
                     CypherVariable variable = edge.getVariable();
+                    validatePathVariable( pathVariable, variable );
                     PolyType type = edge.getPathLength() == null ? PolyType.EDGE : PolyType.ARRAY;
                     registerMatchBinding( bindings, variable, type );
                     if ( variable != null && type == PolyType.EDGE && !fixedRelationships.add( variable.getName() ) ) {
@@ -1097,17 +1108,24 @@ public class CypherToAlgConverter {
     }
 
 
+    private static void validatePathVariable( @Nullable CypherVariable path, @Nullable CypherVariable element ) {
+        if ( path != null && element != null && path.getName().equals( element.getName() ) ) {
+            throw new CypherSyntaxException( "VariableAlreadyBound: Path variable '" + path.getName() + "' is already bound." );
+        }
+    }
+
+
     private static void registerMatchBinding( Map<String, PolyType> bindings, @Nullable CypherVariable variable, PolyType type ) {
         if ( variable == null ) {
             return;
         }
         String name = variable.getName();
         PolyType previous = bindings.putIfAbsent( name, type );
-        if ( previous != null && previous != type ) {
-            throw new CypherSyntaxException( "Variable '" + name + "' has conflicting types in MATCH: " + previous + " and " + type + "." );
+        if ( previous != null && type == PolyType.PATH ) {
+            throw new CypherSyntaxException( "VariableAlreadyBound: Path variable '" + name + "' is already bound." );
         }
-        if ( previous == PolyType.PATH ) {
-            throw new CypherSyntaxException( "Path variable '" + name + "' is already bound." );
+        if ( previous != null && previous != type ) {
+            throw new CypherSyntaxException( "VariableTypeConflict: Variable '" + name + "' has conflicting types in MATCH: " + previous + " and " + type + "." );
         }
     }
 
@@ -1154,6 +1172,9 @@ public class CypherToAlgConverter {
 
     private static @Nullable MatchPropertySplit splitMatchProperties( @Nullable CypherExpression properties, @Nullable CypherVariable binding,
             Set<String> occupiedBindings, Set<PolyString> internalBindings, List<MatchPropertyCheck> checks ) {
+        if ( properties instanceof CypherParameter ) {
+            throw new CypherSyntaxException( "InvalidParameterUse: MATCH pattern properties require a literal map of expressions." );
+        }
         if ( !(properties instanceof CypherLiteral literal) || literal.getLiteralType() != CypherLiteral.Literal.MAP || !isComputedProperty( literal ) ) {
             return null;
         }
@@ -1527,6 +1548,10 @@ public class CypherToAlgConverter {
     private RexNode sameBinding( PolyString name, RexNode left, RexNode right ) {
         PolyType leftType = left.getType().getPolyType();
         PolyType rightType = right.getType().getPolyType();
+        if ( rightType == PolyType.PATH ) {
+            throw new CypherSyntaxException( "VariableAlreadyBound: Variable '" + name.value + "' has incompatible bindings in MATCH: "
+                    + left.getType() + " and " + right.getType() + "." );
+        }
         boolean element = rightType == PolyType.NODE || rightType == PolyType.EDGE;
         boolean relationshipList = isRelationshipList( right.getType() );
         if ( element && (leftType == rightType || isDynamicBinding( leftType )) ) {
@@ -1544,7 +1569,7 @@ public class CypherToAlgConverter {
             AlgDataType result = types.createTypeWithNullability( types.createPolyType( PolyType.BOOLEAN ), true );
             return rexBuilder.makeCall( result, OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EQUALS ), List.of( left, right ) );
         }
-        throw new CypherSyntaxException( "Variable '" + name.value + "' has incompatible bindings in MATCH: "
+        throw new CypherSyntaxException( "VariableTypeConflict: Variable '" + name.value + "' has incompatible bindings in MATCH: "
                 + left.getType() + " and " + right.getType() + "." );
     }
 
@@ -1683,12 +1708,13 @@ public class CypherToAlgConverter {
         private final Stack<AlgNode> stack = new Stack<>();
         // named projects, null if no name provided
         private final Queue<Pair<PolyString, RexNode>> rexQueue = new LinkedList<>();
-        private final Queue<Pair<String, AggregateCall>> rexAggQueue = new LinkedList<>();
+        private final List<ProjectionAggregate> projectionAggregates = new ArrayList<>();
+        private boolean acceptingAggregates;
         private final Map<PolyString, PolyNode> nodes = new HashMap<>();
         // Paths still represented by a single match column. The value says whether the path itself has a user alias.
         private final Map<String, Boolean> implicitPathBindings = new HashMap<>();
-        private final Map<String, RexNameRef> quantifiedBindings = new HashMap<>();
-        private int quantifiedDepth;
+        private final Map<String, RexNode> localBindings = new HashMap<>();
+        private int listBindingDepth;
         private Function<String, RexNode> scopedVariables;
         private Function<CypherExpression, RexNode> scopedExpressions;
         public CypherNode active;
@@ -1754,40 +1780,46 @@ public class CypherToAlgConverter {
 
 
         @Nullable
-        public RexNode scopedVariable( String name ) {
-            RexNameRef quantified = quantifiedBindings.get( name );
-            if ( quantified != null ) {
-                return quantified;
+        public RexNode resolveVariable( String name, Supplier<RexNode> inputLookup ) {
+            RexNode local = localBindings.get( name );
+            if ( local != null ) {
+                return local;
             }
-            if ( scopedVariables == null ) {
-                return null;
-            }
-            RexNode variable = scopedVariables.apply( name );
-            if ( variable == null ) {
-                throw new CypherSyntaxException( "The used variable is not known: " + name );
-            }
-            return variable;
+            return scopedVariables == null ? inputLookup.get() : scopedVariables.apply( name );
         }
 
 
         @Nullable
         public RexNode projectedExpression( CypherExpression expression ) {
-            return scopedExpressions == null || !quantifiedBindings.isEmpty() ? null : scopedExpressions.apply( expression );
+            return scopedExpressions == null || listBindingDepth != 0 || !localBindings.isEmpty() ? null : scopedExpressions.apply( expression );
         }
 
 
-        public Pair<RexNameRef, RexNode> quantifiedPredicate( String variable, AlgDataType component, CypherExpression predicate ) {
-            RexNameRef element = RexNameRef.scoped( "$cypherListItem" + quantifiedDepth++, typeFactory.createTypeWithNullability( component, true ) );
-            RexNameRef previous = quantifiedBindings.put( variable, element );
+        public <T> T listBinding( @Nullable String variable, AlgDataType component, Function<RexNameRef, T> body ) {
+            RexNameRef element = RexNameRef.scoped( "$cypherListItem" + listBindingDepth++, typeFactory.createTypeWithNullability( component, true ) );
             try {
-                return Pair.of( element, booleanPredicate( predicate.getRex( this, RexType.FILTER ).right ) );
+                return withAggregates( false, () -> variable == null
+                        ? body.apply( element )
+                        : withLocalBindings( Map.of( variable, element ), () -> body.apply( element ) ) );
             } finally {
-                quantifiedDepth--;
-                if ( previous == null ) {
-                    quantifiedBindings.remove( variable );
-                } else {
-                    quantifiedBindings.put( variable, previous );
-                }
+                listBindingDepth--;
+            }
+        }
+
+
+        public <T> T withLocalBindings( Map<String, RexNode> bindings, Supplier<T> body ) {
+            Map<String, RexNode> previous = new HashMap<>();
+            bindings.forEach( ( name, binding ) -> previous.put( name, localBindings.put( name, binding ) ) );
+            try {
+                return body.get();
+            } finally {
+                previous.forEach( ( name, binding ) -> {
+                    if ( binding == null ) {
+                        localBindings.remove( name );
+                    } else {
+                        localBindings.put( name, binding );
+                    }
+                } );
             }
         }
 
@@ -1926,8 +1958,34 @@ public class CypherToAlgConverter {
         }
 
 
-        public void addAgg( Pair<String, AggregateCall> agg ) {
-            this.rexAggQueue.add( agg );
+        public record ProjectionAggregate( RexNameRef reference, AggregateCall call, RexNode operand ) {
+
+        }
+
+
+        public <T> T withAggregates( boolean enable, Supplier<T> action ) {
+            boolean previous = acceptingAggregates;
+            acceptingAggregates = enable;
+            try {
+                return action.get();
+            } finally {
+                acceptingAggregates = previous;
+            }
+        }
+
+
+        public RexNode addAggregate( AggregateCall call, RexNode operand ) {
+            if ( !acceptingAggregates ) {
+                throw new CypherSyntaxException( "InvalidAggregation: Aggregates are only allowed in projection expressions and cannot be nested." );
+            }
+            RexNameRef reference = RexNameRef.scoped( "$aggregate" + projectionAggregates.size(), call.getType() );
+            projectionAggregates.add( new ProjectionAggregate( reference, call, operand ) );
+            return reference;
+        }
+
+
+        public int aggregateCount() {
+            return projectionAggregates.size();
         }
 
 
@@ -1962,10 +2020,10 @@ public class CypherToAlgConverter {
         }
 
 
-        public List<Pair<String, AggregateCall>> popAggNodes() {
-            List<Pair<String, AggregateCall>> namedNodes = new ArrayList<>( rexAggQueue );
-            rexAggQueue.clear();
-            return namedNodes;
+        public List<ProjectionAggregate> popAggregates() {
+            List<ProjectionAggregate> result = List.copyOf( projectionAggregates );
+            projectionAggregates.clear();
+            return result;
         }
 
 
@@ -1994,7 +2052,7 @@ public class CypherToAlgConverter {
 
 
         public boolean containsAggs() {
-            return !rexAggQueue.isEmpty();
+            return !projectionAggregates.isEmpty();
         }
 
 

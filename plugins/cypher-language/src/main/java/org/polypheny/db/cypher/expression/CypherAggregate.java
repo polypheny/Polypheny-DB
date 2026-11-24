@@ -56,39 +56,19 @@ public class CypherAggregate extends CypherExpression {
     }
 
 
-    public Pair<PolyString, RexNode> getAggregate( CypherContext context, String alias ) {
-        PolyString name = null;
-        Pair<PolyString, RexNode> namedNode = null;
-        if ( target != null ) {
-            namedNode = target.getRex( context, RexType.PROJECT );
-            name = namedNode.left;
-        }
-
-        RexNode operand = namedNode != null ? namedNode.right : null;
+    @Override
+    protected Pair<PolyString, RexNode> toRex( CypherContext context, RexType type ) {
+        RexNode operand = target == null ? null
+                : context.withAggregates( false, () -> target.getRex( context, RexType.PROJECT ).right );
         if ( operand != null && operand.getType().getPolyType() == PolyType.NULL ) {
             operand = context.rexBuilder.makeNullLiteral( context.typeFactory.createPolyType( PolyType.ANY ) );
         }
         Pair<RexNode, AlgDataType> typeAndValue = getReturnType( context, operand );
-
         AggregateCall call = AggregateCall.create(
-                OperatorRegistry.getAgg( op ),
-                distinct,
-                false,
-                List.of(),
-                -1,
-                AlgCollations.EMPTY,
-                typeAndValue.right,
-                alias != null ? alias : op.name()
+                OperatorRegistry.getAgg( op ), distinct, false, List.of(), -1,
+                AlgCollations.EMPTY, typeAndValue.right, op.name()
         );
-
-        context.addAgg( Pair.of( name != null ? name.value : null, call ) );
-
-        if ( namedNode != null ) {
-            return Pair.of( namedNode.left, typeAndValue.left );
-        } else {
-            return null;
-        }
-
+        return Pair.of( PolyString.of( op.name() ), context.addAggregate( call, typeAndValue.left ) );
     }
 
 

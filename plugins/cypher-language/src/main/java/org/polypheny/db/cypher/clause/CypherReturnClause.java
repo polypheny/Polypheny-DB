@@ -17,10 +17,11 @@
 package org.polypheny.db.cypher.clause;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.stream.IntStream;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollations;
@@ -39,12 +40,15 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.cypher2alg.CypherSyntaxException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
-import org.polypheny.db.cypher.expression.CypherAggregate;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext.ProjectionAggregate;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
@@ -105,31 +109,28 @@ public class CypherReturnClause extends CypherClause {
         }
 
         List<Pair<PolyString, RexNode>> projections = new ArrayList<>();
-        List<Pair<PolyString, RexNode>> operands = new ArrayList<>();
-        List<Integer> requestedOrder = new ArrayList<>();
+        List<Integer> groupPositions = new ArrayList<>();
         for ( CypherReturn item : returnItems ) {
             if ( item instanceof CypherStarReturn star ) {
                 for ( Pair<PolyString, RexNode> field : star.expand( context, explicitNames, withClause ) ) {
-                    requestedOrder.add( projections.size() );
+                    groupPositions.add( projections.size() );
                     projections.add( field );
                 }
                 continue;
             }
 
-            Pair<PolyString, RexNode> expression = item.getRex( context, RexType.PROJECT );
-            if ( item instanceof CypherReturnItem value && value.getExpression() instanceof CypherAggregate ) {
-                requestedOrder.add( -1 - operands.size() );
-                operands.add( expression );
-            } else {
-                requestedOrder.add( projections.size() );
-                projections.add( expression.left == null
-                        ? Pair.of( PolyString.of( "EXPR$" + projections.size() ), expression.right )
-                        : expression );
+            int before = context.aggregateCount();
+            Pair<PolyString, RexNode> expression = context.withAggregates( true, () -> item.getRex( context, RexType.PROJECT ) );
+            if ( context.aggregateCount() == before ) {
+                groupPositions.add( projections.size() );
             }
+            projections.add( expression.left == null
+                    ? Pair.of( PolyString.of( "EXPR$" + projections.size() ), expression.right )
+                    : expression );
         }
 
         AlgNode result = context.containsAggs()
-                ? getAggregate( context, projections, operands, requestedOrder )
+                ? getAggregate( context, projections, groupPositions )
                 : getProject( context, projections );
         if ( !distinct ) {
             return result;
@@ -144,32 +145,26 @@ public class CypherReturnClause extends CypherClause {
     }
 
 
-    private AlgNode getAggregate(
-            CypherContext context, List<Pair<PolyString, RexNode>> groups, List<Pair<PolyString, RexNode>> operands, List<Integer> requestedOrder ) {
-        List<Pair<String, AggregateCall>> aggregates = context.popAggNodes();
-        List<Pair<PolyString, RexNode>> inputProjections = new ArrayList<>( groups );
+    private AlgNode getAggregate( CypherContext context, List<Pair<PolyString, RexNode>> projections, List<Integer> groupPositions ) {
+        List<ProjectionAggregate> aggregates = context.popAggregates();
+        List<Pair<PolyString, RexNode>> groups = groupPositions.stream().map( projections::get ).toList();
+        List<Pair<PolyString, RexNode>> inputs = new ArrayList<>( groups );
+        Set<PolyString> usedNames = new HashSet<>( Pair.left( projections ) );
         List<Integer> operandIndexes = new ArrayList<>();
-        List<PolyString> fieldNames = new ArrayList<>( Pair.left( groups ) );
-        for ( Pair<PolyString, RexNode> operand : operands ) {
-            if ( operand == null ) {
+        for ( ProjectionAggregate aggregate : aggregates ) {
+            if ( aggregate.operand() == null ) {
                 operandIndexes.add( -1 );
                 continue;
             }
-
-            // The argument is resolved in the input scope, independently of any aliases in the output.
-            PolyString name = operand.left;
-            if ( name == null || name.value.startsWith( "$" ) || fieldNames.contains( name ) ) {
-                name = PolyString.of( "_aggregateInput" + operandIndexes.size() );
-                while ( fieldNames.contains( name ) ) {
-                    name = PolyString.of( name.value + "_" );
-                }
+            PolyString name = PolyString.of( "_aggregateInput" + operandIndexes.size() );
+            while ( !usedNames.add( name ) ) {
+                name = PolyString.of( name.value + "_" );
             }
-            operandIndexes.add( inputProjections.size() );
-            inputProjections.add( Pair.of( name, operand.right ) );
-            fieldNames.add( name );
+            operandIndexes.add( inputs.size() );
+            inputs.add( Pair.of( name, aggregate.operand() ) );
         }
 
-        AlgNode input = getProject( context, inputProjections );
+        AlgNode input = getProject( context, inputs );
         List<RexNameRef> groupIndexes = new ArrayList<>();
         List<LaxAggregateCall> calls = new ArrayList<>();
         AlgDataTypeFactory.Builder groupedType = context.typeFactory.builder();
@@ -180,27 +175,63 @@ public class CypherReturnClause extends CypherClause {
             groupedType.add( name, null, type );
         }
         for ( int i = 0; i < aggregates.size(); i++ ) {
-            AggregateCall aggregate = aggregates.get( i ).right;
+            PolyString name = PolyString.of( "_aggregateResult" + i );
+            while ( !usedNames.add( name ) ) {
+                name = PolyString.of( name.value + "_" );
+            }
+            AggregateCall aggregate = aggregates.get( i ).call().rename( name.value );
             int operandIndex = operandIndexes.get( i );
             LaxAggregateCall call = operandIndex < 0
                     ? LaxAggregateCall.from( aggregate, null )
                     : LaxAggregateCall.from( aggregate.adjustedCopy( List.of( operandIndex ) ), input );
             calls.add( call );
-            groupedType.add( aggregate.name, null, call.getType( input.getCluster() ) );
+            groupedType.add( name.value, null, call.getType( input.getCluster() ) );
         }
 
         AlgNode aggregate = new LogicalLpgAggregate(
                 input.getCluster(), input.getTraitSet(), input, groupIndexes, calls, groupedType.build() );
-        List<Integer> positions = requestedOrder.stream()
-                .map( index -> index < 0 ? groups.size() - 1 - index : index )
-                .toList();
-        if ( IntStream.range( 0, positions.size() ).allMatch( index -> positions.get( index ) == index ) ) {
-            return aggregate;
+        Map<RexNode, RexNode> groupRefs = new HashMap<>();
+        for ( int i = 0; i < groups.size(); i++ ) {
+            groupRefs.putIfAbsent( groups.get( i ).right, context.rexBuilder.makeInputRef( aggregate, i ) );
         }
-        return LogicalLpgProject.create(
-                aggregate,
-                positions.stream().map( index -> context.rexBuilder.makeInputRef( aggregate, index ) ).toList(),
-                positions.stream().map( index -> PolyString.of( aggregate.getTupleType().getFieldNames().get( index ) ) ).toList() );
+        Map<RexNameRef, RexNode> aggregateRefs = new HashMap<>();
+        for ( int i = 0; i < aggregates.size(); i++ ) {
+            aggregateRefs.put( aggregates.get( i ).reference(), context.rexBuilder.makeInputRef( aggregate, groups.size() + i ) );
+        }
+
+        RexShuttle postAggregation = new RexShuttle() {
+            @Override
+            public RexNode visitCall( RexCall call ) {
+                RexNode group = groupRefs.get( call );
+                return group == null ? super.visitCall( call ) : group;
+            }
+
+
+            @Override
+            public RexNode visitNameRef( RexNameRef reference ) {
+                return aggregateRefs.getOrDefault( reference, reference );
+            }
+
+
+            @Override
+            public RexNode visitIndexRef( RexIndexRef reference ) {
+                RexNode group = groupRefs.get( reference );
+                if ( group == null ) {
+                    throw new CypherSyntaxException( "AmbiguousAggregationExpression: A variable used outside an aggregate must be a grouping key." );
+                }
+                return group;
+            }
+        };
+        List<RexNode> output = new ArrayList<>();
+        int groupIndex = 0;
+        for ( int i = 0; i < projections.size(); i++ ) {
+            if ( groupIndex < groupPositions.size() && groupPositions.get( groupIndex ) == i ) {
+                output.add( context.rexBuilder.makeInputRef( aggregate, groupIndex++ ) );
+            } else {
+                output.add( projections.get( i ).right.accept( postAggregation ) );
+            }
+        }
+        return LogicalLpgProject.create( aggregate, output, Pair.left( projections ) );
     }
 
 
