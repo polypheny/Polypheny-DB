@@ -98,6 +98,7 @@ import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
 import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
@@ -265,6 +266,8 @@ public class RexToLixTranslator {
         Expression convert = null;
         convert = switch ( targetType.getPolyType() ) {
             case ANY -> operand;
+            // Numeric types share the PolyNumber Java class, but a DECIMAL cast must widen integers.
+            case DECIMAL -> Expressions.call( PolyBigDecimal.class, "convert", Expressions.convert_( operand, PolyValue.class ) );
             case DATE -> switch ( sourceType.getPolyType() ) {
                 case CHAR, VARCHAR -> Expressions.call( BuiltInMethod.STRING_TO_DATE.method, operand );
                 case TIMESTAMP -> Expressions.call( PolyDate.class, "of", Expressions.call( operand, "LongValue" ) );
