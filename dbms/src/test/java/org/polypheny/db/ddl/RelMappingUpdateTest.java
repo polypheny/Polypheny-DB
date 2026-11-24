@@ -403,8 +403,8 @@ class RelMappingUpdateTest {
 
     @Test
     void describesTheSourceKeyEvenWhenTheMappingTargetHasDifferentColumnIds() {
-        var logical = catalog.getLogicalRel( table.namespaceId );
-        logical.addPrimaryKey( table.id, List.of( columns.get( 0 ).id ), statement );
+        var physical = physicalCatalog.fromAllocation( allocationId );
+        physicalCatalog.replacePhysical( physical.toBuilder().uniqueFieldIds( List.of( columns.get( 0 ).id ) ).build() );
         catalog.commit();
 
         var draft = RelMappingState.draft( catalog, adapterId, table.id );
@@ -419,6 +419,46 @@ class RelMappingUpdateTest {
             var fields = MappingModel.RelDetail.from( state, catalog ).columns();
             assertTrue( fields.get( 0 ).physicalReferences().get( 0 ).primary() );
             assertFalse( fields.get( 1 ).physicalReferences().get( 0 ).primary() );
+        }
+    }
+
+
+    @Test
+    void allowsConvertingTheExportedPrimaryColumnAfterRefreshingEitherMappingTarget() {
+        var sourceAdapter = mock( DataSource.class );
+        var exported = mock( RelationalDataSource.class, CALLS_REAL_METHODS );
+        when( sourceAdapter.supportsRelational() ).thenReturn( true );
+        when( sourceAdapter.asRelationalDataSource() ).thenReturn( exported );
+        when( AdapterManager.getInstance().getSource( adapterId ) ).thenReturn( Optional.of( sourceAdapter ) );
+        when( exported.supportsDynamicTableDiscovery() ).thenReturn( true );
+        when( exported.getExportedColumns() ).thenReturn( Map.of( "source_file", List.of(
+                new ExportedColumn( "id", PolyType.BIGINT, null, null, null, null, null, false, false, "files", "source_file", "id", 1, true ),
+                new ExportedColumn( "name", PolyType.VARCHAR, null, 40, null, null, null, true, true, "files", "source_file", "name", 2, false ) ) ) );
+
+        var ddl = new DdlManagerImpl( catalog );
+        var draft = RelMappingState.draft( catalog, adapterId, table.id );
+        var names = draft.columns().stream().map( column -> new RelMappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
+        var created = ddl.createRelMapping( table.id,
+                new RelMappingUpdate( adapterId, -1, draft.revision(), "Direct copy", "direct_copy", names ), statement );
+        assertNull( created.table().primaryKey );
+
+        ddl.refreshSourceSchemaIfNeeded( table.id, statement );
+        ddl.refreshSourceSchemaIfNeeded( created.table().id, statement );
+        catalog.commit();
+        for ( long mappingId : List.of( original.mapping().id(), created.mapping().id() ) ) {
+            var refreshed = RelMappingState.load( catalog, mappingId );
+            assertNull( refreshed.table().primaryKey );
+            var sourceId = MappingModel.RelDetail.from( refreshed, catalog ).columns().stream()
+                    .filter( column -> column.logicalName().equals( "id" ) ).findFirst().orElseThrow();
+            assertTrue( sourceId.physicalReferences().get( 0 ).primary() );
+
+            var conversions = refreshed.columns().stream().map( column -> column.name.equals( "id" )
+                    ? new RelMappingUpdate.ColumnName( column.id, column.name, true, PolyType.DOUBLE, false )
+                    : new RelMappingUpdate.ColumnName( column.id, column.name, true ) ).toList();
+            var updated = ddl.updateRelMapping( new RelMappingUpdate( adapterId, mappingId, refreshed.revision(),
+                    refreshed.mapping().name(), refreshed.table().name, conversions ), statement );
+            assertEquals( PolyType.DOUBLE, catalog.getSnapshot().rel().getColumn( updated.table().id, "id" ).orElseThrow().type );
+            assertNull( updated.table().primaryKey );
         }
     }
 
@@ -447,7 +487,7 @@ class RelMappingUpdateTest {
         assertFalse( MappingModel.RelDetail.from( draft, catalog ).columns().get( 0 ).physicalReferences().get( 0 ).primary() );
 
         when( relational.getExportedColumns() ).thenReturn( Map.of() );
-        assertTrue( MappingModel.RelDetail.from( draft, catalog ).columns().get( 0 ).physicalReferences().get( 0 ).primary() );
+        assertFalse( MappingModel.RelDetail.from( draft, catalog ).columns().get( 0 ).physicalReferences().get( 0 ).primary() );
     }
 
 

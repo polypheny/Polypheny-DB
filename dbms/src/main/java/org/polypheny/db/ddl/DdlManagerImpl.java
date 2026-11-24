@@ -423,16 +423,12 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        if ( !pkIds.isEmpty() ) {
-            catalog.getLogicalRel( namespace ).addPrimaryKey( logical.id, pkIds, transaction.createStatement() );
-        }
-
         buildRelationalNamespace( namespace, logical, adapter );
 
         transaction.attachCommitAction( () -> {
             // we can execute with initial logical and allocation data as this is a source and this will not change
             // register the physical table metadata for the existing source
-            adapter.createTable( null, LogicalTableWrapper.of( logical, columns, List.of() ), AllocationTableWrapper.of( allocation.unwrapOrThrow( AllocationTable.class ), aColumns, physicalSchema, physicalTable, sourcePhysicalColumnNames ) );
+            adapter.createTable( null, LogicalTableWrapper.of( logical, columns, pkIds ), AllocationTableWrapper.of( allocation.unwrapOrThrow( AllocationTable.class ), aColumns, physicalSchema, physicalTable, sourcePhysicalColumnNames ) );
             // Create and register default mapping
             synchronized ( catalog ) {
                 String mappingName = SchemaMappingManager.availableDefaultMappingName( catalog.getSchemaMappings().values(), adapter.getUniqueName(), physicalTable );
@@ -812,7 +808,7 @@ public class DdlManagerImpl extends DdlManager {
                     .map( ExportedColumn::physicalColumnName )
                     .toList();
             if ( !primaryKeyColumns.isEmpty() ) {
-                changeDescriptions.add( "Added primary key: " + joinNames( primaryKeyColumns ) );
+                changeDescriptions.add( "Added source primary key: " + joinNames( primaryKeyColumns ) );
             }
             List<String> foreignKeys = importedForeignKeys.getOrDefault( addedTable.getKey(), List.of() );
             if ( !foreignKeys.isEmpty() ) {
@@ -937,13 +933,13 @@ public class DdlManagerImpl extends DdlManager {
     private List<String> buildSourceSchemaChangeDescriptions(
             LogicalTable table,
             List<LogicalColumn> currentLogicalColumns,
-            List<ExportedColumn> orderedSourceColumns,
             List<ExportedForeignKey> sourceForeignKeys,
             List<ExportedColumn> missingColumns,
             List<LogicalColumn> droppedColumns,
             List<String> changedTypeColumnNames,
             List<String> changedNullabilityDescriptions,
             boolean hasReorderedColumns,
+            String primaryKeyChange,
             Snapshot snapshot,
             AdapterCatalog sourceAdapterCatalog,
             long sourceAdapterId,
@@ -965,7 +961,6 @@ public class DdlManagerImpl extends DdlManager {
         if ( hasReorderedColumns ) {
             changeDescriptions.add( "Changed column order" );
         }
-        String primaryKeyChange = buildPrimaryKeyChangeDescription( table, currentLogicalColumns, orderedSourceColumns, snapshot.rel() );
         if ( primaryKeyChange != null ) {
             changeDescriptions.add( primaryKeyChange );
         }
@@ -1152,7 +1147,7 @@ public class DdlManagerImpl extends DdlManager {
         }
 
         if ( !refreshPlan.hasChanges() ) {
-            refreshUnchangedSourcePhysicalMetadata( refreshPlan, statement );
+            refreshUnchangedSourcePhysicalMetadata( refreshPlan );
             catalog.updateSnapshot();
             statement.getQueryProcessor().resetCaches();
             return refreshPlan.changeDescriptions();
@@ -1292,19 +1287,24 @@ public class DdlManagerImpl extends DdlManager {
     private PhysicalTable buildRefreshedMappedTable( AllocationEntity allocation, long targetId, PhysicalTable physical, List<ExportedColumn> orderedColumns ) {
         Map<String, PhysicalColumn> previousByName = Maps.uniqueIndex( physical.columns, column -> normalizeIdentifier( column.name ) );
         List<PhysicalColumn> columns = new ArrayList<>();
+        List<Long> sourceKeyIds = new ArrayList<>();
         for ( ExportedColumn exported : orderedColumns ) {
             PhysicalColumn previous = previousByName.get( normalizeIdentifier( exported.physicalColumnName() ) );
+            long columnId = previous == null ? IdBuilder.getInstance().getNewFieldId() : previous.id;
             columns.add( new PhysicalColumn(
-                    previous == null ? IdBuilder.getInstance().getNewFieldId() : previous.id,
+                    columnId,
                     exported.physicalColumnName(), previous == null ? exported.name() : previous.logicalName,
                     allocation.id, targetId, allocation.adapterId, columns.size(),
                     exported.type(), exported.collectionsType(), exported.length(), exported.scale(), exported.dimension(), exported.cardinality(),
                     exported.nullable(), exported.elementsNullable(), previous == null ? Collation.getDefaultCollation() : previous.collation,
                     previous == null ? null : previous.defaultValue ) );
+            if ( exported.primary() ) {
+                sourceKeyIds.add( columnId );
+            }
         }
         ExportedColumn first = orderedColumns.get( 0 );
         return new PhysicalTable( physical.id, allocation.id, targetId, first.physicalTableName(), columns, physical.namespaceId,
-                first.physicalSchemaName(), physical.uniqueFieldIds, allocation.adapterId );
+                first.physicalSchemaName(), sourceKeyIds, allocation.adapterId );
     }
 
 
@@ -1319,7 +1319,7 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private void refreshUnchangedSourcePhysicalMetadata( SourceSchemaRefreshPlan refreshPlan, Statement statement ) {
+    private void refreshUnchangedSourcePhysicalMetadata( SourceSchemaRefreshPlan refreshPlan ) {
         AllocationEntity sourceAllocation = refreshPlan.sourceAllocation();
         List<AllocationColumn> refreshedAllocationColumns = catalog.getSnapshot().alloc().getColumns( sourceAllocation.placementId ).stream()
                 .filter( c -> c.logicalTableId == refreshPlan.logicalTable().id )
@@ -1333,7 +1333,6 @@ public class DdlManagerImpl extends DdlManager {
                 refreshPlan.sourceTableName(),
                 refreshPlan.currentLogicalColumns(),
                 refreshedAllocationColumns,
-                ImmutableList.copyOf( getCurrentPrimaryKeyIds( refreshPlan.logicalTable(), catalog.getSnapshot().rel() ) ),
                 refreshPlan.orderedSourceColumns()
         );
     }
@@ -1482,12 +1481,13 @@ public class DdlManagerImpl extends DdlManager {
                 .toList();
 
         boolean hasReorderedColumns = hasReorderedColumns( currentLogicalColumns, orderedSourceColumns );
-        boolean hasChangedPrimaryKey = hasChangedPrimaryKey( logicalTable, currentLogicalColumns, orderedSourceColumns, snapshot.rel() );
+        List<String> currentSourceKey = currentPolyphenyPhysicalTable.columns.stream()
+                .filter( column -> currentPolyphenyPhysicalTable.uniqueFieldIds.contains( column.id ) ).map( column -> column.name ).toList();
+        List<String> refreshedSourceKey = orderedSourceColumns.stream().filter( ExportedColumn::primary ).map( ExportedColumn::physicalColumnName ).toList();
         boolean hasChangedForeignKeys = hasChangedForeignKeys( logicalTable, currentSourceForeignKeys, currentLogicalColumns, snapshot, sourceAdapterCatalog, sourceAdapterId );
         List<String> changeDescriptions = buildSourceSchemaChangeDescriptions(
                 logicalTable,
                 currentLogicalColumns,
-                orderedSourceColumns,
                 currentSourceForeignKeys,
                 missingColumns,
                 droppedColumns,
@@ -1500,6 +1500,7 @@ public class DdlManagerImpl extends DdlManager {
                         .map( column -> formatNullabilityChange( column.name, column.nullable, sourceColumnsByPhysicalName.get( normalizeIdentifier( column.name ) ).nullable() ) )
                         .toList(),
                 hasReorderedColumns,
+                describePrimaryKeyChange( currentSourceKey, refreshedSourceKey, "source primary key" ),
                 snapshot,
                 sourceAdapterCatalog,
                 sourceAdapterId,
@@ -1520,7 +1521,6 @@ public class DdlManagerImpl extends DdlManager {
                 .droppedColumns( droppedColumns )
                 .changedTypeColumns( changedTypeColumns )
                 .hasReorderedColumns( hasReorderedColumns )
-                .hasChangedPrimaryKey( hasChangedPrimaryKey )
                 .hasChangedForeignKeys( hasChangedForeignKeys )
                 .changeDescriptions( changeDescriptions )
                 .unsupported( false )
@@ -1728,7 +1728,6 @@ public class DdlManagerImpl extends DdlManager {
         List<String> changeDescriptions = buildSourceSchemaChangeDescriptions(
                 connectedTable,
                 connectedColumns,
-                sourceRefreshPlan.orderedSourceColumns(),
                 List.of(),
                 missingColumns,
                 droppedColumns,
@@ -1741,6 +1740,7 @@ public class DdlManagerImpl extends DdlManager {
                         .map( column -> formatNullabilityChange( column.name, column.nullable, sourceColumnsByPhysicalName.get( normalizeIdentifier( column.name ) ).nullable() ) )
                         .toList(),
                 hasReorderedColumns,
+                primaryKeyChangeDescription,
                 snapshot,
                 sourceRefreshPlan.sourceAdapterCatalog(),
                 sourceRefreshPlan.sourceAdapterId(),
@@ -1801,7 +1801,7 @@ public class DdlManagerImpl extends DdlManager {
             }
         }
 
-        ImmutableList<Long> refreshedPkIds = syncSourcePrimaryKeyForRefresh( logicalTable, refreshPlan.orderedSourceColumns(), refreshedLogicalColumns, statement );
+        List<Long> logicalPrimaryKeyIds = getCurrentPrimaryKeyIds( logicalTable, catalog.getSnapshot().rel() );
         List<Long> refreshedForeignKeyColumnIds = syncSourceForeignKeysForRefresh(
                 logicalTable,
                 refreshPlan.sourceForeignKeys(),
@@ -1820,7 +1820,7 @@ public class DdlManagerImpl extends DdlManager {
                     catalog.getSnapshot().alloc().getColumnFromLogical( dropped.id ).orElse( List.of() ),
                     refreshedLogicalColumns,
                     refreshedAllocationColumns,
-                    refreshedPkIds,
+                    logicalPrimaryKeyIds,
                     refreshedForeignKeyColumnIds
             );
         }
@@ -1834,7 +1834,6 @@ public class DdlManagerImpl extends DdlManager {
                 refreshPlan.sourceTableName(),
                 refreshedLogicalColumns,
                 refreshedAllocationColumns,
-                refreshedPkIds,
                 refreshPlan.orderedSourceColumns()
         );
     }
@@ -2188,11 +2187,6 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private boolean hasChangedPrimaryKey( LogicalTable table, List<LogicalColumn> currentLogicalColumns, List<ExportedColumn> orderedSourceColumns, LogicalRelSnapshot snapshot ) {
-        return !getSourcePrimaryKeyIds( orderedSourceColumns, currentLogicalColumns ).equals( getCurrentPrimaryKeyIds( table, snapshot ) );
-    }
-
-
     private List<Long> getSourcePrimaryKeyIds( List<ExportedColumn> orderedSourceColumns, List<LogicalColumn> logicalColumns ) {
         Map<String, LogicalColumn> logicalColumnsByName = getLogicalColumnsByName( logicalColumns );
 
@@ -2228,17 +2222,23 @@ public class DdlManagerImpl extends DdlManager {
             return null;
         }
 
-        List<String> sourcePkColumns = getColumnNames( sourcePkIds, snapshot );
-        List<String> currentPkColumns = getColumnNames( currentPkIds, snapshot );
+        return describePrimaryKeyChange( getColumnNames( currentPkIds, snapshot ), getColumnNames( sourcePkIds, snapshot ), "primary key" );
+    }
+
+
+    private String describePrimaryKeyChange( List<String> currentPkColumns, List<String> sourcePkColumns, String keyLabel ) {
+        if ( currentPkColumns.equals( sourcePkColumns ) ) {
+            return null;
+        }
 
         if ( currentPkColumns.isEmpty() ) {
-            return "Added primary key: " + joinNames( sourcePkColumns );
+            return "Added " + keyLabel + ": " + joinNames( sourcePkColumns );
         }
         if ( sourcePkColumns.isEmpty() ) {
-            return "Removed primary key: " + joinNames( currentPkColumns );
+            return "Removed " + keyLabel + ": " + joinNames( currentPkColumns );
         }
 
-        return "Changed primary key: " + joinNames( currentPkColumns ) + " -> " + joinNames( sourcePkColumns );
+        return "Changed " + keyLabel + ": " + joinNames( currentPkColumns ) + " -> " + joinNames( sourcePkColumns );
     }
 
 
@@ -2827,7 +2827,6 @@ public class DdlManagerImpl extends DdlManager {
             String physicalTable,
             List<LogicalColumn> logicalColumns,
             List<AllocationColumn> allocationColumns,
-            ImmutableList<Long> pkIds,
             List<ExportedColumn> sourceColumns ) {
 
         DataSource<?> adapter = AdapterManager.getInstance()
@@ -2842,7 +2841,7 @@ public class DdlManagerImpl extends DdlManager {
         // Recreate table in underlying data source
         adapter.createTable(
                 null,
-                LogicalTableWrapper.of( table, logicalColumns, pkIds ),
+                LogicalTableWrapper.of( table, logicalColumns, getSourcePrimaryKeyIds( sourceColumns, logicalColumns ) ),
                 AllocationTableWrapper.of( allocationTable, allocationColumns, physicalSchema, physicalTable, getSourcePhysicalColumnNamesById( logicalColumns, sourceColumns ) )
         );
 
@@ -4277,10 +4276,10 @@ public class DdlManagerImpl extends DdlManager {
                 } ).toList();
 
         // add schema mapping definition to catalog
-        Long sourceAllocationId = SchemaMappingManager.requiresExplicitSourceAllocation( rules, Maps.uniqueIndex( targetColumns.values(), column -> column.id ), physicalColumns.stream() )
-                ? allocation.id : null;
+        // Store allocation.id for every new target
+        // This binds the mapping to its allocation so source refresh preserves the target schema.
         catalog.addSchemaMapping( new SchemaMapping( mappingId, update.mappingName(), source.mapping().kind(), null, target.id,
-                source.mapping().sourceModel(), source.mapping().targetModel(), rules, sourceAllocationId ) );
+                source.mapping().sourceModel(), source.mapping().targetModel(), rules, allocation.id ) );
     }
 
 
@@ -6150,7 +6149,6 @@ public class DdlManagerImpl extends DdlManager {
         List<LogicalColumn> droppedColumns;
         List<PhysicalColumn> changedTypeColumns;
         boolean hasReorderedColumns;
-        boolean hasChangedPrimaryKey;
         boolean hasChangedForeignKeys;
         List<String> changeDescriptions;
         boolean unsupported;
@@ -6173,7 +6171,6 @@ public class DdlManagerImpl extends DdlManager {
                     .droppedColumns( List.of() )
                     .changedTypeColumns( List.of() )
                     .hasReorderedColumns( false )
-                    .hasChangedPrimaryKey( false )
                     .hasChangedForeignKeys( false )
                     .changeDescriptions( List.of() )
                     .unsupported( false )
@@ -6198,7 +6195,6 @@ public class DdlManagerImpl extends DdlManager {
                     .droppedColumns( List.of() )
                     .changedTypeColumns( List.of() )
                     .hasReorderedColumns( false )
-                    .hasChangedPrimaryKey( false )
                     .hasChangedForeignKeys( false )
                     .changeDescriptions( List.of() )
                     .unsupported( false )
@@ -6223,7 +6219,6 @@ public class DdlManagerImpl extends DdlManager {
                     .droppedColumns( List.of() )
                     .changedTypeColumns( List.of() )
                     .hasReorderedColumns( false )
-                    .hasChangedPrimaryKey( false )
                     .hasChangedForeignKeys( false )
                     .changeDescriptions( List.of() )
                     .unsupported( true )
@@ -6237,7 +6232,6 @@ public class DdlManagerImpl extends DdlManager {
                     || !droppedColumns.isEmpty()
                     || !changedTypeColumns.isEmpty()
                     || hasReorderedColumns
-                    || hasChangedPrimaryKey
                     || hasChangedForeignKeys;
         }
 

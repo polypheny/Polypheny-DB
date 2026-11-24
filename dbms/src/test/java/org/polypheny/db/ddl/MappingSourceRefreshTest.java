@@ -18,6 +18,7 @@ package org.polypheny.db.ddl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -84,6 +85,7 @@ class MappingSourceRefreshTest {
     private Statement statement;
     private DdlManagerImpl ddl;
     private MockedStatic<AdapterManager> adapters;
+    private final List<Runnable> importActions = new ArrayList<>();
 
     @BeforeEach
     void setUp() throws Exception {
@@ -117,17 +119,21 @@ class MappingSourceRefreshTest {
         when( transaction.createStatement() ).thenReturn( statement );
         when( statement.getTransaction() ).thenReturn( transaction );
         when( statement.getQueryProcessor() ).thenReturn( mock( QueryProcessor.class ) );
-        List<Runnable> commitActions = new ArrayList<>();
-        doAnswer( invocation -> { commitActions.add( invocation.getArgument( 0 ) ); return null; } )
+        doAnswer( invocation -> { importActions.add( invocation.getArgument( 0 ) ); return null; } )
                 .when( transaction ).attachCommitAction( any() );
         ddl = new DdlManagerImpl( catalog );
-        Method register = DdlManagerImpl.class.getDeclaredMethod( "createRelationalSource", Transaction.class, DataSource.class, long.class );
-        register.setAccessible( true );
-        register.invoke( ddl, transaction, source, namespaceId );
-        commitActions.forEach( Runnable::run );
-        catalog.commit();
+        importSource( namespaceId );
         table = catalog.getSnapshot().rel().getTable( namespaceId, "customers" ).orElseThrow();
         original = catalog.getSnapshot().mappings().getMappingsForLogicalEntity( table.id ).get( 0 );
+    }
+
+    private void importSource( long namespaceId ) throws ReflectiveOperationException {
+        Method register = DdlManagerImpl.class.getDeclaredMethod( "createRelationalSource", Transaction.class, DataSource.class, long.class );
+        register.setAccessible( true );
+        register.invoke( ddl, statement.getTransaction(), source, namespaceId );
+        importActions.forEach( Runnable::run );
+        importActions.clear();
+        catalog.commit();
     }
 
     @AfterEach
@@ -135,6 +141,31 @@ class MappingSourceRefreshTest {
         if ( adapters != null ) {
             adapters.close();
         }
+    }
+
+    @Test
+    void keepsExportedPrimaryKeysOnPhysicalTablesDuringImportAndRefresh() throws Exception {
+        long namespaceId = catalog.createNamespace( "physical_key_test", DataModel.RELATIONAL, false, false );
+        export( List.of( nonNullColumn( "id", PolyType.BIGINT, null, 1, true ), nonNullColumn( "name", PolyType.VARCHAR, 40, 2, false ) ) );
+        importSource( namespaceId );
+
+        var imported = catalog.getSnapshot().rel().getTable( namespaceId, "customers" ).orElseThrow();
+        var mapping = catalog.getSnapshot().mappings().getMappingsForLogicalEntity( imported.id ).get( 0 );
+        var allocation = catalog.getSnapshot().alloc().getFromLogical( imported.id ).get( 0 );
+        var physicalCatalog = (RelAdapterCatalog) catalog.getAdapterCatalog( allocation.adapterId ).orElseThrow();
+        assertNull( imported.primaryKey );
+        long idColumnId = catalog.getSnapshot().rel().getColumn( imported.id, "id" ).orElseThrow().id;
+        assertEquals( List.of( idColumnId ), physicalCatalog.fromAllocation( allocation.id ).getPrimaryColumns() );
+
+        export( List.of( nonNullColumn( "id", PolyType.BIGINT, null, 1, false ), nonNullColumn( "name", PolyType.VARCHAR, 40, 2, true ) ) );
+        var changes = ddl.refreshSourceSchemaIfNeeded( imported.id, statement );
+        catalog.commit();
+
+        assertTrue( changes.stream().anyMatch( change -> change.startsWith( "Changed source primary key:" ) ) );
+        assertNull( catalog.getSnapshot().rel().getTable( imported.id ).orElseThrow().primaryKey );
+        long nameColumnId = catalog.getSnapshot().rel().getColumn( imported.id, "name" ).orElseThrow().id;
+        assertEquals( List.of( nameColumnId ), physicalCatalog.fromAllocation( allocation.id ).getPrimaryColumns() );
+        assertEquals( mapping, catalog.getSnapshot().mappings().getMapping( mapping.id() ).orElseThrow() );
     }
 
     @Test
@@ -365,6 +396,10 @@ class MappingSourceRefreshTest {
 
     private static ExportedColumn column( String name, PolyType type, Integer length, int position ) {
         return new ExportedColumn( name, type, null, length, null, null, null, true, true, "public", "customers", name, position, false );
+    }
+
+    private static ExportedColumn nonNullColumn( String name, PolyType type, Integer length, int position, boolean primary ) {
+        return new ExportedColumn( name, type, null, length, null, null, null, false, false, "public", "customers", name, position, primary );
     }
 
     @AdapterProperties(name = "RefreshSource", description = "Source mapping refresh test", usedModes = DeployMode.EMBEDDED, defaultMode = DeployMode.EMBEDDED)

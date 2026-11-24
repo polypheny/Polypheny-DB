@@ -109,6 +109,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.mapping.SchemaMappingManager;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.exceptions.MappingException;
@@ -297,21 +298,39 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
 
     private static String buildMaterializationCopyOrderBy( LogicalTable sourceTable, List<LogicalColumn> columns ) {
-        if ( sourceTable.primaryKey == null ) {
-            return "";
-        }
-        LogicalPrimaryKey primaryKey = Catalog.snapshot().rel().getPrimaryKey( sourceTable.primaryKey ).orElse( null );
-        if ( primaryKey == null || primaryKey.fieldIds.isEmpty() ) {
-            return "";
-        }
-        Map<Long, String> columnNames = columns.stream()
-                .collect( Collectors.toMap( column -> column.id, column -> column.name ) );
-        String orderBy = primaryKey.fieldIds.stream()
-                .map( columnNames::get )
-                .filter( Objects::nonNull )
-                .map( Crud::quoteIdentifier )
-                .collect( Collectors.joining( ", " ) );
+        String orderBy = materializationKeyColumns( sourceTable, columns ).stream().map( Crud::quoteIdentifier ).collect( Collectors.joining( ", " ) );
         return orderBy.isEmpty() ? "" : " ORDER BY " + orderBy;
+    }
+
+
+    /**
+     * Reads the physical source key when its columns can be used in the materialized table.
+     */
+    private static List<String> materializationKeyColumns( LogicalTable sourceTable, List<LogicalColumn> columns ) {
+        Snapshot snapshot = Catalog.snapshot();
+        var allocations = snapshot.alloc().getFromLogical( sourceTable.id );
+        if ( allocations.size() != 1 ) {
+            return List.of();
+        }
+        AllocationEntity allocation = allocations.get( 0 );
+        var physical = Catalog.getInstance().getAdapterCatalog( allocation.adapterId )
+                .flatMap( adapter -> adapter.getPhysicalsFromAllocs( allocation.id ).stream().findFirst() )
+                .flatMap( entity -> entity.unwrap( PhysicalTable.class ) ).orElse( null );
+        if ( physical == null ) {
+            return List.of();
+        }
+        Map<Long, LogicalColumn> logicalColumns = columns.stream().collect( Collectors.toMap( column -> column.id, column -> column ) );
+        Map<Long, PhysicalColumn> physicalColumns = physical.columns.stream().collect( Collectors.toMap( column -> column.id, column -> column ) );
+        List<String> keyNames = new ArrayList<>();
+        for ( long id : physical.getPrimaryColumns() ) {
+            LogicalColumn logicalColumn = logicalColumns.get( id );
+            PhysicalColumn physicalColumn = physicalColumns.get( id );
+            if ( logicalColumn == null || physicalColumn == null || logicalColumn.nullable || !SchemaMappingManager.hasMatchingValueType( logicalColumn, physicalColumn ) ) {
+                return List.of();
+            }
+            keyNames.add( logicalColumn.name );
+        }
+        return keyNames;
     }
 
 
@@ -1963,14 +1982,10 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             columnJoiner.add( buildMaterializationColumnDefinition( column ) );
         }
 
-        if ( sourceTable.primaryKey != null ) {
-            LogicalPrimaryKey primaryKey = Catalog.snapshot().rel().getPrimaryKey( sourceTable.primaryKey ).orElse( null );
-            if ( primaryKey != null ) {
-                String primaryKeyColumns = primaryKey.getFieldNames().stream()
-                        .map( Crud::quoteIdentifier )
-                        .collect( Collectors.joining( ", " ) );
-                columnJoiner.add( "PRIMARY KEY (" + primaryKeyColumns + ")" );
-            }
+        List<String> keyColumns = materializationKeyColumns( sourceTable, columns );
+        if ( !keyColumns.isEmpty() ) {
+            String primaryKeyColumns = keyColumns.stream().map( Crud::quoteIdentifier ).collect( Collectors.joining( ", " ) );
+            columnJoiner.add( "PRIMARY KEY (" + primaryKeyColumns + ")" );
         }
 
         return String.format( "CREATE TABLE %s (%s) ON STORE %s", targetTable, columnJoiner, quoteIdentifier( targetStoreName ) );

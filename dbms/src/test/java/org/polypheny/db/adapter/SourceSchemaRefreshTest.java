@@ -19,6 +19,7 @@ package org.polypheny.db.adapter;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
@@ -30,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.webui.models.results.RelationalResult;
 
@@ -46,14 +48,11 @@ class SourceSchemaRefreshTest {
     private static final String PASSWORD = "polypheny";
 
 
-    private static List<String> getPrimaryKeyColumnNames( long entityId ) {
-        Long primaryKey = Catalog.snapshot().rel().getTable( entityId ).orElseThrow().primaryKey;
-        if ( primaryKey == null ) {
-            return List.of();
-        }
-        return Catalog.snapshot().rel().getPrimaryKey( primaryKey ).orElseThrow().fieldIds.stream()
-                .map( id -> Catalog.snapshot().rel().getColumn( id ).orElseThrow().name )
-                .toList();
+    private static List<String> getSourcePrimaryKeyColumnNames( long entityId ) {
+        var allocation = Catalog.snapshot().alloc().getFromLogical( entityId ).get( 0 );
+        var physical = Catalog.getInstance().getAdapterCatalog( allocation.adapterId ).orElseThrow()
+                .getPhysicalsFromAllocs( allocation.id ).get( 0 ).unwrapOrThrow( PhysicalTable.class );
+        return physical.columns.stream().filter( column -> physical.uniqueFieldIds.contains( column.id ) ).map( column -> column.name ).toList();
     }
 
 
@@ -290,7 +289,7 @@ class SourceSchemaRefreshTest {
 
 
     @Test
-    void refreshRequestUpdatesPrimaryKeyAfterExternalPrimaryKeyChanged() throws Exception {
+    void refreshRequestUpdatesPhysicalMetadataAfterExternalPrimaryKeyChanged() throws Exception {
         Assumptions.assumeTrue( TestHelper.isLinuxDockerDaemonAvailable(), "A Linux Docker daemon is required for PostgreSQL integration tests" );
         TestHelper.getInstance();
 
@@ -312,7 +311,8 @@ class SourceSchemaRefreshTest {
 
             try {
                 long entityId = TestHelper.awaitLogicalTable( Catalog.defaultNamespaceId, SOURCE_TABLE, 30 ).id;
-                assertEquals( List.of( "id" ), getPrimaryKeyColumnNames( entityId ) );
+                assertNull( Catalog.snapshot().rel().getTable( entityId ).orElseThrow().primaryKey );
+                assertEquals( List.of( "id" ), getSourcePrimaryKeyColumnNames( entityId ) );
 
                 postgres.execute( "ALTER TABLE public." + SOURCE_TABLE + " DROP CONSTRAINT refresh_pk" );
                 postgres.execute( "ALTER TABLE public." + SOURCE_TABLE + " ADD CONSTRAINT refresh_pk PRIMARY KEY (name)" );
@@ -323,7 +323,8 @@ class SourceSchemaRefreshTest {
                 assertTrue( refreshed.getError() == null || refreshed.getError().isBlank(), "Refresh returned error: " + refreshed.getError() );
                 assertEquals( List.of( "name", "city" ), Arrays.stream( refreshed.getHeader() ).map( h -> h.getName() ).toList() );
                 assertEquals( List.of( "name", "city" ), TestHelper.getCatalogColumnNames( entityId ) );
-                assertEquals( List.of( "name" ), getPrimaryKeyColumnNames( entityId ) );
+                assertNull( Catalog.snapshot().rel().getTable( entityId ).orElseThrow().primaryKey );
+                assertEquals( List.of( "name" ), getSourcePrimaryKeyColumnNames( entityId ) );
             } finally {
                 TestHelper.executeSQL( "ALTER ADAPTERS DROP \"" + ADAPTER_NAME + "\"" );
             }

@@ -102,7 +102,7 @@ public class PhysicalTable extends PhysicalEntity {
 
 
     public ImmutableList<Long> getPrimaryColumns() {
-        return Catalog.snapshot().rel().getPrimaryKey( Catalog.snapshot().rel().getTable( logicalId ).orElseThrow().primaryKey ).orElseThrow().fieldIds;
+        return ImmutableList.copyOf( uniqueFieldIds );
     }
 
 }

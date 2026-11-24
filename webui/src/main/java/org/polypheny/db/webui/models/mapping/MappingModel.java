@@ -146,7 +146,7 @@ public final class MappingModel {
         Set<String> primaryColumns( Catalog catalog, Snapshot snapshot ) {
             return exportedColumns().map( columns -> columns.stream().filter( ExportedColumn::primary )
                     .map( ExportedColumn::physicalColumnName ).collect( Collectors.toSet() ) )
-                    .orElseGet( () -> logicalPrimaryColumns( catalog, snapshot ) );
+                    .orElseGet( () -> persistedPrimaryColumns( catalog, snapshot ) );
         }
 
 
@@ -172,23 +172,23 @@ public final class MappingModel {
         }
 
 
-        private Set<String> logicalPrimaryColumns( Catalog catalog, Snapshot snapshot ) {
-            // The first allocation of an imported table identifies its source. Later attachments can share the logical table's key.
-            var importedSource = catalog.getAdapterCatalog( adapterId ).stream().flatMap( adapter -> adapter.getPhysicals().values().stream() )
+        /**
+         * reads the source key saved in PhysicalTable.uniqueFieldIds
+         * and resolves those IDs to source column names
+         */
+        private Set<String> persistedPrimaryColumns( Catalog catalog, Snapshot snapshot ) {
+            // The first allocation of an imported table identifies its source.
+            return catalog.getAdapterCatalog( adapterId ).stream().flatMap( adapter -> adapter.getPhysicals().values().stream() )
                     .filter( PhysicalTable.class::isInstance ).map( PhysicalTable.class::cast )
                     .filter( physical -> Objects.equals( schema, physical.namespaceName ) && table.equals( physical.name ) )
                     .filter( physical -> snapshot.alloc().getFromLogical( physical.logicalId ).stream()
                             .noneMatch( allocation -> allocation.id < physical.allocationId ) )
-                    .min( Comparator.comparingLong( physical -> physical.allocationId ) );
-            var key = importedSource.flatMap( physical -> snapshot.rel().getTable( physical.logicalId ) )
-                    .flatMap( logical -> logical.primaryKey == null ? Optional.empty() : snapshot.rel().getPrimaryKey( logical.primaryKey ) );
-            if ( key.isPresent() ) {
-                var ids = key.get().fieldIds;
-                return importedSource.orElseThrow().columns.stream().filter( column -> ids.contains( column.id ) )
-                        .map( column -> column.name ).collect( Collectors.toSet() );
-            }
-
-            return Set.of();
+                    .min( Comparator.comparingLong( physical -> physical.allocationId ) )
+                    .map( physical -> {
+                        List<Long> sourceIds = physical.getPrimaryColumns();
+                        return physical.columns.stream().filter( column -> sourceIds.contains( column.id ) )
+                                .map( column -> column.name ).collect( Collectors.toSet() );
+                    } ).orElseGet( Set::of );
         }
     }
 
