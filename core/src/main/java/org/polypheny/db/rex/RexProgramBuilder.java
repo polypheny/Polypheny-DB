@@ -912,6 +912,9 @@ public class RexProgramBuilder {
 
         @Override
         public RexNode visitNameRef( RexNameRef nameRef ) {
+            if ( nameRef.isScoped() ) {
+                return nameRef;
+            }
             final int index = 0;
 
             // Return a reference to the N'th expression, which should be equivalent.

@@ -1714,6 +1714,7 @@ public enum OperatorName {
     DESERIALIZE( LangFunctionOperator.class ),
 
     CYPHER_PATH_MATCH( LangFunctionOperator.class ),
+    CYPHER_SHORTEST_PATH_MATCH( LangFunctionOperator.class ),
 
     CYPHER_ALL_MATCH( LangFunctionOperator.class ),
 
@@ -1726,6 +1727,9 @@ public enum OperatorName {
     DESERIALIZE_DIRECTORY( LangFunctionOperator.class ),
 
     CYPHER_HAS_PROPERTY( LangFunctionOperator.class ),
+    CYPHER_PROPERTY_EXISTS( LangFunctionOperator.class ),
+    CYPHER_PATTERN_EXISTS( LangFunctionOperator.class ),
+    CYPHER_GRAPH_VALUE( LangFunctionOperator.class ),
 
     DESERIALIZE_LIST( LangFunctionOperator.class ),
 
@@ -1771,6 +1775,7 @@ public enum OperatorName {
     CYPHER_MAP_CONSTRUCTOR( LangFunctionOperator.class ),
     CYPHER_NODES( LangFunctionOperator.class ),
     CYPHER_RELATIONSHIPS( LangFunctionOperator.class ),
+    CYPHER_SHORTEST_PATH_VALUE( LangFunctionOperator.class ),
     CYPHER_LENGTH( LangFunctionOperator.class ),
     CYPHER_SIZE( LangFunctionOperator.class ),
     CYPHER_SCALAR_FUNCTION( LangFunctionOperator.class ),

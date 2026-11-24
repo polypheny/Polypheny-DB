@@ -231,7 +231,7 @@ final class PlanKeyComponents {
             return tagged( type, reference.getType(), reference.getIndex() );
         }
         if ( type == RexNameRef.class && rex instanceof RexNameRef reference ) {
-            return tagged( type, reference.getType(), reference.getName(), reference.names, reference.getIndex().orElse( null ) );
+            return tagged( type, reference.getType(), reference.getName(), reference.names, reference.getIndex().orElse( null ), reference.isScoped() );
         }
         if ( type == RexCorrelVariable.class && rex instanceof RexCorrelVariable reference ) {
             return tagged( type, reference.getType(), reference.id );

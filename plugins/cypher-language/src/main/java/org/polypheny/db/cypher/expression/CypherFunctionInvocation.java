@@ -32,6 +32,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.cypher2alg.CypherSyntaxException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
+import org.polypheny.db.cypher.pattern.CypherEveryPathPattern;
 import org.polypheny.db.functions.CypherScalarFunction;
 import org.polypheny.db.functions.CypherTemporalFunction;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -245,6 +246,8 @@ public class CypherFunctionInvocation extends CypherExpression {
                                 // Because create function logic is implemented in
                                 arguments.get( 1 ).getRex( context, RexType.PROJECT ).getRight()
                         ) );
+            case EXISTS:
+                return exists( context, type );
             case VECTOR_DISTANCE:
                 return getVectorDistanceRex( context, type );
             case LAST, CYPHER_LAST: {
@@ -289,6 +292,29 @@ public class CypherFunctionInvocation extends CypherExpression {
             throw new CypherSyntaxException( "DISTINCT requires an aggregating function." );
         }
         return scalarFunction.apply( arguments.stream().map( CypherExpression::getComparable ).toArray( PolyValue[]::new ) );
+    }
+
+
+    private RexNode exists( CypherContext context, RexType type ) {
+        if ( !namespace.isEmpty() || arguments.size() != 1 ) {
+            throw new CypherSyntaxException( "exists() requires exactly one property or path pattern argument." );
+        }
+        CypherExpression argument = arguments.get( 0 );
+        if ( argument instanceof CypherProperty property ) {
+            RexNode owner = property.getSubject().getRex( context, type ).right;
+            switch ( owner.getType().getPolyType() ) {
+                case MAP, NODE, EDGE, ANY, NULL -> {
+                    return context.rexBuilder.makeCall( context.booleanType,
+                            OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_PROPERTY_EXISTS ),
+                            List.of( owner, context.rexBuilder.makeLiteral( property.getPropertyKey() ) ) );
+                }
+                default -> throw new CypherSyntaxException( "exists() requires a property of a map, node, or relationship." );
+            }
+        }
+        if ( argument.getType() == ExpressionType.PATTERN && argument.getPattern() instanceof CypherEveryPathPattern pattern ) {
+            return CypherPatternExistence.toRex( pattern, context, type );
+        }
+        throw new CypherSyntaxException( "exists() requires a property or path pattern argument." );
     }
 
 

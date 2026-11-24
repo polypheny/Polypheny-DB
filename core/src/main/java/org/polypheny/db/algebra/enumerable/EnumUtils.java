@@ -432,7 +432,7 @@ public class EnumUtils {
     /**
      * Returns a predicate expression based on a join condition.
      */
-    static Expression generatePredicate(
+    public static Expression generatePredicate(
             EnumerableAlgImplementor implementor,
             RexBuilder rexBuilder,
             AlgNode left,

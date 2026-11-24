@@ -61,16 +61,17 @@ public class CypherCase extends CypherExpression {
         List<RexNode> operands = new ArrayList<>();
         List<AlgDataType> resultTypes = new ArrayList<>();
         if ( condition != null ) {
-            operands.add( condition.getRex( context, type ).right );
+            operands.add( condition.getRex( context, RexType.PROJECT ).right );
         }
+        RexType testType = condition == null ? RexType.FILTER : RexType.PROJECT;
         for ( int i = 0; i < when.size(); i++ ) {
-            RexNode test = when.get( i ).getRex( context, type ).right;
-            RexNode value = then.get( i ).getRex( context, type ).right;
+            RexNode test = when.get( i ).getRex( context, testType ).right;
+            RexNode value = then.get( i ).getRex( context, RexType.PROJECT ).right;
             operands.add( condition == null ? context.booleanPredicate( test ) : test );
             operands.add( value );
             resultTypes.add( value.getType() );
         }
-        RexNode fallback = elseCase == null ? context.rexBuilder.constantNull() : elseCase.getRex( context, type ).right;
+        RexNode fallback = elseCase == null ? context.rexBuilder.constantNull() : elseCase.getRex( context, RexType.PROJECT ).right;
         operands.add( fallback );
         resultTypes.add( fallback.getType() );
         AlgDataType resultType = PolyTypeUtil.commonDynamicType( context.typeFactory, resultTypes );

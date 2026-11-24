@@ -26,7 +26,7 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Function0;
-import org.apache.calcite.linq4j.function.Function1;
+import org.apache.calcite.linq4j.function.Function2;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.type.PolyType;
@@ -96,8 +96,8 @@ public final class CypherMergeRows {
     public static Enumerable<PolyValue[]> execute( DataContext context, Enumerable<PolyValue[]> input,
             Function0<Enumerable<PolyValue[]>> scan, Pattern pattern, Function0<Enumerable<PolyValue[]>> insert,
             Function0<Enumerable<PolyValue[]>> update, List<PolyType> updateTypes,
-            Function1<PolyValue[], PolyValue[]> properties, Function1<PolyValue[], PolyValue[]> onCreate,
-            Function1<PolyValue[], PolyValue[]> onMatch, boolean countOnly ) {
+            Function2<PolyValue[], PolyGraph, PolyValue[]> properties, Function2<PolyValue[], PolyGraph, PolyValue[]> onCreate,
+            Function2<PolyValue[], PolyGraph, PolyValue[]> onMatch, boolean countOnly ) {
         // Capture the upstream rows (and finish their writes) before opening the graph scan.
         List<PolyValue[]> source = new ArrayList<>();
         try ( Enumerator<PolyValue[]> upstream = input.enumerator() ) {
@@ -120,7 +120,7 @@ public final class CypherMergeRows {
             for ( int i = 0; i < pattern.inputCount; i++ ) {
                 bindings[i] = currentValue( graph, row[i] );
             }
-            PolyPath template = template( pattern, properties.apply( bindings ) );
+            PolyPath template = template( pattern, properties.apply( bindings, graph ) );
             // Resolve all matches before applying the branch's SET operations.
             // Changes can affect the next input row, but cannot change this row's set of matches.
             List<PolyPath> matches = new ArrayList<>();
@@ -133,25 +133,25 @@ public final class CypherMergeRows {
                 List<GraphPropertyHolder> created = new ArrayList<>();
                 PolyPath path = create( pattern, template, bindings, created );
                 bindPattern( pattern, path, bindings );
-                PolyValue[] updates = onCreate.apply( bindings );
-                write( context, insert, insertTypes, created.toArray( PolyValue[]::new ) );
-
                 Set<PolyString> inserted = new HashSet<>();
-                created.forEach( element -> inserted.add( element.id ) );
-                update( context, update, updateTypes, updates, inserted );
+                // ON CREATE observes the newly created pattern before it is persisted with the action's updates.
                 for ( GraphPropertyHolder element : created ) {
+                    inserted.add( element.id );
                     if ( element instanceof PolyNode node ) {
                         graph.getNodes().put( node.id, node );
                     } else {
                         graph.getEdges().put( element.id, element.asEdge() );
                     }
                 }
+                PolyValue[] updates = onCreate.apply( bindings, graph );
+                write( context, insert, insertTypes, created.toArray( PolyValue[]::new ) );
+                update( context, update, updateTypes, updates, inserted );
                 result.add( bindings );
             } else {
                 for ( PolyPath path : matches ) {
                     PolyValue[] matched = bindings.clone();
                     bindPattern( pattern, path.rebindGraphValues( value -> currentValue( graph, value ) ), matched );
-                    PolyValue[] updates = onMatch.apply( matched );
+                    PolyValue[] updates = onMatch.apply( matched, graph );
                     boolean changed = update( context, update, updateTypes, updates, Set.of() );
                     if ( changed || !countOnly ) {
                         result.add( matched );

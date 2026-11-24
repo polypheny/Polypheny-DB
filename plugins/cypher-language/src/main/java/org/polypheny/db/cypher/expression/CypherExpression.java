@@ -18,21 +18,26 @@ package org.polypheny.db.cypher.expression;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
+import java.util.Locale;
 import lombok.Getter;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.cypher2alg.CypherSyntaxException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
+import org.polypheny.db.cypher.pattern.CypherEveryPathPattern;
 import org.polypheny.db.cypher.pattern.CypherPattern;
+import org.polypheny.db.cypher.pattern.CypherShortestPathPattern;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
-import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
@@ -78,8 +83,16 @@ public class CypherExpression extends CypherNode {
 
 
     public final Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
+        if ( this.type == ExpressionType.PATTERN && pattern instanceof CypherEveryPathPattern everyPath ) {
+            if ( type != RexType.FILTER ) {
+                throw new CypherSyntaxException( "Use exists(pattern) to evaluate a pattern as a value expression." );
+            }
+            return Pair.of( null, CypherPatternExistence.toRex( everyPath, context, RexType.PROJECT ) );
+        }
+
         RexNode projected = context.projectedExpression( this );
-        return projected == null ? toRex( context, type ) : Pair.of( null, projected );
+        // A Boolean expectation applies only to this expression. Boolean operands opt in explicitly.
+        return projected == null ? toRex( context, RexType.PROJECT ) : Pair.of( null, projected );
     }
 
 
@@ -89,30 +102,31 @@ public class CypherExpression extends CypherNode {
             return Pair.of( PolyString.of( null ), func.getRexCall( context, type ) );
         }
 
+        if ( pattern instanceof CypherShortestPathPattern shortest ) {
+            return Pair.of( null, CypherShortestPathValue.toRex( shortest, context, type ) );
+        }
         OperatorName operatorName = switch ( this.type ) {
-            // EveryPathPattern
-            //return pattern.getPatternMatch( context );
-            case PATTERN, ALL -> OperatorName.CYPHER_ALL_MATCH;
+            case ALL -> OperatorName.CYPHER_ALL_MATCH;
             case ANY -> OperatorName.CYPHER_ANY_MATCH;
             case NONE -> OperatorName.CYPHER_NONE_MATCH;
             case SINGLE -> OperatorName.CYPHER_SINGLE_MATCH;
             default -> throw new UnsupportedOperationException();
         };
 
-        //  ANY ( Variable IN Expression(list) Where? )
-        //  MATCH p = (a)-[*1..3]->(b)
-        //  WHERE
-        //  a.name = 'Alice'
-        //  AND b.name = 'Daniel'
-        //  AND all(x IN nodes(p) WHERE x.age > 30)
-        //  RETURN p
-
-        String var = variable.getName();
-
-        return Pair.of( PolyString.of( var ), new RexCall(
-                context.booleanType,
-                OperatorRegistry.get( operatorName ),
-                List.of( context.rexBuilder.makeInputRef( context.graphType, 0 ), where.getRex( context, type ).right ) ) );
+        String quantifier = this.type.name().toLowerCase( Locale.ROOT );
+        if ( where == null ) {
+            throw new CypherSyntaxException( quantifier + "() requires a WHERE predicate." );
+        }
+        RexNode list = expression.getRex( context, RexType.PROJECT ).right;
+        requireListOperand( list, quantifier + "() requires a list." );
+        AlgDataType component = list.getType().getComponentType();
+        if ( component == null ) {
+            component = context.typeFactory.createPolyType( PolyType.ANY );
+        }
+        Pair<RexNameRef, RexNode> predicate = context.quantifiedPredicate( variable.getName(), component, where );
+        AlgDataType result = context.typeFactory.createTypeWithNullability( context.booleanType, true );
+        return Pair.of( null, context.rexBuilder.makeCall( result, OperatorRegistry.get( QueryLanguage.from( "cypher" ), operatorName ),
+                List.of( list, predicate.left, predicate.right ) ) );
     }
 
 

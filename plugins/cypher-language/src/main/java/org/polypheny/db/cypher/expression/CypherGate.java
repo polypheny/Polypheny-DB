@@ -59,12 +59,12 @@ public class CypherGate extends CypherExpression {
             case OR -> OperatorName.OR;
             case AND -> OperatorName.AND;
             case NOT -> OperatorName.NOT;
-            case XOR -> throw new UnsupportedOperationException();
+            case XOR -> OperatorName.NOT_EQUALS;
         };
-        RexNode lhs = context.booleanPredicate( left.getRex( context, type ).right );
+        RexNode lhs = context.booleanPredicate( left.getRex( context, RexType.FILTER ).right );
         List<RexNode> operands = gate == Gate.NOT
                 ? List.of( lhs )
-                : List.of( lhs, context.booleanPredicate( right.getRex( context, type ).right ) );
+                : List.of( lhs, context.booleanPredicate( right.getRex( context, RexType.FILTER ).right ) );
         boolean nullable = operands.stream().anyMatch( operand -> operand.getType().isNullable() );
         AlgDataType resultType = context.typeFactory.createTypeWithNullability( context.booleanType, nullable );
         return Pair.of( null, new RexCall( resultType, OperatorRegistry.get( operatorName ), operands ) );

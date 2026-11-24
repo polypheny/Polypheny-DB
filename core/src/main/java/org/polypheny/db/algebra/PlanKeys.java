@@ -49,10 +49,12 @@ import org.polypheny.db.algebra.logical.document.LogicalDocumentValues;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgAggregate;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgJoin;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgShortestPathJoin;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgScan;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgSetRows;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgTransformer;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnion;
@@ -127,8 +129,10 @@ public final class PlanKeys {
             attributes( LogicalLpgScan.class, node -> List.of( entity( node.entity ) ) ),
             attributes( LogicalLpgMatch.class, node -> List.of( node.getNames(), node.getMatches(), node.isEnumerableOnly() ) ),
             attributes( LogicalLpgJoin.class, node -> List.of( node.getCondition(), node.getVariablesSet(), node.getJoinType() ) ),
+            attributes( LogicalLpgShortestPathJoin.class, node -> List.of( node.getCondition(), node.isOptional(), node.getPathColumns(), node.getGroupColumns() ) ),
             attributes( LogicalLpgFilter.class, node -> List.of( node.getCondition() ) ),
             attributes( LogicalLpgProject.class, node -> List.of( node.getNames(), node.getProjects() ) ),
+            attributes( LogicalLpgSetRows.class, node -> List.of( node.getActions(), node.getActionSlots(), node.getTargetCount() ) ),
             attributes( LogicalLpgAggregate.class, node -> List.of( node.groups, laxAggregates( node.aggCalls ), node.isWriteCount() ) ),
             attributes( LogicalLpgSort.class, PlanKeys::sort ),
             attributes( LogicalLpgUnwind.class, node -> Arrays.asList( node.index, node.alias ) ),
@@ -137,7 +141,7 @@ public final class PlanKeys {
                     node.getReturningParameters(), node.isDetachDelete() ) ),
             attributes( LogicalLpgUnion.class, PlanKeys::setOperation ),
             attributes( LogicalLpgTransformer.class, node -> Arrays.asList( node.operationOrder, node.operation, node.detachDelete ) ),
-            attributes( LogicalLpgWriteRow.class, node -> Arrays.asList( node.getName() ) ),
+            attributes( LogicalLpgWriteRow.class, node -> Arrays.asList( node.getName(), node.isWithGraph() ) ),
 
             attributes( LogicalTransformer.class, PlanKeys::transform ),
             attributes( LogicalConditionalExecute.class, PlanKeys::conditional ),

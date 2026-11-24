@@ -105,6 +105,7 @@ import org.polypheny.db.algebra.metadata.BuiltInMetadata.TableReferences;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.TupleCount;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.UniqueKeys;
 import org.polypheny.db.algebra.metadata.Metadata;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.functions.CrossModelFunctions;
 import org.polypheny.db.functions.CypherFunctions;
@@ -160,7 +161,7 @@ public enum BuiltInMethod {
     STREAM_RIGHT( Functions.class, "streamRight", DataContext.class, Enumerable.class, Function0.class, List.class ),
     STREAM_GRAPH_ROWS( Functions.class, "streamGraphRows", DataContext.class, Enumerable.class, Function0.class, List.class, boolean.class ),
     APPEND_GRAPH_ROW_ID( Functions.class, "appendGraphRowId", Enumerable.class ),
-    MATERIALIZE_GRAPH_ROWS( Functions.class, "materializeGraphRows", Enumerable.class ),
+    MATERIALIZE_GRAPH_ROWS( Functions.class, "materializeGraphRows", Enumerable.class, boolean.class ),
     ENFORCE_CONSTRAINT( Functions.class, "enforceConstraint", DataContext.class, Function0.class, Function0.class, List.class, List.class ),
     PARSE_ARRAY_FROM_TEXT( Functions.class, "reparse", String.class ),
     QUERYABLE_SELECT( Queryable.class, "select", FunctionExpression.class ),
@@ -551,6 +552,8 @@ public enum BuiltInMethod {
     CYPHER_MAP_CONSTRUCTOR( CypherFunctions.class, "constructMap", PolyValue[].class ),
     CYPHER_NODES( CypherFunctions.class, "nodes", PolyValue.class ),
     CYPHER_RELATIONSHIPS( CypherFunctions.class, "relationships", PolyValue.class ),
+    CYPHER_SHORTEST_PATH_VALUE( CypherFunctions.class, "shortestPathValue", PolyGraph.class, PolyPath.class, PolyValue.class, PolyValue.class,
+            PolyValue.class, Function0.class, Function0.class, Function0.class ),
     CYPHER_LENGTH( CypherFunctions.class, "pathLength", PolyValue.class ),
     CYPHER_SIZE( CypherFunctions.class, "size", PolyValue.class ),
     CYPHER_SCALAR_FUNCTION( CypherScalarFunction.class, "evaluate", PolyString.class, PolyValue[].class ),
@@ -569,8 +572,12 @@ public enum BuiltInMethod {
     CYPHER_ENDS_WITH( CypherFunctions.class, "endsWith", PolyValue.class, PolyValue.class ),
     CYPHER_CONTAINS( CypherFunctions.class, "contains", PolyValue.class, PolyValue.class ),
     CYPHER_PATH_MATCH( CypherFunctions.class, "pathMatch", PolyGraph.class, PolyPath.class ),
-    CYPHER_HAS_LABEL( CypherFunctions.class, "hasLabel", PolyNode.class, PolyString.class ),
+    CYPHER_SHORTEST_PATH_MATCH( CypherFunctions.class, "shortestPathMatch", PolyGraph.class, PolyPath.class ),
+    CYPHER_HAS_LABEL( CypherFunctions.class, "hasLabel", PolyValue.class, PolyValue.class ),
     CYPHER_HAS_PROPERTY( CypherFunctions.class, "hasProperty", GraphPropertyHolder.class, PolyString.class ),
+    CYPHER_PROPERTY_EXISTS( CypherFunctions.class, "propertyExists", PolyValue.class, PolyString.class ),
+    CYPHER_PATTERN_EXISTS( CypherFunctions.class, "patternExists", PolyGraph.class, PolyPath.class, PolyValue.class, PolyString[].class, Function0[].class ),
+    CYPHER_GRAPH_VALUE( CypherFunctions.class, "graphValue", PolyGraph.class ),
     CYPHER_NODE_MATCH( CypherFunctions.class, "nodeMatch", PolyGraph.class, PolyNode.class ),
     CYPHER_NODE_EXTRACT( CypherFunctions.class, "nodeExtract", PolyGraph.class ),
     CYPHER_MATCH_CTOR( MatchEnumerable.class, List.class ),
@@ -584,6 +591,7 @@ public enum BuiltInMethod {
     CYPHER_MATCH_PROPERTIES( CypherFunctions.class, "matchProperties", PolyValue.class, Function0.class ),
     CYPHER_MATCH_VISIBLE_PATH( CypherFunctions.class, "visibleMatchPath", PolyPath.class, PolyList.class ),
     CYPHER_BOOLEAN_PREDICATE( CypherFunctions.class, "booleanPredicate", PolyValue.class ),
+    CYPHER_QUANTIFY( CypherFunctions.class, "quantify", OperatorName.class, PolyValue.class, Function1.class ),
     CYPHER_MATCH_WITH_WHERE( CypherFunctions.class, "matchWithWhere", PolyBoolean.class, PolyBoolean.class ),
     CYPHER_VALIDATE_MATCH_RELATIONSHIP_LIST( CypherFunctions.class, "validateMatchRelationshipList", PolyValue.class, PolyBoolean.class ),
     CYPHER_EXTRACT_LABELS( CypherFunctions.class, "extractLabels", GraphPropertyHolder.class ),

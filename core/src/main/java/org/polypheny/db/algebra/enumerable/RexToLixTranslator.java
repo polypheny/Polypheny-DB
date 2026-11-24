@@ -460,6 +460,13 @@ public class RexToLixTranslator {
                     return replace.get( expr );
                 }
                 return translate( deref( expr ), nullAs, storageType );
+            case NAME_INDEX_REF:
+                Expression replacement = replace.get( expr );
+                if ( replacement != null ) {
+                    Expression typedValue = Types.castIfNecessary( typeFactory.getJavaClass( expr.getType() ), replacement );
+                    return handleNullUnboxingIfNecessary( typedValue, nullAs, storageType );
+                }
+                throw new GenericRuntimeException( "cannot translate expression " + expr );
             case LITERAL:
                 return translateLiteral(
                         (RexLiteral) expr,
@@ -940,6 +947,13 @@ public class RexToLixTranslator {
             return this;
         }
         return new RexToLixTranslator( program, typeFactory, root, inputGetter, block, ImmutableMap.of(), builder, conformance, this, correlates, replace );
+    }
+
+
+    RexToLixTranslator withReplacement( RexNode rex, Expression value ) {
+        Map<RexNode, Expression> replacements = new HashMap<>( replace );
+        replacements.put( rex, value );
+        return new RexToLixTranslator( program, typeFactory, root, inputGetter, list, exprNullableMap, builder, conformance, this, correlates, replacements );
     }
 
 

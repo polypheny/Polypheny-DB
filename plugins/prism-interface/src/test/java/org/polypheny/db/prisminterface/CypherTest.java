@@ -1246,7 +1246,7 @@ class CypherTest {
     }
 
 
-    private static PreparedStatementSignature prepareNamedCypher( PrismConnection connection, String namespace, String query ) throws IOException {
+    static PreparedStatementSignature prepareNamedCypher( PrismConnection connection, String namespace, String query ) throws IOException {
         return expect( connection.send( Request.newBuilder().setPrepareNamedStatementRequest( PrepareStatementRequest.newBuilder()
                 .setNamespaceName( namespace )
                 .setLanguageName( "cypher" )
@@ -1254,7 +1254,7 @@ class CypherTest {
     }
 
 
-    private static Response executeNamedCypher( PrismConnection connection, int statementId, Map<String, ProtoValue> values ) throws IOException {
+    static Response executeNamedCypher( PrismConnection connection, int statementId, Map<String, ProtoValue> values ) throws IOException {
         return connection.send( Request.newBuilder().setExecuteNamedStatementRequest( ExecuteNamedStatementRequest.newBuilder()
                 .setStatementId( statementId )
                 .setParameters( NamedParameters.newBuilder().putAllParameters( values ) )
@@ -4498,6 +4498,203 @@ class CypherTest {
     }
 
 
+    @Test
+    void evaluatesExistsInPrismForPropertiesAndPaths() throws IOException {
+        String namespace = "cypherexistscontract";
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            connection.execute( Catalog.DEFAULT_NAMESPACE_NAME, "sql", "CREATE GRAPH NAMESPACE " + namespace, 1 );
+            try {
+                connection.execute( namespace, "cypher", """
+                        CREATE (:Person {name:'Alice', enabled:false})-[:KNOWS]->(:Person {name:'Bob'}),
+                               (:Person {name:'Carol'})
+                        """, -1 );
+                PreparedStatementSignature prepared = prepareNamedCypher( connection, namespace, """
+                        MATCH (n:Person)
+                        RETURN n.name AS name, exists(n.enabled) AS hasEnabled,
+                               exists((n)-[:KNOWS]->(:Person {name:$target})) AS reaches
+                        ORDER BY name
+                        """ );
+                Response response = expect( executeNamedCypher( connection, prepared.getStatementId(), Map.of( "target", stringParameter( "Bob" ) ) ),
+                        Response.TypeCase.STATEMENT_RESULT );
+                RelationalFrame people = relationalFrame( response.getStatementResult().getFrame(), true, List.of( "name", "hasEnabled", "reaches" ) );
+                assertEquals( List.of( "Alice", "Bob", "Carol" ), projectedNames( people ) );
+                assertEquals( ProtoPolyType.BOOLEAN, people.getColumnMeta( 1 ).getTypeMeta().getProtoValueType() );
+                assertEquals( ProtoPolyType.BOOLEAN, people.getColumnMeta( 2 ).getTypeMeta().getProtoValueType() );
+                ProtoValue yes = PolyValueSerializer.serialize( PolyBoolean.of( true ) );
+                ProtoValue no = PolyValueSerializer.serialize( PolyBoolean.of( false ) );
+                assertEquals( List.of( yes, no, no ), people.getRowsList().stream().map( row -> row.getValues( 1 ) ).toList() );
+                assertEquals( List.of( yes, no, no ), people.getRowsList().stream().map( row -> row.getValues( 2 ) ).toList() );
+
+                Frame missing = connection.execute( namespace, "cypher", """
+                        OPTIONAL MATCH (n:Missing)
+                        RETURN exists(n.enabled) AS propertyExists, exists((n)-[:KNOWS]->()) AS patternExists
+                        """, -1 ).getResult().getFrame();
+                assertEquals( List.of( no, no ), singleRow( relationalFrame( missing, true, List.of( "propertyExists", "patternExists" ) ) ).getValuesList() );
+            } finally {
+                connection.execute( Catalog.DEFAULT_NAMESPACE_NAME, "sql", "DROP NAMESPACE " + namespace, 1 );
+            }
+        }
+    }
+
+
+    @Test
+    void returnsShortestPathAfterCypherPredicateAndExtendsOptionalMatches() throws IOException {
+        String namespace = "cyphershortestcontract";
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            connection.execute( Catalog.DEFAULT_NAMESPACE_NAME, "sql", "CREATE GRAPH NAMESPACE " + namespace, 1 );
+            try {
+                connection.execute( namespace, "cypher", """
+                        CREATE (a:Stop {name:'A'})-[:ROUTE {active:false}]->(b:Stop {name:'B'}),
+                               (a)-[:ROUTE {active:true}]->(:Stop {name:'C'})-[:ROUTE {active:true}]->(b),
+                               (:Stop {name:'D'})
+                        """, -1 );
+                Frame filtered = connection.execute( namespace, "cypher", """
+                        MATCH (a:Stop {name:'A'}), (b:Stop {name:'B'}), p = shortestPath((a)-[:ROUTE*..3]->(b))
+                        WHERE length(p) > 1
+                        RETURN p AS route, length(p) AS hops
+                        """, -1 ).getResult().getFrame();
+                RelationalFrame route = relationalFrame( filtered, true, List.of( "route", "hops" ) );
+                assertEquals( ProtoPolyType.PATH, route.getColumnMeta( 0 ).getTypeMeta().getProtoValueType() );
+                Row shortest = singleRow( route );
+                ProtoPath path = shortest.getValues( 0 ).getPath();
+                assertEquals( List.of( "A", "C", "B" ), path.getNodesList().stream()
+                        .map( node -> node.getPropertiesOrThrow( "name" ).getString().getString() ).toList() );
+                assertEquals( 2, path.getEdgesCount() );
+                assertEquals( 2, integerValue( shortest.getValues( 1 ) ) );
+
+                Frame optional = connection.execute( namespace, "cypher", """
+                        MATCH (a:Stop {name:'A'}), (b:Stop)
+                        WHERE b.name IN ['B','D']
+                        OPTIONAL MATCH p = shortestPath((a)-[:ROUTE*..3]->(b))
+                        RETURN b.name AS destination, p AS route
+                        ORDER BY destination
+                        """, -1 ).getResult().getFrame();
+                RelationalFrame destinations = relationalFrame( optional, true, List.of( "destination", "route" ) );
+                assertEquals( List.of( "B", "D" ), projectedNames( destinations ) );
+                assertEquals( 1, destinations.getRows( 0 ).getValues( 1 ).getPath().getEdgesCount() );
+                assertTrue( destinations.getRows( 1 ).getValues( 1 ).hasNull() );
+
+                Frame expression = connection.execute( namespace, "cypher", """
+                        MATCH (a:Stop {name:'A'}), (b:Stop)
+                        WHERE b.name IN ['B','D']
+                        RETURN b.name AS destination, shortestPath((a)-[:ROUTE*..3]->(b)) AS route
+                        ORDER BY destination
+                        """, -1 ).getResult().getFrame();
+                RelationalFrame expressionRows = relationalFrame( expression, true, List.of( "destination", "route" ) );
+                assertEquals( List.of( "B", "D" ), projectedNames( expressionRows ) );
+                assertEquals( 1, expressionRows.getRows( 0 ).getValues( 1 ).getPath().getEdgesCount() );
+                assertTrue( expressionRows.getRows( 1 ).getValues( 1 ).hasNull() );
+
+                PreparedStatementSignature prepared = prepareNamedCypher( connection, namespace, """
+                        MATCH (a:Stop {name:'A'}), (b:Stop {name:'B'})
+                        RETURN length(shortestPath((a)-[:ROUTE*..3 {active:$active}]->(b))) AS hops
+                        """ );
+                for ( boolean active : List.of( true, false ) ) {
+                    Response response = expect( executeNamedCypher( connection, prepared.getStatementId(),
+                            Map.of( "active", PolyValueSerializer.serialize( PolyBoolean.of( active ) ) ) ), Response.TypeCase.STATEMENT_RESULT );
+                    Row row = singleRow( relationalFrame( response.getStatementResult().getFrame(), true, List.of( "hops" ) ) );
+                    assertEquals( active ? 2 : 1, integerValue( row.getValues( 0 ) ) );
+                }
+
+                Frame bound = connection.execute( namespace, "cypher", """
+                        MATCH (a:Stop {name:'A'})-[edges:ROUTE*2..2]->(b:Stop {name:'B'})
+                        RETURN length(shortestPath((a)-[edges:ROUTE*..3]->(b))) AS hops
+                        """, -1 ).getResult().getFrame();
+                assertEquals( 2, integerValue( singleRow( relationalFrame( bound, true, List.of( "hops" ) ) ).getValues( 0 ) ) );
+
+                Frame combined = connection.execute( namespace, "cypher", """
+                        MATCH (a:Stop {name:'A'}), (b:Stop {name:'B'}), p = shortestPath((a)-[:ROUTE*..3]->(b))
+                        WHERE exists((a)-[:ROUTE]->(b)) AND length(p) > 1
+                        RETURN length(p) AS hops
+                        """, -1 ).getResult().getFrame();
+                assertEquals( 2, integerValue( singleRow( relationalFrame( combined, true, List.of( "hops" ) ) ).getValues( 0 ) ) );
+            } finally {
+                connection.execute( Catalog.DEFAULT_NAMESPACE_NAME, "sql", "DROP NAMESPACE " + namespace, 1 );
+            }
+        }
+    }
+
+
+    @Test
+    void evaluatesPatternPredicatesInBooleanExpressions() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            Frame frame = connection.cypher( """
+                    MATCH (n:Person)
+                    RETURN n.name AS name,
+                           CASE WHEN (n)-[:KNOWS]->() THEN 1 ELSE 2 END AS branch,
+                           NOT (n)-[:KNOWS]->() AS missing,
+                           ((n)-[:KNOWS]->()) AND true AS conjunction,
+                           false OR (n)-[:KNOWS]->() AS disjunction,
+                           ((n)-[:KNOWS]->()) XOR true AS exclusive,
+                           ((n)-[:KNOWS]->()) XOR null AS unknown
+                    ORDER BY name
+                    """, -1 ).getResult().getFrame();
+            RelationalFrame people = relationalFrame( frame, true,
+                    List.of( "name", "branch", "missing", "conjunction", "disjunction", "exclusive", "unknown" ) );
+            assertEquals( List.of( "Alice", "Bob", "Charlie" ), projectedNames( people ) );
+            for ( int i = 0; i < 3; i++ ) {
+                Row row = people.getRows( i );
+                boolean hasRelationship = i < 2;
+                assertEquals( hasRelationship ? 1 : 2, integerValue( row.getValues( 1 ) ) );
+                assertEquals( PolyValueSerializer.serialize( PolyBoolean.of( !hasRelationship ) ), row.getValues( 2 ) );
+                assertEquals( PolyValueSerializer.serialize( PolyBoolean.of( hasRelationship ) ), row.getValues( 3 ) );
+                assertEquals( PolyValueSerializer.serialize( PolyBoolean.of( hasRelationship ) ), row.getValues( 4 ) );
+                assertEquals( PolyValueSerializer.serialize( PolyBoolean.of( !hasRelationship ) ), row.getValues( 5 ) );
+                assertTrue( row.getValues( 6 ).hasNull() );
+            }
+        }
+    }
+
+
+    @Test
+    void evaluatesPatternExistsInCorrelatedCallProjection() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            Frame frame = connection.cypher( """
+                    MATCH (n:Person)
+                    CALL {
+                        WITH n
+                        RETURN exists((n)-[:KNOWS]->()) AS reaches
+                    }
+                    RETURN n.name AS name, reaches ORDER BY name
+                    """, -1 ).getResult().getFrame();
+            RelationalFrame people = relationalFrame( frame, true, List.of( "name", "reaches" ) );
+            assertEquals( List.of( "Alice", "Bob", "Charlie" ), projectedNames( people ) );
+            assertEquals( List.of( true, true, false ).stream().map( value -> PolyValueSerializer.serialize( PolyBoolean.of( value ) ) ).toList(),
+                    people.getRowsList().stream().map( row -> row.getValues( 1 ) ).toList() );
+        }
+    }
+
+
+    @Test
+    void graphExpressionsSeeEarlierAssignmentsInTheSameSet() throws IOException {
+        String namespace = "cyphersetgraphvisibility";
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            connection.execute( Catalog.DEFAULT_NAMESPACE_NAME, "sql", "CREATE GRAPH NAMESPACE " + namespace, 1 );
+            try {
+                connection.execute( namespace, "cypher", "CREATE (:Start)-[:ROAD]->(:End)", -1 );
+                Frame updated = connection.execute( namespace, "cypher", """
+                        MATCH (a:Start)-[r:ROAD]->(b:End)
+                        SET b.ready = true, r.weight = 2,
+                            b.reachable = exists((a)-[:ROAD {weight:2}]->(b {ready:true})),
+                            b.hops = length(shortestPath((a)-[:ROAD* {weight:2}]->(b {ready:true})))
+                        RETURN b.reachable AS reachable, b.hops AS hops
+                        """, -1 ).getResult().getFrame();
+                Frame persisted = connection.execute( namespace, "cypher", """
+                        MATCH (:Start)-[:ROAD {weight:2}]->(b:End {ready:true})
+                        RETURN b.reachable AS reachable, b.hops AS hops
+                        """, -1 ).getResult().getFrame();
+                for ( Frame result : List.of( updated, persisted ) ) {
+                    Row row = singleRow( relationalFrame( result, true, List.of( "reachable", "hops" ) ) );
+                    assertEquals( PolyValueSerializer.serialize( PolyBoolean.of( true ) ), row.getValues( 0 ) );
+                    assertEquals( 1, integerValue( row.getValues( 1 ) ) );
+                }
+            } finally {
+                connection.execute( Catalog.DEFAULT_NAMESPACE_NAME, "sql", "DROP NAMESPACE " + namespace, 1 );
+            }
+        }
+    }
+
+
     static RelationalFrame relationalFrame( Frame frame, boolean isLast, List<String> labels ) {
         assertTrue( frame.hasRelationalFrame(), () -> "Expected a relational frame but got " + frame.getResultCase() );
         assertEquals( isLast, frame.getIsLast() );
@@ -4744,7 +4941,7 @@ class CypherTest {
     }
 
 
-    private static Response expect( Response response, Response.TypeCase type ) {
+    static Response expect( Response response, Response.TypeCase type ) {
         assertEquals( type, response.getTypeCase(), () -> response.getErrorResponse().getMessage() );
         return response;
     }

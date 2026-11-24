@@ -73,7 +73,6 @@ import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.BlockStatement;
-import org.apache.calcite.linq4j.tree.ConditionalStatement;
 import org.apache.calcite.linq4j.tree.ConstantExpression;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.ExpressionType;
@@ -103,7 +102,9 @@ import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.nodes.TimeUnitRange;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.schema.Function;
 import org.polypheny.db.schema.ImplementableAggFunction;
 import org.polypheny.db.schema.ImplementableFunction;
@@ -114,6 +115,8 @@ import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.type.entity.graph.PolyGraph;
+import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.util.BuiltInMethod;
@@ -836,13 +839,11 @@ public class RexImpTable {
 
 
     private void defineCypherMethods() {
-        CypherImplementor implementor = new CypherImplementor();
         QueryLanguage cypher = QueryLanguage.from( "cypher" );
         map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_CASE ), RexImpTable::implementCypherCase );
-        map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_ALL_MATCH ), implementor );
-        map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_ANY_MATCH ), implementor );
-        map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_SINGLE_MATCH ), implementor );
-        map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_NONE_MATCH ), implementor );
+        for ( OperatorName quantifier : List.of( OperatorName.CYPHER_ALL_MATCH, OperatorName.CYPHER_ANY_MATCH, OperatorName.CYPHER_NONE_MATCH, OperatorName.CYPHER_SINGLE_MATCH ) ) {
+            map.put( OperatorRegistry.get( cypher, quantifier ), RexImpTable::implementCypherQuantifier );
+        }
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_LIKE ), BuiltInMethod.CYPHER_LIKE.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EQUALS ), BuiltInMethod.CYPHER_EQUALS.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_NOT_EQUALS ), BuiltInMethod.CYPHER_NOT_EQUALS.method, NullPolicy.NONE );
@@ -852,6 +853,7 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_SLICE ), BuiltInMethod.CYPHER_SLICE.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_NODES ), BuiltInMethod.CYPHER_NODES.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_RELATIONSHIPS ), BuiltInMethod.CYPHER_RELATIONSHIPS.method, NullPolicy.NONE );
+        map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_SHORTEST_PATH_VALUE ), RexImpTable::implementCypherShortestPathValue );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_LENGTH ), BuiltInMethod.CYPHER_LENGTH.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_SIZE ), BuiltInMethod.CYPHER_SIZE.method, NullPolicy.NONE );
         defineImplementor( OperatorRegistry.get( cypher, OperatorName.CYPHER_SCALAR_FUNCTION ), NullPolicy.NONE,
@@ -883,6 +885,8 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_NODE_MATCH ), BuiltInMethod.CYPHER_NODE_MATCH.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_HAS_LABEL ), BuiltInMethod.CYPHER_HAS_LABEL.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_HAS_PROPERTY ), BuiltInMethod.CYPHER_HAS_PROPERTY.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_PROPERTY_EXISTS ), BuiltInMethod.CYPHER_PROPERTY_EXISTS.method, NullPolicy.NONE );
+        map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_PATTERN_EXISTS ), RexImpTable::implementCypherPatternExists );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_PROPERTY ), BuiltInMethod.CYPHER_EXTRACT_PROPERTY.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_PROPERTIES ), BuiltInMethod.CYPHER_EXTRACT_PROPERTIES.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_EXTRACT_ID ), BuiltInMethod.CYPHER_EXTRACT_ID.method, NullPolicy.NONE );
@@ -977,15 +981,64 @@ public class RexImpTable {
     }
 
 
+    private static Expression implementCypherPatternExists( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
+        List<RexNode> operands = call.getOperands();
+        Expression graph = translator.translate( operands.get( 0 ), NullAs.NULL );
+        Expression template = translator.translate( operands.get( 1 ), NullAs.NULL );
+        Expression bindings = translator.translate( operands.get( 2 ), NullAs.NULL, PolyValue.class );
+        List<Expression> propertyBindings = new ArrayList<>();
+        List<Expression> properties = new ArrayList<>();
+        for ( int i = 3; i < operands.size(); i += 2 ) {
+            propertyBindings.add( translator.translate( operands.get( i ), NullAs.NULL, PolyString.class ) );
+            properties.add( deferredCypherValue( translator, operands.get( i + 1 ) ) );
+        }
+        return nullAs.handle( Expressions.call( BuiltInMethod.CYPHER_PATTERN_EXISTS.method, graph, template, bindings,
+                Expressions.newArrayInit( PolyString.class, propertyBindings ), Expressions.newArrayInit( Function0.class, properties ) ) );
+    }
+
+
     private static Expression implementCypherMatchProperties( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
         List<RexNode> operands = call.getOperands();
         Expression candidate = translator.translate( operands.get( 0 ), NullAs.NULL, PolyValue.class );
         // A variable-length pattern tests each captured relationship, with no property evaluation for zero hops.
+        return nullAs.handle( Expressions.call( BuiltInMethod.CYPHER_MATCH_PROPERTIES.method, candidate, deferredCypherValue( translator, operands.get( 1 ) ) ) );
+    }
+
+
+    private static Expression deferredCypherValue( RexToLixTranslator translator, RexNode value ) {
         BlockBuilder block = new BlockBuilder( false, translator.getList() );
-        Expression properties = translator.setBlock( block ).translate( operands.get( 1 ), NullAs.NULL, PolyValue.class );
-        block.add( Expressions.return_( null, properties ) );
-        return nullAs.handle( Expressions.call( BuiltInMethod.CYPHER_MATCH_PROPERTIES.method, candidate,
-                Expressions.lambda( Function0.class, block.toBlock() ) ) );
+        block.add( Expressions.return_( null, translator.setBlock( block ).translate( value, NullAs.NULL, PolyValue.class ) ) );
+        return Expressions.lambda( Function0.class, block.toBlock() );
+    }
+
+
+    private static Expression implementCypherShortestPathValue( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
+        List<RexNode> operands = call.getOperands();
+        List<Expression> arguments = new ArrayList<>( List.of(
+                translator.translate( operands.get( 0 ), NullAs.NULL, PolyGraph.class ),
+                translator.translate( operands.get( 1 ), NullAs.NULL, PolyPath.class ),
+                translator.translate( operands.get( 2 ), NullAs.NULL, PolyValue.class ),
+                translator.translate( operands.get( 3 ), NullAs.NULL, PolyValue.class ),
+                translator.translate( operands.get( 4 ), NullAs.NULL, PolyValue.class ) ) );
+        for ( RexNode properties : operands.subList( 5, operands.size() ) ) {
+            arguments.add( RexUtil.isNullLiteral( translator.deref( properties ), false )
+                    ? Expressions.constant( null, Function0.class )
+                    : deferredCypherValue( translator, properties ) );
+        }
+        return nullAs.handle( Expressions.call( BuiltInMethod.CYPHER_SHORTEST_PATH_VALUE.method, arguments ) );
+    }
+
+
+    private static Expression implementCypherQuantifier( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
+        List<RexNode> operands = call.getOperands();
+        Expression list = translator.translate( operands.get( 0 ), NullAs.NULL, PolyValue.class );
+        RexNameRef variable = (RexNameRef) translator.deref( operands.get( 1 ) );
+        ParameterExpression item = Expressions.parameter( Modifier.FINAL, PolyValue.class, variable.getName() );
+        BlockBuilder body = new BlockBuilder( false, translator.getList() );
+        Expression predicate = translator.setBlock( body ).withReplacement( variable, item ).translate( operands.get( 2 ), NullAs.NULL, PolyBoolean.class );
+        body.add( Expressions.return_( null, predicate ) );
+        return nullAs.handle( Expressions.call( BuiltInMethod.CYPHER_QUANTIFY.method,
+                Expressions.constant( call.op.getOperatorName() ), list, Expressions.lambda( Function1.class, body.toBlock(), item ) ) );
     }
 
 
@@ -2667,101 +2720,6 @@ public class RexImpTable {
                 return node;
             }
             return null;
-        }
-
-    }
-
-
-    private static class CypherImplementor implements CallImplementor {
-
-        @Override
-        public Expression implement( RexToLixTranslator translator, RexCall call, NullAs nullAs ) {
-            // GRAPH, WHERE
-            switch ( call.op.getOperatorName() ) {
-                // if i0 is list:
-                //     throw exception
-                // List list = (List) i0;
-                // int count = 0;
-                // for e in list:
-                //    if where(e):
-                //      count++;
-                // return list.count() == count (ALL)
-                // return count == 1 (SINGLE)
-                // return count >= 1 (ANY)
-                // return count == 0 (NONE)
-                case CYPHER_ALL_MATCH:
-                case CYPHER_ANY_MATCH:
-                case CYPHER_NONE_MATCH:
-                case CYPHER_SINGLE_MATCH:
-                    BlockBuilder blockBuilder = translator.getList();
-
-                    RexNode list = call.getOperands().get( 0 );
-
-                    Expression list_ = translator.translate( list, NullAs.NULL );
-                    blockBuilder.add( EnumUtils.ifThen(
-                            Expressions.typeIs( list_, List.class ),
-                            Expressions.block(
-                                    Expressions.throw_(
-                                            Expressions.new_(
-                                                    RuntimeException.class,
-                                                    Expressions.constant( "The supplied element is no collection to test the predicate against." ) ) ) ) ) );
-
-                    ParameterExpression cList = Expressions.parameter( List.class );
-                    blockBuilder.add( Expressions.declare( Modifier.PRIVATE, cList, Expressions.convert_( list_, List.class ) ) );
-
-                    ParameterExpression count_ = Expressions.parameter( int.class, "count_" + System.nanoTime() );
-                    blockBuilder.add( Expressions.declare( Modifier.PRIVATE, count_, Expressions.constant( 0 ) ) );
-
-                    ParameterExpression i_ = Expressions.parameter( int.class, "i_" + System.nanoTime() );
-                    blockBuilder.add( Expressions.declare( Modifier.PRIVATE, i_, Expressions.constant( 0 ) ) );
-
-                    ConditionalStatement ifIncr = EnumUtils.ifThen( translator.translate( call.operands.get( 1 ) ), Expressions.block( Expressions.statement( Expressions.increment( i_ ) ) ) );
-
-                    blockBuilder.add( EnumUtils.for_( i_, cList, Expressions.block( ifIncr ) ) );
-
-                    ParameterExpression return_ = Expressions.parameter( boolean.class, "return_" );
-
-                    switch ( call.op.getOperatorName() ) {
-                        case CYPHER_ALL_MATCH:
-                            blockBuilder.add(
-                                    Expressions.declare(
-                                            Modifier.PRIVATE,
-                                            return_,
-                                            Expressions.equal( count_, Expressions.call( list_, "size" ) ) ) );
-
-                            return return_;
-                        case CYPHER_SINGLE_MATCH:
-                            blockBuilder.add(
-                                    Expressions.declare(
-                                            Modifier.PRIVATE,
-                                            return_,
-                                            Expressions.equal( count_, Expressions.constant( 1 ) ) ) );
-
-                            return return_;
-                        case CYPHER_NONE_MATCH:
-                            blockBuilder.add(
-                                    Expressions.declare(
-                                            Modifier.PRIVATE,
-                                            return_,
-                                            Expressions.equal( count_, Expressions.constant( 0 ) ) ) );
-
-                            return return_;
-                        case CYPHER_ANY_MATCH:
-                            blockBuilder.add(
-                                    Expressions.declare(
-                                            Modifier.PRIVATE,
-                                            return_,
-                                            Expressions.greaterThanOrEqual( count_, Expressions.constant( 1 ) ) ) );
-
-                            return return_;
-                    }
-
-                case CYPHER_PATH_MATCH:
-                    throw new UnsupportedOperationException( "Pattern match is not yet supported" );
-
-            }
-
-            throw new UnsupportedOperationException( "Cypher operation was not supported." );
         }
 
     }

@@ -33,6 +33,7 @@ public class RexNameRef extends RexVariable {
     public List<String> names;
     @Nullable
     Integer index;
+    boolean scoped;
 
 
     public Optional<Integer> getIndex() {
@@ -44,9 +45,15 @@ public class RexNameRef extends RexVariable {
      * Regular expression, that references an input field by name
      */
     public RexNameRef( List<String> names, @Nullable Integer index, AlgDataType type ) {
+        this( names, index, type, false );
+    }
+
+
+    private RexNameRef( List<String> names, @Nullable Integer index, AlgDataType type, boolean scoped ) {
         super( String.join( ".", names ), type );
         this.names = names.stream().filter( n -> !n.isEmpty() ).toList();
         this.index = index;
+        this.scoped = scoped;
     }
 
 
@@ -62,6 +69,12 @@ public class RexNameRef extends RexVariable {
 
     public static RexNameRef create( String name, @Nullable Integer index, AlgDataType type ) {
         return new RexNameRef( List.of( name.split( "\\." ) ), index, type );
+    }
+
+
+    /** A local expression binding whose value is supplied by the surrounding operator. */
+    public static RexNameRef scoped( String name, AlgDataType type ) {
+        return new RexNameRef( List.of( name ), null, type, true );
     }
 
 
