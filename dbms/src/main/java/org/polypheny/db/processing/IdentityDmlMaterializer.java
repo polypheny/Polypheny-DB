@@ -300,7 +300,7 @@ final class IdentityDmlMaterializer {
         AlgNode checks = ConstraintEnforceAttacher.enforceConstraintBeforeQuery( root.withAlg( validation ), statement ).alg;
         while ( checks instanceof LogicalConditionalExecute check ) {
             if ( !readRows( check.getLeft(), statement, parameterRowType ).isEmpty() ) {
-                throw new ConstraintViolationException( check.getExceptionMessage() );
+                throw new ConstraintViolationException( check.getExceptionMessage(), ConstraintViolationException.sqlStateFor( check.getExceptionClass() ) );
             }
             checks = check.getRight();
         }

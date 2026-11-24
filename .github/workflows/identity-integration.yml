@@ -90,7 +90,7 @@ jobs:
           POLYPHENY_HOME="$RUNNER_TEMP/identity-db-home" \
             ./gradlew "-Dmaven.repo.local=$MAVEN_DIR" "-PpolyphenyUiZip=$UI_ARCHIVE" \
               :dbms:assemble :core:test --tests '*Identity*' --tests '*DurableFile*' \
-              :dbms:test --tests '*Identity*' --tests '*JdbcStatementTest' \
+              :dbms:test --tests 'org.polypheny.db.sql.Identity*' --tests '*IdentityWebUiTest' --tests '*JdbcStatementTest' \
               --tests '*JdbcPreparedStatementsTest' --tests '*CatalogTransactionTest'
 
           POLYPHENY_HOME="$RUNNER_TEMP/identity-sql-home" \
@@ -99,7 +99,8 @@ jobs:
 
           POLYPHENY_HOME="$RUNNER_TEMP/identity-prism-home" \
             ./gradlew "-Dmaven.repo.local=$MAVEN_DIR" "-PpolyphenyUiZip=$UI_ARCHIVE" \
-              :plugins:prism-interface:test --tests '*PrismIdentityKeysTest' --tests '*PreparedIndexedStatementTest'
+              :plugins:prism-interface:test --tests '*PrismIdentityKeysTest' --tests '*PreparedIndexedStatementTest' \
+              --tests '*PrismErrorResponseTest' --tests '*PrismNativeCastErrorTest'
 
           POLYPHENY_HOME="$RUNNER_TEMP/identity-workflow-home" \
             ./gradlew "-Dmaven.repo.local=$MAVEN_DIR" "-PpolyphenyUiZip=$UI_ARCHIVE" \

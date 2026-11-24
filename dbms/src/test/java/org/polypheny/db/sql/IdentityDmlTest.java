@@ -210,7 +210,8 @@ class IdentityDmlTest {
                 assertEquals( 2, statement.executeUpdate( "INSERT INTO identity_unique_update (pk, u) VALUES (1, 1), (2, 2)" ) );
                 assertEquals( 2, statement.executeUpdate( "UPDATE identity_unique_update SET seq = DEFAULT" ) );
                 assertEquals( 2, statement.executeUpdate( "UPDATE identity_unique_update SET seq = DEFAULT, u = CASE u WHEN 1 THEN 2 ELSE 1 END" ) );
-                assertThrows( SQLException.class, () -> statement.executeUpdate( "UPDATE identity_unique_update SET seq = DEFAULT, u = 1" ) );
+                SQLException violation = assertThrows( SQLException.class, () -> statement.executeUpdate( "UPDATE identity_unique_update SET seq = DEFAULT, u = 1" ) );
+                assertTrue( violation.getMessage().contains( "identity_u" ), violation.getMessage() );
                 try ( ResultSet rows = statement.executeQuery( "SELECT pk, seq, u FROM identity_unique_update ORDER BY pk" ) ) {
                     assertTrue( rows.next() );
                     assertEquals( 1, rows.getInt( 1 ) );

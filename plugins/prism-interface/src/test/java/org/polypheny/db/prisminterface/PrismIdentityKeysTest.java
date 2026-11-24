@@ -18,6 +18,7 @@ package org.polypheny.db.prisminterface;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.SQLException;
@@ -29,9 +30,11 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
 import org.polypheny.db.prisminterface.statements.PIPreparedIndexedStatement;
 import org.polypheny.db.prisminterface.statements.PIUnparameterizedStatement;
+import org.polypheny.db.processing.ConstraintStrategy;
 import org.polypheny.prism.BatchGeneratedKeys;
 import org.polypheny.prism.ExecuteUnparameterizedStatementRequest;
 import org.polypheny.prism.GeneratedKeysRequest;
@@ -90,6 +93,40 @@ class PrismIdentityKeysTest {
                 client.getStatementManager().closeAll();
                 setup.executeUpdate( "DROP TABLE prism_identity_keys" );
             }
+        }
+    }
+
+
+    @Test
+    void reportsTheUniqueSqlStateForIdentityUpdatesUnderBothStrategies() throws SQLException {
+        boolean uniqueConstraints = RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean();
+        Enum<?> previousStrategy = RuntimeConfig.CONSTRAINT_ENFORCEMENT_STRATEGY.getEnum();
+        RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.setBoolean( true );
+        try ( JdbcConnection connection = new JdbcConnection( true );
+                Statement setup = connection.getConnection().createStatement() ) {
+            setup.executeUpdate( "CREATE TABLE prism_identity_sqlstate (pk INTEGER PRIMARY KEY, seq SERIAL, u INTEGER, CONSTRAINT identity_state_u UNIQUE (u))" );
+            PIClient client = new PIClient( "prism-identity-sqlstate", Catalog.snapshot().getUser( Catalog.USER_NAME ).orElseThrow(),
+                    TestHelper.getInstance().getTransactionManager(), Catalog.snapshot().getNamespace( Catalog.DEFAULT_NAMESPACE_NAME ).orElseThrow(),
+                    new MonitoringPage( "prism-identity-sqlstate", "Prism identity SQLSTATE test" ), true );
+            try {
+                setup.executeUpdate( "INSERT INTO prism_identity_sqlstate (pk, u) VALUES (1, 10), (2, 20)" );
+                for ( ConstraintStrategy strategy : ConstraintStrategy.values() ) {
+                    RuntimeConfig.CONSTRAINT_ENFORCEMENT_STRATEGY.setEnum( strategy );
+                    PIUnparameterizedStatement write = client.getStatementManager().createUnparameterizedStatement( ExecuteUnparameterizedStatementRequest.newBuilder()
+                            .setLanguageName( "sql" )
+                            .setStatement( "UPDATE prism_identity_sqlstate SET seq = DEFAULT, u = 99" )
+                            .build() );
+                    RuntimeException error = assertThrows( RuntimeException.class, () -> write.execute( -1 ) );
+                    assertEquals( "23505", PIService.createErrorResponse( 1, error ).getErrorResponse().getDetails().getState(), strategy.name() );
+                }
+            } finally {
+                client.rollbackCurrentTransaction( null );
+                client.getStatementManager().closeAll();
+                setup.executeUpdate( "DROP TABLE prism_identity_sqlstate" );
+            }
+        } finally {
+            RuntimeConfig.CONSTRAINT_ENFORCEMENT_STRATEGY.setEnum( previousStrategy );
+            RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.setBoolean( uniqueConstraints );
         }
     }
 
