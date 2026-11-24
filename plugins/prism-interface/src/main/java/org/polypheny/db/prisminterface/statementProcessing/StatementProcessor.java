@@ -60,7 +60,10 @@ public class StatementProcessor {
         if ( piStatement.getLanguage().dataModel() == DataModel.GRAPH ) {
             parsed = parseGraphStatement( piStatement, processor );
         } else {
-            List<? extends Node> statements = processor.parse( piStatement.getQuery() );
+            String query = piStatement.getQuery();
+            List<? extends Node> statements = piStatement.getLanguage().dataModel() == DataModel.RELATIONAL
+                    ? processor.splitStatements( query ).stream().flatMap( command -> processor.parse( command ).stream() ).toList()
+                    : processor.parse( query );
             if ( statements.size() != 1 ) {
                 throw new PIServiceException( "An update batch requires exactly one statement per member", "42601" );
             }

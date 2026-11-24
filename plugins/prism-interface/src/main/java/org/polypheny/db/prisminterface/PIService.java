@@ -33,6 +33,7 @@ import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
+import org.polypheny.db.prisminterface.statements.BatchProgress;
 import org.polypheny.db.prisminterface.statements.PIPreparedIndexedStatement;
 import org.polypheny.db.prisminterface.statements.PIPreparedNamedStatement;
 import org.polypheny.db.prisminterface.statements.PIStatement;
@@ -466,16 +467,18 @@ class PIService {
     private Response executeUnparameterizedStatementBatch( ExecuteUnparameterizedStatementBatchRequest request, ResponseMaker<StatementBatchResponse> responseObserver ) throws IOException {
         PIClient client = getClient();
         PIUnparameterizedStatementBatch batch = client.getStatementManager().createUnparameterizedStatementBatch( request.getStatementsList() );
+        BatchProgress progress = new BatchProgress( batch.getBatchId() );
         try {
             List<Node> parsedStatements = batch.validate();
             sendOneMessage( responseObserver.makeResponse( PrismUtils.createStatementBatchStatus( batch.getBatchId() ), false ) );
-            return responseObserver.makeResponse( batch.executeBatch( parsedStatements ) );
+            return responseObserver.makeResponse( batch.executeBatch( parsedStatements, progress ) );
         } catch ( Throwable failure ) {
             try {
                 client.getStatementManager().closeStatementOrBatch( batch.getBatchId() );
             } catch ( RuntimeException closeFailure ) {
                 failure.addSuppressed( closeFailure );
             }
+            sendBatchProgressOnFailure( client, responseObserver, progress, failure );
             throw failure;
         }
     }
@@ -508,11 +511,31 @@ class PIService {
             List<List<PolyValue>> bindings = request.getParametersList().stream()
                     .map( binding -> PrismValueDeserializer.deserializeParameterList( binding.getParametersList() ) )
                     .toList();
-            return resultObserver.makeResponse( statement.executeSequentialBatch( bindings ) );
+            BatchProgress progress = new BatchProgress( statement.getId() );
+            try {
+                return resultObserver.makeResponse( statement.executeSequentialBatch( bindings, progress ) );
+            } catch ( Throwable failure ) {
+                sendBatchProgressOnFailure( client, resultObserver, progress, failure );
+                throw failure;
+            }
         }
         List<List<PolyValue>> valuesList = PrismValueDeserializer.deserializeParameterLists( request.getParametersList() );
         List<Long> updateCounts = statement.executeBatch( valuesList );
         return resultObserver.makeResponse( PrismUtils.createStatementBatchStatus( statement.getId(), updateCounts ) );
+    }
+
+
+    private void sendBatchProgressOnFailure( PIClient client, ResponseMaker<StatementBatchResponse> observer, BatchProgress progress, Throwable failure ) {
+        if ( client.supportsPartialBatchResults() ) {
+            StatementBatchResponse partial = progress.partialResponse();
+            if ( partial.getScalarsCount() > 0 ) {
+                try {
+                    sendOneMessage( observer.makeResponse( partial, false ) );
+                } catch ( IOException sendFailure ) {
+                    failure.addSuppressed( sendFailure );
+                }
+            }
+        }
     }
 
 
@@ -622,7 +645,13 @@ class PIService {
                 throw new PIServiceException( "Relational Cypher results require Prism 2.3 or later", "0A000" );
             }
         }
-        client.getPIClientInfoProperties().putAll( properties.getPropertiesMap() );
+        properties.getPropertiesMap().forEach( ( key, value ) -> {
+            if ( PIClientInfoProperties.PARTIAL_BATCH_RESULTS.equals( key ) ) {
+                client.setPartialBatchResults( "true".equals( value ) );
+            } else {
+                client.getPIClientInfoProperties().setProperty( key, value );
+            }
+        } );
         return reponseObserver.makeResponse( ClientInfoPropertiesResponse.newBuilder().build() );
     }
 

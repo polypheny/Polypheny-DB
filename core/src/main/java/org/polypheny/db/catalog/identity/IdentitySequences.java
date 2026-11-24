@@ -35,6 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.catalog.entity.logical.IdentityColumn;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.persistance.DurableFile;
+import org.polypheny.db.runtime.SqlStateException;
 import org.polypheny.db.type.PolyType;
 
 
@@ -196,10 +197,10 @@ public final class IdentitySequences {
     }
 
 
-    private static GenericRuntimeException exhausted( IdentityColumn identity ) {
+    private static SqlStateException exhausted( IdentityColumn identity ) {
         boolean ascending = identity.increment() > 0;
-        return new GenericRuntimeException( "Identity sequence has reached its %s value (%s).",
-                ascending ? "maximum" : "minimum", ascending ? identity.max() : identity.min() );
+        return new SqlStateException( String.format( "Identity sequence has reached its %s value (%s).",
+                ascending ? "maximum" : "minimum", ascending ? identity.max() : identity.min() ), "2200H" );
     }
 
 

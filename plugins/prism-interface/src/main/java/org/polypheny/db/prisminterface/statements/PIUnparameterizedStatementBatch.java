@@ -26,7 +26,6 @@ import org.polypheny.db.prisminterface.PIServiceException;
 import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
 import org.polypheny.db.prisminterface.utils.PropertyUtils;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
-import org.polypheny.prism.BatchGeneratedKeys;
 import org.polypheny.prism.StatementBatchResponse;
 import org.polypheny.prism.StatementResult;
 
@@ -60,30 +59,30 @@ public class PIUnparameterizedStatementBatch {
     }
 
 
-    public StatementBatchResponse executeBatch( List<Node> parsedStatements ) {
+    public StatementBatchResponse executeBatch( List<Node> parsedStatements, BatchProgress progress ) {
         return includesGraphStatement
-                ? prismInterfaceClient.executeAtomicBatch( () -> executeMembers( parsedStatements ) )
-                : executeMembers( parsedStatements );
+                ? prismInterfaceClient.executeAtomicBatch( () -> executeMembers( parsedStatements, progress ) )
+                : executeMembers( parsedStatements, progress );
     }
 
 
-    private StatementBatchResponse executeMembers( List<Node> parsedStatements ) {
+    private StatementBatchResponse executeMembers( List<Node> parsedStatements, BatchProgress progress ) {
         int fetchSize = PropertyUtils.DEFAULT_FETCH_SIZE;
         List<List<ParsedQueryContext>> preParsedQueries = statements.stream()
                 .map( StatementProcessor::parseWithOpenAutocommitResult )
                 .toList();
-        StatementBatchResponse.Builder response = StatementBatchResponse.newBuilder().setBatchId( batchId );
         for ( int i = 0; i < statements.size(); i++ ) {
             PIUnparameterizedStatement statement = statements.get( i );
-            StatementResult result = statement.executeBatchMember( parsedStatements.get( i ), fetchSize, preParsedQueries.get( i ) );
-            response.addScalars( result.getScalar() );
-            if ( result.hasGeneratedKeys() ) {
-                response.addGeneratedKeys( BatchGeneratedKeys.newBuilder().setStatementIndex( i ).setKeys( result.getGeneratedKeys() ) );
+            Node parsed = parsedStatements.get( i );
+            if ( parsed == null && prismInterfaceClient.supportsPartialBatchResults() && statement.getLanguage().dataModel() == DataModel.RELATIONAL ) {
+                parsed = StatementProcessor.parseUpdateBatchMember( statement );
             }
+            StatementResult result = statement.executeBatchMember( parsed, fetchSize, preParsedQueries.get( i ), includesGraphStatement );
             // Batch members cannot expose a cursor.
             statement.closeResultsAndCommitIfAuto();
+            progress.add( statement, result );
         }
-        return response.build();
+        return progress.completeResponse();
     }
 
 }

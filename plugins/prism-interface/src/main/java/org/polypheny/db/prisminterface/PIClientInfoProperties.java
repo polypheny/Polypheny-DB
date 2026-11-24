@@ -23,6 +23,7 @@ import java.util.Properties;
 class PIClientInfoProperties extends Properties {
 
     static final String CYPHER_RESULT_FORMAT = "CypherResultFormat";
+    static final String PARTIAL_BATCH_RESULTS = "PolyphenyPartialBatchResults";
     static final String AUTO_FORMAT = "auto";
     static final String RELATIONAL_FORMAT = "relational";
     private static final int MAX_STRING_LENGTH = 2147483647;

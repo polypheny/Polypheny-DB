@@ -65,12 +65,12 @@ public class PIUnparameterizedStatement extends PIStatement {
     }
 
 
-    StatementResult executeBatchMember( @Nullable Node parsedStatement, int fetchSize, @Nullable List<ParsedQueryContext> preParsedQueries ) {
+    StatementResult executeBatchMember( @Nullable Node parsedStatement, int fetchSize, @Nullable List<ParsedQueryContext> preParsedQueries, boolean countOnly ) {
         return executeInTransaction( preParsedQueries != null, () -> {
             StatementProcessor.implement( this, parsedStatement, preParsedQueries );
-            return parsedStatement == null
-                    ? StatementProcessor.executeAndGetResult( this, fetchSize )
-                    : StatementProcessor.executeAndGetResult( this );
+            return countOnly
+                    ? StatementProcessor.executeAndGetResult( this )
+                    : StatementProcessor.executeAndGetResult( this, fetchSize );
         } );
     }
 

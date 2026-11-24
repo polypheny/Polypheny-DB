@@ -21,8 +21,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
@@ -31,15 +33,21 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.prisminterface.CypherTest.PrismConnection;
 import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
+import org.polypheny.db.prisminterface.statements.BatchProgress;
 import org.polypheny.db.prisminterface.statements.PIPreparedIndexedStatement;
 import org.polypheny.db.prisminterface.statements.PIUnparameterizedStatement;
 import org.polypheny.db.processing.ConstraintStrategy;
 import org.polypheny.prism.BatchGeneratedKeys;
+import org.polypheny.prism.ClientInfoProperties;
+import org.polypheny.prism.ExecuteUnparameterizedStatementBatchRequest;
 import org.polypheny.prism.ExecuteUnparameterizedStatementRequest;
 import org.polypheny.prism.GeneratedKeysRequest;
 import org.polypheny.prism.PrepareStatementRequest;
 import org.polypheny.prism.RelationalFrame;
+import org.polypheny.prism.Request;
+import org.polypheny.prism.Response;
 import org.polypheny.prism.StatementBatchResponse;
 import org.polypheny.prism.StatementResult;
 
@@ -82,7 +90,7 @@ class PrismIdentityKeysTest {
                         .setGeneratedKeys( selection )
                         .build() );
                 StatementProcessor.prepare( prepared );
-                StatementBatchResponse batch = prepared.executeSequentialBatch( List.of( List.of(), List.of() ) );
+                StatementBatchResponse batch = prepared.executeSequentialBatch( List.of( List.of(), List.of() ), new BatchProgress( prepared.getId() ) );
                 assertEquals( List.of( 1L, 1L ), batch.getScalarsList() );
                 assertEquals( List.of( 0, 1 ), batch.getGeneratedKeysList().stream().map( BatchGeneratedKeys::getStatementIndex ).toList() );
                 assertEquals( List.of( 3L, 4L ), batch.getGeneratedKeysList().stream()
@@ -92,6 +100,49 @@ class PrismIdentityKeysTest {
                 client.rollbackCurrentTransaction( null );
                 client.getStatementManager().closeAll();
                 setup.executeUpdate( "DROP TABLE prism_identity_keys" );
+            }
+        }
+    }
+
+
+    @Test
+    void sendsCommittedBatchCountsAndKeysOnlyToOptedInClients() throws IOException, SQLException {
+        String table = "prism_identity_batch_progress";
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement setup = jdbc.getConnection().createStatement() ) {
+            setup.executeUpdate( "CREATE TABLE " + table + " (id BIGSERIAL PRIMARY KEY)" );
+            try {
+                for ( boolean optIn : new boolean[]{ false, true } ) {
+                    try ( PrismConnection connection = new PrismConnection( true, 5 ) ) {
+                        if ( optIn ) {
+                            Response optedIn = connection.send( Request.newBuilder().setSetClientInfoPropertiesRequest( ClientInfoProperties.newBuilder()
+                                    .putProperties( PIClientInfoProperties.PARTIAL_BATCH_RESULTS, "true" ) ) );
+                            assertEquals( Response.TypeCase.SET_CLIENT_INFO_PROPERTIES_RESPONSE, optedIn.getTypeCase() );
+                        }
+                        GeneratedKeysRequest all = GeneratedKeysRequest.newBuilder().setAll( true ).build();
+                        Request.Builder batch = Request.newBuilder().setExecuteUnparameterizedStatementBatchRequest(
+                                ExecuteUnparameterizedStatementBatchRequest.newBuilder()
+                                        .addStatements( ExecuteUnparameterizedStatementRequest.newBuilder().setLanguageName( "sql" )
+                                                .setStatement( "INSERT INTO " + table + " DEFAULT VALUES; -- first member" ).setGeneratedKeys( all ) )
+                                        .addStatements( ExecuteUnparameterizedStatementRequest.newBuilder().setLanguageName( "sql" )
+                                                .setStatement( "INSERT INTO " + table + "_missing DEFAULT VALUES" ).setGeneratedKeys( all ) ) );
+                        List<Response> intermediate = new ArrayList<>();
+                        Response failure = connection.send( batch, intermediate::add );
+                        assertTrue( failure.hasErrorResponse() );
+                        assertEquals( "42P01", failure.getErrorResponse().getDetails().getState() );
+                        assertEquals( optIn ? 2 : 1, intermediate.size() );
+                        StatementBatchResponse started = intermediate.get( 0 ).getStatementBatchResponse();
+                        assertEquals( 0, started.getScalarsCount() );
+                        if ( optIn ) {
+                            StatementBatchResponse completed = intermediate.get( 1 ).getStatementBatchResponse();
+                            assertEquals( started.getBatchId(), completed.getBatchId() );
+                            assertEquals( List.of( 1L ), completed.getScalarsList() );
+                            assertEquals( 0, completed.getGeneratedKeys( 0 ).getStatementIndex() );
+                            assertEquals( List.of( 2L ), longs( completed.getGeneratedKeys( 0 ).getKeys().getRelationalFrame() ) );
+                        }
+                    }
+                }
+            } finally {
+                setup.executeUpdate( "DROP TABLE " + table );
             }
         }
     }

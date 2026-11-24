@@ -35,7 +35,7 @@ jobs:
         with:
           repository: polypheny/Polypheny-JDBC-Driver
           # Polypheny-JDBC-Driver #24, including the generated-key client.
-          ref: ${{ inputs.jdbc_ref || vars.IDENTITY_JDBC_REF || '729ed79e495441f6960812de5c2488c39431ee2a' }}
+          ref: ${{ inputs.jdbc_ref || vars.IDENTITY_JDBC_REF || 'c471167879edca36b41eeae0b7d8a788c24fe1c5' }}
           path: jdbc
       - uses: actions/checkout@v4
         with:
@@ -62,18 +62,18 @@ jobs:
           echo "MAVEN_DIR=$maven_dir" >> "$GITHUB_ENV"
           echo "UI_ARCHIVE=$RUNNER_TEMP/polypheny-ui.zip" >> "$GITHUB_ENV"
 
-      - name: Test and package Prism from source
+      - name: Test the released Prism protocol
         working-directory: prism
         run: |
           python -m pip install -r requirements.txt
           python -m unittest discover -s tests -v
-          ./gradlew "-Dmaven.repo.local=$MAVEN_DIR" -Pversion=2.5 publishToMavenLocal
 
       - name: Test and package JDBC from source
         working-directory: jdbc
         run: |
           ./gradlew "-Dmaven.repo.local=$MAVEN_DIR" -PdisableToolchain -PskipGraphIntegration \
-            test --tests '*GeneratedKeysTest' --tests '*DocumentMetadataTest' publishToMavenLocal
+            test --tests '*GeneratedKeys*' --tests '*DocumentMetadataTest' --tests '*MetaScrollerTest' \
+            --tests '*RpcServiceErrorTest' publishToMavenLocal
 
       - name: Build and test the UI
         working-directory: ui

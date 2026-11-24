@@ -68,6 +68,7 @@ import org.polypheny.db.sql.language.fun.SqlStdOperatorTable;
 import org.polypheny.db.sql.language.parser.SqlAbstractParserImpl;
 import org.polypheny.db.sql.language.parser.SqlParser;
 import org.polypheny.db.sql.language.validate.PolyphenyDbSqlValidator;
+import org.polypheny.db.sql.language.validate.SqlValidatorUtil;
 import org.polypheny.db.sql.sql2alg.SqlToAlgConverter;
 import org.polypheny.db.sql.sql2alg.StandardConvertletTable;
 import org.polypheny.db.tools.AlgBuilder;
@@ -264,7 +265,7 @@ public class SqlProcessor extends Processor {
 
 
     private InsertReturning insertReturning( Transaction transaction, Snapshot snapshot, SqlInsert insert ) {
-        LogicalTable table = getTable( transaction, snapshot, (SqlIdentifier) insert.getTargetTable() );
+        LogicalTable table = getValidatedInsertTarget( snapshot, insert );
         List<LogicalColumn> columns = snapshot.rel().getColumns( table.id );
         LogicalNamespace namespace = snapshot.getNamespace( table.namespaceId ).orElseThrow();
         List<LogicalColumn> selected = new ArrayList<>();
@@ -285,7 +286,7 @@ public class SqlProcessor extends Processor {
 
 
     private InsertReturning generatedKeys( Transaction transaction, Snapshot snapshot, SqlInsert insert, GeneratedKeySelection selection ) {
-        LogicalTable table = getTable( transaction, snapshot, (SqlIdentifier) insert.getTargetTable() );
+        LogicalTable table = getValidatedInsertTarget( snapshot, insert );
         List<LogicalColumn> columns = snapshot.rel().getColumns( table.id );
         LogicalNamespace namespace = snapshot.getNamespace( table.namespaceId ).orElseThrow();
         List<LogicalColumn> selected;
@@ -302,6 +303,12 @@ public class SqlProcessor extends Processor {
             selected = columns.stream().filter( column -> column.getIdentity() != null ).toList();
         }
         return returningProjection( transaction, snapshot, table, columns, selected );
+    }
+
+
+    private LogicalTable getValidatedInsertTarget( Snapshot snapshot, SqlInsert insert ) {
+        // The validator can normalize the target identifier to an unqualified name.
+        return SqlValidatorUtil.getLogicalEntity( validator.getSqlNamespace( insert ), snapshot, null, null ).unwrapOrThrow( LogicalTable.class );
     }
 
 

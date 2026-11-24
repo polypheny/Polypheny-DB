@@ -29,7 +29,7 @@ The restart sets the next generated value. Entity Settings shows and changes the
 
 ### Build and verify changes across repositories
 
-The default build uses Prism API 2.5 and JDBC Driver 3.3. Publish Prism 2.5 in Maven Central before merging and publishing JDBC Driver v3.3. Publish the matching UI bundle before releasing the DB.
+The default build uses Prism API 2.5 and JDBC Driver 3.3 from Maven Central. JDBC Driver 3.3 must be available on Maven Central for the standard DB build. Publish the matching UI bundle before releasing the DB.
 
 Before those releases, use an empty Maven directory and build the artifacts from the corresponding source checkouts. Run each command from the named checkout with the same absolute Maven directory.
 
@@ -52,7 +52,7 @@ POLYPHENY_HOME="$(mktemp -d)" ./gradlew -Dmaven.repo.local="$maven_dir" -Ppolyph
   :plugins:prism-interface:test --tests '*PrismIdentityKeysTest'
 ```
 
-The Identity integration workflow runs on draft and ready pull requests. It builds Prism 2.5 and the pinned JDBC and UI companion commits in an empty local Maven repository. Set `IDENTITY_PRISM_REF`, `IDENTITY_JDBC_REF`, and `IDENTITY_UI_REF` in the DB repository's Actions variables to verify other branches, tags, commits, or upstream pull request refs. Manual runs accept the refs as workflow inputs once the workflow is available on the DB default branch. Use a DB server that advertises identity support to manage identity columns in Entity Settings.
+The Identity integration workflow runs on draft and ready pull requests. It runs the protocol tests from the Prism 2.5 tag and builds the pinned JDBC and UI companion commits. The DB and JDBC builds resolve Prism 2.5 from Maven Central. Set `IDENTITY_PRISM_REF`, `IDENTITY_JDBC_REF`, and `IDENTITY_UI_REF` in the DB repository's Actions variables to verify other branches, tags, commits, or upstream pull request refs. Manual runs accept the refs as workflow inputs once the workflow is available on the DB default branch. Use a DB server that advertises identity support to manage identity columns in Entity Settings.
 
 ## Roadmap ##
 See the [open issues](https://github.com/polypheny/Polypheny-DB/issues) for a list of proposed features (and known issues).

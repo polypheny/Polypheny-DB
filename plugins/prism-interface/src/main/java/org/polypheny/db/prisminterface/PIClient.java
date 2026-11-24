@@ -46,6 +46,8 @@ public class PIClient {
     private final TransactionManager transactionManager;
     private final Set<Transaction> isolatedReadTransactions = new LinkedHashSet<>();
     private final int prismMinorVersion;
+    @Setter
+    private boolean partialBatchResults;
     @Getter
     private final StatementManager statementManager;
     @Getter
@@ -95,6 +97,11 @@ public class PIClient {
 
     public boolean supportsGraphValues() {
         return prismMinorVersion >= 3;
+    }
+
+
+    public boolean supportsPartialBatchResults() {
+        return prismMinorVersion >= 5 && partialBatchResults;
     }
 
 

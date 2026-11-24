@@ -135,6 +135,53 @@ class IdentityJdbcKeysTest {
     }
 
 
+    @Test
+    void returningAndGeneratedKeysUseTheQualifiedInsertTarget() throws SQLException {
+        try ( JdbcConnection jdbc = new JdbcConnection( true );
+                Statement sql = jdbc.getConnection().createStatement() ) {
+            sql.executeUpdate( "CREATE SCHEMA qualified_identity_keys" );
+            try {
+                sql.executeUpdate( "CREATE TABLE qualified_identity_keys.identity_scoped_keys (id BIGSERIAL PRIMARY KEY, marker BIGINT)" );
+                try ( ResultSet rows = sql.executeQuery( "INSERT INTO qualified_identity_keys.identity_scoped_keys (marker) VALUES (101) RETURNING id" ) ) {
+                    TestHelper.checkResultSet( rows, List.<Object[]>of( new Object[]{ 1L } ) );
+                }
+                assertEquals( 1, sql.executeUpdate( "INSERT INTO qualified_identity_keys.identity_scoped_keys (marker) VALUES (102)", Statement.RETURN_GENERATED_KEYS ) );
+                assertEquals( List.of( 2L ), readKeys( sql ) );
+
+                sql.executeUpdate( "CREATE TABLE identity_scoped_keys (marker BIGINT, id BIGSERIAL PRIMARY KEY)" );
+                try ( ResultSet rows = sql.executeQuery( "INSERT INTO qualified_identity_keys.identity_scoped_keys (marker) VALUES (103) RETURNING id" ) ) {
+                    TestHelper.checkResultSet( rows, List.<Object[]>of( new Object[]{ 3L } ) );
+                }
+                assertEquals( 1, sql.executeUpdate( "INSERT INTO qualified_identity_keys.identity_scoped_keys (marker) VALUES (104)", Statement.RETURN_GENERATED_KEYS ) );
+                assertEquals( List.of( 4L ), readKeys( sql ) );
+                try ( PreparedStatement insert = jdbc.getConnection().prepareStatement(
+                        "INSERT INTO qualified_identity_keys.identity_scoped_keys (marker) VALUES (?)", new String[]{ "id" } ) ) {
+                    insert.setLong( 1, 105 );
+                    assertEquals( 1, insert.executeUpdate() );
+                    try ( ResultSet keys = insert.getGeneratedKeys() ) {
+                        assertTrue( keys.next() );
+                        assertEquals( 5, keys.getLong( 1 ) );
+                        assertEquals( "qualified_identity_keys", keys.getMetaData().getSchemaName( 1 ) );
+                        assertFalse( keys.next() );
+                    }
+                }
+
+                try ( ResultSet rows = sql.executeQuery( "SELECT id, marker FROM qualified_identity_keys.identity_scoped_keys ORDER BY id" ) ) {
+                    TestHelper.checkResultSet( rows, List.of(
+                            new Object[]{ 1L, 101L }, new Object[]{ 2L, 102L }, new Object[]{ 3L, 103L }, new Object[]{ 4L, 104L }, new Object[]{ 5L, 105L } ) );
+                }
+                try ( ResultSet rows = sql.executeQuery( "SELECT id FROM identity_scoped_keys" ) ) {
+                    assertFalse( rows.next() );
+                }
+            } finally {
+                sql.executeUpdate( "DROP TABLE IF EXISTS identity_scoped_keys" );
+                sql.executeUpdate( "DROP TABLE IF EXISTS qualified_identity_keys.identity_scoped_keys" );
+                sql.executeUpdate( "DROP SCHEMA qualified_identity_keys" );
+            }
+        }
+    }
+
+
     private static List<Long> readKeys( Statement statement ) throws SQLException {
         List<Long> values = new ArrayList<>();
         try ( ResultSet keys = statement.getGeneratedKeys() ) {

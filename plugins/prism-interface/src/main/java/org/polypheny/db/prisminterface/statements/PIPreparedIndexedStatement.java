@@ -31,7 +31,6 @@ import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
-import org.polypheny.prism.BatchGeneratedKeys;
 import org.polypheny.prism.ParameterMeta;
 import org.polypheny.prism.StatementBatchResponse;
 import org.polypheny.prism.StatementResult;
@@ -78,7 +77,7 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
     }
 
 
-    public StatementBatchResponse executeSequentialBatch( List<List<PolyValue>> bindings ) {
+    public StatementBatchResponse executeSequentialBatch( List<List<PolyValue>> bindings, BatchProgress progress ) {
         List<ParameterMeta> metadata = getParameterMetas();
         if ( bindings.stream().anyMatch( row -> row.size() != metadata.size() ) ) {
             throw new PIServiceException( "Incorrect number of parameters in prepared batch." );
@@ -88,21 +87,16 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
         }
         StatementProcessor.parseWithOpenAutocommitResult( this );
         return client.isAutoCommit()
-                ? client.executeAtomicBatch( () -> executeBindings( bindings, metadata ) )
-                : executeBindings( bindings, metadata );
+                ? client.executeAtomicBatch( () -> executeBindings( bindings, metadata, progress ) )
+                : executeBindings( bindings, metadata, progress );
     }
 
 
-    private StatementBatchResponse executeBindings( List<List<PolyValue>> bindings, List<ParameterMeta> metadata ) {
-        StatementBatchResponse.Builder response = StatementBatchResponse.newBuilder().setBatchId( id );
-        for ( int i = 0; i < bindings.size(); i++ ) {
-            StatementResult result = execute( bindings.get( i ), metadata, -1 );
-            response.addScalars( result.getScalar() );
-            if ( result.hasGeneratedKeys() ) {
-                response.addGeneratedKeys( BatchGeneratedKeys.newBuilder().setStatementIndex( i ).setKeys( result.getGeneratedKeys() ) );
-            }
+    private StatementBatchResponse executeBindings( List<List<PolyValue>> bindings, List<ParameterMeta> metadata, BatchProgress progress ) {
+        for ( List<PolyValue> binding : bindings ) {
+            progress.add( this, execute( binding, metadata, -1 ) );
         }
-        return response.build();
+        return progress.completeResponse();
     }
 
 
