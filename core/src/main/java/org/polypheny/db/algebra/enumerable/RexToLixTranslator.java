@@ -818,7 +818,7 @@ public class RexToLixTranslator {
         if ( Types.isAssignableFrom( PolyValue.class, toType ) ) {
             operand = Expressions.convert_( operand, PolyValue.class );
             if ( toType == PolyNumber.class ) {
-                return Expressions.call( PolyNumber.class, "convert", operand );
+                return Expressions.call( PolyBigDecimal.class, "convert", operand );
             } else if ( toType == PolyString.class ) {
                 return Expressions.call( PolyString.class, "convert", operand );
             } else if ( toType == PolyBoolean.class ) {
@@ -1021,11 +1021,18 @@ public class RexToLixTranslator {
 
         private final Expression expression;
         private final PhysType type;
+        private final boolean preserveNumericTypes;
 
 
         public InputGetterImpl( Expression expression, PhysType type ) {
+            this( expression, type, false );
+        }
+
+
+        public InputGetterImpl( Expression expression, PhysType type, boolean preserveNumericTypes ) {
             this.expression = expression;
             this.type = type;
+            this.preserveNumericTypes = preserveNumericTypes;
         }
 
 
@@ -1038,6 +1045,10 @@ public class RexToLixTranslator {
                 throw new GenericRuntimeException( "Index too high" );
             }
             final Expression left = list.append( "current", expression );
+            if ( preserveNumericTypes && (storageType == PolyNumber.class || storageType == null && physType.fieldClass( index ) == PolyNumber.class) ) {
+                Expression value = physType.fieldReference( left, index, PolyValue.class );
+                return Expressions.call( PolyNumber.class, "convert", value );
+            }
             return physType.fieldReference( left, index, storageType );
 
         }

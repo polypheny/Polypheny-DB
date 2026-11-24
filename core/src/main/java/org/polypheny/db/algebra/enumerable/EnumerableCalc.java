@@ -145,6 +145,8 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
         Type inputJavaType = result.physType().getJavaTupleType();
         ParameterExpression inputEnumerator = Expressions.parameter( Types.of( Enumerator.class, inputJavaType ), "inputEnumerator" );
         Expression input = RexToLixTranslator.convert( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CURRENT.method ), inputJavaType );
+        boolean graph = getModel() == DataModel.GRAPH;
+        RexToLixTranslator.InputGetter inputGetter = new RexToLixTranslator.InputGetterImpl( input, result.physType(), graph );
 
         final RexBuilder rexBuilder = getCluster().getRexBuilder();
         final AlgMetadataQuery mq = AlgMetadataQuery.instance();
@@ -162,7 +164,7 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
                             program,
                             typeFactory,
                             builder2,
-                            new RexToLixTranslator.InputGetterImpl( input, result.physType() ),
+                            inputGetter,
                             implementor.allCorrelateVariables,
                             implementor.getConformance() );
             builder2.add(
@@ -185,7 +187,7 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
                         builder3,
                         physType,
                         DataContext.ROOT,
-                        new RexToLixTranslator.InputGetterImpl( input, result.physType() ),
+                        inputGetter,
                         implementor.allCorrelateVariables );
         builder3.add( Expressions.return_( null, physType.record( expressions ) ) );
         BlockStatement currentBody = builder3.toBlock();
@@ -222,7 +224,7 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
                                 EnumUtils.NO_PARAMS,
                                 currentBody ) ) );
 
-        Expression enumerator = getModel() == DataModel.GRAPH && program.getExprList().stream().anyMatch( expression -> !RexUtil.isDeterministic( expression ) )
+        Expression enumerator = graph && program.getExprList().stream().anyMatch( expression -> !RexUtil.isDeterministic( expression ) )
                 ? Expressions.call( EnumerableCalc.class, "memoizeCurrent", body )
                 : body;
         builder.add(
