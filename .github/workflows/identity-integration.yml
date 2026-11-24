@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   identity:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
@@ -53,7 +53,7 @@ jobs:
           node-version: '20.11.0'
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: '3.12'
 
       - name: Prepare isolated repositories
         run: |
