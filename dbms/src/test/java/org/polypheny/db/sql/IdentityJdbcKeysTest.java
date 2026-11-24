@@ -23,6 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
@@ -187,6 +189,114 @@ class IdentityJdbcKeysTest {
                 sql.executeUpdate( "DROP SCHEMA qualified_identity_keys" );
             }
         }
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void preparedProjectionsReturnStoredDecimalAssignments( boolean identity ) throws SQLException {
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
+            sql.executeUpdate( "CREATE TABLE projected_decimal (id " + (identity ? "BIGSERIAL" : "BIGINT")
+                    + " PRIMARY KEY, amount DECIMAL(12,4))" );
+            try {
+                String insert = "INSERT INTO projected_decimal (id, amount) VALUES (?, ?), (?, ?)";
+                BigDecimal first = new BigDecimal( "1.234567" );
+                BigDecimal second = new BigDecimal( "-1.23455" );
+                try ( PreparedStatement plain = jdbc.getConnection().prepareStatement( insert );
+                        PreparedStatement keys = jdbc.getConnection().prepareStatement( insert, new String[]{ "amount" } );
+                        PreparedStatement returning = jdbc.getConnection().prepareStatement( insert + " RETURNING amount" ) ) {
+                    bindDecimalRows( plain, 10, first, second );
+                    assertEquals( 2, plain.executeUpdate() );
+                    List<BigDecimal> stored;
+                    try ( ResultSet rows = sql.executeQuery( "SELECT amount FROM projected_decimal WHERE id < 20 ORDER BY id DESC" ) ) {
+                        stored = readDecimals( rows );
+                    }
+                    assertEquals( new BigDecimal( "1.2346" ), stored.get( 0 ) );
+                    assertEquals( 4, stored.get( 1 ).scale() );
+
+                    bindDecimalRows( keys, 20, first, second );
+                    assertEquals( 2, keys.executeUpdate() );
+                    try ( ResultSet rows = keys.getGeneratedKeys() ) {
+                        assertEquals( stored, readDecimals( rows ) );
+                    }
+                    bindDecimalRows( returning, 30, first, second );
+                    try ( ResultSet rows = returning.executeQuery() ) {
+                        assertEquals( stored, readDecimals( rows ) );
+                    }
+                    try ( ResultSet rows = sql.executeQuery( "SELECT amount FROM projected_decimal WHERE id >= 20 ORDER BY id" ) ) {
+                        assertEquals( List.of( stored.get( 1 ), stored.get( 0 ), stored.get( 1 ), stored.get( 0 ) ), readDecimals( rows ) );
+                    }
+                }
+            } finally {
+                sql.executeUpdate( "DROP TABLE projected_decimal" );
+            }
+        }
+    }
+
+
+    @Test
+    void readsBackTheInsertedDecimalPrimaryKeyInsteadOfAnAdjacentRow() throws SQLException {
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
+            sql.executeUpdate( "CREATE TABLE projected_decimal_key (bucket INTEGER NOT NULL, id DECIMAL(12,4) NOT NULL, amount DECIMAL(12,4), PRIMARY KEY(bucket, id))" );
+            try {
+                String insert = "INSERT INTO projected_decimal_key (bucket, id, amount) VALUES (?, ?, ?)";
+                try ( PreparedStatement plain = jdbc.getConnection().prepareStatement( insert );
+                        PreparedStatement keys = jdbc.getConnection().prepareStatement( insert, new String[]{ "id", "amount" } );
+                        PreparedStatement returning = jdbc.getConnection().prepareStatement( insert + " RETURNING id, amount" ) ) {
+                    BigDecimal amount = new BigDecimal( "1.234567" );
+                    for ( int sign : new int[]{ -1, 1 } ) {
+                        BigDecimal input = new BigDecimal( "1.23455" ).multiply( BigDecimal.valueOf( sign ) );
+                        plain.setInt( 1, 0 );
+                        plain.setBigDecimal( 2, input );
+                        plain.setBigDecimal( 3, amount );
+                        plain.executeUpdate();
+                        BigDecimal storedId;
+                        BigDecimal storedAmount;
+                        try ( ResultSet row = sql.executeQuery( "SELECT id, amount FROM projected_decimal_key WHERE bucket = 0 AND id * " + sign + " > 0" ) ) {
+                            assertTrue( row.next() );
+                            storedId = row.getBigDecimal( 1 );
+                            storedAmount = row.getBigDecimal( 2 );
+                        }
+                        BigDecimal lower = input.setScale( 4, RoundingMode.FLOOR );
+                        BigDecimal adjacent = lower.equals( storedId ) ? input.setScale( 4, RoundingMode.CEILING ) : lower;
+                        int bucket = sign == -1 ? 1 : 2;
+                        sql.executeUpdate( "INSERT INTO projected_decimal_key VALUES (" + bucket + ", " + adjacent.toPlainString() + ", 99)" );
+                        PreparedStatement projected = sign == -1 ? keys : returning;
+                        projected.setInt( 1, bucket );
+                        projected.setBigDecimal( 2, input );
+                        projected.setBigDecimal( 3, amount );
+                        if ( sign == -1 ) {
+                            assertEquals( 1, projected.executeUpdate() );
+                        }
+                        try ( ResultSet row = sign == -1 ? projected.getGeneratedKeys() : projected.executeQuery() ) {
+                            assertTrue( row.next() );
+                            assertEquals( storedId, row.getBigDecimal( 1 ) );
+                            assertEquals( storedAmount, row.getBigDecimal( 2 ) );
+                            assertFalse( row.next() );
+                        }
+                    }
+                }
+            } finally {
+                sql.executeUpdate( "DROP TABLE projected_decimal_key" );
+            }
+        }
+    }
+
+
+    private static void bindDecimalRows( PreparedStatement insert, int id, BigDecimal first, BigDecimal second ) throws SQLException {
+        insert.setInt( 1, id + 1 );
+        insert.setBigDecimal( 2, first );
+        insert.setInt( 3, id );
+        insert.setBigDecimal( 4, second );
+    }
+
+
+    private static List<BigDecimal> readDecimals( ResultSet rows ) throws SQLException {
+        List<BigDecimal> result = new ArrayList<>();
+        while ( rows.next() ) {
+            result.add( rows.getBigDecimal( 1 ) );
+        }
+        return result;
     }
 
 

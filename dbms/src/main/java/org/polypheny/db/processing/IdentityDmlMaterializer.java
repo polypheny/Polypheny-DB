@@ -17,6 +17,7 @@
 package org.polypheny.db.processing;
 
 import com.google.common.collect.ImmutableList;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -63,7 +64,9 @@ import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Statement.GeneratedKeySelection;
+import org.polypheny.db.transaction.Statement.InsertReturning;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
@@ -180,14 +183,22 @@ final class IdentityDmlMaterializer {
             for ( AlgDataTypeField field : targetFields ) {
                 tuple.add( toLiteral( row.get( field.getIndex() ), field ) );
             }
-            tuples.add( tuple.build() );
+            ImmutableList<RexLiteral> inserted = tuple.build();
+            tuples.add( inserted );
             if ( statement.isInsertRowCaptureRequested() && (!generatedOnly
                     || identities.stream().anyMatch( identity -> row.get( identity.flagIndex() ).asBoolean().value )) ) {
-                capturedRows.add( new ArrayList<>( row.subList( 0, targetFields.size() ) ) );
+                List<PolyValue> captured = new ArrayList<>( row.subList( 0, targetFields.size() ) );
+                for ( AlgDataTypeField field : targetFields ) {
+                    if ( field.getType().getPolyType() == PolyType.DECIMAL ) {
+                        int index = field.getIndex();
+                        captured.set( index, inserted.get( index ).getValue() );
+                    }
+                }
+                capturedRows.add( captured );
             }
         }
         if ( statement.isInsertRowCaptureRequested() ) {
-            statement.setInsertedRows( capturedRows );
+            captureStoredRows( modify, table, statement, parameterRowType, targetFields, capturedRows );
         }
 
         // Parameter sets have already been expanded into concrete rows, once each.
@@ -195,6 +206,131 @@ final class IdentityDmlMaterializer {
         statement.setMaterializedDmlRowCount( sourceRows.size() );
         AlgNode values = LogicalRelValues.create( modify.getCluster(), rowType, tuples.build() );
         return root.withAlg( modify.copy( modify.getTraitSet(), List.of( values ) ) );
+    }
+
+
+    private static void captureStoredRows( LogicalRelModify modify, LogicalTable table, Statement statement,
+            AlgDataType parameterRowType, List<AlgDataTypeField> fields, List<List<PolyValue>> rows ) {
+        InsertReturning projection = statement.getInsertReturning() != null ? statement.getInsertReturning() : statement.getGeneratedKeysProjection();
+        List<AlgDataTypeField> decimals = projection.ordinals().stream().distinct().map( fields::get )
+                .filter( field -> rows.stream().anyMatch( row -> needsDecimalReadback( field, row.get( field.getIndex() ) ) ) )
+                .toList();
+        if ( decimals.isEmpty() ) {
+            statement.setInsertedRows( rows );
+            return;
+        }
+        List<StoredDecimalBatch> batches = prepareDecimalReadback( modify, table, statement, parameterRowType, fields, decimals, rows );
+        statement.setInsertedRowsReader( () -> readStoredDecimals( table, statement, parameterRowType, decimals, rows, batches ) );
+    }
+
+
+    private static boolean needsDecimalReadback( AlgDataTypeField field, PolyValue value ) {
+        AlgDataType type = field.getType();
+        return type.getPolyType() == PolyType.DECIMAL && PolyTypeUtil.hasScale( type )
+                && value != null && !value.isNull() && value.asNumber().bigDecimalValue().scale() != type.getScale();
+    }
+
+
+    // Storage adapters can round decimal assignments differently. Read the values in the same transaction
+    // after INSERT, projecting the input ordinal so the output follows the original statement's row order.
+    private static List<StoredDecimalBatch> prepareDecimalReadback( LogicalRelModify modify, LogicalTable table, Statement statement,
+            AlgDataType parameterRowType, List<AlgDataTypeField> fields, List<AlgDataTypeField> decimals, List<List<PolyValue>> rows ) {
+        List<Long> primaryKey = statement.getTransaction().getSnapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow().fieldIds;
+        List<AlgDataTypeField> keyFields = fields.stream().filter( field -> primaryKey.contains( field.getId() ) ).toList();
+        RexBuilder rex = modify.getCluster().getRexBuilder();
+        List<StoredDecimalBatch> batches = new ArrayList<>();
+        int batchSize = 128;
+        for ( int offset = 0; offset < rows.size(); offset += batchSize ) {
+            List<List<PolyValue>> batch = rows.subList( offset, Math.min( offset + batchSize, rows.size() ) );
+            LogicalRelScan scan = LogicalRelScan.create( modify.getCluster(), table );
+            List<RexNode> predicates = new ArrayList<>();
+            List<RexNode> matches = new ArrayList<>();
+            for ( int index = 0; index < batch.size(); index++ ) {
+                List<PolyValue> row = batch.get( index );
+                List<RexNode> keyMatch = keyFields.stream().map( field -> rex.makeCall( OperatorRegistry.get( OperatorName.EQUALS ),
+                        rex.makeInputRef( scan, field.getIndex() ), storedKeyLiteral( rex, field, row.get( field.getIndex() ) ) ) ).toList();
+                RexNode predicate = RexUtil.composeConjunction( rex, keyMatch, false );
+                predicates.add( predicate );
+                matches.add( predicate );
+                matches.add( rex.makeExactLiteral( BigDecimal.valueOf( index ) ) );
+            }
+            matches.add( rex.makeExactLiteral( BigDecimal.valueOf( -1 ) ) );
+            List<RexNode> expressions = new ArrayList<>();
+            expressions.add( rex.makeCall( OperatorRegistry.get( OperatorName.CASE ), matches ) );
+            decimals.forEach( field -> expressions.add( rex.makeInputRef( scan, field.getIndex() ) ) );
+            List<String> aliases = new ArrayList<>();
+            aliases.add( "insert_ordinal" );
+            decimals.forEach( field -> aliases.add( field.getName() ) );
+            AlgNode filtered = LogicalRelFilter.create( scan, RexUtil.composeDisjunction( rex, predicates, false ) );
+            AlgNode projected = LogicalRelProject.create( filtered, expressions, aliases );
+            boolean castsKey = batch.stream().anyMatch( row -> keyFields.stream()
+                    .anyMatch( field -> needsDecimalKeyCoercion( field, row.get( field.getIndex() ) ) ) );
+            // A dialect or optimizer must not turn a lookup cast into a different, already-existing key.
+            // Detect preexisting matches and refuse to expose them as rows written by this INSERT.
+            Set<Integer> existing = new HashSet<>();
+            if ( castsKey ) {
+                readDecimalBatch( projected, statement, parameterRowType )
+                        .forEach( stored -> existing.add( stored.get( 0 ).asNumber().intValue() ) );
+            }
+            batches.add( new StoredDecimalBatch( batch, projected, existing ) );
+        }
+        return batches;
+    }
+
+
+    private static List<List<PolyValue>> readStoredDecimals( LogicalTable table, Statement statement, AlgDataType parameterRowType,
+            List<AlgDataTypeField> decimals, List<List<PolyValue>> rows, List<StoredDecimalBatch> batches ) {
+        for ( StoredDecimalBatch batch : batches ) {
+            Set<Integer> matched = new HashSet<>();
+            for ( List<PolyValue> stored : readDecimalBatch( batch.query(), statement, parameterRowType ) ) {
+                int index = stored.get( 0 ).asNumber().intValue();
+                if ( index < 0 || index >= batch.rows().size() || batch.existing().contains( index ) || !matched.add( index ) ) {
+                    throw new GenericRuntimeException( "Could not match an inserted row in '%s' to its stored values.", table.name );
+                }
+                for ( int column = 0; column < decimals.size(); column++ ) {
+                    batch.rows().get( index ).set( decimals.get( column ).getIndex(), stored.get( column + 1 ) );
+                }
+            }
+            if ( matched.size() != batch.rows().size() ) {
+                throw new GenericRuntimeException( "Could not read back all inserted rows in '%s'.", table.name );
+            }
+        }
+        return rows;
+    }
+
+
+    private static List<List<PolyValue>> readDecimalBatch( AlgNode projected, Statement statement, AlgDataType parameterRowType ) {
+        DataContext context = statement.getDataContext();
+        List<Map<Long, PolyValue>> originalValues = context.getParameterValues();
+        Map<Long, AlgDataType> originalTypes = Map.copyOf( context.getParameterTypes() );
+        context.resetParameterValues();
+        try {
+            List<List<PolyValue>> stored = new ArrayList<>();
+            readRows( projected, statement, parameterRowType, Map.of(), stored );
+            return stored;
+        } finally {
+            context.setParameterTypes( originalTypes );
+            context.setParameterValues( originalValues );
+        }
+    }
+
+
+    private static boolean needsDecimalKeyCoercion( AlgDataTypeField field, PolyValue value ) {
+        return needsDecimalReadback( field, value )
+                && value.asNumber().bigDecimalValue().stripTrailingZeros().scale() > field.getType().getScale();
+    }
+
+
+    private static RexNode storedKeyLiteral( RexBuilder rex, AlgDataTypeField field, PolyValue value ) {
+        if ( needsDecimalKeyCoercion( field, value ) ) {
+            // Let the store apply its own precision and scale conversion to a decimal primary key.
+            return rex.makeAbstractCast( field.getType(), rex.makeExactLiteral( value.asNumber().bigDecimalValue() ) );
+        }
+        return toLiteral( value, field );
+    }
+
+
+    private record StoredDecimalBatch( List<List<PolyValue>> rows, AlgNode query, Set<Integer> existing ) {
     }
 
 

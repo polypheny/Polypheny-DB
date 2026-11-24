@@ -17,6 +17,7 @@
 package org.polypheny.db.transaction;
 
 import java.util.List;
+import java.util.function.Supplier;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.information.InformationDuration;
@@ -76,6 +77,12 @@ public interface Statement {
 
 
     default void setInsertedRows( List<List<PolyValue>> rows ) {
+        throw new UnsupportedOperationException();
+    }
+
+
+    /** Reads captured rows after the mutation has finished in this statement's transaction. */
+    default void setInsertedRowsReader( Supplier<List<List<PolyValue>>> reader ) {
         throw new UnsupportedOperationException();
     }
 

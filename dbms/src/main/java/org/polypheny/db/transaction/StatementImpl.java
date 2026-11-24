@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.Setter;
 import org.polypheny.db.adapter.DataContext;
@@ -70,9 +71,7 @@ public class StatementImpl implements Statement {
     @Getter
     @Setter
     private InsertReturning generatedKeysProjection;
-    @Getter
-    @Setter
-    private List<List<PolyValue>> insertedRows = List.of();
+    private Supplier<List<List<PolyValue>>> insertedRowsReader = List::of;
 
     @Getter
     private final StatementAnalyzer analyzer;
@@ -84,6 +83,24 @@ public class StatementImpl implements Statement {
         this.analyzer = transaction.getAnalyzer() == null ?
                 null :
                 transaction.getAnalyzer().createStatementAnalyzer( this );
+    }
+
+
+    @Override
+    public void setInsertedRows( List<List<PolyValue>> rows ) {
+        setInsertedRowsReader( () -> rows );
+    }
+
+
+    @Override
+    public void setInsertedRowsReader( Supplier<List<List<PolyValue>>> reader ) {
+        insertedRowsReader = reader;
+    }
+
+
+    @Override
+    public List<List<PolyValue>> getInsertedRows() {
+        return insertedRowsReader.get();
     }
 
 
