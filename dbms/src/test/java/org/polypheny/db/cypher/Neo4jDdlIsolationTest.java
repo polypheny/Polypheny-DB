@@ -28,6 +28,10 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
+import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.catalogs.AdapterCatalog;
+import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 
 @Tag("adapter")
 class Neo4jDdlIsolationTest {
@@ -88,6 +92,41 @@ class Neo4jDdlIsolationTest {
                 }
             }
         }
+    }
+
+
+    @Test
+    void droppingGraphsAndTablesRemovesTheirRestoreEntries() throws SQLException {
+        assumeTrue( "neo4j".equalsIgnoreCase( System.getProperty( "store.default" ) ) );
+        TestHelper.getInstance();
+        String id = UUID.randomUUID().toString().replace( "-", "" );
+        String table = "ddl_restore_table_" + id;
+        String graph = "ddl_restore_graph_" + id;
+
+        try ( JdbcConnection admin = new JdbcConnection( true ); Statement ddl = admin.getConnection().createStatement() ) {
+            for ( int i = 0; i < 2; i++ ) {
+                ddl.executeUpdate( "CREATE GRAPH NAMESPACE " + graph );
+                long graphId = Catalog.snapshot().getNamespace( graph ).orElseThrow().id;
+                assertRestoreEntriesRemoved( graphId, ddl, "DROP NAMESPACE " + graph );
+
+                ddl.executeUpdate( "CREATE TABLE " + table + " (id INT NOT NULL, PRIMARY KEY(id))" );
+                long tableId = Catalog.snapshot().rel().getTable( Catalog.defaultNamespaceId, table ).orElseThrow().id;
+                assertRestoreEntriesRemoved( tableId, ddl, "DROP TABLE " + table );
+            }
+        }
+    }
+
+
+    private static void assertRestoreEntriesRemoved( long logicalId, Statement ddl, String drop ) throws SQLException {
+        AllocationEntity allocation = Catalog.snapshot().alloc().getFromLogical( logicalId ).get( 0 );
+        AdapterCatalog adapter = AdapterManager.getInstance().getStore( allocation.adapterId ).orElseThrow().getCatalog();
+        assertTrue( adapter.createRestoreSnapshot().allocations().containsKey( allocation.id ) );
+        assertTrue( adapter.createRestoreSnapshot().physicals().containsKey( allocation.id ) );
+
+        ddl.executeUpdate( drop );
+
+        assertFalse( adapter.createRestoreSnapshot().allocations().containsKey( allocation.id ) );
+        assertFalse( adapter.createRestoreSnapshot().physicals().containsKey( allocation.id ) );
     }
 
 }

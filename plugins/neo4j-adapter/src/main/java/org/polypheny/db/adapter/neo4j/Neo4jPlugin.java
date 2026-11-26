@@ -356,6 +356,7 @@ public class Neo4jPlugin extends PolyPlugin {
             transactionProvider.executeDataChange(
                     context.getStatement().getTransaction().getXid(),
                     String.format( "MATCH (n:%s) DELETE n", physical.name ) );
+            adapterCatalog.removeAllocAndPhysical( allocId );
         }
 
 
@@ -564,6 +565,7 @@ public class Neo4jPlugin extends PolyPlugin {
             transactionProvider.executeDataChange(
                     context.getStatement().getTransaction().getXid(),
                     String.format( "MATCH (n:%s) DETACH DELETE n", getMappingLabel( physical.id ) ) );
+            adapterCatalog.removeAllocAndPhysical( allocation.id );
         }
 
 
