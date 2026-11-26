@@ -2187,9 +2187,14 @@ public class CypherToAlgConverter {
             Supplier<CypherSyntaxException> rowDependent = () ->
                     new CypherSyntaxException( "NonConstantExpression: " + clause + " requires a row-independent expression." );
             CypherContext empty = new CypherContext( original, graph, cluster, algBuilder, rexBuilder, snapshot );
-            RexNode value = empty.resolveInScope( expression, RexType.PROJECT, name -> {
+            RexNode value;
+            try {
+                value = empty.resolveInScope( expression, RexType.PROJECT, name -> {
+                    throw rowDependent.get();
+                }, null );
+            } catch ( UnsupportedOperationException e ) {
                 throw rowDependent.get();
-            }, null );
+            }
             value.accept( new RexShuttle() {
                 @Override
                 public RexNode visitIndexRef( RexIndexRef ref ) {

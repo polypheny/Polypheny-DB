@@ -17,6 +17,7 @@
 package org.polypheny.db.cypher;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -196,6 +197,21 @@ class CypherExistsTest extends CypherTestTemplate {
                 """ );
         assertEquals( 1, result.getData().length );
         assertEquals( 3, cell( result, 0, 0 ).asNumber().intValue() );
+    }
+
+
+    @Test
+    void capturesProjectedExistsAliasInOrderBySubqueries() {
+        GraphResult result = execute( """
+                MATCH (a:Person)
+                RETURN a.name AS name, EXISTS { MATCH (a)-[:KNOWS]->() } AS hasFriend
+                ORDER BY EXISTS { RETURN 1 }, EXISTS { WITH hasFriend WHERE hasFriend RETURN hasFriend }, name
+                """ );
+        assertEquals( 4, result.getData().length );
+        assertEquals( "Isolated", cell( result, 0, 0 ).asString().value );
+        assertEquals( "Ada", cell( result, 3, 0 ).asString().value );
+        assertFalse( cell( result, 0, 1 ).asBoolean().value );
+        assertTrue( cell( result, 3, 1 ).asBoolean().value );
     }
 
 

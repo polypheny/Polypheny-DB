@@ -254,6 +254,19 @@ class CypherValueAccessTest extends CypherTestTemplate {
 
 
     @Test
+    void evaluatesTemporalListComprehensionsInSkipAndLimit() {
+        GraphResult result = execute( """
+                UNWIND [1,2,3,4,5] AS x RETURN x ORDER BY x
+                SKIP size([n IN [1,2] | date({year: 2020, month: 1, day: n}).day])
+                LIMIT size([n IN [1,2] | date({year: 2020, month: 1, day: n}).day])
+                """ );
+        assertEquals( 2, result.getData().length );
+        assertEquals( 3, cell( result, 0, 0 ).asNumber().intValue() );
+        assertEquals( 4, cell( result, 1, 0 ).asNumber().intValue() );
+    }
+
+
+    @Test
     void retainsIndividualElementTypesWhenConcatenatingHeterogeneousLists() {
         GraphResult result = execute( "RETURN ([1]+2.0)[0] AS i, ([1]+[2.0])[1] AS f, ([] + [1])[0] AS e" );
         assertEquals( "ANY", result.getHeader()[0].dataType );

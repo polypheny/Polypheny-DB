@@ -17,7 +17,9 @@
 package org.polypheny.db.cypher.cypher2alg;
 
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
 import org.polypheny.db.algebra.AlgCollations;
@@ -164,6 +166,7 @@ final class CypherSubqueryInputs extends AlgShuttleImpl {
 
     private final class ExistsReference extends RexShuttle {
 
+        private final Map<Exists, RexNode> lowered = new IdentityHashMap<>();
         private AlgNode rows;
 
 
@@ -176,6 +179,11 @@ final class CypherSubqueryInputs extends AlgShuttleImpl {
         public RexNode visitCall( RexCall call ) {
             if ( !(call instanceof Exists subquery) ) {
                 return super.visitCall( call );
+            }
+            // A sort predicate can capture a projected alias containing this same subquery.
+            RexNode existing = lowered.get( subquery );
+            if ( existing != null ) {
+                return existing;
             }
             List<RexNode> projected = new ArrayList<>( subquery.operands.stream().map( operand -> operand.accept( this ) ).toList() );
             int captures = projected.size();
@@ -198,7 +206,9 @@ final class CypherSubqueryInputs extends AlgShuttleImpl {
             List<PolyString> visibleNames = new ArrayList<>( originalNames );
             visibleNames.add( PolyString.of( "$exists" + originalWidth ) );
             rows = LogicalLpgProject.create( joined, visible, visibleNames );
-            return rexBuilder.makeInputRef( rows, originalWidth );
+            RexNode reference = rexBuilder.makeInputRef( rows, originalWidth );
+            lowered.put( subquery, reference );
+            return reference;
         }
 
     }
