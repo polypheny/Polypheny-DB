@@ -139,6 +139,45 @@ class IdentitySequencesTest {
 
 
     @Test
+    void reversingDirectionUsesLastAllocatedValueAfterReload() {
+        IdentityColumn identity = IdentityColumn.create( PolyType.INTEGER, Mode.BY_DEFAULT, null, null, null, null, false );
+        assertEquals( 1L, new IdentitySequences( directory ).next( identity ) );
+
+        IdentitySequences reloaded = new IdentitySequences( directory );
+        IdentityColumn descending = reloaded.reconfigure( PolyType.INTEGER, identity, null, -1L, -100L, 100L, null );
+        assertEquals( List.of( 0L, -1L ), reloaded.reserve( descending, 2 ) );
+        IdentityColumn ascending = reloaded.reconfigure( PolyType.INTEGER, descending, null, 2L, null, null, null );
+        assertEquals( List.of( 1L, 3L ), reloaded.reserve( ascending, 2 ) );
+    }
+
+
+    @Test
+    void reversingDirectionKeepsAnUnconsumedRestart() {
+        IdentityColumn identity = IdentityColumn.create( PolyType.INTEGER, Mode.BY_DEFAULT, null, null, null, null, false );
+        IdentitySequences sequences = new IdentitySequences();
+        assertEquals( 1L, sequences.next( identity ) );
+
+        IdentityColumn restarted = identity.restart( 7L );
+        IdentityColumn descending = sequences.reconfigure( PolyType.INTEGER, restarted, null, -2L, null, null, null );
+        assertEquals( List.of( 7L, 5L ), sequences.reserve( descending, 2 ) );
+    }
+
+
+    @Test
+    void reversingDirectionHandlesOverflowAndCycling() {
+        IdentityColumn identity = IdentityColumn.create( PolyType.BIGINT, Mode.BY_DEFAULT,
+                Long.MIN_VALUE + 1, 1L, Long.MIN_VALUE, Long.MAX_VALUE, false );
+        IdentitySequences sequences = new IdentitySequences();
+        assertEquals( Long.MIN_VALUE + 1, sequences.next( identity ) );
+
+        IdentityColumn exhausted = sequences.reconfigure( PolyType.BIGINT, identity, null, Long.MIN_VALUE, null, null, false );
+        assertEquals( OptionalLong.empty(), sequences.peek( exhausted ) );
+        IdentityColumn cycled = sequences.reconfigure( PolyType.BIGINT, identity, null, Long.MIN_VALUE, null, null, true );
+        assertEquals( Long.MAX_VALUE, sequences.next( cycled ) );
+    }
+
+
+    @Test
     void reconfiguringBoundsRecoversLastValueAfterReload() {
         IdentityColumn identity = IdentityColumn.create( PolyType.INTEGER, Mode.BY_DEFAULT, 2L, 3L, 1L, 8L, false );
         IdentitySequences sequences = new IdentitySequences( directory );

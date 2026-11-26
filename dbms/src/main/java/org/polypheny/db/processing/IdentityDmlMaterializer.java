@@ -40,8 +40,15 @@ import org.polypheny.db.adapter.index.Index;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
+import org.polypheny.db.algebra.InsertSourceOrdinals;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.core.Calc;
+import org.polypheny.db.algebra.core.Filter;
+import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.common.Modify.Operation;
+import org.polypheny.db.algebra.enumerable.EnumerableLimit;
 import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
@@ -72,6 +79,7 @@ import org.polypheny.db.processing.shuttles.QueryParameterizer;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
@@ -937,7 +945,8 @@ final class IdentityDmlMaterializer {
         }
         if ( source instanceof LogicalRelValues values ) {
             for ( ImmutableList<RexLiteral> tuple : values.getTuples() ) {
-                addSourceRow( rows, assignmentInputs, source, tuple, new ArrayList<>( tuple.stream().map( RexLiteral::getValue ).toList() ), binding, parameterizeLiterals );
+                addSourceRow( rows, assignmentInputs, source, tuple, tuple,
+                        new ArrayList<>( tuple.stream().map( RexLiteral::getValue ).toList() ), binding, parameterizeLiterals );
             }
             return;
         }
@@ -948,7 +957,7 @@ final class IdentityDmlMaterializer {
             for ( RexNode expression : project.getProjects() ) {
                 row.add( expression instanceof RexLiteral literal ? literal.getValue() : binding.get( ((RexDynamicParam) expression).getIndex() ) );
             }
-            addSourceRow( rows, assignmentInputs, source, project.getProjects(), row, binding, parameterizeLiterals );
+            addSourceRow( rows, assignmentInputs, source, project.getProjects(), project.getProjects(), row, binding, parameterizeLiterals );
             return;
         }
 
@@ -959,11 +968,21 @@ final class IdentityDmlMaterializer {
         Map<Long, AlgDataType> originalTypes = Map.copyOf( context.getParameterTypes() );
         try {
             context.setParameterValues( binding.isEmpty() ? List.of() : List.of( binding ) );
-            AlgRoot query = AlgRoot.of( source, Kind.SELECT );
-            PolyImplementation implementation = statement.getQueryProcessor().prepareQuery( query, parameterRowType, false, true, false );
             List<? extends RexNode> expressions = source instanceof LogicalRelProject project ? project.getProjects() : List.of();
+            List<List<? extends RexNode>> branches = assignmentInputs != null && source instanceof LogicalRelProject project
+                    ? temporalSourceBranches( project.getInput(), expressions ) : List.of( expressions );
+            boolean marked = branches.size() > 1 && branches.stream().flatMap( List::stream ).anyMatch( expression ->
+                    needsTemporalSourceEvaluation( expression, expression instanceof RexDynamicParam param ? binding.get( param.getIndex() ) : null,
+                            parameterizeLiterals ) );
+            // Keep the normal UNION's common types. An extra read-only field identifies the
+            // source expression for each row without splitting or reordering the source query.
+            AlgNode readSource = marked ? InsertSourceOrdinals.add( source, 0, List.of(), LogicalRelProject::create,
+                    (input, ordinal) -> Optional.empty() ).plan() : source;
+            AlgRoot query = AlgRoot.of( readSource, Kind.SELECT );
+            PolyImplementation implementation = statement.getQueryProcessor().prepareQuery( query, parameterRowType, false, true, false );
             for ( List<PolyValue> row : implementation.execute( statement, -1 ).getAllRowsAndClose() ) {
-                addSourceRow( rows, assignmentInputs, source, expressions, row, binding, parameterizeLiterals );
+                int branch = marked ? row.remove( row.size() - 1 ).asNumber().intValue() : 0;
+                addSourceRow( rows, assignmentInputs, source, expressions, branches.get( branch ), row, binding, parameterizeLiterals );
             }
         } finally {
             context.setParameterTypes( originalTypes );
@@ -973,7 +992,8 @@ final class IdentityDmlMaterializer {
 
 
     private static void addSourceRow( List<List<PolyValue>> rows, List<List<AssignmentInput>> assignmentInputs,
-            AlgNode source, List<? extends RexNode> expressions, List<PolyValue> row, Map<Long, PolyValue> binding, boolean parameterizeLiterals ) {
+            AlgNode source, List<? extends RexNode> expressions, List<? extends RexNode> temporalExpressions,
+            List<PolyValue> row, Map<Long, PolyValue> binding, boolean parameterizeLiterals ) {
         rows.add( row );
         if ( assignmentInputs == null ) {
             return;
@@ -986,9 +1006,14 @@ final class IdentityDmlMaterializer {
         for ( int i = 0; i < row.size(); i++ ) {
             RexNode expression = i < expressions.size() ? expressions.get( i ) : null;
             PolyValue value = row.get( i );
-            if ( scalarProject && (expression instanceof RexCall && PolyType.NUMERIC_TYPES.contains( expression.getType().getPolyType() )
-                    && RexUtil.isConstant( expression ) || needsTemporalSourceEvaluation( expression, value )) ) {
+            if ( scalarProject && expression instanceof RexCall && PolyType.NUMERIC_TYPES.contains( expression.getType().getPolyType() )
+                    && RexUtil.isConstant( expression ) ) {
                 inputs.add( assignmentInput( expression, binding, parameterizeLiterals ) );
+                continue;
+            }
+            RexNode temporal = i < temporalExpressions.size() ? temporalExpressions.get( i ) : null;
+            if ( needsTemporalSourceEvaluation( temporal, value, parameterizeLiterals ) ) {
+                inputs.add( assignmentInput( removeTemporalWidening( temporal ), binding, parameterizeLiterals ) );
                 continue;
             }
             if ( value == null || value.isNull() || !value.isNumber() ) {
@@ -1034,7 +1059,41 @@ final class IdentityDmlMaterializer {
     }
 
 
-    private static boolean needsTemporalSourceEvaluation( RexNode expression, PolyValue value ) {
+    private static List<List<? extends RexNode>> temporalSourceBranches( AlgNode source, List<? extends RexNode> expressions ) {
+        // Follow INSERT's projection to constants in each branch of its source query.
+        if ( source instanceof Project project ) {
+            return temporalSourceBranches( project.getInput(), expressions.stream()
+                    .map( expression -> expression instanceof RexIndexRef ref ? project.getProjects().get( ref.getIndex() ) : expression ).toList() );
+        }
+        if ( source instanceof Calc calc ) {
+            return temporalSourceBranches( calc.getInput(), expressions.stream()
+                    .map( expression -> expression instanceof RexIndexRef ref
+                            ? calc.getProgram().expandLocalRef( calc.getProgram().getProjectList().get( ref.getIndex() ) ) : expression ).toList() );
+        }
+        if ( source instanceof Filter || source instanceof Sort || source instanceof EnumerableLimit ) {
+            return temporalSourceBranches( source.getInput( 0 ), expressions );
+        }
+        if ( source instanceof Union union && union.all ) {
+            return union.getInputs().stream().flatMap( input -> temporalSourceBranches( input, expressions ).stream() ).toList();
+        }
+        return List.of( expressions );
+    }
+
+
+    private static RexNode removeTemporalWidening( RexNode expression ) {
+        // An outer widening CAST can cause JDBC stores to infer a parameter's type
+        // from that CAST and skip the narrower source conversion.
+        while ( expression instanceof RexCall outer && outer.isA( Kind.CAST )
+                && outer.getOperands().get( 0 ) instanceof RexCall inner && inner.isA( Kind.CAST )
+                && outer.getType().getPolyType() == inner.getType().getPolyType()
+                && outer.getType().getPrecision() >= inner.getType().getPrecision() ) {
+            expression = inner;
+        }
+        return expression;
+    }
+
+
+    private static boolean needsTemporalSourceEvaluation( RexNode expression, PolyValue value, boolean parameterizeLiterals ) {
         if ( expression == null || !isTimeType( expression.getType().getPolyType() ) ) {
             return false;
         }
@@ -1042,7 +1101,12 @@ final class IdentityDmlMaterializer {
             return expression.isA( Kind.CAST ) && hasNarrowTemporalPrecision( expression )
                     && RexUtil.isConstant( expression ) && !AbstractQueryProcessor.isVolatileInsertExpression( expression );
         }
-        // The planner can fold a CAST to a narrower literal while leaving its milliseconds untouched.
+        // An inline source literal may still carry milliseconds that its declared
+        // precision trims. For a parameterized read, keep casts already applied by
+        // the source adapter, whose rounding may differ from the destination's.
+        if ( expression instanceof RexLiteral literal && (!parameterizeLiterals || value == null) ) {
+            value = literal.getValue();
+        }
         return (expression instanceof RexLiteral || expression instanceof RexDynamicParam)
                 && value != null && !value.isNull() && isTimeType( value.getType() )
                 && value.asTemporal().getMillisSinceEpoch() % millisPerTimeUnit( expression.getType().getPrecision() ) != 0;

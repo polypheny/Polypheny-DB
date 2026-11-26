@@ -26,8 +26,10 @@ import java.util.function.BiFunction;
 import org.polypheny.db.algebra.core.Calc;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.core.relational.RelScan;
+import org.polypheny.db.algebra.enumerable.EnumerableLimit;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -55,6 +57,10 @@ public record InsertSourceOrdinals( AlgNode plan, int branchCount ) {
                 nextOrdinal += child.branchCount;
             }
             return new InsertSourceOrdinals( union.copy( union.getTraitSet(), inputs, true ), nextOrdinal - firstOrdinal );
+        }
+        if ( source instanceof Sort || source instanceof EnumerableLimit ) {
+            InsertSourceOrdinals input = add( source.getInput( 0 ), firstOrdinal, identityFields, project, boundary );
+            return new InsertSourceOrdinals( source.copy( source.getTraitSet(), List.of( input.plan ) ), input.branchCount );
         }
 
         RexBuilder rex = source.getCluster().getRexBuilder();

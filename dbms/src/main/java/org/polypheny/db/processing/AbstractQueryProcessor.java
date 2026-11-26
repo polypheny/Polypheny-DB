@@ -648,6 +648,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         // Its trailing metadata carries unchanged source keys and branch ordinals.
         boolean marked = !identityFields.isEmpty() || (branches.size() > 1 && branches.stream()
                 .anyMatch( branch -> branch.variableSelection() || !branch.volatileFields().isEmpty() ));
+        boolean restoreBranchOrder = marked && !hasOrderedInsertSource( insert.getInput() );
         List<InsertSourceComparison> comparisons = (marked ? branches : List.of( branches.get( 0 ) )).stream()
                 .map( branch -> new InsertSourceComparison(
                         targetFields.stream()
@@ -720,9 +721,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                         consistent &= expected.agreesWith( nativeInsertRowCounts( read.read( context ), comparisons, marked ) );
                     }
                 }
-                if ( marked ) {
-                    // The adapter need not return UNION ALL branches in source order.
+                if ( restoreBranchOrder ) {
+                    // A source without a global ORDER BY follows UNION ALL branch order.
                     first.sort( Comparator.comparingInt( AbstractQueryProcessor::insertSourceOrdinal ) );
+                }
+                if ( marked ) {
                     first.forEach( row -> row.subList( targetFields.size(), row.size() ).clear() );
                 }
                 rows.addAll( first );
@@ -764,6 +767,18 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                             branch.identityFields() ) )
                     .toList();
         }
+        if ( source instanceof Sort sort ) {
+            List<InsertSourceBranch> branches = insertSourceBranches( sort.getInput(), snapshot );
+            boolean variableWindow = (sort.offset != null || sort.fetch != null)
+                    && (isVolatileInsertExpression( sort.offset ) || isVolatileInsertExpression( sort.fetch )
+                    || branches.stream().anyMatch( branch -> branch.variableSelection() || sort.getFieldExps().stream()
+                            .anyMatch( expression -> isVolatileInsertExpression( expression, branch.volatileFields() ) ) ));
+            if ( variableWindow ) {
+                // A changing row or sort key can displace rows from any branch in this window.
+                return branches.stream().map( branch -> new InsertSourceBranch( branch.volatileFields(), true, branch.identityFields() ) ).toList();
+            }
+            return branches;
+        }
         // Joins, aggregate and other opaque operators cannot prove a source identity.
         if ( source instanceof LogicalRelScan scan && scan.getEntity() instanceof LogicalTable table && table.primaryKey != null ) {
             List<Long> key = snapshot.rel().getPrimaryKey( table.primaryKey ).orElseThrow().fieldIds;
@@ -774,6 +789,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
         }
         return List.of( new InsertSourceBranch( Set.of(), hasVolatileInsertExpression( source ), List.of() ) );
+    }
+
+
+    private static boolean hasOrderedInsertSource( AlgNode source ) {
+        if ( source instanceof Sort sort ) {
+            return !sort.getCollation().getFieldCollations().isEmpty() || hasOrderedInsertSource( sort.getInput() );
+        }
+        return (source instanceof LogicalRelProject || source instanceof LogicalRelFilter) && hasOrderedInsertSource( source.getInput( 0 ) );
     }
 
 

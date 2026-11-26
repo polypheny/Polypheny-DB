@@ -270,6 +270,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     private final OperatorTable opTab;
     private final SqlNodeToRexConverter exprConverter;
     private final AlgBuilder algBuilder;
+    private boolean preserveIdentityTemporalCasts;
     /**
      * Fields used in name resolution for correlated sub-queries.
      */
@@ -2698,7 +2699,13 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         assert targetRowType != null;
         if ( call.getSchemaType() == DataModel.RELATIONAL && targetTable instanceof LogicalTable logicalTable
                 && (call.isDefaultValues() || snapshot.rel().getColumns( logicalTable.id ).stream().anyMatch( column -> column.getIdentity() != null )) ) {
-            return createModify( targetTable, convertInsertWithDefaults( call, logicalTable, targetRowType ) );
+            boolean previous = preserveIdentityTemporalCasts;
+            preserveIdentityTemporalCasts = true;
+            try {
+                return createModify( targetTable, convertInsertWithDefaults( call, logicalTable, targetRowType ) );
+            } finally {
+                preserveIdentityTemporalCasts = previous;
+            }
         }
         AlgNode sourceRel = convertQueryRecursive( call.getSource(), false, targetRowType ).project();
         AlgNode massagedRel = convertColumnList( call, sourceRel );
@@ -2737,8 +2744,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                         if ( literal != null ) {
                             expressions.add( literal );
                         } else {
-                            RexNode value = convertIdentityValuesExpression( bb, expression );
-                            expressions.add( preservesTemporalSourcePrecision( targetType, value )
+                            RexNode value = bb.convertExpression( expression );
+                            expressions.add( hasSameTemporalType( targetType, value )
                                     ? value : rexBuilder.ensureType( targetType, value, false ) );
                         }
                     }
@@ -2758,36 +2765,18 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     }
 
 
-    private RexNode convertIdentityValuesExpression( Blackboard bb, SqlNode expression ) {
-        RexNode converted = bb.convertExpression( expression );
-        if ( !(expression instanceof SqlCall cast) || cast.getKind() != Kind.CAST
-                || !isTemporalAssignmentType( converted.getType().getPolyType() ) ) {
-            return converted;
-        }
-        if ( converted instanceof RexLiteral literal && !RexLiteral.isNullLiteral( literal ) ) {
-            SqlNode operand = cast.operand( 0 );
-            if ( operand.getKind() == Kind.CAST ) {
-                RexNode innerCast = convertIdentityValuesExpression( bb, operand );
-                if ( innerCast.isA( Kind.CAST ) ) {
-                    return rexBuilder.makeAbstractCast( literal.getType(), innerCast );
-                }
-            }
-        } else if ( !(converted instanceof RexDynamicParam) ) {
-            return converted;
-        }
+    private RexNode retainTemporalCast( RexNode converted ) {
         // A cast folded into a literal or parameter still constrains its precision.
-        // Keep that requirement visible to the identity assignment stage.
-        return converted.getType().getPrecision() < PolyType.MAX_DATETIME_PRECISION
+        return isTemporalAssignmentType( converted.getType().getPolyType() )
+                && converted.getType().getPrecision() < PolyType.MAX_DATETIME_PRECISION
+                && (converted instanceof RexDynamicParam || converted instanceof RexLiteral literal && !RexLiteral.isNullLiteral( literal ))
                 ? rexBuilder.makeCall( converted.getType(), OperatorRegistry.get( OperatorName.CAST ), converted )
                 : converted;
     }
 
 
-    private static boolean preservesTemporalSourcePrecision( AlgDataType target, RexNode source ) {
-        AlgDataType sourceType = source.getType();
-        return source.isA( Kind.CAST ) && isTemporalAssignmentType( target.getPolyType() )
-                && target.getPolyType() == sourceType.getPolyType()
-                && sourceType.getPrecision() != target.getPrecision();
+    private static boolean hasSameTemporalType( AlgDataType target, RexNode source ) {
+        return isTemporalAssignmentType( target.getPolyType() ) && target.getPolyType() == source.getType().getPolyType();
     }
 
 
@@ -2797,7 +2786,6 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
 
     private AlgNode projectInsertWithDefaults( SqlInsert call, LogicalTable table, List<String> targetNames, AlgNode source, List<RexNode> supplied ) {
-        boolean values = !call.isDefaultValues() && call.getSource().getKind() == Kind.VALUES;
         List<RexNode> expressions = new ArrayList<>();
         List<RexNode> identityDefaults = new ArrayList<>();
         List<String> names = new ArrayList<>();
@@ -2806,6 +2794,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             LogicalColumn column = snapshot.rel().getColumn( field.getId() ).orElseThrow();
             int index = targetNames.indexOf( field.getName() );
             RexNode expression = index < 0 ? null : supplied.get( index );
+            boolean deferTemporalAssignment = expression != null && hasSameTemporalType( field.getType(), expression );
             if ( column.getIdentity() != null ) {
                 boolean generate = expression == null || call.getOverrideMode() == SqlInsert.OverrideMode.USER;
                 identityDefaults.add( rexBuilder.makeLiteral( generate ) );
@@ -2819,8 +2808,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             if ( expression == null ) {
                 expression = columnDefault( column, field.getType() );
             }
-            // The materializer applies the destination precision after the source CAST.
-            expressions.add( values && preservesTemporalSourcePrecision( field.getType(), expression )
+            // The materializer applies the destination precision after evaluating the supplied value.
+            expressions.add( deferTemporalAssignment
                     ? expression : rexBuilder.ensureType( field.getType(), expression, true ) );
             names.add( field.getName() );
         }
@@ -4229,8 +4218,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             }
 
             // Apply standard conversions.
-            rex = expr.accept( this );
-            return Objects.requireNonNull( rex );
+            rex = Objects.requireNonNull( expr.accept( this ) );
+            return preserveIdentityTemporalCasts && kind == Kind.CAST ? retainTemporalCast( rex ) : rex;
         }
 
 

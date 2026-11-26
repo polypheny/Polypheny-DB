@@ -162,9 +162,11 @@ class IdentityReplicaInsertVolatilityTest {
                     sql.executeUpdate( "CREATE TABLE " + table + " (id INTEGER PRIMARY KEY, qty BIGINT) ON STORE " + store );
                     try {
                         sql.executeUpdate( "ALTER TABLE " + table + " ADD PLACEMENT ON STORE " + initialStore );
-                        String insert = "INSERT INTO " + table + " SELECT id AS id, CAST(? AS DOUBLE) AS qty FROM " + source
-                                + " WHERE id=1 AND CURRENT_DATE > DATE '2000-01-01' UNION ALL "
-                                + "SELECT id AS id, CAST(? AS DECIMAL(19,0)) AS qty FROM " + source + " WHERE id=2";
+                        String insertInto = "INSERT INTO " + table + " ";
+                        String filteredSource = "SELECT id AS id, CAST(? AS DOUBLE) AS qty FROM " + source
+                                + " WHERE id=1 AND CURRENT_DATE > DATE '2000-01-01'";
+                        String stableSource = "SELECT id AS id, CAST(? AS DECIMAL(19,0)) AS qty FROM " + source + " WHERE id=2";
+                        String insert = insertInto + filteredSource + " UNION ALL " + stableSource;
                         Connection connection = jdbc.getConnection();
                         try ( PreparedStatement plain = connection.prepareStatement( insert );
                                 PreparedStatement keys = connection.prepareStatement( insert, new String[]{ "id", "qty" } );
@@ -193,7 +195,16 @@ class IdentityReplicaInsertVolatilityTest {
                                 sql.executeUpdate( "DELETE FROM " + table );
                                 assertFilteredReplicaDisagreement( connection, insert );
                                 // The original source key does not appear in the inserted row.
-                                assertFilteredReplicaDisagreement( connection, insert.replace( "SELECT id AS id", "SELECT id + 10 AS id" ) );
+                                String computedInsert = insert.replace( "SELECT id AS id", "SELECT id + 10 AS id" );
+                                assertFilteredReplicaDisagreement( connection, computedInsert );
+                                assertFilteredReplicaDisagreement( connection, computedInsert + " ORDER BY id DESC LIMIT 1 OFFSET 1" );
+                                assertFilteredReplicaDisagreement( connection, insertInto + "(" + filteredSource + " ORDER BY id LIMIT 1) UNION ALL " + stableSource );
+                                String limitedInsert = insertInto + "SELECT id + 10 AS id, CAST(42.75 AS DOUBLE) AS qty FROM " + source
+                                        + " WHERE id=1 AND CURRENT_DATE > DATE '2000-01-01' ORDER BY id LIMIT 1";
+                                assertEquals( "22000", assertThrows( SQLException.class,
+                                        () -> sql.executeUpdate( limitedInsert, new String[]{ "id", "qty" } ) ).getSQLState() );
+                                assertEquals( "22000", assertThrows( SQLException.class,
+                                        () -> sql.executeQuery( limitedInsert + " RETURNING id, qty" ) ).getSQLState() );
                                 try ( ResultSet stored = sql.executeQuery( "SELECT id FROM " + table ) ) {
                                     assertFalse( stored.next() );
                                 }
@@ -292,6 +303,14 @@ class IdentityReplicaInsertVolatilityTest {
                         try ( ResultSet projected = sql.executeQuery( insert + " RETURNING id, qty" ) ) {
                             returning = readPairs( projected );
                         }
+                        assertRandomFilterRows( sql, table, returning );
+
+                        sql.executeUpdate( "DELETE FROM " + table );
+                        try ( ResultSet projected = sql.executeQuery( insert + " ORDER BY id DESC LIMIT 2 RETURNING id, qty" ) ) {
+                            returning = readPairs( projected );
+                        }
+                        assertEquals( List.of( 101L, 42L ), returning.get( 0 ) );
+                        assertTrue( returning.size() <= 2 );
                         assertRandomFilterRows( sql, table, returning );
                     } finally {
                         sql.executeUpdate( "DROP TABLE " + table );

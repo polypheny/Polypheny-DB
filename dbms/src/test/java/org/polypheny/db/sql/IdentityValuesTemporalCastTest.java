@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.TimeZone;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.polypheny.db.PolyphenyDb;
@@ -48,7 +49,9 @@ class IdentityValuesTemporalCastTest {
     private static final String COLUMNS = "stamp TIMESTAMP(3), clock_val TIME(3)";
     private static final String SELECT_VALUES = "SELECT stamp, clock_val FROM ";
     private static final String RETURNING = " RETURNING stamp, clock_val";
+    private static final String RAW_VALUES = "TIMESTAMP '2024-12-31 23:59:59.995', TIME '12:34:56.789'";
     private static final String RAW_CASTS = "CAST(TIMESTAMP '2024-12-31 23:59:59.995' AS TIMESTAMP(2)), CAST(TIME '12:34:56.789' AS TIME(2))";
+    private static final String PREPARED_CASTS = "CAST(? AS TIMESTAMP(2)), CAST(? AS TIME(2))";
 
 
     @BeforeAll
@@ -75,18 +78,79 @@ class IdentityValuesTemporalCastTest {
     @ValueSource(booleans = { false, true })
     void preparedValuesKeepDirectAndNestedSourceCasts( boolean parameterize ) throws SQLException {
         withTables( parameterize, (connection, sql, utc) -> {
-            String direct = "CAST(? AS TIMESTAMP(2)), CAST(? AS TIME(2))";
             String nested = "CAST(CAST(? AS TIMESTAMP(2)) AS TIMESTAMP(3)), CAST(CAST(? AS TIME(2)) AS TIME(3))";
-            assertPreparedInsert( connection, sql, utc, 1, direct );
-            assertPreparedInsert( connection, sql, utc, 2, nested );
+            assertPreparedInsert( connection, sql, utc, "VALUES (1, " + PREPARED_CASTS + ")", "VALUES (" + PREPARED_CASTS + ")" );
+            assertPreparedInsert( connection, sql, utc, "VALUES (2, " + PREPARED_CASTS + ")", "VALUES (" + nested + ")" );
         } );
     }
 
 
-    private static void assertPreparedInsert( Connection connection, Statement sql, Calendar utc, int id, String casts ) throws SQLException {
-        try ( PreparedStatement plain = connection.prepareStatement( "INSERT INTO " + PLAIN + " VALUES (" + id + ", " + casts + ")" );
-                PreparedStatement projected = connection.prepareStatement( "INSERT INTO " + IDENTITY + "(stamp, clock_val) VALUES ("
-                        + casts + ")" + RETURNING ) ) {
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void insertSelectKeepsExplicitSourceCasts( boolean parameterize ) throws SQLException {
+        withTables( parameterize, (connection, sql, utc) -> {
+            assertEquals( 1, sql.executeUpdate( "INSERT INTO " + PLAIN + " SELECT 1, " + RAW_CASTS ) );
+            assertProjectedAndStored( sql, sql.executeQuery(
+                    "INSERT INTO " + IDENTITY + "(stamp, clock_val) SELECT " + RAW_CASTS + RETURNING ), utc, 1 );
+            assertPreparedInsert( connection, sql, utc, "SELECT 2, " + PREPARED_CASTS, "SELECT " + PREPARED_CASTS );
+
+            assertEquals( 1, sql.executeUpdate( "INSERT INTO " + PLAIN + " SELECT 3, " + RAW_CASTS ) );
+            assertEquals( 1, sql.executeUpdate( "INSERT INTO " + PLAIN + " SELECT 4, " + RAW_VALUES ) );
+            String castBranch = "SELECT 2, " + RAW_CASTS;
+            String literalBranch = "SELECT 1, " + RAW_VALUES;
+            assertProjectedAndStored( sql, sql.executeQuery( "INSERT INTO " + IDENTITY + "(stamp, clock_val) SELECT "
+                    + "stamp, clock_val FROM (" + literalBranch + " UNION ALL " + castBranch
+                    + ") AS source_rows (source_order, stamp, clock_val) ORDER BY source_order DESC FETCH NEXT 2 ROWS ONLY" + RETURNING ), utc, 2 );
+
+            String from = " FROM " + PLAIN + " WHERE id = 1";
+            assertEquals( 1, sql.executeUpdate( "INSERT INTO " + PLAIN + " SELECT 5, " + RAW_CASTS + from ) );
+            assertProjectedAndStored( sql, sql.executeQuery(
+                    "INSERT INTO " + IDENTITY + "(stamp, clock_val) SELECT " + RAW_CASTS + from + RETURNING ), utc, 1 );
+        } );
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void temporalLiteralsUseNativeDestinationPrecision( boolean parameterize ) throws SQLException {
+        withTables( parameterize, "stamp TIMESTAMP(2), clock_val TIME(2)", (connection, sql, utc) -> {
+            String explicit = "CAST(TIMESTAMP '2024-12-31 23:59:59.995' AS TIMESTAMP(3)), CAST(TIME '12:34:56.789' AS TIME(3))";
+            assertEquals( 2, sql.executeUpdate( "INSERT INTO " + PLAIN + " VALUES (1, " + RAW_VALUES + "), (2, " + explicit + ")" ) );
+            assertProjectedAndStored( sql, sql.executeQuery( "INSERT INTO " + IDENTITY + "(stamp, clock_val) VALUES ("
+                    + RAW_VALUES + "), (" + explicit + ")" + RETURNING ), utc, 2 );
+        } );
+    }
+
+
+    @Test
+    void parameterizedSelectKeepsTheSourceAdaptersCast() throws SQLException {
+        assumeTrue( "postgresql".equals( PolyphenyDb.defaultStoreName ) );
+        withTables( true, (connection, sql, utc) -> {
+            String store = "temporal_cast_source_store";
+            String source = "temporal_cast_source";
+            TestHelper.addHsqldb( store, sql );
+            try {
+                sql.executeUpdate( "CREATE TABLE " + source + " (id INTEGER PRIMARY KEY) ON STORE " + store );
+                try {
+                    sql.executeUpdate( "INSERT INTO " + source + " VALUES (1)" );
+                    String from = " FROM " + source;
+                    assertEquals( 1, sql.executeUpdate( "INSERT INTO " + PLAIN + " SELECT id, " + RAW_CASTS + from ) );
+                    assertProjectedAndStored( sql, sql.executeQuery(
+                            "INSERT INTO " + IDENTITY + "(stamp, clock_val) SELECT " + RAW_CASTS + from + RETURNING ), utc, 1 );
+                } finally {
+                    sql.executeUpdate( "DROP TABLE " + source );
+                }
+            } finally {
+                TestHelper.dropAdapter( store, sql );
+            }
+        } );
+    }
+
+
+    private static void assertPreparedInsert( Connection connection, Statement sql, Calendar utc, String plainSource, String identitySource ) throws SQLException {
+        try ( PreparedStatement plain = connection.prepareStatement( "INSERT INTO " + PLAIN + " " + plainSource );
+                PreparedStatement projected = connection.prepareStatement( "INSERT INTO " + IDENTITY + "(stamp, clock_val) "
+                        + identitySource + RETURNING ) ) {
             for ( PreparedStatement insert : List.of( plain, projected ) ) {
                 insert.setTimestamp( 1, Timestamp.valueOf( "2024-12-31 23:59:59.995" ), utc );
                 insert.setTime( 2, new Time( LocalTime.parse( "12:34:56.789" ).toNanoOfDay() / 1_000_000L ), utc );
@@ -119,12 +183,17 @@ class IdentityValuesTemporalCastTest {
 
 
     private static void withTables( boolean parameterize, TableCheck check ) throws SQLException {
+        withTables( parameterize, COLUMNS, check );
+    }
+
+
+    private static void withTables( boolean parameterize, String columns, TableCheck check ) throws SQLException {
         boolean previousParameterization = RuntimeConfig.PARAMETERIZE_DML.getBoolean();
         Calendar utc = Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) );
         try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
-            sql.executeUpdate( "CREATE TABLE " + PLAIN + " (id INTEGER PRIMARY KEY, " + COLUMNS + ")" );
+            sql.executeUpdate( "CREATE TABLE " + PLAIN + " (id INTEGER PRIMARY KEY, " + columns + ")" );
             try {
-                sql.executeUpdate( "CREATE TABLE " + IDENTITY + " (id BIGSERIAL PRIMARY KEY, " + COLUMNS + ")" );
+                sql.executeUpdate( "CREATE TABLE " + IDENTITY + " (id BIGSERIAL PRIMARY KEY, " + columns + ")" );
                 try {
                     sql.executeUpdate( "ALTER CONFIG 'runtime/parameterizeDML' SET " + parameterize );
                     check.run( jdbc.getConnection(), sql, utc );

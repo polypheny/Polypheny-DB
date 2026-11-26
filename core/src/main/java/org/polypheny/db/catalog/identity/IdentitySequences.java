@@ -208,13 +208,16 @@ public final class IdentitySequences {
         SequenceState state = state( identity );
         OptionalLong next = state.next();
         Long last = state.last();
+        long step = increment == null ? identity.increment() : increment;
         long lower = min == null ? identity.min() : min;
         long upper = max == null ? identity.max() : max;
+        boolean reversed = Long.signum( step ) != Long.signum( identity.increment() );
         boolean hasWrapped = last != null && next.isPresent() && identity.cycle()
                 && next.getAsLong() == (identity.increment() > 0 ? identity.min() : identity.max())
                 && successor( last, identity.increment(), identity.min(), identity.max(), false ).isEmpty();
-        if ( last != null && (hasWrapped || next.isEmpty() || !withinBounds( next.getAsLong(), lower, upper )) ) {
-            next = successor( last, increment == null ? identity.increment() : increment, lower, upper, cycle == null ? identity.cycle() : cycle );
+        // On reversal the cached next points in the old direction. A pending RESTART has no last value.
+        if ( last != null && (reversed || hasWrapped || next.isEmpty() || !withinBounds( next.getAsLong(), lower, upper )) ) {
+            next = successor( last, step, lower, upper, cycle == null ? identity.cycle() : cycle );
         }
         return identity.withOptions( type, next, last, start, increment, min, max, cycle );
     }
