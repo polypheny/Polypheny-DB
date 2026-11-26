@@ -27,10 +27,14 @@ public interface Transport extends Closeable {
 
     void sendMessage( byte[] msg ) throws IOException;
 
-    Optional<byte[]> tryReceiveMessage() throws IOException;
+    Optional<ReceivedFrame> tryReceiveMessage() throws IOException;
 
     SelectableChannel getChannel();
 
     void close();
+
+    record ReceivedFrame( byte[] payload, long startedAtNanos ) {
+
+    }
 
 }

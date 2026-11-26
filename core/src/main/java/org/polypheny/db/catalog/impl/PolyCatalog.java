@@ -29,8 +29,11 @@ import java.beans.PropertyChangeListener;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter;
@@ -52,9 +55,12 @@ import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.LogicalQueryInterface;
 import org.polypheny.db.catalog.entity.LogicalUser;
+import org.polypheny.db.catalog.entity.logical.IdentityColumn;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.identity.IdentitySequences;
 import org.polypheny.db.catalog.impl.allocation.PolyAllocDocCatalog;
 import org.polypheny.db.catalog.impl.allocation.PolyAllocGraphCatalog;
 import org.polypheny.db.catalog.impl.allocation.PolyAllocRelCatalog;
@@ -64,6 +70,7 @@ import org.polypheny.db.catalog.impl.logical.RelationalCatalog;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.catalog.persistance.FilePersister;
+import org.polypheny.db.catalog.persistance.FilePersister.CatalogPublicationException;
 import org.polypheny.db.catalog.persistance.InMemoryPersister;
 import org.polypheny.db.catalog.persistance.Persister;
 import org.polypheny.db.catalog.snapshot.Snapshot;
@@ -121,6 +128,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     @Getter
     private final BinarySerializer<PolyCatalog> serializer = PolySerializable.buildSerializer( PolyCatalog.class );
     private final Persister persister;
+    private final IdentitySequences identitySequences;
     private final AtomicBoolean dirty = new AtomicBoolean( false );
     @Getter
     PropertyChangeListener changeListener = evt -> dirty.set( true );
@@ -129,6 +137,8 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     @Getter
     private volatile Snapshot snapshot;
     private String backup;
+    private long publishedRevision;
+    private volatile boolean pendingCatalogSync;
 
 
     public PolyCatalog() {
@@ -163,7 +173,14 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         // temporary data
         this.adapterCatalogs = new ConcurrentHashMap<>();
 
-        this.persister = memoryCatalog ? new InMemoryPersister() : new FilePersister();
+        if ( memoryCatalog ) {
+            this.persister = new InMemoryPersister();
+            this.identitySequences = new IdentitySequences();
+        } else {
+            FilePersister filePersister = new FilePersister();
+            this.persister = filePersister;
+            this.identitySequences = new IdentitySequences( filePersister.getDirectory() );
+        }
 
     }
 
@@ -203,7 +220,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
 
 
     public synchronized void commit() {
-        if ( !this.dirty.get() ) {
+        if ( !this.dirty.get() && !pendingCatalogSync ) {
             log.debug( "Nothing changed" );
             return;
         }
@@ -216,11 +233,47 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         String committedState = serialize();
 
         updateSnapshot();
-        persister.write( committedState );
-        this.backup = committedState;
-        this.dirty.set( false );
+        try {
+            persistCatalog( committedState );
+        } catch ( CatalogPublicationException e ) {
+            // Either file version can survive a crash. Keep both sequence epochs until a later durable commit.
+            finishCatalogPublication( committedState, true );
+            throw e;
+        }
+        finishCatalogPublication( committedState, false );
+        retainIdentitySequences();
+    }
 
-        this.lastCommitSnapshotId = snapshot.id();
+
+    @Override
+    public IdentitySequences getIdentitySequences() {
+        if ( pendingCatalogSync ) {
+            synchronizePublishedCatalog();
+        }
+        return identitySequences;
+    }
+
+
+    private synchronized void synchronizePublishedCatalog() {
+        if ( pendingCatalogSync ) {
+            // A new value must never be issued from an epoch that might disappear on restart.
+            persistCatalog( backup );
+            pendingCatalogSync = false;
+        }
+    }
+
+
+    protected void persistCatalog( String committedState ) {
+        persister.write( committedState );
+    }
+
+
+    private void finishCatalogPublication( String committedState, boolean pendingSync ) {
+        backup = committedState;
+        dirty.set( false );
+        lastCommitSnapshotId = snapshot.id();
+        pendingCatalogSync = pendingSync;
+        publishedRevision++;
     }
 
 
@@ -239,10 +292,16 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         adapterCatalogs.values().forEach( catalog -> catalog.captureRollback( state ) );
 
         boolean wasDirty = dirty.get();
+        long capturedRevision = publishedRevision;
         return () -> {
+            if ( capturedRevision != publishedRevision ) {
+                // Publication has already happened, even if the caller received a durability error.
+                return;
+            }
             state.restore();
             dirty.set( wasDirty );
             updateSnapshot();
+            retainIdentitySequences();
         };
     }
 
@@ -277,6 +336,23 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         adapterRestore.clear();
         adapterRestore.putAll( old.adapterRestore );
         idBuilder.restore( old.idBuilder );
+        idBuilder.getFieldId().accumulateAndGet( identitySequences.getFieldIdFloor(), Math::max );
+    }
+
+
+    private void retainIdentitySequences() {
+        if ( !isRegisteredInstance() || pendingCatalogSync ) {
+            return;
+        }
+        Set<UUID> active = logicalCatalogs.values().stream()
+                .filter( LogicalRelationalCatalog.class::isInstance )
+                .map( LogicalRelationalCatalog.class::cast )
+                .flatMap( relational -> relational.getColumns().values().stream() )
+                .map( LogicalColumn::getIdentity )
+                .filter( identity -> identity != null )
+                .map( IdentityColumn::id )
+                .collect( Collectors.toSet() );
+        identitySequences.retain( active );
     }
 
 
@@ -449,6 +525,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         }
         // set old state;
         restoreLastState();
+        retainIdentitySequences();
         // only for templates
         this.snapshot = SnapshotBuilder.createSnapshot( idBuilder.getNewSnapshotId(), this, Map.of(), Map.of() );
         AdapterManager.getInstance().restoreAdapters( List.copyOf( adapters.values() ) );

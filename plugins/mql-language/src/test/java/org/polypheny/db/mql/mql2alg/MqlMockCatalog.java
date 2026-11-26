@@ -20,10 +20,20 @@ import java.beans.PropertyChangeListener;
 import java.util.Optional;
 import org.polypheny.db.catalog.MockCatalog;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
+import org.polypheny.db.catalog.identity.IdentitySequences;
 import org.polypheny.db.transaction.Transaction;
 
 
 public class MqlMockCatalog extends MockCatalog {
+
+    private final IdentitySequences identitySequences = new IdentitySequences();
+
+
+    @Override
+    public IdentitySequences getIdentitySequences() {
+        return identitySequences;
+    }
+
 
     @Override
     public void change() {

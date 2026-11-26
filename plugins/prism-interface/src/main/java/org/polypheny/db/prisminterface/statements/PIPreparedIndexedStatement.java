@@ -25,12 +25,14 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.prisminterface.PIClient;
+import org.polypheny.db.prisminterface.PIServiceException;
 import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.prism.ParameterMeta;
+import org.polypheny.prism.StatementBatchResponse;
 import org.polypheny.prism.StatementResult;
 
 @Getter
@@ -41,6 +43,8 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
     private Statement statement;
     @Setter
     private PolyImplementation implementation;
+    @Setter
+    private boolean sequentialBatchExecution;
 
 
     public PIPreparedIndexedStatement(
@@ -70,6 +74,29 @@ public class PIPreparedIndexedStatement extends PIPreparedStatement {
             StatementProcessor.implement( this, null, preParsedQueries );
             return List.of( StatementProcessor.executeAndGetResult( this ).getScalar() );
         } );
+    }
+
+
+    public StatementBatchResponse executeSequentialBatch( List<List<PolyValue>> bindings, BatchProgress progress ) {
+        List<ParameterMeta> metadata = getParameterMetas();
+        if ( bindings.stream().anyMatch( row -> row.size() != metadata.size() ) ) {
+            throw new PIServiceException( "Incorrect number of parameters in prepared batch." );
+        }
+        if ( StatementProcessor.parseUpdateBatchMember( this ).isDdl() ) {
+            throw new PIServiceException( "DDL must execute separately from the prepared batch." );
+        }
+        StatementProcessor.parseWithOpenAutocommitResult( this );
+        return client.isAutoCommit()
+                ? client.executeAtomicBatch( () -> executeBindings( bindings, metadata, progress ) )
+                : executeBindings( bindings, metadata, progress );
+    }
+
+
+    private StatementBatchResponse executeBindings( List<List<PolyValue>> bindings, List<ParameterMeta> metadata, BatchProgress progress ) {
+        for ( List<PolyValue> binding : bindings ) {
+            progress.add( this, execute( binding, metadata, -1 ) );
+        }
+        return progress.completeResponse();
     }
 
 

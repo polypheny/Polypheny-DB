@@ -94,6 +94,12 @@ public record SnapshotModel(
     }
 
 
+    @JsonProperty("supportsIdentityColumns")
+    public boolean supportsIdentityColumns() {
+        return true;
+    }
+
+
     public static SnapshotModel from( Snapshot snapshot ) {
         List<NamespaceModel> namespaces = snapshot.getNamespaces( null ).stream().filter( ns -> !ns.hidden ).map( NamespaceModel::from ).toList();
         List<EntityModel> entities = new ArrayList<>();

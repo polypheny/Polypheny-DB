@@ -137,7 +137,7 @@ public abstract class AlgDataTypeSystemImpl implements AlgDataTypeSystem {
 
     @Override
     public boolean isAutoincrement( PolyType typeName ) {
-        return false;
+        return typeName == PolyType.SMALLINT || typeName == PolyType.INTEGER || typeName == PolyType.BIGINT;
     }
 
 

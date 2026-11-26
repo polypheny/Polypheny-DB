@@ -189,7 +189,8 @@ class DbMetaRetriever {
         Optional.ofNullable( logicalColumn.getLength() ).ifPresent( columnBuilder::setTypeLength );
         Optional.ofNullable( logicalColumn.getScale() ).ifPresent( columnBuilder::setTypeScale );
         columnBuilder.setIsNullable( logicalColumn.isNullable() );
-        Optional.ofNullable( logicalColumn.getDefaultValue() ).ifPresent( p -> columnBuilder.setDefaultValueAsString( p.value.toJson() ) );
+        columnBuilder.setIsAutoIncrement( logicalColumn.getIdentity() != null );
+        Optional.ofNullable( logicalColumn.getLiteralDefaultValue() ).ifPresent( p -> columnBuilder.setDefaultValueAsString( p.value.toJson() ) );
         columnBuilder.setColumnIndex( logicalColumn.getPosition() );
         Optional.ofNullable( PolyObject.getEnumNameOrNull( logicalColumn.getCollation() ) ).ifPresent( columnBuilder::setCollation );
         columnBuilder.setIsHidden( logicalColumn.getVisibility() == Visibility.INTERNAL );

@@ -17,26 +17,47 @@
 package org.polypheny.db.adapter.jdbc.stores;
 
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TimeZone;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.ExtensionPoint;
+import org.polypheny.db.adapter.DataContext.ParameterValue;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.RelationalModifyDelegate;
+import org.polypheny.db.adapter.jdbc.JdbcImplementor;
+import org.polypheny.db.adapter.jdbc.JdbcRules.JdbcProjectRule;
 import org.polypheny.db.adapter.jdbc.JdbcSchema;
 import org.polypheny.db.adapter.jdbc.JdbcTable;
+import org.polypheny.db.adapter.jdbc.JdbcToEnumerableConverter;
 import org.polypheny.db.adapter.jdbc.JdbcUtils;
+import org.polypheny.db.adapter.jdbc.ResultSetEnumerable;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
+import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.InsertSourceOrdinals;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
@@ -49,16 +70,37 @@ import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.sql.language.SqlDbFeature;
 import org.polypheny.db.sql.language.SqlDialect;
+import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlLiteral;
+import org.polypheny.db.sql.language.SqlNode;
+import org.polypheny.db.sql.language.SqlNodeList;
+import org.polypheny.db.sql.language.SqlSelect;
+import org.polypheny.db.sql.language.util.SqlString;
 import org.polypheny.db.transaction.PolyXid;
+import org.polypheny.db.transaction.QueryExecutionScope;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.VectorType;
+import org.polypheny.db.type.entity.PolyNull;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 
 
 @Slf4j
@@ -425,6 +467,146 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
         } catch ( Exception e ) {
             throw new GenericRuntimeException( e );
         }
+    }
+
+
+    @Override
+    public boolean supportsReadInsertSource() {
+        return dialect.supportsAliasedValues();
+    }
+
+
+    @Override
+    public Optional<AlgNode> readInsertSource( AlgNode physicalInsert, List<AlgDataTypeField> targetFields, Set<Long> nativeTemporalFields ) {
+        return JdbcToEnumerableConverter.readInsertSource( adapterId, physicalInsert, targetFields, nativeTemporalFields );
+    }
+
+
+    @Override
+    public Optional<InsertSourceOrdinals> markInsertSource( AlgNode source, int firstOrdinal, List<AlgDataTypeField> identityFields ) {
+        return JdbcToEnumerableConverter.markInsertSource( source, firstOrdinal, identityFields );
+    }
+
+
+    @Override
+    public List<PolyValue> castNumericAssignments( Transaction transaction, AlgCluster cluster, AlgDataType target, List<NumericAssignment> assignments ) {
+        return castAssignments( transaction, cluster, target, dialect.getCastSpec( target ), assignments,
+                (assignment, bindings) -> numericAssignmentSource( cluster, assignment, bindings ) );
+    }
+
+
+    @Override
+    public List<PolyValue> castTemporalAssignments( Transaction transaction, AlgCluster cluster, AlgDataType target, boolean nativePrecision,
+            List<TemporalAssignment> assignments ) {
+        AlgDataType input = cluster.getTypeFactory().createPolyType( target.getPolyType(), PolyType.MAX_DATETIME_PRECISION );
+        SqlNode castType = JdbcToEnumerableConverter.assignmentCastType( dialect, target, nativePrecision );
+        return castAssignments( transaction, cluster, target, castType, assignments,
+                (assignment, bindings) -> assignment.expression() == null
+                        ? bindAssignment( input, assignment.value(), bindings )
+                        : bindAssignmentExpression( assignment.expression(), assignment.parameters(), bindings ) );
+    }
+
+
+    private <T> List<PolyValue> castAssignments( Transaction transaction, AlgCluster cluster, AlgDataType target, SqlNode castType, List<T> assignments,
+            BiFunction<T, List<ParameterValue>, RexNode> source ) {
+        transaction.registerInvolvedAdapter( this );
+        List<PolyValue> converted = new ArrayList<>( assignments.size() );
+        final int batchSize = 128;
+        try {
+            ConnectionHandler handler = connectionFactory.getOrCreateConnectionHandler( transaction.getXid() );
+            for ( int offset = 0; offset < assignments.size(); offset += batchSize ) {
+                int count = Math.min( batchSize, assignments.size() - offset );
+                List<RexNode> expressions = new ArrayList<>( count );
+                List<ParameterValue> bindings = new ArrayList<>( count );
+                List<String> names = new ArrayList<>( count );
+                for ( int i = 0; i < count; i++ ) {
+                    expressions.add( source.apply( assignments.get( offset + i ), bindings ) );
+                    names.add( "bound_value_" + i );
+                }
+                LogicalRelProject sources = LogicalRelProject.create( LogicalRelValues.createOneRow( cluster ), expressions, names );
+                JdbcImplementor implementor = new JdbcImplementor( dialect, transaction.getTypeFactory(), currentJdbcSchema );
+                // As in INSERT ... SELECT, evaluate the source (including explicit casts)
+                // before assigning to the destination type. Inlining the two casts can
+                // let the store infer a bound parameter's type from the destination.
+                SqlSelect destination = implementor.visitChild( 0, sources ).subSelect();
+                List<SqlNode> castColumns = names.stream()
+                        .map( name -> (SqlNode) OperatorRegistry.get( OperatorName.CAST ).createCall(
+                                ParserPos.ZERO, new SqlIdentifier( name, ParserPos.ZERO ), castType ) )
+                        .toList();
+                destination.setSelectList( new SqlNodeList( castColumns, ParserPos.ZERO ) );
+                SqlString sql = destination.toSqlString( dialect );
+                try ( PreparedStatement select = handler.prepareStatement( sql.getSql() ) ) {
+                    long remaining = QueryExecutionScope.remainingTimeoutMillis();
+                    if ( remaining > 0 ) {
+                        try {
+                            select.setQueryTimeout( (int) Math.min( Integer.MAX_VALUE, 1 + (remaining - 1) / 1000 ) );
+                        } catch ( SQLFeatureNotSupportedException e ) {
+                            log.debug( "The adapter does not support a native assignment query timeout", e );
+                        }
+                    }
+                    List<Integer> parameterOrder = sql.getDynamicParameters();
+                    if ( parameterOrder != null ) {
+                        for ( int i = 0; i < parameterOrder.size(); i++ ) {
+                            ParameterValue parameter = bindings.get( parameterOrder.get( i ) );
+                            ResultSetEnumerable.setDynamicParam( select, i + 1, parameter.value(), parameter.type(), handler );
+                        }
+                    }
+                    try ( ResultSet row = select.executeQuery() ) {
+                        if ( !row.next() ) {
+                            throw new GenericRuntimeException( "The native assignment cast returned no row." );
+                        }
+                        for ( int i = 1; i <= count; i++ ) {
+                            PolyValue value = switch ( target.getPolyType() ) {
+                                case TINYINT, SMALLINT, INTEGER -> PolyInteger.of( row.getInt( i ) );
+                                case BIGINT -> PolyLong.of( row.getLong( i ) );
+                                case DECIMAL -> PolyBigDecimal.of( row.getBigDecimal( i ) );
+                                case REAL, FLOAT -> PolyFloat.of( row.getFloat( i ) );
+                                case DOUBLE -> PolyDouble.of( row.getDouble( i ) );
+                                case TIME -> JdbcToEnumerableConverter.readTime( row, i );
+                                case TIMESTAMP -> {
+                                    Timestamp timestamp = row.getTimestamp( i, Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ) );
+                                    yield timestamp == null ? PolyNull.NULL : PolyTimestamp.of( timestamp );
+                                }
+                                default -> throw new IllegalArgumentException( "Unsupported assignment target " + target );
+                            };
+                            converted.add( row.wasNull() ? PolyNull.NULL : value );
+                        }
+                    }
+                }
+            }
+            return converted;
+        } catch ( SQLException e ) {
+            throw new PolyphenyDbException( target.getPolyType() + " assignment failed: " + e.getMessage(), e, e.getSQLState() );
+        } catch ( ConnectionHandlerException e ) {
+            throw new GenericRuntimeException( e );
+        }
+    }
+
+
+    private RexNode numericAssignmentSource( AlgCluster cluster, NumericAssignment assignment, List<ParameterValue> bindings ) {
+        NumericExpression expression = assignment.expression();
+        if ( expression != null && (!(expression.node() instanceof RexCall) || JdbcProjectRule.supports( currentJdbcSchema.getConvention(),
+                LogicalRelProject.create( LogicalRelValues.createOneRow( cluster ), List.of( expression.node() ), List.of( "assignment" ) ) )) ) {
+            return bindAssignmentExpression( expression.node(), expression.parameters(), bindings );
+        }
+        return bindAssignment( assignment.inputType(), assignment.value(), bindings );
+    }
+
+
+    private static RexNode bindAssignmentExpression( RexNode expression, Map<Long, PolyValue> parameters, List<ParameterValue> bindings ) {
+        return expression.accept( new RexShuttle() {
+            @Override
+            public RexNode visitDynamicParam( RexDynamicParam parameter ) {
+                return bindAssignment( parameter.getType(), parameters.get( parameter.getIndex() ), bindings );
+            }
+        } );
+    }
+
+
+    private static RexNode bindAssignment( AlgDataType input, PolyValue value, List<ParameterValue> bindings ) {
+        int index = bindings.size();
+        bindings.add( new ParameterValue( index, input, value ) );
+        return new RexDynamicParam( input, index );
     }
 
 

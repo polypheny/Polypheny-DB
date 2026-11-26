@@ -141,12 +141,25 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
     }
 
 
+    public IdentityColumn getIdentity() {
+        return defaultValue == null ? null : defaultValue.identity;
+    }
+
+
+    public LogicalDefaultValue getLiteralDefaultValue() {
+        return getIdentity() == null ? defaultValue : null;
+    }
+
+
     public static AlgDataType getAlgDataType( AlgDataTypeFactory typeFactory, Integer length, Integer scale, PolyType type, PolyType collectionsType, Integer cardinality, Integer dimension, boolean nullable, boolean elementsNullable ) {
         AlgDataType elementType;
         if ( length != null && scale != null && type.allowsPrecScale( true, true ) ) {
             elementType = typeFactory.createPolyType( type, length, scale );
         } else if ( length != null && type.allowsPrecNoScale() ) {
             elementType = typeFactory.createPolyType( type, length );
+        } else if ( (type == PolyType.TIME || type == PolyType.TIMESTAMP) && collectionsType == null ) {
+            // Keep the full input precision until the native column applies its default.
+            elementType = typeFactory.createPolyType( type, PolyType.MAX_DATETIME_PRECISION );
         } else {
             assert type.allowsNoPrecNoScale();
             elementType = typeFactory.createPolyType( type );

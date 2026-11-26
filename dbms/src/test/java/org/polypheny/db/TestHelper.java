@@ -70,6 +70,7 @@ import org.bson.BsonDocument;
 import org.bson.BsonValue;
 import org.junit.jupiter.api.AfterAll;
 import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.algebra.type.DocumentType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.IdBuilder;
@@ -225,6 +226,18 @@ public class TestHelper {
     public static void addHsqldb( String name, Statement statement ) throws SQLException {
         executeSQL( statement, "ALTER ADAPTERS ADD \"" + name + "\" USING 'Hsqldb' AS 'Store'"
                 + " WITH '{maxConnections:\"25\",trxControlMode:locks,trxIsolationLevel:read_committed,type:Memory,tableType:Memory,mode:embedded}'" );
+    }
+
+
+    /** Returns the JDBC bootstrap store or creates a dedicated embedded HSQLDB fixture. */
+    public static String useJdbcTestStore( String fallback, Statement statement ) throws SQLException {
+        // The bootstrap adapter uses this unique name for every store type.
+        String defaultStore = "hsqldb";
+        if ( AdapterManager.getInstance().getStore( defaultStore ).map( DataStore::supportsReadInsertSource ).orElse( false ) ) {
+            return defaultStore;
+        }
+        addHsqldb( fallback, statement );
+        return fallback;
     }
 
 

@@ -142,7 +142,7 @@ public class PhysicalColumn extends PhysicalField {
                 column.nullable,
                 column.elementsNullable,
                 column.collation,
-                column.defaultValue );
+                column.getLiteralDefaultValue() );
     }
 
 

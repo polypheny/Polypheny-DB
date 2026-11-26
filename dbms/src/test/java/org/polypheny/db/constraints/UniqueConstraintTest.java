@@ -18,6 +18,7 @@ package org.polypheny.db.constraints;
 
 
 import com.google.common.collect.ImmutableList;
+import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -344,11 +345,12 @@ public class UniqueConstraintTest {
                     preparedStatement.setInt( 3, 1 );
                     preparedStatement.setInt( 4, 1 );
                     preparedStatement.addBatch();
-                    Assertions.assertThrows(
-                            PrismInterfaceServiceException.class,
+                    BatchUpdateException duplicate = Assertions.assertThrows(
+                            BatchUpdateException.class,
                             preparedStatement::executeBatch,
                             "Insert violates unique constraint"
                     );
+                    Assertions.assertNull( duplicate.getUpdateCounts() );
                     connection.rollback();
 
                     // This should work
@@ -370,16 +372,10 @@ public class UniqueConstraintTest {
                         preparedStatement.setInt( 4, i );
                         preparedStatement.addBatch();
                     }
-                    try {
-                        preparedStatement.executeBatch();
-                        connection.commit();
-                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( PrismInterfaceServiceException e ) {
-                        if ( !e.getMessage().contains( "Insert violates unique constraint" ) ) {
-                            throw new RuntimeException( "Unexpected exception", e );
-                        }
-                        connection.rollback();
-                    }
+                    BatchUpdateException conflictingInsert = Assertions.assertThrows( BatchUpdateException.class, preparedStatement::executeBatch );
+                    Assertions.assertTrue( conflictingInsert.getMessage().contains( "Insert violates unique constraint" ), conflictingInsert::getMessage );
+                    Assertions.assertNull( conflictingInsert.getUpdateCounts() );
+                    connection.rollback();
                     TestHelper.checkResultSet(
                             statement.executeQuery( "SELECT * FROM constraint_test ORDER BY ctid" ),
                             ImmutableList.of(
@@ -426,16 +422,10 @@ public class UniqueConstraintTest {
                     preparedStatement.setInt( 2, 22 );
                     preparedStatement.setInt( 3, 2 );
                     preparedStatement.addBatch();
-                    try {
-                        preparedStatement.executeBatch();
-                        connection.commit();
-                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( Exception e ) {
-                        if ( !e.getMessage().contains( "Update violates unique constraint" ) ) {
-                            throw new RuntimeException( "Unexpected exception", e );
-                        }
-                        connection.rollback();
-                    }
+                    BatchUpdateException conflictingUpdate = Assertions.assertThrows( BatchUpdateException.class, preparedStatement::executeBatch );
+                    Assertions.assertTrue( conflictingUpdate.getMessage().contains( "Update violates unique constraint" ), conflictingUpdate::getMessage );
+                    Assertions.assertNull( conflictingUpdate.getUpdateCounts() );
+                    connection.rollback();
 
                     // This should work
                     preparedStatement.setInt( 1, 99 );
@@ -468,15 +458,10 @@ public class UniqueConstraintTest {
                     preparedStatement.setInt( 2, 91 );
                     preparedStatement.setInt( 3, 4 );
                     preparedStatement.addBatch();
-                    try {
-                        preparedStatement.executeBatch();
-                        Assertions.fail( "Expected ConstraintViolationException was not thrown" );
-                    } catch ( PrismInterfaceServiceException e ) {
-                        if ( !e.getMessage().contains( "Update violates unique constraint" ) ) {
-                            throw new RuntimeException( "Unexpected exception", e );
-                        }
-                        connection.rollback();
-                    }
+                    BatchUpdateException repeatedConflict = Assertions.assertThrows( BatchUpdateException.class, preparedStatement::executeBatch );
+                    Assertions.assertTrue( repeatedConflict.getMessage().contains( "Update violates unique constraint" ), repeatedConflict::getMessage );
+                    Assertions.assertNull( repeatedConflict.getUpdateCounts() );
+                    connection.rollback();
                 } catch ( Exception e ) {
                     log.error( "Exception", e );
                 } finally {

@@ -64,6 +64,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.validate.SqlType;
+import org.polypheny.db.transaction.QueryExecutionScope;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.VectorType;
 import org.polypheny.db.type.entity.PolyValue;
@@ -71,6 +72,7 @@ import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.Static;
+import org.polypheny.db.util.temporal.DateTimeUtils;
 
 
 /**
@@ -233,7 +235,7 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
      * Assigns a value to a dynamic parameter in a prepared statement, calling the appropriate {@code setXxx}
      * method based on the type of the parameter.
      */
-    private static void setDynamicParam( PreparedStatement preparedStatement, int i, PolyValue value, AlgDataType type, ConnectionHandler connectionHandler ) throws SQLException {
+    public static void setDynamicParam( PreparedStatement preparedStatement, int i, PolyValue value, AlgDataType type, ConnectionHandler connectionHandler ) throws SQLException {
         if ( value == null || value.isNull() ) {
             preparedStatement.setNull( i, Types.NULL );
             return;
@@ -272,7 +274,12 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                 }
                 break;
             case TIME:
-                preparedStatement.setTime( i, value.asTime().asSqlTime(), Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ) );
+                if ( value.asTime().getOfDay() == DateTimeUtils.MILLIS_PER_DAY ) {
+                    // java.sql.Time would bind the start of the day instead.
+                    preparedStatement.setString( i, value.asTime().toString() );
+                } else {
+                    preparedStatement.setTime( i, value.asTime().asSqlTime(), Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ) );
+                }
                 break;
             case TIMESTAMP:
                 if ( dialect.handlesUtcIncorrectly() ) {
@@ -491,13 +498,18 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
 
 
     private void setTimeoutIfPossible( Statement statement ) throws SQLException {
-        if ( timeout == 0 ) {
+        long requestMillisLeft = QueryExecutionScope.remainingTimeoutMillis();
+        if ( timeout == 0 && requestMillisLeft == 0 ) {
             return;
         }
-        long now = System.currentTimeMillis();
-        long secondsLeft = (queryStart + timeout - now) / 1000;
-        if ( secondsLeft <= 0 ) {
-            throw Static.RESOURCE.queryExecutionTimeoutReached( String.valueOf( timeout ), String.valueOf( Instant.ofEpochMilli( queryStart ) ) ).ex();
+        // Native JDBC drivers accept whole seconds. Round up so native cancellation cannot precede the request deadline.
+        long secondsLeft = requestMillisLeft == 0 ? Long.MAX_VALUE : 1 + (requestMillisLeft - 1) / 1000;
+        if ( timeout != 0 ) {
+            long configuredSecondsLeft = (queryStart + timeout - System.currentTimeMillis()) / 1000;
+            if ( configuredSecondsLeft <= 0 ) {
+                throw Static.RESOURCE.queryExecutionTimeoutReached( String.valueOf( timeout ), String.valueOf( Instant.ofEpochMilli( queryStart ) ) ).ex();
+            }
+            secondsLeft = Math.min( secondsLeft, configuredSecondsLeft );
         }
         if ( secondsLeft > Integer.MAX_VALUE ) {
             // Just ignore the timeout if it happens to be too big, we can't squeeze it into int

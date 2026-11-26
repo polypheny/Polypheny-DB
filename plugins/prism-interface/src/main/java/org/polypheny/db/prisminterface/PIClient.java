@@ -29,6 +29,7 @@ import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.prisminterface.statements.StatementManager;
+import org.polypheny.db.transaction.QueryExecutionScope;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
@@ -46,6 +47,10 @@ public class PIClient {
     private final TransactionManager transactionManager;
     private final Set<Transaction> isolatedReadTransactions = new LinkedHashSet<>();
     private final int prismMinorVersion;
+    @Setter
+    private boolean partialBatchResults;
+    @Setter
+    private boolean transactionBoundaryEvents;
     @Getter
     private final StatementManager statementManager;
     @Getter
@@ -98,6 +103,34 @@ public class PIClient {
     }
 
 
+    public boolean supportsPartialBatchResults() {
+        return prismMinorVersion >= 5 && partialBatchResults;
+    }
+
+
+    List<Transaction> observeTransactionBoundaries( boolean explicitCommit ) {
+        if ( prismMinorVersion < 5 || !transactionBoundaryEvents ) {
+            return List.of();
+        }
+        if ( !isAutoCommit ) {
+            return hasNoTransaction() ? List.of() : List.of( currentTransaction );
+        }
+        // Individual auto-commit requests can finish without affecting other open results.
+        // An explicit COMMIT finishes every transaction owned by this connection.
+        return explicitCommit ? connectionTransactions().stream().filter( Transaction::isActive ).toList() : List.of();
+    }
+
+
+    boolean supportsQueryTimeouts() {
+        return prismMinorVersion >= 5;
+    }
+
+
+    boolean supportsClientInfoRemoval() {
+        return prismMinorVersion >= 5 && transactionBoundaryEvents;
+    }
+
+
     public boolean wantsRelationalCypherResults() {
         return PIClientInfoProperties.RELATIONAL_FORMAT.equals( this.PIClientInfoProperties.getProperty( PIClientInfoProperties.CYPHER_RESULT_FORMAT ) );
     }
@@ -107,6 +140,7 @@ public class PIClient {
         if ( hasNoTransaction() ) {
             currentTransaction = transactionManager.startTransaction( catalogUser.id, namespace.id, null, "PrismInterface" );
         }
+        QueryExecutionScope.statementStarted( currentTransaction );
         return currentTransaction;
     }
 
@@ -114,6 +148,7 @@ public class PIClient {
     public Transaction startIsolatedReadTransaction() {
         Transaction transaction = transactionManager.startTransaction( catalogUser.id, namespace.id, null, "PrismInterface" );
         isolatedReadTransactions.add( transaction );
+        QueryExecutionScope.statementStarted( transaction );
         return transaction;
     }
 
@@ -185,14 +220,28 @@ public class PIClient {
     }
 
 
-    private void finishAllTransactions( Consumer<Transaction> finish ) {
+    void rollbackTimedOutQuery( Transaction transaction ) {
+        String reason = "Prism query timed out";
+        if ( transaction == currentTransaction || isolatedReadTransactions.contains( transaction ) ) {
+            finishTransaction( transaction, owned -> rollbackTransaction( owned, reason ) );
+        } else if ( transaction.isActive() ) {
+            rollbackTransaction( transaction, reason );
+        }
+    }
+
+
+    private List<Transaction> connectionTransactions() {
         List<Transaction> transactions = new ArrayList<>( isolatedReadTransactions );
         if ( currentTransaction != null ) {
             transactions.add( 0, currentTransaction );
         }
+        return transactions;
+    }
 
+
+    private void finishAllTransactions( Consumer<Transaction> finish ) {
         RuntimeException failure = null;
-        for ( Transaction transaction : transactions ) {
+        for ( Transaction transaction : connectionTransactions() ) {
             try {
                 finishTransaction( transaction, finish );
             } catch ( RuntimeException e ) {

@@ -16,28 +16,22 @@
 
 package org.polypheny.db.catalog.persistance;
 
-import com.drew.lang.Charsets;
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 
 public class FilePersister implements Persister {
 
-    private final ExecutorService service = Executors.newSingleThreadExecutor();
-
-
-    private final File backup;
+    private final Path backup;
 
 
     public FilePersister() {
-        this.backup = initBackupFile();
+        this.backup = initBackupFile().toPath();
     }
 
 
@@ -53,35 +47,39 @@ public class FilePersister implements Persister {
     }
 
 
+    public Path getDirectory() {
+        return backup.getParent();
+    }
+
+
     @Override
     public synchronized void write( String data ) {
-        service.execute( () -> {
-            try {
-                FileWriter writer = new FileWriter( backup, Charsets.ISO_8859_1 );
-                writer.write( data );
-                writer.flush();
-                writer.close();
-            } catch ( IOException e ) {
-                throw new GenericRuntimeException( e );
-            }
-        } );
+        try {
+            DurableFile.replace( backup, data.getBytes( StandardCharsets.ISO_8859_1 ) );
+        } catch ( DurableFile.PublishedFileException e ) {
+            throw new CatalogPublicationException( e );
+        } catch ( IOException e ) {
+            throw new GenericRuntimeException( "Cannot persist catalog.", e );
+        }
     }
 
 
     @Override
     public synchronized String read() {
-        StringBuilder data = new StringBuilder();
         try {
-            BufferedReader reader = new BufferedReader( new FileReader( backup, Charsets.ISO_8859_1 ) );
-            int c;
-            while ( ((c = reader.read()) != -1) ) {
-                data.append( (char) c );
-            }
-            reader.close();
+            return Files.readString( backup, StandardCharsets.ISO_8859_1 );
         } catch ( IOException e ) {
-            throw new GenericRuntimeException( e );
+            throw new GenericRuntimeException( "Cannot read catalog.", e );
         }
-        return data.toString();
+    }
+
+    /** The catalog is visible at its final path, but crash durability could not be confirmed. */
+    public static final class CatalogPublicationException extends GenericRuntimeException {
+
+        public CatalogPublicationException( IOException cause ) {
+            super( "The catalog change was published, but its durability could not be confirmed.", cause );
+        }
+
     }
 
 }

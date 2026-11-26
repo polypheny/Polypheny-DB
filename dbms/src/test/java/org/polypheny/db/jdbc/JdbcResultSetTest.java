@@ -481,10 +481,14 @@ public class JdbcResultSetTest {
                 Connection connection = jdbcConnection.getConnection();
                 Statement statement = connection.createStatement( ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY ) ) {
             createTableWithData( connection );
-            ResultSet rs = statement.executeQuery( SELECT_SQL );
-            assertTrue( rs.absolute( 0 ) );
-            assertEquals( 0, rs.getRow() );
-            rs.close();
+            try ( ResultSet rs = statement.executeQuery( SELECT_SQL ) ) {
+                assertTrue( rs.absolute( 5 ) );
+                assertFalse( rs.absolute( 0 ) );
+                assertTrue( rs.isBeforeFirst() );
+                assertEquals( 0, rs.getRow() );
+                assertTrue( rs.next() );
+                assertEquals( 1, rs.getInt( 1 ) );
+            }
             statement.executeUpdate( DROP_TABLE_SQL );
         }
     }
@@ -756,10 +760,21 @@ public class JdbcResultSetTest {
                 Connection connection = jdbcConnection.getConnection();
                 Statement statement = connection.createStatement( ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY ) ) {
             createTableWithData( connection );
-            ResultSet rs = statement.executeQuery( SELECT_SQL );
-            rs.setFetchSize( 0 );
-            assertEquals( 0, rs.getFetchSize() );
-            rs.close();
+            statement.setFetchSize( 2 );
+            try ( ResultSet rs = statement.executeQuery( SELECT_SQL ) ) {
+                assertEquals( 2, rs.getFetchSize() );
+                rs.setFetchSize( 3 );
+                assertEquals( 3, rs.getFetchSize() );
+                statement.setFetchSize( 4 );
+                rs.setFetchSize( 0 );
+                assertEquals( 2, rs.getFetchSize() );
+                assertEquals( 4, statement.getFetchSize() );
+                for ( int id = 1; id <= 25; id++ ) {
+                    assertTrue( rs.next() );
+                    assertEquals( id, rs.getInt( 1 ) );
+                }
+                assertFalse( rs.next() );
+            }
             statement.executeUpdate( DROP_TABLE_SQL );
         }
     }

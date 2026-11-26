@@ -17,13 +17,18 @@
 package org.polypheny.db.transaction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.BeforeAll;
@@ -32,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
 import org.polypheny.db.transaction.locking.LockableImpl;
+import org.polypheny.db.util.DeadlockException;
 
 public class LockableImplTest {
 
@@ -164,6 +170,51 @@ public class LockableImplTest {
         assertTrue( lockable.getCopyOfOwners().isEmpty() );
 
         executorService.shutdown();
+    }
+
+
+    @Test
+    public void interruptedChildWaitFinishesWhileAnEarlierWaiterIsBlockedOnTheParent() throws Exception {
+        CountDownLatch firstAtParent = new CountDownLatch( 1 );
+        LockableImpl parent = new LockableImpl( null ) {
+            @Override
+            public void acquire( Transaction transaction, LockType lockType ) {
+                if ( transaction == transaction2 ) {
+                    firstAtParent.countDown();
+                }
+                super.acquire( transaction, lockType );
+            }
+        };
+        LockableImpl child = new LockableImpl( parent );
+        FutureTask<Void> earlier = new FutureTask<>( () -> {
+            transaction2.acquireLockable( child, LockType.EXCLUSIVE );
+            transaction2.commit();
+            return null;
+        } );
+        FutureTask<Void> timed = new FutureTask<>( () -> {
+            transaction3.acquireLockable( child, LockType.EXCLUSIVE );
+            transaction3.commit();
+            return null;
+        } );
+        Thread ordinaryWaiter = new Thread( earlier, "ordinary lock waiter" );
+        Thread interruptedWaiter = new Thread( timed, "interrupted lock waiter" );
+        transaction1.acquireLockable( parent, LockType.EXCLUSIVE );
+        ordinaryWaiter.start();
+        try {
+            assertTrue( firstAtParent.await( 5, TimeUnit.SECONDS ) );
+            interruptedWaiter.start();
+            interruptedWaiter.interrupt();
+            ExecutionException failure = assertThrows( ExecutionException.class, () -> timed.get( 2, TimeUnit.SECONDS ) );
+            assertInstanceOf( DeadlockException.class, failure.getCause() );
+            assertFalse( earlier.isDone() );
+        } finally {
+            transaction1.commit();
+            ordinaryWaiter.join( 5000 );
+            interruptedWaiter.join( 5000 );
+        }
+        earlier.get( 1, TimeUnit.SECONDS );
+        assertTrue( parent.getCopyOfOwners().isEmpty() );
+        assertTrue( child.getCopyOfOwners().isEmpty() );
     }
 
 

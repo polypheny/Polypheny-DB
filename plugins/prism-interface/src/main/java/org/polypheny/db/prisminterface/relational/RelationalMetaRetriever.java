@@ -24,6 +24,7 @@ import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.processing.QueryProcessorHelpers;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.prism.ArrayMeta;
@@ -36,9 +37,9 @@ import org.polypheny.prism.TypeMeta;
 
 public class RelationalMetaRetriever {
 
-    private static final int ORIGIN_COLUMN_INDEX = 3;
-    private static final int ORIGIN_TABLE_INDEX = 2;
-    private static final int ORIGIN_SCHEMA_INDEX = 1;
+    private static final int ORIGIN_COLUMN_OFFSET = 0;
+    private static final int ORIGIN_TABLE_OFFSET = 1;
+    private static final int ORIGIN_SCHEMA_OFFSET = 2;
 
 
     public static List<ParameterMeta> retrieveParameterMetas( AlgDataType parameterRowType ) {
@@ -67,15 +68,39 @@ public class RelationalMetaRetriever {
             return List.of( retrieveColumnMeta( 0, "graph", algDataType, null ) );
         }
         AlgDataType whatever = QueryProcessorHelpers.makeStruct( polyImplementation.getStatement().getTransaction().getTypeFactory(), algDataType );
-        List<List<String>> origins = polyImplementation.getPreparedResult().getFieldOrigins();
+        return retrieveColumnMetas( whatever, polyImplementation.getFieldOrigins(), polyImplementation.getStatement().getTransaction().getSnapshot(), polyImplementation.getIdentityFields() );
+    }
+
+
+    public static List<ColumnMeta> retrieveColumnMetas( AlgDataType rowType, List<List<String>> origins, Snapshot snapshot ) {
+        return retrieveColumnMetas( rowType, origins, snapshot, List.of() );
+    }
+
+
+    private static List<ColumnMeta> retrieveColumnMetas( AlgDataType rowType, List<List<String>> origins, Snapshot snapshot, List<Boolean> identityFields ) {
         List<ColumnMeta> columns = new ArrayList<>();
-        int index = 0;
-        for ( Ord<AlgDataTypeField> pair : Ord.zip( whatever.getFields() ) ) {
-            final AlgDataTypeField field = pair.e;
-            final AlgDataType type = field.getType();
-            columns.add( retrieveColumnMeta( index++, field.getName(), type, origins.get( pair.i ) ) );
+        for ( Ord<AlgDataTypeField> pair : Ord.zip( rowType.getFields() ) ) {
+            AlgDataTypeField field = pair.e;
+            List<String> origin = origins.get( pair.i );
+            ColumnMeta meta = retrieveColumnMeta( pair.i, field.getName(), field.getType(), origin );
+            boolean identity = pair.i < identityFields.size() ? identityFields.get( pair.i ) : isIdentityColumn( origin, snapshot );
+            columns.add( meta.toBuilder().setIsAutoIncrement( identity ).build() );
         }
         return columns;
+    }
+
+
+    private static boolean isIdentityColumn( List<String> origins, Snapshot snapshot ) {
+        String namespace = QueryProcessorHelpers.origin( origins, ORIGIN_SCHEMA_OFFSET );
+        String table = QueryProcessorHelpers.origin( origins, ORIGIN_TABLE_OFFSET );
+        String column = QueryProcessorHelpers.origin( origins, ORIGIN_COLUMN_OFFSET );
+        if ( namespace == null || table == null || column == null ) {
+            return false;
+        }
+        return snapshot.getNamespace( namespace )
+                .flatMap( schema -> snapshot.rel().getColumn( schema.id, table, column ) )
+                .filter( logical -> logical.getIdentity() != null )
+                .isPresent();
     }
 
 
@@ -94,8 +119,8 @@ public class RelationalMetaRetriever {
             List<String> origins ) {
         TypeMeta typeMeta = retrieveTypeMeta( type );
         ColumnMeta.Builder columnMetaBuilder = ColumnMeta.newBuilder();
-        Optional.ofNullable( QueryProcessorHelpers.origin( origins, ORIGIN_TABLE_INDEX ) ).ifPresent( columnMetaBuilder::setEntityName );
-        Optional.ofNullable( QueryProcessorHelpers.origin( origins, ORIGIN_SCHEMA_INDEX ) ).ifPresent( columnMetaBuilder::setSchemaName );
+        Optional.ofNullable( QueryProcessorHelpers.origin( origins, ORIGIN_TABLE_OFFSET ) ).ifPresent( columnMetaBuilder::setEntityName );
+        Optional.ofNullable( QueryProcessorHelpers.origin( origins, ORIGIN_SCHEMA_OFFSET ) ).ifPresent( columnMetaBuilder::setSchemaName );
         return columnMetaBuilder
                 .setColumnIndex( index )
                 .setColumnName( fieldName ) // designated column name
@@ -112,7 +137,7 @@ public class RelationalMetaRetriever {
 
 
     private static String getColumnLabel( List<String> origins, String fieldName ) {
-        String columnLabel = QueryProcessorHelpers.origin( origins, ORIGIN_COLUMN_INDEX );
+        String columnLabel = QueryProcessorHelpers.origin( origins, ORIGIN_COLUMN_OFFSET );
         return columnLabel == null ? fieldName : columnLabel;
     }
 

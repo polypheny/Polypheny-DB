@@ -132,7 +132,7 @@ public class PostgresqlSource extends AbstractJdbcSource {
 
     @Override
     protected String getConnectionUrl( final String dbHostname, final int dbPort, final String dbName ) {
-        return String.format( "jdbc:postgresql://%s:%d/%s", dbHostname, dbPort, dbName );
+        return String.format( "jdbc:postgresql://%s:%d/%s?binaryTransferDisable=TIME", dbHostname, dbPort, dbName );
     }
 
 

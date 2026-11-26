@@ -23,22 +23,29 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.ParameterValue;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.index.Index;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.algebra.AlgCollation;
@@ -50,6 +57,7 @@ import org.polypheny.db.algebra.PlanKeys;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
+import org.polypheny.db.algebra.InsertSourceOrdinals;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
@@ -64,21 +72,29 @@ import org.polypheny.db.algebra.enumerable.EnumerableAlg.Prefer;
 import org.polypheny.db.algebra.enumerable.EnumerableCalc;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.enumerable.EnumerableInterpretable;
+import org.polypheny.db.algebra.enumerable.EnumerableStreamer;
+import org.polypheny.db.algebra.enumerable.common.EnumerableModifyCollect;
 import org.polypheny.db.algebra.logical.common.LogicalBatchIterator;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgModify;
+import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
+import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
+import org.polypheny.db.algebra.metadata.AlgColumnOrigin;
 import org.polypheny.db.algebra.polyalg.PolyAlgMetadata.GlobalStats;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
@@ -86,6 +102,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.functions.Functions;
 import org.polypheny.db.information.InformationPolyAlg.PlanType;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
@@ -96,8 +113,10 @@ import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner.CannotPlanException;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.volcano.VolcanoPlanner;
 import org.polypheny.db.prepare.Prepare.PreparedResult;
 import org.polypheny.db.prepare.Prepare.PreparedResultImpl;
 import org.polypheny.db.processing.caching.ImplementationCache;
@@ -113,7 +132,9 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexSubQuery;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.routing.DmlRouter;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
@@ -130,6 +151,7 @@ import org.polypheny.db.routing.dto.ProposedRoutingPlanImpl;
 import org.polypheny.db.routing.routers.CachedPlanRouter;
 import org.polypheny.db.routing.routers.SimpleRouter;
 import org.polypheny.db.runtime.Bindable;
+import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.schema.trait.ModelTraitDef;
@@ -137,6 +159,7 @@ import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
 import org.polypheny.db.tools.RoutedAlgBuilder;
+import org.polypheny.db.transaction.QueryExecutionScope;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.locking.AlgEntityLockablesExtractor;
@@ -222,6 +245,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
     @Override
     public PolyImplementation prepareQuery( AlgRoot root, AlgDataType parameterRowType, boolean isRouted, boolean isPhysical, boolean isSubquery, boolean withMonitoring ) {
+        if ( !isSubquery && root.kind.belongsTo( Kind.DML ) ) {
+            statement.setMaterializedDmlRowCount( null );
+        }
         if ( isPhysical ) {
             return implementPhysicalPlan( root, parameterRowType );
         }
@@ -249,7 +275,23 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             this.monitorResult( selectedPlan.right );
         }
 
-        return selectedPlan.left;
+        PolyImplementation implementation = selectedPlan.left;
+        if ( !isSubquery && implementation.getDataModel() == DataModel.RELATIONAL
+                && implementation.getResultKind() == ResultKind.ROWS && root.kind.belongsTo( Kind.QUERY ) ) {
+            implementation.setIdentityFields( root.fields.stream().map( field -> isIdentityField( root, field.left ) ).toList() );
+        }
+        return implementation;
+    }
+
+
+    private boolean isIdentityField( AlgRoot root, int ordinal ) {
+        AlgColumnOrigin origin = root.alg.getCluster().getMetadataQuery().getColumnOrigin( root.alg, ordinal );
+        if ( origin == null || origin.isDerived() || !(origin.getOriginTable() instanceof LogicalTable table) ) {
+            return false;
+        }
+        List<LogicalColumn> columns = root.alg.getCluster().getSnapshot().rel().getColumns( table.id );
+        int sourceOrdinal = origin.getOriginColumnOrdinal();
+        return sourceOrdinal >= 0 && sourceOrdinal < columns.size() && columns.get( sourceOrdinal ).getIdentity() != null;
     }
 
 
@@ -345,9 +387,19 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 statement.getProcessingDuration().stop( "Locking" );
                 statement.getProcessingDuration().start( "Index Update" );
             }
-            AlgRoot indexUpdateRoot = logicalRoot;
-            if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() ) {
+            boolean usePolystoreIndexes = RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean();
+            if ( usePolystoreIndexes ) {
                 IndexManager.getInstance().barrier( statement.getTransaction().getXid() );
+            }
+            boolean materializedUpdate = IdentityDmlMaterializer.usesIdentityUpdate( logicalRoot );
+            boolean enforceConstraints = RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() || RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean();
+            boolean validateBeforeRouting = materializedUpdate && enforceConstraints
+                    && RuntimeConfig.CONSTRAINT_ENFORCEMENT_STRATEGY.getEnum() == ConstraintStrategy.BEFORE_QUERY_EXECUTION;
+            AlgRoot materializedRoot = IdentityDmlMaterializer.materialize( logicalRoot, statement, parameterRowType, validateBeforeRouting );
+            boolean materializedWrite = materializedRoot != logicalRoot;
+            logicalRoot = materializedRoot;
+            AlgRoot indexUpdateRoot = logicalRoot;
+            if ( usePolystoreIndexes && !materializedUpdate ) {
                 indexUpdateRoot = indexUpdate( indexUpdateRoot, statement, parameterRowType );
             }
 
@@ -359,7 +411,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
             AlgRoot constraintsRoot = indexUpdateRoot;
 
-            if ( constraintsRoot.kind.belongsTo( Kind.DML ) && (RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.getBoolean() || RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean()) ) {
+            if ( enforceConstraints && !validateBeforeRouting && constraintsRoot.kind.belongsTo( Kind.DML ) ) {
+                // Check the final state of a SQL statement once all of its writes have finished.
                 constraintsRoot = ConstraintEnforceAttacher.handleConstraints( constraintsRoot, statement );
             }
 
@@ -371,8 +424,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             }
 
             AlgRoot indexLookupRoot = constraintsRoot;
-            if ( RuntimeConfig.POLYSTORE_INDEXES_ENABLED.getBoolean() && RuntimeConfig.POLYSTORE_INDEXES_SIMPLIFY.getBoolean() ) {
+            if ( usePolystoreIndexes && RuntimeConfig.POLYSTORE_INDEXES_SIMPLIFY.getBoolean() ) {
                 indexLookupRoot = indexLookup( indexLookupRoot, statement );
+            }
+            if ( usePolystoreIndexes && materializedWrite ) {
+                // Validate staged unique index entries before the physical write. Any
+                // index-derived checks above still read the pre-statement contents.
+                IndexManager.getInstance().barrier( statement.getTransaction().getXid() );
             }
             if ( isAnalyze ) {
                 statement.getProcessingDuration().stop( "Index Lookup Rewrite" );
@@ -408,7 +466,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             AlgRoot routedRoot = plan.proposedRoutingPlan().getRoutedRoot();
             AlgRoot parameterizedRoot;
             if ( statement.getDataContext().getParameterValues().isEmpty()
-                    && (RuntimeConfig.PARAMETERIZE_DML.getBoolean() || !routedRoot.kind.belongsTo( Kind.DML )) ) {
+                    && (RuntimeConfig.PARAMETERIZE_DML.getBoolean() || !routedRoot.kind.belongsTo( Kind.DML )
+                    || (statement.getMaterializedDmlRowCount() != null && requiresFloatingLiteralBinding( routedRoot.alg ))) ) {
                 Pair<AlgRoot, AlgDataType> parameterized = parameterize( routedRoot, parameterRowType );
                 parameterizedRoot = parameterized.left;
             } else {
@@ -550,6 +609,362 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         // Finally, all optionals should be of certain values.
         return new ProposedImplementations( plans.stream().filter( Plan::isValid ).toList() );
+    }
+
+
+    Optional<List<List<PolyValue>>> readNativeInsertSource( LogicalRelModify insert, LogicalTable table, AlgDataType parameterRowType,
+            Set<Long> nativeTemporalFields ) {
+        if ( !(getPlanner() instanceof VolcanoPlanner planner) ) {
+            return Optional.empty();
+        }
+        List<AlgDataTypeField> targetFields = table.getTupleType().getFields();
+        if ( targetFields.stream().noneMatch( field -> DataStore.isInsertSourceAssignmentType( field.getType().getPolyType() ) ) ) {
+            return Optional.empty();
+        }
+        Snapshot snapshot = statement.getTransaction().getSnapshot();
+        List<AllocationPlacement> placements = snapshot.alloc().getPlacementsFromLogical( table.id );
+        if ( snapshot.alloc().getPartitionProperty( table.id ).orElseThrow().isPartitioned
+                || placements.stream().anyMatch( placement -> snapshot.alloc().getColumns( placement.id ).size() != targetFields.size() ) ) {
+            return Optional.empty();
+        }
+        List<DataStore<?>> stores = placements.stream()
+                .map( placement -> AdapterManager.getInstance().getStore( placement.adapterId ) )
+                .flatMap( Optional::stream )
+                .filter( DataStore::supportsReadInsertSource )
+                .toList();
+        if ( stores.isEmpty() ) {
+            return Optional.empty();
+        }
+        List<Long> keyIds = snapshot.rel().getPrimaryKey( table.primaryKey ).orElseThrow().fieldIds;
+        List<InsertSourceBranch> branches = placements.size() > 1
+                ? insertSourceBranches( insert.getInput(), snapshot ) : List.of( InsertSourceBranch.STABLE );
+        List<AlgDataTypeField> identityFields = branches.stream().filter( InsertSourceBranch::variableSelection )
+                .flatMap( branch -> branch.identityFields().stream() ).distinct().toList();
+        Map<Long, Integer> identityIndexes = new HashMap<>();
+        for ( int i = 0; i < identityFields.size(); i++ ) {
+            identityIndexes.put( identityFields.get( i ).getId(), targetFields.size() + i );
+        }
+        // Do not split the native UNION or compare using values after destination casts.
+        // Its trailing metadata carries unchanged source keys and branch ordinals.
+        boolean marked = !identityFields.isEmpty() || (branches.size() > 1 && branches.stream()
+                .anyMatch( branch -> branch.variableSelection() || !branch.volatileFields().isEmpty() ));
+        boolean restoreBranchOrder = marked && !hasOrderedInsertSource( insert.getInput() );
+        List<InsertSourceComparison> comparisons = (marked ? branches : List.of( branches.get( 0 ) )).stream()
+                .map( branch -> new InsertSourceComparison(
+                        targetFields.stream()
+                                .filter( field -> !branch.volatileFields().contains( field.getIndex() ) )
+                                .filter( field -> keyIds.contains( field.getId() ) || DataStore.isInsertSourceAssignmentType( field.getType().getPolyType() ) )
+                                .map( AlgDataTypeField::getIndex )
+                                .toList(),
+                        branch.variableSelection(), branch.variableSelection()
+                                ? branch.identityFields().stream().map( field -> identityIndexes.get( field.getId() ) ).toList()
+                                : List.of() ) )
+                .toList();
+
+        // Plan the ordinary DML without preparing or running its write, index or constraint actions.
+        // The enclosing INSERT already holds the necessary locks on both source and destination.
+        DataContext context = statement.getDataContext();
+        List<Map<Long, PolyValue>> originalValues = context.getParameterValues();
+        Map<Long, AlgDataType> originalTypes = Map.copyOf( context.getParameterTypes() );
+        try {
+            context.setParameterValues( new ArrayList<>( originalValues ) );
+            AlgNode routed = RoutingManager.getInstance().getDmlRouter().routeRelationalDml( insert, statement );
+            AlgRoot routedInsert = AlgRoot.of( routed, Kind.INSERT );
+            if ( originalValues.isEmpty() && RuntimeConfig.PARAMETERIZE_DML.getBoolean() ) {
+                Pair<AlgRoot, AlgDataType> parameters = parameterize( routedInsert, parameterRowType );
+                routedInsert = parameters.left;
+                parameterRowType = parameters.right;
+            }
+            AlgNode physicalInsert;
+            try {
+                physicalInsert = optimize( routedInsert, EnumerableConvention.INSTANCE );
+            } catch ( CannotPlanException e ) {
+                return Optional.empty();
+            } finally {
+                // The actual materialized INSERT has new row types and must not share
+                // equivalence sets with the preview of its original source.
+                planner.clearMemo();
+                insert.getCluster().invalidateMetadataQuery();
+            }
+            List<AlgNode> writes = physicalInsert instanceof EnumerableModifyCollect ? physicalInsert.getInputs() : List.of( physicalInsert );
+            List<InsertSourceRead> reads = new ArrayList<>();
+            for ( AlgNode write : writes ) {
+                EnumerableStreamer streamer = write instanceof EnumerableStreamer streamingWrite ? streamingWrite : null;
+                AlgNode collector = streamer == null ? write : streamer.getCollector();
+                for ( DataStore<?> store : stores ) {
+                    Optional<AlgNode> source = store.readInsertSource( collector, targetFields, nativeTemporalFields );
+                    if ( source.isPresent() ) {
+                        AlgNode preview = source.get();
+                        if ( marked && streamer == null ) {
+                            preview = requireInsertSourceOrdinals( store.markInsertSource( preview, 0, identityFields ), branches.size() );
+                        }
+                        Bindable<PolyValue[]> read = implement( AlgRoot.of( preview, Kind.SELECT ), parameterRowType ).getBindable();
+                        reads.add( streamer == null ? new InsertSourceRead( read, null, List.of(), false )
+                                : streamedInsertSource( read, streamer.getProvider(), parameterRowType, stores, marked ? branches.size() : 0, identityFields ) );
+                        break;
+                    }
+                }
+            }
+            if ( reads.isEmpty() ) {
+                return Optional.empty();
+            }
+
+            List<Map<Long, PolyValue>> bindings = context.getParameterValues();
+            List<List<PolyValue>> rows = new ArrayList<>();
+            boolean consistent = true;
+            for ( Map<Long, PolyValue> binding : bindings.isEmpty() ? List.<Map<Long, PolyValue>>of( Map.of() ) : bindings ) {
+                context.setParameterValues( List.of( binding ) );
+                List<List<PolyValue>> first = reads.get( 0 ).read( context );
+                if ( reads.size() > 1 ) {
+                    InsertSourceRowCounts expected = nativeInsertRowCounts( first, comparisons, marked );
+                    for ( InsertSourceRead read : reads.subList( 1, reads.size() ) ) {
+                        consistent &= expected.agreesWith( nativeInsertRowCounts( read.read( context ), comparisons, marked ) );
+                    }
+                }
+                if ( restoreBranchOrder ) {
+                    // A source without a global ORDER BY follows UNION ALL branch order.
+                    first.sort( Comparator.comparingInt( AbstractQueryProcessor::insertSourceOrdinal ) );
+                }
+                if ( marked ) {
+                    first.forEach( row -> row.subList( targetFields.size(), row.size() ).clear() );
+                }
+                rows.addAll( first );
+            }
+            if ( !consistent ) {
+                throw new PolyphenyDbException( "Store placements disagree on the native INSERT source values.", null, "22000" );
+            }
+            // Remaining coordinator-driven writes receive the same complete, validated rows
+            // through the normal materialized INSERT, including index and constraint checks.
+            return Optional.of( rows );
+        } finally {
+            context.setParameterTypes( originalTypes );
+            context.setParameterValues( originalValues );
+        }
+    }
+
+
+    private record InsertSourceBranch( Set<Integer> volatileFields, boolean variableSelection, List<AlgDataTypeField> identityFields ) {
+
+        private static final InsertSourceBranch STABLE = new InsertSourceBranch( Set.of(), false, List.of() );
+
+    }
+
+
+    private static List<InsertSourceBranch> insertSourceBranches( AlgNode source, Snapshot snapshot ) {
+        if ( source instanceof LogicalRelUnion union && union.all ) {
+            return union.getInputs().stream().flatMap( input -> insertSourceBranches( input, snapshot ).stream() ).toList();
+        }
+        if ( source instanceof LogicalRelProject project ) {
+            return insertSourceBranches( project.getInput(), snapshot ).stream()
+                    .map( branch -> new InsertSourceBranch( volatileProjectColumns( project, branch.volatileFields() ),
+                            branch.variableSelection(), branch.identityFields() ) )
+                    .toList();
+        }
+        if ( source instanceof LogicalRelFilter filter ) {
+            return insertSourceBranches( filter.getInput(), snapshot ).stream()
+                    .map( branch -> new InsertSourceBranch( branch.volatileFields(),
+                            branch.variableSelection() || isVolatileInsertExpression( filter.getCondition(), branch.volatileFields() ),
+                            branch.identityFields() ) )
+                    .toList();
+        }
+        if ( source instanceof Sort sort ) {
+            List<InsertSourceBranch> branches = insertSourceBranches( sort.getInput(), snapshot );
+            boolean variableWindow = (sort.offset != null || sort.fetch != null)
+                    && (isVolatileInsertExpression( sort.offset ) || isVolatileInsertExpression( sort.fetch )
+                    || branches.stream().anyMatch( branch -> branch.variableSelection() || sort.getFieldExps().stream()
+                            .anyMatch( expression -> isVolatileInsertExpression( expression, branch.volatileFields() ) ) ));
+            if ( variableWindow ) {
+                // A changing row or sort key can displace rows from any branch in this window.
+                return branches.stream().map( branch -> new InsertSourceBranch( branch.volatileFields(), true, branch.identityFields() ) ).toList();
+            }
+            return branches;
+        }
+        // Joins, aggregate and other opaque operators cannot prove a source identity.
+        if ( source instanceof LogicalRelScan scan && scan.getEntity() instanceof LogicalTable table && table.primaryKey != null ) {
+            List<Long> key = snapshot.rel().getPrimaryKey( table.primaryKey ).orElseThrow().fieldIds;
+            List<AlgDataTypeField> fields = source.getTupleType().getFields().stream()
+                    .filter( field -> key.contains( field.getId() ) ).toList();
+            if ( fields.size() == key.size() ) {
+                return List.of( new InsertSourceBranch( Set.of(), false, fields ) );
+            }
+        }
+        return List.of( new InsertSourceBranch( Set.of(), hasVolatileInsertExpression( source ), List.of() ) );
+    }
+
+
+    private static boolean hasOrderedInsertSource( AlgNode source ) {
+        if ( source instanceof Sort sort ) {
+            return !sort.getCollation().getFieldCollations().isEmpty() || hasOrderedInsertSource( sort.getInput() );
+        }
+        return (source instanceof LogicalRelProject || source instanceof LogicalRelFilter) && hasOrderedInsertSource( source.getInput( 0 ) );
+    }
+
+
+    private static Set<Integer> volatileProjectColumns( LogicalRelProject project, Set<Integer> input ) {
+        Set<Integer> columns = new HashSet<>();
+        for ( int i = 0; i < project.getProjects().size(); i++ ) {
+            if ( isVolatileInsertExpression( project.getProjects().get( i ), input ) ) {
+                columns.add( i );
+            }
+        }
+        return columns;
+    }
+
+
+    private static boolean isVolatileInsertExpression( RexNode expression, Set<Integer> volatileInputs ) {
+        return isVolatileInsertExpression( expression ) || (!volatileInputs.isEmpty()
+                && AlgOptUtil.InputFinder.bits( expression ).asList().stream().anyMatch( volatileInputs::contains ));
+    }
+
+
+    private static AlgNode requireInsertSourceOrdinals( Optional<InsertSourceOrdinals> source, int branches ) {
+        return source.filter( marked -> marked.branchCount() == branches )
+                .map( InsertSourceOrdinals::plan )
+                .orElseThrow( () -> new PolyphenyDbException( "Cannot identify the volatile INSERT source branches of a store placement.", null, "22000" ) );
+    }
+
+
+    private static boolean hasVolatileInsertExpression( AlgNode source ) {
+        return source.getChildExps().stream().anyMatch( AbstractQueryProcessor::isVolatileInsertExpression )
+                || source.getInputs().stream().anyMatch( AbstractQueryProcessor::hasVolatileInsertExpression );
+    }
+
+
+    static boolean isVolatileInsertExpression( RexNode expression ) {
+        if ( expression instanceof RexSubQuery subQuery && hasVolatileInsertExpression( subQuery.alg ) ) {
+            return true;
+        }
+        return expression instanceof RexCall call && (call.getOperator().isDynamicFunction() || !call.getOperator().isDeterministic()
+                || call.getOperands().stream().anyMatch( AbstractQueryProcessor::isVolatileInsertExpression ));
+    }
+
+
+    private InsertSourceRead streamedInsertSource( Bindable<PolyValue[]> collector, AlgNode provider, AlgDataType parameterRowType,
+            List<DataStore<?>> stores, int branches, List<AlgDataTypeField> identityFields ) {
+        List<AlgDataType> types = Functions.streamerParameterTypes(
+                provider.getTupleType().getFields().stream().map( field -> field.getType().getPolyType() ).toList() );
+        boolean marked = branches > 0;
+        if ( marked ) {
+            InsertSourceOrdinals annotated = InsertSourceOrdinals.add( provider, 0, identityFields,
+                    (input, expressions, rowType) -> EnumerableCalc.create( input,
+                            RexProgram.create( input.getTupleType(), expressions, null, rowType, input.getCluster().getRexBuilder() ) ),
+                    (input, firstOrdinal) -> stores.stream().map( store -> store.markInsertSource( input, firstOrdinal, identityFields ) )
+                            .flatMap( Optional::stream ).findFirst() );
+            provider = requireInsertSourceOrdinals( Optional.of( annotated ), branches );
+        }
+        Bindable<PolyValue[]> read = implement( AlgRoot.of( provider, Kind.SELECT ), parameterRowType ).getBindable();
+        return new InsertSourceRead( collector, read, types, marked );
+    }
+
+
+    private record InsertSourceRead( Bindable<PolyValue[]> collector, Bindable<PolyValue[]> provider, List<AlgDataType> streamedTypes, boolean marked ) {
+
+        private List<List<PolyValue>> read( DataContext context ) {
+            if ( provider == null ) {
+                return readNativeInsertBinding( collector, context );
+            }
+
+            // The ordinary streamer first evaluates the complete provider, then binds
+            // its output to the collector. Here the collector is a read-only projection.
+            List<List<PolyValue>> providedRows = readNativeInsertBinding( provider, context );
+            Map<Long, AlgDataType> types = context.getParameterTypes();
+            List<Map<Long, PolyValue>> values = context.getParameterValues();
+            try {
+                List<List<PolyValue>> rows = new ArrayList<>();
+                for ( List<PolyValue> row : providedRows ) {
+                    QueryExecutionScope.remainingTimeoutMillis();
+                    context.resetParameterValues();
+                    for ( int i = 0; i < streamedTypes.size(); i++ ) {
+                        context.addParameterValues( i, streamedTypes.get( i ), Collections.singletonList( row.get( i ) ) );
+                    }
+                    List<List<PolyValue>> castRows = readNativeInsertBinding( collector, context );
+                    if ( marked ) {
+                        List<PolyValue> metadata = row.subList( streamedTypes.size(), row.size() );
+                        castRows.forEach( cast -> cast.addAll( metadata ) );
+                    }
+                    rows.addAll( castRows );
+                }
+                return rows;
+            } finally {
+                context.setParameterTypes( types );
+                context.setParameterValues( values );
+            }
+        }
+
+    }
+
+
+    private static List<List<PolyValue>> readNativeInsertBinding( Bindable<PolyValue[]> read, DataContext context ) {
+        QueryExecutionScope.remainingTimeoutMillis();
+        List<List<PolyValue>> rows = new ArrayList<>();
+        try ( Enumerator<PolyValue[]> result = read.bind( context ).enumerator() ) {
+            while ( result.moveNext() ) {
+                QueryExecutionScope.remainingTimeoutMillis();
+                rows.add( new ArrayList<>( Arrays.asList( result.current() ) ) );
+            }
+            return rows;
+        } catch ( RuntimeException e ) {
+            // The JDBC read wraps binding failures. Preserve the materialized
+            // INSERT's numeric range error without changing ordinary JDBC binds.
+            if ( ExceptionUtils.indexOfType( e, ArithmeticException.class ) >= 0
+                    || ExceptionUtils.indexOfType( e, NumberFormatException.class ) >= 0 ) {
+                throw new PolyphenyDbException( "Numeric assignment is out of range.", e, "22003" );
+            }
+            throw e;
+        }
+    }
+
+
+    private static int insertSourceOrdinal( List<PolyValue> row ) {
+        return row.get( row.size() - 1 ).asNumber().intValue();
+    }
+
+
+    private record InsertSourceComparison( List<Integer> fields, boolean variableSelection, List<Integer> identityFields ) {
+    }
+
+
+    private record InsertSourceIdentity( int branch, List<PolyValue> sourceKey ) {
+    }
+
+
+    private record InsertSourceRowCounts( Map<List<PolyValue>, Long> stable, Map<InsertSourceIdentity, Map<List<PolyValue>, Long>> variable ) {
+
+        private boolean agreesWith( InsertSourceRowCounts other ) {
+            // A dynamic selection can choose different rows. Compare stable values
+            // only when both previews saw the same proven source identity.
+            return stable.equals( other.stable ) && variable.entrySet().stream().allMatch( entry -> {
+                Map<List<PolyValue>, Long> matching = other.variable.get( entry.getKey() );
+                return matching == null || matching.equals( entry.getValue() );
+            } );
+        }
+
+    }
+
+
+    private static InsertSourceRowCounts nativeInsertRowCounts( List<List<PolyValue>> rows, List<InsertSourceComparison> comparisons, boolean marked ) {
+        Map<List<PolyValue>, Long> stable = new HashMap<>();
+        Map<InsertSourceIdentity, Map<List<PolyValue>, Long>> variable = new HashMap<>();
+        for ( List<PolyValue> row : rows ) {
+            int branch = marked ? insertSourceOrdinal( row ) : 0;
+            InsertSourceComparison comparison = comparisons.get( branch );
+            if ( comparison.variableSelection() ) {
+                List<PolyValue> sourceKey = comparison.identityFields().stream().map( row::get ).toList();
+                if ( !sourceKey.isEmpty() && sourceKey.stream().noneMatch( value -> value == null || value.isNull() ) ) {
+                    InsertSourceIdentity identity = new InsertSourceIdentity( branch, sourceKey );
+                    variable.computeIfAbsent( identity, ignored -> new HashMap<>() )
+                            .merge( comparison.fields().stream().map( row::get ).toList(), 1L, Long::sum );
+                }
+            } else {
+                List<PolyValue> values = new ArrayList<>();
+                if ( marked ) {
+                    values.add( row.get( row.size() - 1 ) );
+                }
+                comparison.fields().forEach( field -> values.add( row.get( field ) ) );
+                stable.merge( values, 1L, Long::sum );
+            }
+        }
+        return new InsertSourceRowCounts( stable, variable );
     }
 
 
@@ -906,6 +1321,12 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             return routeGraph( logicalRoot, queryInformation, dmlRouter );
         } else if ( logicalRoot.getModel() == ModelTrait.DOCUMENT ) {
             return routeDocument( logicalRoot, queryInformation, dmlRouter );
+        } else if ( logicalRoot.alg instanceof LogicalModifyCollect collect && logicalRoot.kind.belongsTo( Kind.DML ) ) {
+            List<AlgNode> routedWrites = collect.getInputs().stream()
+                    .map( write -> route( logicalRoot.withAlg( write ), statement, queryInformation, isAnalyze ).get( 0 ).getRoutedRoot().alg )
+                    .toList();
+            AlgNode routedDml = LogicalModifyCollect.create( routedWrites, collect.all );
+            return List.of( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryHash() ) );
         } else if ( logicalRoot.alg instanceof LogicalRelModify logicalRelModify ) {
             AlgNode routedDml = dmlRouter.routeRelationalDml( logicalRelModify, statement );
             return Lists.newArrayList( new ProposedRoutingPlanImpl( routedDml, logicalRoot, queryInformation.getQueryHash() ) );
@@ -1035,6 +1456,22 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getRoutingDuration().stop( "Route Cached Plan" );
         }
         return plan;
+    }
+
+
+    private static boolean requiresFloatingLiteralBinding( AlgNode node ) {
+        if ( node instanceof LogicalRelValues values && values.getTuples().stream().flatMap( List::stream ).anyMatch( literal ->
+                PolyType.APPROX_TYPES.contains( literal.getPolyType() ) && literal.getValue() != null && !literal.getValue().isNull()
+                        && requiresFloatingLiteralBinding( literal.getValue().asNumber().doubleValue() ) ) ) {
+            return true;
+        }
+        return node.getInputs().stream().anyMatch( AbstractQueryProcessor::requiresFloatingLiteralBinding );
+    }
+
+
+    private static boolean requiresFloatingLiteralBinding( double value ) {
+        // Native SQL literal rendering goes through BigDecimal, which has neither non-finite values nor signed zero.
+        return !Double.isFinite( value ) || Double.doubleToRawLongBits( value ) == Long.MIN_VALUE;
     }
 
 

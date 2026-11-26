@@ -41,6 +41,7 @@ import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.LogicalQueryInterface;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.catalog.identity.IdentitySequences;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.transaction.Transaction;
@@ -85,6 +86,11 @@ public abstract class Catalog implements ExtensionPoint {
     }
 
 
+    protected final boolean isRegisteredInstance() {
+        return this == INSTANCE;
+    }
+
+
     public static void afterInit( Runnable action ) {
         afterInit.add( action );
     }
@@ -111,6 +117,9 @@ public abstract class Catalog implements ExtensionPoint {
 
 
     public abstract void rollback();
+
+
+    public abstract IdentitySequences getIdentitySequences();
 
     /**
      * Captures live catalog state while the transaction owns the catalog write lock.

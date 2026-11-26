@@ -44,8 +44,17 @@ public class LockableImpl implements Lockable {
 
 
     public void acquire( @NotNull Transaction transaction, @NotNull LockType lockType ) throws DeadlockException {
+        // The parent can wait on another transaction. Do not hold this lock's mutex during that wait.
+        if ( !isRoot() ) {
+            parent.acquire( transaction, LockType.SHARED );
+        }
         try {
-            concurrencyLock.lock();
+            concurrencyLock.lockInterruptibly();
+        } catch ( InterruptedException e ) {
+            releaseParentsAndTrackedLocks( transaction );
+            throw interruptedAcquire( transaction, lockType, e );
+        }
+        try {
             if ( !owners.contains( transaction ) ) {
                 switch ( lockType ) {
                     case SHARED -> acquireShared( transaction );
@@ -61,23 +70,45 @@ public class LockableImpl implements Lockable {
                 }
             }
         } catch ( InterruptedException e ) {
-            concurrencyLock.unlock();
-            transaction.releaseAllLocks();
-            throw new DeadlockException( MessageFormat.format( "Transaction {0} encountered a deadlock while acquiring a lock of type {1} on entry {2}.", transaction.getId(), lockType, this ) );
+            releaseAfterFailedAcquire( transaction );
+            throw interruptedAcquire( transaction, lockType, e );
         } catch ( DeadlockException e ) {
-            concurrencyLock.unlock();
-            transaction.releaseAllLocks();
+            releaseAfterFailedAcquire( transaction );
             throw e;
         } catch ( Throwable t ) {
-            concurrencyLock.unlock();
             log.error( "Unexpected exception while acquiring lock", t );
-            transaction.releaseAllLocks();
+            releaseAfterFailedAcquire( transaction );
             throw t;
         } finally {
             if ( concurrencyLock.isHeldByCurrentThread() ) {
                 concurrencyLock.unlock();
             }
         }
+    }
+
+
+    private void releaseAfterFailedAcquire( Transaction transaction ) {
+        DeadlockHandler.INSTANCE.remove( this, transaction );
+        concurrencyCondition.signalAll();
+        concurrencyLock.unlock();
+        releaseParentsAndTrackedLocks( transaction );
+    }
+
+
+    private void releaseParentsAndTrackedLocks( Transaction transaction ) {
+        try {
+            // The transaction registers the requested lock only after acquire returns.
+            if ( !isRoot() ) {
+                parent.release( transaction );
+            }
+        } finally {
+            transaction.releaseAllLocks();
+        }
+    }
+
+
+    private DeadlockException interruptedAcquire( Transaction transaction, LockType lockType, InterruptedException cause ) {
+        return new DeadlockException( MessageFormat.format( "Transaction {0} encountered a deadlock while acquiring a lock of type {1} on entry {2}.", transaction.getId(), lockType, this ), cause );
     }
 
 
@@ -150,9 +181,6 @@ public class LockableImpl implements Lockable {
 
 
     private void acquireShared( Transaction transaction ) throws InterruptedException {
-        if ( !isRoot() ) {
-            parent.acquire( transaction, LockType.SHARED );
-        }
         while ( state == LockState.EXCLUSIVE || hasWaitingTransactions() ) {
             if ( DeadlockHandler.INSTANCE.addAndResolveDeadlock( this, transaction, owners ) ) {
                 throw new InterruptedException( "Deadlock detected" );
@@ -168,9 +196,6 @@ public class LockableImpl implements Lockable {
 
 
     private void acquireExclusive( Transaction transaction ) throws InterruptedException {
-        if ( !isRoot() ) {
-            parent.acquire( transaction, LockType.SHARED );
-        }
         while ( !owners.isEmpty() ) {
             if ( DeadlockHandler.INSTANCE.addAndResolveDeadlock( this, transaction, owners ) ) {
                 throw new InterruptedException( "Deadlock detected" );

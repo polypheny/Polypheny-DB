@@ -262,20 +262,16 @@ public class SelectTest {
 
     @Test
     public void insertUpdateTest() throws SQLException {
-        String ddl1 = "DROP TABLE IF EXISTS my_table";
-        String ddl2 = "CREATE TABLE my_table (column1 INT NOT NULL, column2 VARCHAR(255), column3 INT, PRIMARY KEY (column1))";
-        String insert = "INSERT INTO my_table (column1, column2, column3) VALUES (1, 'v1', 100), (2, 'v2', 200), (3, 'v3', 300)";
-        String update = "UPDATE my_table SET column2 = 'foo' WHERE column1 = 1 AND column3 = 100";
-
-        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true ) ) {
-            Connection connection = polyphenyDbConnection.getConnection();
-            try ( Statement statement = connection.createStatement() ) {
-
-                statement.executeUpdate( ddl1 );
-                statement.executeUpdate( ddl2 );
-                statement.executeUpdate( insert );
-                statement.executeUpdate( update );
-
+        try ( TestHelper.JdbcConnection polyphenyDbConnection = new TestHelper.JdbcConnection( true );
+                Statement statement = polyphenyDbConnection.getConnection().createStatement() ) {
+            statement.executeUpdate( "CREATE TABLE select_insert_update_test "
+                    + "(column1 INT NOT NULL, column2 VARCHAR(255), column3 INT, PRIMARY KEY (column1))" );
+            try {
+                statement.executeUpdate( "INSERT INTO select_insert_update_test (column1, column2, column3) "
+                        + "VALUES (1, 'v1', 100), (2, 'v2', 200), (3, 'v3', 300)" );
+                statement.executeUpdate( "UPDATE select_insert_update_test SET column2 = 'foo' WHERE column1 = 1 AND column3 = 100" );
+            } finally {
+                statement.executeUpdate( "DROP TABLE select_insert_update_test" );
             }
         }
     }

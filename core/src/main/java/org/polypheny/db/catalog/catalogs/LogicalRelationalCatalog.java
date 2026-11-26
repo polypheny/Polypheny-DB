@@ -24,6 +24,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.entity.LogicalConstraint;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
+import org.polypheny.db.catalog.entity.logical.IdentityColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalIndex;
 import org.polypheny.db.catalog.entity.logical.LogicalKey;
@@ -205,6 +206,10 @@ public interface LogicalRelationalCatalog extends LogicalCatalog {
      * @param columnId The id of the column
      */
     void deleteDefaultValue( long columnId );
+
+
+    /** Sets the identity definition or removes it when identity is null. */
+    LogicalColumn setIdentity( long columnId, IdentityColumn identity );
 
 
     /**

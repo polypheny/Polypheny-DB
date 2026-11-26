@@ -127,6 +127,7 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.entity.Entity;
+import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -269,6 +270,7 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     private final OperatorTable opTab;
     private final SqlNodeToRexConverter exprConverter;
     private final AlgBuilder algBuilder;
+    private boolean preserveIdentityTemporalCasts;
     /**
      * Fields used in name resolution for correlated sub-queries.
      */
@@ -2695,10 +2697,136 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
 
         final AlgDataType targetRowType = validator.getValidatedNodeType( call );
         assert targetRowType != null;
+        if ( call.getSchemaType() == DataModel.RELATIONAL && targetTable instanceof LogicalTable logicalTable
+                && (call.isDefaultValues() || snapshot.rel().getColumns( logicalTable.id ).stream().anyMatch( column -> column.getIdentity() != null )) ) {
+            boolean previous = preserveIdentityTemporalCasts;
+            preserveIdentityTemporalCasts = true;
+            try {
+                return createModify( targetTable, convertInsertWithDefaults( call, logicalTable, targetRowType ) );
+            } finally {
+                preserveIdentityTemporalCasts = previous;
+            }
+        }
         AlgNode sourceRel = convertQueryRecursive( call.getSource(), false, targetRowType ).project();
         AlgNode massagedRel = convertColumnList( call, sourceRel );
 
         return createModify( targetTable, massagedRel );
+    }
+
+
+    /**
+     * Builds the input rows and their per-column identity default flags. The coordinator
+     * consumes these flags after locking, before a row can be copied to multiple placements.
+     */
+    private AlgNode convertInsertWithDefaults( SqlInsert call, LogicalTable table, AlgDataType targetRowType ) {
+        List<String> targetNames = targetRowType.getFieldNames();
+        if ( call.isDefaultValues() ) {
+            return projectInsertWithDefaults( call, table, List.of(), LogicalRelValues.createOneRow( cluster ), List.of() );
+        }
+
+        if ( call.getSource().getKind() == Kind.VALUES && call.getSource() instanceof SqlCall values ) {
+            List<AlgNode> rows = new ArrayList<>();
+            SqlValidatorScope scope = validator.getOverScope( values );
+            for ( SqlNode operand : values.getSqlOperandList() ) {
+                SqlCall row = (SqlCall) operand;
+                Blackboard bb = createBlackboard( scope, null, false );
+                List<RexNode> expressions = new ArrayList<>();
+                for ( int i = 0; i < row.operandCount(); i++ ) {
+                    SqlNode expression = row.getSqlOperandList().get( i );
+                    AlgDataType targetType = targetRowType.getFields().get( i ).getType();
+                    LogicalColumn column = snapshot.rel().getColumn( table.id, targetNames.get( i ) ).orElseThrow();
+                    if ( expression.getKind() == Kind.DEFAULT
+                            || (column.getIdentity() != null && call.getOverrideMode() == SqlInsert.OverrideMode.USER) ) {
+                        expressions.add( null );
+                    } else {
+                        replaceSubQueries( bb, expression, AlgOptUtil.Logic.TRUE_FALSE_UNKNOWN );
+                        RexLiteral literal = convertLiteralInValuesList( expression, bb, targetRowType, i );
+                        if ( literal != null ) {
+                            expressions.add( literal );
+                        } else {
+                            RexNode value = bb.convertExpression( expression );
+                            expressions.add( hasSameTemporalType( targetType, value )
+                                    ? value : rexBuilder.ensureType( targetType, value, false ) );
+                        }
+                    }
+                }
+                AlgNode source = bb.root == null ? LogicalRelValues.createOneRow( cluster ) : bb.root;
+                rows.add( projectInsertWithDefaults( call, table, targetNames, source, expressions ) );
+            }
+            return rows.size() == 1 ? rows.get( 0 ) : LogicalRelUnion.create( rows, true );
+        }
+
+        AlgNode source = convertQueryRecursive( call.getSource(), false, targetRowType ).project();
+        List<RexNode> expressions = new ArrayList<>();
+        for ( int i = 0; i < targetRowType.getFieldCount(); i++ ) {
+            expressions.add( rexBuilder.makeInputRef( source, i ) );
+        }
+        return projectInsertWithDefaults( call, table, targetNames, source, expressions );
+    }
+
+
+    private RexNode retainTemporalCast( RexNode converted ) {
+        // A cast folded into a literal or parameter still constrains its precision.
+        return isTemporalAssignmentType( converted.getType().getPolyType() )
+                && converted.getType().getPrecision() < PolyType.MAX_DATETIME_PRECISION
+                && (converted instanceof RexDynamicParam || converted instanceof RexLiteral literal && !RexLiteral.isNullLiteral( literal ))
+                ? rexBuilder.makeCall( converted.getType(), OperatorRegistry.get( OperatorName.CAST ), converted )
+                : converted;
+    }
+
+
+    private static boolean hasSameTemporalType( AlgDataType target, RexNode source ) {
+        return isTemporalAssignmentType( target.getPolyType() ) && target.getPolyType() == source.getType().getPolyType();
+    }
+
+
+    private static boolean isTemporalAssignmentType( PolyType type ) {
+        return type == PolyType.TIME || type == PolyType.TIMESTAMP;
+    }
+
+
+    private AlgNode projectInsertWithDefaults( SqlInsert call, LogicalTable table, List<String> targetNames, AlgNode source, List<RexNode> supplied ) {
+        List<RexNode> expressions = new ArrayList<>();
+        List<RexNode> identityDefaults = new ArrayList<>();
+        List<String> names = new ArrayList<>();
+        List<String> identityNames = new ArrayList<>();
+        for ( AlgDataTypeField field : table.getTupleType().getFields() ) {
+            LogicalColumn column = snapshot.rel().getColumn( field.getId() ).orElseThrow();
+            int index = targetNames.indexOf( field.getName() );
+            RexNode expression = index < 0 ? null : supplied.get( index );
+            boolean deferTemporalAssignment = expression != null && hasSameTemporalType( field.getType(), expression );
+            if ( column.getIdentity() != null ) {
+                boolean generate = expression == null || call.getOverrideMode() == SqlInsert.OverrideMode.USER;
+                identityDefaults.add( rexBuilder.makeLiteral( generate ) );
+                identityNames.add( LogicalRelModify.identityDefaultFieldName( column.id ) );
+                // Keep SELECT-supplied values until the coordinator replaces them. They may
+                // distinguish rows in a source set operation even though they are not inserted.
+                if ( expression == null ) {
+                    expression = rexBuilder.makeZeroLiteral( field.getType() );
+                }
+            }
+            if ( expression == null ) {
+                expression = columnDefault( column, field.getType() );
+            }
+            // The materializer applies the destination precision after evaluating the supplied value.
+            expressions.add( deferTemporalAssignment
+                    ? expression : rexBuilder.ensureType( field.getType(), expression, true ) );
+            names.add( field.getName() );
+        }
+        expressions.addAll( identityDefaults );
+        names.addAll( identityNames );
+        return LogicalRelProject.create( source, expressions, names );
+    }
+
+
+    private RexNode columnDefault( LogicalColumn column, AlgDataType type ) {
+        if ( column.defaultValue != null ) {
+            return rexBuilder.makeLiteral( column.defaultValue.value, type, true );
+        }
+        if ( !column.nullable ) {
+            throw new GenericRuntimeException( "Column '%s' has no default value.", column.name );
+        }
+        return rexBuilder.makeNullLiteral( type );
     }
 
 
@@ -2977,12 +3105,6 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         final SqlValidatorScope scope = validator.getWhereScope( call.getSourceSelect() );
         Blackboard bb = createBlackboard( scope, null, false );
 
-        Builder<RexNode> rexNodeSourceExpressionListBuilder = ImmutableList.builder();
-        for ( SqlNode n : call.getSourceExpressionList().getSqlList() ) {
-            RexNode rn = bb.convertExpression( n );
-            rexNodeSourceExpressionListBuilder.add( rn );
-        }
-
         Entity targetTable = getTargetTable( call );
 
         // convert update column list from SqlIdentifier to String
@@ -2996,13 +3118,33 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
         }
 
         AlgNode sourceRel = convertSelect( call.getSourceSelect(), false );
+        List<RexNode> sources = new ArrayList<>();
+        List<SqlNode> assignments = call.getSourceExpressionList().getSqlList();
+        for ( int i = 0; i < assignments.size(); i++ ) {
+            SqlNode assignment = assignments.get( i );
+            if ( assignment.getKind() != Kind.DEFAULT ) {
+                sources.add( bb.convertExpression( assignment ) );
+                continue;
+            }
+            AlgDataTypeField field = targetRowType.getField( targetColumnNameList.get( i ), true, false );
+            LogicalColumn column = snapshot.rel().getColumn( field.getId() ).orElseThrow();
+            // Keep a typed DEFAULT marker until the coordinator has the exact update rows.
+            sources.add( column.getIdentity() == null
+                    ? columnDefault( column, field.getType() )
+                    : rexBuilder.makeCall( field.getType(), OperatorRegistry.get( OperatorName.DEFAULT ), List.of() ) );
+            if ( column.getIdentity() == null && sourceRel instanceof LogicalRelProject project ) {
+                List<RexNode> projected = new ArrayList<>( project.getProjects() );
+                projected.set( targetRowType.getFieldCount() + i, sources.get( i ) );
+                sourceRel = LogicalRelProject.create( project.getInput(), projected, project.getTupleType().getFieldNames() );
+            }
+        }
 
         return LogicalRelModify.create(
                 targetTable,
                 sourceRel,
                 Modify.Operation.UPDATE,
                 targetColumnNameList,
-                rexNodeSourceExpressionListBuilder.build(),
+                sources,
                 false );
     }
 
@@ -4076,8 +4218,8 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             }
 
             // Apply standard conversions.
-            rex = expr.accept( this );
-            return Objects.requireNonNull( rex );
+            rex = Objects.requireNonNull( expr.accept( this ) );
+            return preserveIdentityTemporalCasts && kind == Kind.CAST ? retainTemporalCast( rex ) : rex;
         }
 
 

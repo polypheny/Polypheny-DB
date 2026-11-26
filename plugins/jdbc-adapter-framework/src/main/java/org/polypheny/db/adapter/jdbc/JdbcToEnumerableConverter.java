@@ -41,10 +41,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TimeZone;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -58,9 +62,13 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.DataStore;
+import org.polypheny.db.adapter.jdbc.JdbcRules.JdbcProject;
+import org.polypheny.db.adapter.jdbc.JdbcRules.JdbcTableModify;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.InsertSourceOrdinals;
 import org.polypheny.db.algebra.convert.ConverterImpl;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
@@ -69,12 +77,17 @@ import org.polypheny.db.algebra.enumerable.JavaTupleFormat;
 import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.functions.TemporalFunctions;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
@@ -83,8 +96,13 @@ import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.schema.Schemas;
+import org.polypheny.db.sql.language.SqlDataTypeSpec;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlDialect.CalendarPolicy;
+import org.polypheny.db.sql.language.SqlIdentifier;
+import org.polypheny.db.sql.language.SqlNode;
+import org.polypheny.db.sql.language.SqlNodeList;
+import org.polypheny.db.sql.language.SqlSelect;
 import org.polypheny.db.sql.language.util.SqlString;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
@@ -104,6 +122,7 @@ import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.temporal.DateTimeUtils;
 
 
 /**
@@ -143,11 +162,69 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             Integer[].class,
             DataContext.class );
     private static final Expression UTC_EXPRESSION = Expressions.field( null, JdbcToEnumerableConverter.class, "utc" );
-    private static final Expression LOCAL_EXPRESSION = Expressions.field( null, JdbcToEnumerableConverter.class, "local" );
+
+
+    private final List<AlgDataTypeField> insertTargetFields;
+    private final Set<Long> nativeTemporalFields;
 
 
     protected JdbcToEnumerableConverter( AlgCluster cluster, AlgTraitSet traits, AlgNode input ) {
+        this( cluster, traits, input, List.of(), Set.of() );
+    }
+
+
+    private JdbcToEnumerableConverter( AlgCluster cluster, AlgTraitSet traits, AlgNode input, List<AlgDataTypeField> insertTargetFields,
+            Set<Long> nativeTemporalFields ) {
         super( cluster, ConventionTraitDef.INSTANCE, traits, input );
+        this.insertTargetFields = List.copyOf( insertTargetFields );
+        this.nativeTemporalFields = Set.copyOf( nativeTemporalFields );
+    }
+
+
+    public static Optional<AlgNode> readInsertSource( long adapterId, AlgNode physicalInsert, List<AlgDataTypeField> targetFields,
+            Set<Long> nativeTemporalFields ) {
+        if ( physicalInsert instanceof JdbcToEnumerableConverter converter && converter.getInput() instanceof JdbcTableModify insert
+                && insert.isInsert() && insert.getEntity().adapterId == adapterId
+                && insert.getInput().getTupleType().getFieldCount() == targetFields.size() ) {
+            return Optional.of( new JdbcToEnumerableConverter( converter.getCluster(), converter.getTraitSet(), insert.getInput(), targetFields, nativeTemporalFields ) );
+        }
+        return Optional.empty();
+    }
+
+
+    public static Optional<InsertSourceOrdinals> markInsertSource( AlgNode source, int firstOrdinal, List<AlgDataTypeField> identityFields ) {
+        if ( !(source instanceof JdbcToEnumerableConverter converter) ) {
+            return Optional.empty();
+        }
+        InsertSourceOrdinals nativeSource = InsertSourceOrdinals.add(
+                converter.getInput(), firstOrdinal, identityFields, JdbcProject::create, (input, ordinal) -> Optional.empty() );
+        return Optional.of( new InsertSourceOrdinals(
+                new JdbcToEnumerableConverter( converter.getCluster(), converter.getTraitSet(), nativeSource.plan(),
+                        converter.insertTargetFields, converter.nativeTemporalFields ),
+                nativeSource.branchCount() ) );
+    }
+
+
+    @Override
+    protected AlgDataType deriveRowType() {
+        if ( insertTargetFields.isEmpty() ) {
+            return super.deriveRowType();
+        }
+        AlgDataTypeFactory factory = getCluster().getTypeFactory();
+        var output = factory.builder();
+        List<AlgDataTypeField> source = getInput().getTupleType().getFields();
+        for ( int i = 0; i < source.size(); i++ ) {
+            AlgDataTypeField field = source.get( i );
+            AlgDataType type = field.getType();
+            if ( i < insertTargetFields.size() ) {
+                AlgDataType target = insertTargetFields.get( i ).getType();
+                if ( DataStore.isInsertSourceAssignmentType( target.getPolyType() ) ) {
+                    type = factory.createTypeWithNullability( target, true );
+                }
+            }
+            output.add( field.getId(), field.getName(), field.getPhysicalName(), type );
+        }
+        return output.build();
     }
 
 
@@ -263,7 +340,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new JdbcToEnumerableConverter( getCluster(), traitSet, AbstractAlgNode.sole( inputs ) );
+        return new JdbcToEnumerableConverter( getCluster(), traitSet, AbstractAlgNode.sole( inputs ), insertTargetFields, nativeTemporalFields );
     }
 
 
@@ -431,12 +508,12 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             //  add nullability stuff as well
             case ARRAY -> getPreprocessArrayExpression( resultSet_, i, dialect, fieldType );
             case DATE -> Expressions.call( resultSet_, "getDate", Expressions.constant( i + 1 ), UTC_EXPRESSION );
-            case TIME -> Expressions.call( resultSet_, "getTime", Expressions.constant( i + 1 ), LOCAL_EXPRESSION );
+            case TIME -> Expressions.call( JdbcToEnumerableConverter.class, "readTime", resultSet_, Expressions.constant( i + 1 ) );
             case TIMESTAMP -> Expressions.call( resultSet_, "getTimestamp", Expressions.constant( i + 1 ), UTC_EXPRESSION );
             case FILE, AUDIO, IMAGE, VIDEO -> Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBYTES.method, Expressions.constant( i + 1 ) );
             default -> Expressions.call( resultSet_, jdbcGetMethod( primitive ), Expressions.constant( i + 1 ) );
         };
-        final Expression poly = getOfPolyExpression( fieldType, source, resultSet_, i, dialect );
+        final Expression poly = polyType == PolyType.TIME ? source : getOfPolyExpression( fieldType, source, resultSet_, i, dialect );
 
         //source is null if an expression was already added to the builder.
         if ( poly != null ) {
@@ -455,6 +532,28 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
     }
 
 
+    public static PolyTime readTime( ResultSet result, int index ) throws SQLException {
+        // java.sql.Time conversion can discard the fraction even when the store kept it.
+        String text = result.getString( index );
+        if ( text == null ) {
+            return PolyTime.of( (Integer) null );
+        }
+        try {
+            // HSQLDB can omit the leading zero on the hour.
+            String normalizedText = text.length() > 1 && text.charAt( 1 ) == ':' ? "0" + text : text;
+            return PolyTime.of( (int) (LocalTime.parse( normalizedText ).toNanoOfDay() / 1_000_000) );
+        } catch ( DateTimeParseException e ) {
+            if ( text.startsWith( "24:" ) ) {
+                if ( text.matches( "24:00(?::00(?:\\.0+)?)?" ) ) {
+                    return PolyTime.of( (int) DateTimeUtils.MILLIS_PER_DAY );
+                }
+                throw new SQLException( "The store returned a TIME outside the supported day.", "22008", e );
+            }
+            return PolyTime.ofNullable( result.getTime( index, Calendar.getInstance( TemporalFunctions.LOCAL_TZ ) ) );
+        }
+    }
+
+
     /**
      * E,g, {@code jdbcGetMethod(int)} returns "getInt".
      */
@@ -465,10 +564,44 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
     }
 
 
+    public static SqlNode assignmentCastType( SqlDialect dialect, AlgDataType target, boolean nativePrecision ) {
+        ParserPos pos = ParserPos.ZERO;
+        return nativePrecision
+                ? new SqlDataTypeSpec( new SqlIdentifier( target.getPolyType().getName(), pos ), -1, -1, null, null, pos )
+                : dialect.getCastSpec( target );
+    }
+
+
     private SqlString generateSql( SqlDialect dialect, JdbcSchema jdbcSchema ) {
         final JdbcImplementor jdbcImplementor = new JdbcImplementor( dialect, new JavaTypeFactoryImpl(), jdbcSchema );
         final JdbcImplementor.Result result = jdbcImplementor.visitChild( 0, getInput() );
-        return result.asStatement().toSqlString( dialect );
+        if ( insertTargetFields.isEmpty() ) {
+            return result.asStatement().toSqlString( dialect );
+        }
+
+        // Keep the complete source query below the assignment casts. In particular,
+        // the store must resolve the common type of a UNION before the destination cast.
+        ParserPos pos = ParserPos.ZERO;
+        List<SqlNode> aliasOperands = new ArrayList<>();
+        aliasOperands.add( result.asQueryOrValues() );
+        aliasOperands.add( new SqlIdentifier( "insert_source", pos ) );
+        List<SqlNode> columns = new ArrayList<>();
+        for ( int i = 0; i < getInput().getTupleType().getFieldCount(); i++ ) {
+            SqlIdentifier column = new SqlIdentifier( "insert_value_" + i, pos );
+            aliasOperands.add( column );
+            if ( i < insertTargetFields.size() ) {
+                AlgDataTypeField target = insertTargetFields.get( i );
+                if ( DataStore.isInsertSourceAssignmentType( target.getType().getPolyType() ) ) {
+                    SqlNode castType = assignmentCastType( dialect, target.getType(), nativeTemporalFields.contains( target.getId() ) );
+                    columns.add( (SqlNode) OperatorRegistry.get( OperatorName.CAST ).createCall( pos, column, castType ) );
+                    continue;
+                }
+            }
+            columns.add( column );
+        }
+        SqlNode aliased = (SqlNode) OperatorRegistry.get( OperatorName.AS ).createCall( new SqlNodeList( aliasOperands, pos ) );
+        SqlSelect select = new SqlSelect( pos, SqlNodeList.EMPTY, new SqlNodeList( columns, pos ), aliased, null, null, null, null, null, null, null );
+        return select.toSqlString( dialect );
     }
 
 }

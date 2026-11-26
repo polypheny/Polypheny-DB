@@ -378,7 +378,8 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
                 break;
             case DOUBLE:
                 assert value.isNumber();
-                pw.print( Util.toScientificNotation( value.asNumber().BigDecimalValue() ) );
+                double approximation = value.asNumber().doubleValue();
+                pw.print( Double.isFinite( approximation ) ? Util.toScientificNotation( value.asNumber().BigDecimalValue() ) : Double.toString( approximation ) );
                 break;
             case BIGINT:
                 assert value.isNumber();

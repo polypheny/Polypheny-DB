@@ -17,6 +17,7 @@
 package org.polypheny.db.webui;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
@@ -54,6 +55,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.UUID;
@@ -94,6 +96,8 @@ import org.polypheny.db.catalog.entity.MaterializedCriteria;
 import org.polypheny.db.catalog.entity.MaterializedCriteria.CriteriaType;
 import org.polypheny.db.catalog.entity.allocation.AllocationColumn;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.logical.IdentityColumn;
+import org.polypheny.db.catalog.entity.logical.IdentityColumn.Mode;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalEntity;
@@ -195,6 +199,7 @@ import org.polypheny.db.webui.models.UnderlyingTables;
 import org.polypheny.db.webui.models.catalog.AdapterModel;
 import org.polypheny.db.webui.models.catalog.PolyTypeModel;
 import org.polypheny.db.webui.models.catalog.SnapshotModel;
+import org.polypheny.db.webui.models.catalog.IdentityColumnModel;
 import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest;
 import org.polypheny.db.webui.models.requests.BatchUpdateRequest.Update;
@@ -888,7 +893,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             primaryColumns = new ArrayList<>();
         }
         for ( LogicalColumn logicalColumn : Catalog.snapshot().rel().getColumns( table.id ) ) {
-            PolyValue defaultValue = logicalColumn.defaultValue == null ? null : logicalColumn.defaultValue.value;
             String collectionsType = logicalColumn.collectionsType == null ? "" : logicalColumn.collectionsType.getName();
             cols.add(
                     UiColumnDefinition.builder()
@@ -902,7 +906,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                             .dimension( logicalColumn.dimension )
                             .cardinality( logicalColumn.cardinality )
                             .primary( primaryColumns.contains( logicalColumn.name ) )
-                            .defaultValue( defaultValue == null ? null : defaultValue.toJson() )
+                            .defaultValue( IdentityColumnModel.dataHeaderDefault( logicalColumn ) )
+                            .identity( IdentityColumnModel.from( logicalColumn.getIdentity() ) )
                             .sort( request.sortState == null ? new SortState() : request.sortState.get( logicalColumn.name ) )
                             .filter( request.filter == null || request.filter.get( logicalColumn.name ) == null ? "" : request.filter.get( logicalColumn.name ) ).build() );
         }
@@ -1039,7 +1044,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     private String getFullEntityName( long entityId ) {
         LogicalTable table = Catalog.snapshot().rel().getTable( entityId ).orElseThrow();
         LogicalNamespace namespace = Catalog.snapshot().getNamespace( table.namespaceId ).orElseThrow();
-        return String.format( "\"%s\".\"%s\"", namespace.name, table.name );
+        return quoteQualified( namespace.name, table.name );
     }
 
 
@@ -1108,6 +1113,14 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             }
             if ( !col.nullable ) {
                 colBuilder.append( " NOT NULL" );
+            }
+            if ( col.identity != null ) {
+                try {
+                    colBuilder.append( ' ' ).append( identityDeclaration( col.identity ) );
+                } catch ( GenericRuntimeException e ) {
+                    ctx.json( RelationalResult.builder().error( e.getMessage() ).build() );
+                    return;
+                }
             }
             if ( col.defaultValue != null ) {
                 switch ( col.dataType ) {
@@ -1930,11 +1943,11 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
         LogicalTable table = Catalog.snapshot().rel().getTable( entityId ).orElseThrow();
         LogicalNamespace namespace = Catalog.snapshot().getNamespace( table.namespaceId ).orElseThrow();
-        String entityName = String.format( "\"%s\".\"%s\"", namespace.name, table.name );
+        String entityName = quoteQualified( namespace.name, table.name );
 
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
-        StringJoiner columns = new StringJoiner( ",", "(", ")" );
+        StringJoiner columns = new StringJoiner( ",", "(", ")" ).setEmptyValue( "" );
         StringJoiner values = new StringJoiner( ",", "(", ")" );
 
         List<LogicalColumn> logicalColumns = Catalog.snapshot().rel().getColumns( table.id );
@@ -1945,20 +1958,22 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 Part part = ctx.req().getPart( logicalColumn.name );
                 if ( part == null ) {
                     //don't add if default value is set
-                    if ( logicalColumn.defaultValue == null ) {
+                    if ( logicalColumn.getLiteralDefaultValue() == null && logicalColumn.getIdentity() == null ) {
                         values.add( "NULL" );
-                        columns.add( "\"" + logicalColumn.name + "\"" );
+                        columns.add( quoteIdentifier( logicalColumn.name ) );
                     }
                 } else {
-                    columns.add( "\"" + logicalColumn.name + "\"" );
+                    columns.add( quoteIdentifier( logicalColumn.name ) );
                     if ( part.getSubmittedFileName() == null ) {
                         String value = new BufferedReader( new InputStreamReader( part.getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
-                        if ( logicalColumn.name.equals( "_id" ) ) {
-                            if ( value.isEmpty() ) {
+                        if ( logicalColumn.getIdentity() != null ) {
+                            values.add( Long.toString( parseIdentityNumber( value, "value" ) ) );
+                        } else {
+                            if ( logicalColumn.name.equals( "_id" ) && value.isEmpty() ) {
                                 value = BsonUtil.getObjectId();
                             }
+                            values.add( uiValueToSql( value, logicalColumn.type, logicalColumn.collectionsType ) );
                         }
-                        values.add( uiValueToSql( value, logicalColumn.type, logicalColumn.collectionsType ) );
                     } else {
                         values.add( "?" );
                         FileInputHandle fih = new FileInputHandle( statement, part.getInputStream() );
@@ -1966,11 +1981,14 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                     }
                 }
             }
-        } catch ( ServletException e ) {
-            throw new GenericRuntimeException( e );
+        } catch ( IOException | ServletException | RuntimeException e ) {
+            failTupleMutation( ctx, transaction, e );
+            return;
         }
 
-        String query = String.format( "INSERT INTO %s %s VALUES %s", entityName, columns, values );
+        String query = columns.length() == 0
+                ? String.format( "INSERT INTO %s DEFAULT VALUES", entityName )
+                : String.format( "INSERT INTO %s %s VALUES %s", entityName, columns, values );
         QueryLanguage language = QueryLanguage.from( "sql" );
         QueryContext context = QueryContext.builder()
                 .query( query )
@@ -2004,14 +2022,14 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         LogicalPrimaryKey pk = Catalog.snapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow();
         for ( long colId : pk.fieldIds ) {
             LogicalColumn col = columns.get( colId );
-            String condition;
-            if ( filter.containsKey( col.name ) ) {
-                String val = filter.get( col.name );
-
-                condition = uiValueToSql( val, col.type, col.collectionsType );
-                condition = String.format( "\"%s\" = %s", col.name, condition );
-                joiner.add( condition );
+            if ( filter == null || filter.get( col.name ) == null ) {
+                throw new GenericRuntimeException( "A value for primary key column " + quoteIdentifier( col.name ) + " is required." );
             }
+            String val = filter.get( col.name );
+            String condition = col.getIdentity() == null
+                    ? uiValueToSql( val, col.type, col.collectionsType )
+                    : Long.toString( parseIdentityNumber( val, "key value" ) );
+            joiner.add( quoteIdentifier( col.name ) + " = " + condition );
         }
         return " WHERE " + joiner;
     }
@@ -2028,7 +2046,12 @@ public class Crud implements InformationObserver, PropertyChangeListener {
         String tableId = getFullEntityName( request.entityId );
         LogicalTable table = Catalog.snapshot().rel().getTable( request.entityId ).orElseThrow();
 
-        query.append( "DELETE FROM " ).append( tableId ).append( computeWherePK( table, request.data ) );
+        try {
+            query.append( "DELETE FROM " ).append( tableId ).append( computeWherePK( table, request.data ) );
+        } catch ( GenericRuntimeException e ) {
+            ctx.json( RelationalResult.builder().error( e.getMessage() ).build() );
+            return;
+        }
         QueryLanguage language = QueryLanguage.from( "sql" );
         Result<?, ?> result = LanguageCrud.anyQueryResult(
                 QueryContext.builder()
@@ -2045,52 +2068,66 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     /**
      * Update a row from a table. The row is determined by the value of every PK column in that row (conjunction).
      */
-    void updateTuple( final Context ctx ) throws ServletException, IOException {
+    void updateTuple( final Context ctx ) {
         ctx.contentType( "multipart/form-data" );
         initMultipart( ctx );
-        Map<String, String> oldValues = null;
         long entityId = Long.parseLong( Objects.requireNonNull( ctx.formParam( "entityId" ) ) );
-        try {
-            String _oldValues = new BufferedReader( new InputStreamReader( ctx.req().getPart( "oldValues" ).getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
-            oldValues = gson.fromJson( _oldValues, Map.class );
-        } catch ( IOException | ServletException e ) {
-            ctx.json( RelationalResult.builder().error( e.getMessage() ).build() );
-        }
+        LogicalTable table = Catalog.snapshot().rel().getTable( entityId ).orElseThrow();
         String fullName = getFullEntityName( entityId );
+        Map<String, String> oldValues;
+        String where;
+        try {
+            String previous = readMultipartValue( ctx.req().getPart( "oldValues" ) );
+            oldValues = HttpServer.mapper.readValue( previous, new TypeReference<Map<String, String>>() { } );
+            where = computeWherePK( table, oldValues );
+        } catch ( IOException | ServletException | RuntimeException e ) {
+            ctx.json( RelationalResult.builder().error( e.getMessage() ).build() );
+            return;
+        }
 
         Transaction transaction = getTransaction();
         Statement statement = transaction.createStatement();
-        StringJoiner setStatements = new StringJoiner( ",", "", "" );
+        StringJoiner setStatements = new StringJoiner( "," );
 
-        List<LogicalColumn> logicalColumns = Catalog.snapshot().rel().getColumns( entityId );
-
-        int i = 0;
-        for ( LogicalColumn logicalColumn : logicalColumns ) {
-            Part part = ctx.req().getPart( logicalColumn.name );
-            if ( part == null ) {
-                continue;
-            }
-            if ( part.getSubmittedFileName() == null ) {
-                String value = new BufferedReader( new InputStreamReader( part.getInputStream(), StandardCharsets.UTF_8 ) ).lines().collect( Collectors.joining( System.lineSeparator() ) );
-                String parsed = gson.fromJson( value, String.class );
-                if ( parsed == null ) {
-                    setStatements.add( String.format( "\"%s\" = NULL", logicalColumn.name ) );
-                } else {
-                    setStatements.add( String.format( "\"%s\" = %s", logicalColumn.name, uiValueToSql( parsed, logicalColumn.type, logicalColumn.collectionsType ) ) );
+        try {
+            int i = 0;
+            for ( LogicalColumn column : Catalog.snapshot().rel().getColumns( entityId ) ) {
+                Part part = ctx.req().getPart( column.name );
+                if ( part == null ) {
+                    continue;
                 }
-            } else {
-                setStatements.add( String.format( "\"%s\" = ?", logicalColumn.name ) );
-                FileInputHandle fih = new FileInputHandle( statement, part.getInputStream() );
-                statement.getDataContext().addParameterValues( i++, logicalColumn.getAlgDataType( transaction.getTypeFactory() ), ImmutableList.of( PolyBlob.of( fih.getData() ) ) );
+                String target = quoteIdentifier( column.name ) + " = ";
+                if ( part.getSubmittedFileName() == null ) {
+                    String value = gson.fromJson( readMultipartValue( part ), String.class );
+                    IdentityColumn identity = column.getIdentity();
+                    if ( identity != null && identity.mode() == Mode.ALWAYS ) {
+                        if ( value != null && value.equals( oldValues.get( column.name ) ) ) {
+                            // Older data views include unchanged identity values in an update.
+                            continue;
+                        }
+                        throw new GenericRuntimeException( "Cannot update an always-generated identity column: " + column.name );
+                    }
+                    String sqlValue = identity != null && value != null
+                            ? Long.toString( parseIdentityNumber( value, "value" ) )
+                            : uiValueToSql( value, column.type, column.collectionsType );
+                    setStatements.add( target + sqlValue );
+                } else {
+                    setStatements.add( target + "?" );
+                    FileInputHandle handle = new FileInputHandle( statement, part.getInputStream() );
+                    statement.getDataContext().addParameterValues( i++, column.getAlgDataType( transaction.getTypeFactory() ), ImmutableList.of( PolyBlob.of( handle.getData() ) ) );
+                }
             }
+            if ( setStatements.length() == 0 ) {
+                transaction.rollback( null );
+                ctx.json( RelationalResult.builder().affectedTuples( 0 ).build() );
+                return;
+            }
+        } catch ( IOException | ServletException | RuntimeException e ) {
+            failTupleMutation( ctx, transaction, e );
+            return;
         }
 
-        String query = "UPDATE "
-                + fullName
-                + " SET "
-                + setStatements
-                + computeWherePK( Catalog.snapshot().rel().getTable( logicalColumns.get( 0 ).tableId ).orElseThrow(), oldValues );
-
+        String query = "UPDATE " + fullName + " SET " + setStatements + where;
         QueryLanguage language = QueryLanguage.from( "sql" );
         Result<?, ?> result = LanguageCrud.anyQueryResult(
                 QueryContext.builder()
@@ -2103,6 +2140,29 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .build(), UIRequest.builder().build() ).get( 0 );
 
         ctx.json( result );
+    }
+
+
+    private static String readMultipartValue( Part part ) throws IOException {
+        if ( part == null ) {
+            throw new GenericRuntimeException( "Previous row values are required." );
+        }
+        try ( BufferedReader reader = new BufferedReader( new InputStreamReader( part.getInputStream(), StandardCharsets.UTF_8 ) ) ) {
+            return reader.lines().collect( Collectors.joining( System.lineSeparator() ) );
+        }
+    }
+
+
+    private static void failTupleMutation( Context ctx, Transaction transaction, Exception failure ) {
+        if ( transaction.isActive() ) {
+            try {
+                transaction.rollback( failure.getMessage() );
+            } catch ( TransactionException rollbackFailure ) {
+                failure.addSuppressed( rollbackFailure );
+                log.warn( "Could not roll back tuple mutation", failure );
+            }
+        }
+        ctx.json( RelationalResult.builder().error( failure.getMessage() ).build() );
     }
 
 
@@ -2150,7 +2210,6 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             primaryColumns = new ArrayList<>();
         }
         for ( LogicalColumn logicalColumn : Catalog.snapshot().rel().getColumns( table.id ) ) {
-            String defaultValue = logicalColumn.defaultValue == null ? null : logicalColumn.defaultValue.value.toJson();
             String collectionsType = logicalColumn.collectionsType == null ? "" : logicalColumn.collectionsType.getName();
             cols.add(
                     UiColumnDefinition.builder()
@@ -2164,7 +2223,8 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                             .dimension( logicalColumn.dimension )
                             .cardinality( logicalColumn.cardinality )
                             .primary( primaryColumns.contains( logicalColumn.name ) )
-                            .defaultValue( defaultValue )
+                            .defaultValue( IdentityColumnModel.dataHeaderDefault( logicalColumn ) )
+                            .identity( IdentityColumnModel.from( logicalColumn.getIdentity() ) )
                             .build() );
         }
         RelationalResultBuilder<?, ?> result = RelationalResult
@@ -2202,7 +2262,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .dimension( col.dimension )
                         .cardinality( col.cardinality )
                         .primary( false )
-                        .defaultValue( col.defaultValue == null ? null : col.defaultValue.value.toJson() )
+                        .defaultValue( col.getLiteralDefaultValue() == null ? null : col.getLiteralDefaultValue().value.toJson() )
                         .build()
                 );
 
@@ -2230,7 +2290,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                         .dimension( col.dimension )
                         .cardinality( col.cardinality )
                         .primary( pkColumnNames.contains( col.name ) )
-                        .defaultValue( col.defaultValue == null ? null : col.defaultValue.value.toJson() ).build() );
+                        .defaultValue( col.getLiteralDefaultValue() == null ? null : col.getLiteralDefaultValue().value.toJson() ).build() );
             }
             ctx.json( RelationalResult.builder().header( columns.toArray( new UiColumnDefinition[0] ) ).type( ResultType.TABLE ).build() );
         }
@@ -2348,6 +2408,144 @@ public class Crud implements InformationObserver, PropertyChangeListener {
     }
 
 
+    private record IdentityRequest(
+            @JsonProperty long entityId,
+            @JsonProperty long columnId,
+            @JsonProperty IdentityAction action,
+            @JsonProperty IdentityColumnModel identity,
+            @JsonProperty String nextValue ) {
+
+    }
+
+
+    private enum IdentityAction {
+        ADD,
+        SET_MODE,
+        SET_OPTIONS,
+        DROP
+    }
+
+
+    private record IdentitySequenceResponse(
+            @JsonProperty IdentityColumnModel identity,
+            @JsonProperty String nextValue ) {
+
+    }
+
+
+    void getIdentitySequence( final Context ctx ) {
+        IdentityRequest request = ctx.bodyAsClass( IdentityRequest.class );
+        IdentityColumn identity = getIdentityTarget( request ).getIdentity();
+        OptionalLong next = identity == null ? OptionalLong.empty() : Catalog.getInstance().getIdentitySequences().peek( identity );
+        ctx.json( new IdentitySequenceResponse( IdentityColumnModel.from( identity ), next.isPresent() ? Long.toString( next.getAsLong() ) : null ) );
+    }
+
+
+    void configureIdentityColumn( final Context ctx ) {
+        IdentityRequest request = ctx.bodyAsClass( IdentityRequest.class );
+        if ( !ensureTableModifiable( request.entityId, ctx ) ) {
+            return;
+        }
+        if ( request.action == null || request.action != IdentityAction.DROP && request.identity == null ) {
+            ctx.json( RelationalResult.builder().error( "An identity action and its options are required." ).build() );
+            return;
+        }
+        try {
+            String alteration = switch ( request.action ) {
+                case ADD -> "ADD " + identityDeclaration( request.identity );
+                case SET_MODE -> "SET GENERATED " + identityMode( request.identity.mode() );
+                case SET_OPTIONS -> "SET " + identityOptions( request.identity );
+                case DROP -> "DROP IDENTITY";
+            };
+            executeIdentityAlteration( ctx, request, alteration );
+        } catch ( GenericRuntimeException e ) {
+            ctx.json( RelationalResult.builder().error( e.getMessage() ).build() );
+        }
+    }
+
+
+    void restartIdentitySequence( final Context ctx ) {
+        IdentityRequest request = ctx.bodyAsClass( IdentityRequest.class );
+        if ( !ensureTableModifiable( request.entityId, ctx ) ) {
+            return;
+        }
+        try {
+            executeIdentityAlteration( ctx, request, "RESTART WITH " + parseIdentityNumber( request.nextValue, "next value" ) );
+        } catch ( GenericRuntimeException e ) {
+            ctx.json( RelationalResult.builder().error( e.getMessage() ).build() );
+        }
+    }
+
+
+    private LogicalColumn getIdentityTarget( IdentityRequest request ) {
+        Snapshot snapshot = Catalog.snapshot();
+        LogicalTable table = snapshot.rel().getTable( request.entityId ).orElseThrow();
+        if ( table.entityType != EntityType.ENTITY ) {
+            throw new GenericRuntimeException( "Identity columns are supported only on regular tables." );
+        }
+        return snapshot.rel().getColumn( request.columnId )
+                .filter( column -> column.tableId == table.id )
+                .orElseThrow( () -> new GenericRuntimeException( "Column does not belong to the selected table." ) );
+    }
+
+
+    private void executeIdentityAlteration( Context ctx, IdentityRequest request, String alteration ) {
+        LogicalColumn column = getIdentityTarget( request );
+        LogicalNamespace namespace = Catalog.snapshot().getNamespace( column.namespaceId ).orElseThrow();
+        LogicalTable table = Catalog.snapshot().rel().getTable( column.tableId ).orElseThrow();
+        String query = "ALTER TABLE " + quoteQualified( namespace.name, table.name )
+                + " ALTER COLUMN " + quoteIdentifier( column.name ) + " " + alteration;
+        QueryContext context = QueryContext.builder()
+                .query( query )
+                .language( QueryLanguage.from( "sql" ) )
+                .origin( ORIGIN )
+                .transactionManager( transactionManager )
+                .build();
+        ctx.json( LanguageCrud.anyQueryResult( context, UIRequest.builder().build() ).get( 0 ) );
+    }
+
+
+    private static String identityDeclaration( IdentityColumnModel identity ) {
+        return "GENERATED " + identityMode( identity.mode() ) + " AS IDENTITY " + identityOptions( identity );
+    }
+
+
+    private static String identityMode( Mode mode ) {
+        if ( mode == null ) {
+            throw new GenericRuntimeException( "An identity generation mode is required." );
+        }
+        return mode == Mode.ALWAYS ? "ALWAYS" : "BY DEFAULT";
+    }
+
+
+    private static String identityOptions( IdentityColumnModel identity ) {
+        StringJoiner options = new StringJoiner( " ", "(", ")" );
+        if ( identity.start() != null && !identity.start().isBlank() ) {
+            options.add( "START WITH " + parseIdentityNumber( identity.start(), "start" ) );
+        }
+        if ( identity.increment() != null && !identity.increment().isBlank() ) {
+            options.add( "INCREMENT BY " + parseIdentityNumber( identity.increment(), "increment" ) );
+        }
+        options.add( identity.min() == null || identity.min().isBlank()
+                ? "NO MINVALUE"
+                : "MINVALUE " + parseIdentityNumber( identity.min(), "minimum" ) );
+        options.add( identity.max() == null || identity.max().isBlank()
+                ? "NO MAXVALUE"
+                : "MAXVALUE " + parseIdentityNumber( identity.max(), "maximum" ) );
+        options.add( identity.cycle() ? "CYCLE" : "NO CYCLE" );
+        return options.toString();
+    }
+
+
+    private static long parseIdentityNumber( String number, String option ) {
+        try {
+            return Long.parseLong( number == null ? "" : number.strip() );
+        } catch ( NumberFormatException e ) {
+            throw new GenericRuntimeException( "Identity " + option + " must be a signed 64-bit integer." );
+        }
+    }
+
+
     void updateColumn( final Context ctx ) {
         ColumnRequest request = ctx.bodyAsClass( ColumnRequest.class );
         if ( !ensureTableModifiable( request.entityId, ctx ) ) {
@@ -2356,7 +2554,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
 
         UiColumnDefinition oldColumn = request.oldColumn;
         UiColumnDefinition newColumn = request.newColumn;
-        String elementsNullable = newColumn.elementsNullable ? "" : " NOT NULL";
+        String elementsNullable = Boolean.FALSE.equals( newColumn.elementsNullable ) ? " NOT NULL" : "";
         List<String> queries = new ArrayList<>();
         StringBuilder sBuilder = new StringBuilder();
 
@@ -2499,7 +2697,7 @@ public class Crud implements InformationObserver, PropertyChangeListener {
                 query = query + ")";
             }
             if ( request.newColumn.collectionsType != null && !request.newColumn.collectionsType.isEmpty() ) {
-                if ( !request.newColumn.elementsNullable ) {
+                if ( Boolean.FALSE.equals( request.newColumn.elementsNullable ) ) {
                     query = query + " NOT NULL";
                 }
                 query = query + " " + request.newColumn.collectionsType;
@@ -2509,6 +2707,14 @@ public class Crud implements InformationObserver, PropertyChangeListener {
             }
             if ( !request.newColumn.nullable ) {
                 query = query + " NOT NULL";
+            }
+        }
+        if ( request.newColumn.identity != null ) {
+            try {
+                query += " " + identityDeclaration( request.newColumn.identity );
+            } catch ( GenericRuntimeException e ) {
+                ctx.json( RelationalResult.builder().error( e.getMessage() ).build() );
+                return;
             }
         }
         if ( request.newColumn.defaultValue != null && !request.newColumn.defaultValue.isEmpty() ) {

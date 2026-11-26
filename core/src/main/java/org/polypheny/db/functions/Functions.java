@@ -335,8 +335,7 @@ public class Functions {
 
     @SuppressWarnings("unused")
     public static <T> Enumerable<PolyValue[]> streamRight( final DataContext context, final Enumerable<PolyValue[]> baz, final Function0<Enumerable<PolyValue[]>> executorCall, final List<PolyType> polyTypes ) {
-        AlgDataTypeFactory factory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
-        List<AlgDataType> algDataTypes = polyTypes.stream().map( typeName -> typeName == PolyType.ARRAY ? factory.createArrayType( factory.createPolyType( PolyType.ANY ), -1 ) : deriveType( factory, typeName ) ).toList();
+        List<AlgDataType> algDataTypes = streamerParameterTypes( polyTypes );
 
         boolean single = polyTypes.size() == 1;
 
@@ -534,6 +533,14 @@ public class Functions {
                 // Drain all adapters' writes before exposing any returning rows.
             }
         }
+    }
+
+
+    public static List<AlgDataType> streamerParameterTypes( List<PolyType> polyTypes ) {
+        AlgDataTypeFactory factory = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT );
+        return polyTypes.stream()
+                .map( type -> type == PolyType.ARRAY ? factory.createArrayType( factory.createPolyType( PolyType.ANY ), -1 ) : deriveType( factory, type ) )
+                .toList();
     }
 
 

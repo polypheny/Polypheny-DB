@@ -361,12 +361,22 @@ public class VolcanoPlanner extends AbstractAlgPlanner {
             removeRule( rule );
         }
         this.classOperands.clear();
-        this.allSets.clear();
-        this.mapDigestToAlg.clear();
-        this.mapAlg2Subset.clear();
-        this.algImportances.clear();
-        this.ruleQueue.clear();
         this.ruleNames.clear();
+        clearMemo();
+    }
+
+
+    /** Clears the current optimization state while preserving the registered rules and phases. */
+    public void clearMemo() {
+        root = null;
+        originalRoot = null;
+        originalRootString = null;
+        allSets.clear();
+        mapDigestToAlg.clear();
+        mapAlg2Subset.clear();
+        algImportances.clear();
+        ruleQueue.clear();
+        provenances.clear();
     }
 
 

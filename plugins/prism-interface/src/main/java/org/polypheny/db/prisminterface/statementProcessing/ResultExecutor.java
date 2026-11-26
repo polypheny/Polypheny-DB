@@ -37,6 +37,8 @@ import org.polypheny.db.prisminterface.relational.RelationalMetaRetriever;
 import org.polypheny.db.prisminterface.statements.PIStatement;
 import org.polypheny.db.prisminterface.statements.PIStatement.ResultCursor;
 import org.polypheny.db.prisminterface.utils.PrismUtils;
+import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Statement.InsertReturning;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -180,12 +182,30 @@ final class ResultExecutor {
             try ( ResultIterator iterator = implementation.execute( statement.getStatement(), -1 ) ) {
                 count = PolyImplementation.getRowsChanged( statement.getStatement(), iterator.getIterator(), MonitoringType.from( implementation.getKind() ) );
             }
+            StatementResult result = updateResult( statement, count );
             statement.getClient().getStatementManager().commitIfAutocommitAndNoOpenResults( transaction );
-            return scalar( count );
+            return result;
         } catch ( RuntimeException e ) {
             discardFailedResult( statement, transaction, e );
             throw preserveSqlErrorMessage( statement, implementation, e );
         }
+    }
+
+
+    private static StatementResult updateResult( PIStatement piStatement, long count ) {
+        Statement statement = piStatement.getStatement();
+        InsertReturning projection = statement.getGeneratedKeysProjection();
+        if ( projection == null ) {
+            return scalar( count );
+        }
+        List<List<PolyValue>> rows = statement.getInsertedRows().stream()
+                .map( row -> projection.ordinals().stream().map( row::get ).toList() )
+                .toList();
+        statement.setInsertedRows( List.of() );
+        List<ColumnMeta> metadata = RelationalMetaRetriever.retrieveColumnMetas(
+                projection.rowType(), projection.origins(), statement.getTransaction().getSnapshot() );
+        Frame keys = PrismUtils.buildRelationalFrame( true, rows, metadata, piStatement.getClient().supportsGraphValues() );
+        return StatementResult.newBuilder().setScalar( count ).setGeneratedKeys( keys ).build();
     }
 
 

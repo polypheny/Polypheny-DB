@@ -18,6 +18,7 @@ package org.polypheny.db;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -48,6 +49,7 @@ import org.polypheny.db.processing.QueryProcessorHelpers;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
 import org.polypheny.db.runtime.Bindable;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Statement.InsertReturning;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
@@ -67,6 +69,8 @@ public class PolyImplementation {
     private final ExecutionTimeMonitor executionTimeMonitor;
     private final Convention resultConvention;
     private List<String> fields;
+    private List<List<String>> resultOrigins;
+    private List<Boolean> identityFields = List.of();
     private final PreparedResult<PolyValue> preparedResult;
     private final Statement statement;
 
@@ -131,6 +135,26 @@ public class PolyImplementation {
     }
 
 
+    /**
+     * Executes the INSERT before exposing its projected rows. Mutation and constraint processing
+     * still use the ordinary update-count implementation.
+     */
+    public PolyImplementation withInsertReturning( InsertReturning returning ) {
+        PolyImplementation result = new PolyImplementation(
+                returning.rowType(), dataModel, executionTimeMonitor, null, kind, statement, resultConvention, ResultKind.ROWS );
+        result.resultOrigins = returning.origins();
+        result.bindable = context -> {
+            try ( ResultIterator updated = execute( statement, -1 ) ) {
+                updated.getNextBatch();
+            }
+            List<List<PolyValue>> rows = statement.getInsertedRows();
+            statement.setInsertedRows( List.of() );
+            return Linq4j.asEnumerable( rows ).select( row -> returning.ordinals().stream().map( row::get ).toArray( PolyValue[]::new ) );
+        };
+        return result;
+    }
+
+
     public Enumerable<PolyValue[]> enumerable( DataContext dataContext ) {
         return enumerable( getBindable(), dataContext );
     }
@@ -183,6 +207,21 @@ public class PolyImplementation {
         this.fields = fieldNames;
         return fieldNames;
 
+    }
+
+
+    public void setIdentityFields( List<Boolean> fields ) {
+        this.identityFields = List.copyOf( fields );
+    }
+
+
+    public List<List<String>> getFieldOrigins() {
+        if ( resultOrigins != null ) {
+            return resultOrigins;
+        }
+        return preparedResult == null
+                ? Collections.nCopies( getResultRowType().getFieldCount(), null )
+                : preparedResult.getFieldOrigins();
     }
 
 
@@ -250,6 +289,11 @@ public class PolyImplementation {
             rowsChanged = num;
         }
 
+        Integer logicalRowsChanged = statement.getMaterializedDmlRowCount();
+        if ( logicalRowsChanged != null && rowsChanged > logicalRowsChanged ) {
+            // A native store reports changes on its own placements. The statement reports logical rows.
+            rowsChanged = logicalRowsChanged;
+        }
         addMonitoringInformation( statement, kind, rowsChanged );
 
         // Some stores do not correctly report the number of changed rows (set to zero to avoid assertion error in the MetaResultSet.count() method)

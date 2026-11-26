@@ -278,13 +278,15 @@ public class SqlCreateTable extends SqlCreate implements ExecutableStatement {
 
                 PolyValue defaultValue = columnDeclaration.getExpression() == null ? null : SqlLiteral.toPoly( columnDeclaration.getExpression() );
 
+                ColumnTypeInformation type = ColumnTypeInformation.fromDataTypeSpec( columnDeclaration.getDataType() );
                 fieldInformation.add(
                         new FieldInformation(
                                 columnDeclaration.getName().getSimple(),
-                                ColumnTypeInformation.fromDataTypeSpec( columnDeclaration.getDataType() ),
+                                type,
                                 columnDeclaration.getCollation(),
                                 defaultValue,
-                                position ) );
+                                position,
+                                columnDeclaration.getIdentity() == null ? null : columnDeclaration.getIdentity().create( type ) ) );
 
             } else if ( c.e instanceof SqlKeyConstraint constraint ) {
                 String constraintName = constraint.getName() != null ? constraint.getName().getSimple() : null;

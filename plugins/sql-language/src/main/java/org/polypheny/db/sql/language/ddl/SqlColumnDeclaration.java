@@ -52,18 +52,21 @@ public class SqlColumnDeclaration extends SqlCall {
     final SqlNode expression;
     final ColumnStrategy strategy;
     final String collation;
+    @Getter
+    final SqlIdentitySpec identity;
 
 
     /**
      * Creates a SqlColumnDeclaration; use {@link SqlDdlNodes#column}.
      */
-    SqlColumnDeclaration( ParserPos pos, SqlIdentifier name, SqlDataTypeSpec dataType, String collation, SqlNode expression, ColumnStrategy strategy ) {
+    SqlColumnDeclaration( ParserPos pos, SqlIdentifier name, SqlDataTypeSpec dataType, String collation, SqlNode expression, ColumnStrategy strategy, SqlIdentitySpec identity ) {
         super( pos );
         this.name = name;
         this.dataType = dataType;
         this.expression = expression;
         this.strategy = strategy;
         this.collation = collation;
+        this.identity = identity;
     }
 
 
@@ -111,6 +114,9 @@ public class SqlColumnDeclaration extends SqlCall {
         dataType.unparse( writer, 0, 0 );
         if ( dataType.getNullable() != null && !dataType.getNullable() ) {
             writer.keyword( "NOT NULL" );
+        }
+        if ( identity != null ) {
+            identity.unparse( writer );
         }
         if ( expression != null ) {
             switch ( strategy ) {

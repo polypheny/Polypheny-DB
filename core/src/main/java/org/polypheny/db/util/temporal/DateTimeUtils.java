@@ -942,7 +942,7 @@ public class DateTimeUtils {
      */
     public static int unixTimeExtract( TimeUnitRange range, int time ) {
         assert time >= 0;
-        assert time < MILLIS_PER_DAY;
+        assert time <= MILLIS_PER_DAY;
         switch ( range ) {
             case HOUR:
                 return time / (int) MILLIS_PER_HOUR;

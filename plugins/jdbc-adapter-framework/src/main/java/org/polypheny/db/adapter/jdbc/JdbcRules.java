@@ -533,7 +533,7 @@ public class JdbcRules {
         }
 
 
-        private static boolean supports( JdbcConvention out, Project project ) {
+        public static boolean supports( JdbcConvention out, Project project ) {
             return (out.dialect.supportsWindowFunctions()
                     || !RexOver.containsOver( project.getProjects(), null ))
                     && !userDefinedFunctionInProject( project )

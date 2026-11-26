@@ -35,6 +35,9 @@ jobs:
             -   name: Build Plugins
                 timeout-minutes: 60
                 run: ./gradlew assemblePlugins -PwithoutpullingUi=true
+            -   name: Set up JDBC test dependency
+                id: jdbc
+                uses: ./.github/actions/setup-test-jdbc
             -   name: Execute tests
                 timeout-minutes: 30
-                run: ./gradlew platformTests -PwithoutpullingUi=true
+                run: ./gradlew "-Dmaven.repo.local=${{ steps.jdbc.outputs.maven-dir }}" platformTests -PwithoutpullingUi=true

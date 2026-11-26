@@ -27,6 +27,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.prisminterface.transport.Transport;
+import org.polypheny.db.prisminterface.transport.Transport.ReceivedFrame;
 import org.polypheny.db.util.Util;
 
 @Slf4j
@@ -42,8 +43,8 @@ class PIRequestReader implements Closeable {
     }
 
 
-    public BlockingQueue<Optional<byte[]>> addConnection( Transport transport, long connectionId ) throws ClosedChannelException {
-        BlockingQueue<Optional<byte[]>> queue = new LinkedBlockingQueue<>();
+    public BlockingQueue<Optional<ReceivedFrame>> addConnection( Transport transport, long connectionId ) throws ClosedChannelException {
+        BlockingQueue<Optional<ReceivedFrame>> queue = new LinkedBlockingQueue<>();
         SelectableChannel chan = transport.getChannel();
         chan.register( selector, SelectionKey.OP_READ, new Connection( transport, queue, connectionId ) );
         selector.wakeup();
@@ -51,7 +52,7 @@ class PIRequestReader implements Closeable {
     }
 
 
-    private void putIgnoreInterrupt( BlockingQueue<Optional<byte[]>> q, byte[] element ) {
+    private void putIgnoreInterrupt( BlockingQueue<Optional<ReceivedFrame>> q, ReceivedFrame element ) {
         try {
             q.put( Optional.ofNullable( element ) );
         } catch ( InterruptedException e ) {
@@ -66,11 +67,7 @@ class PIRequestReader implements Closeable {
                 selector.select( key -> {
                     Connection c = (Connection) key.attachment();
                     try {
-                        Optional<byte[]> maybeMessage = c.transport.tryReceiveMessage();
-                        if ( maybeMessage.isPresent() ) {
-                            byte[] msg = maybeMessage.get();
-                            putIgnoreInterrupt( c.queue, msg );
-                        }
+                        c.transport.tryReceiveMessage().ifPresent( frame -> putIgnoreInterrupt( c.queue, frame ) );
                     } catch ( IOException e ) {
                         putIgnoreInterrupt( c.queue, null );
                         key.cancel();
@@ -93,7 +90,7 @@ class PIRequestReader implements Closeable {
     }
 
 
-    private record Connection( Transport transport, BlockingQueue<Optional<byte[]>> queue, long connectionId ) {
+    private record Connection( Transport transport, BlockingQueue<Optional<ReceivedFrame>> queue, long connectionId ) {
 
     }
 

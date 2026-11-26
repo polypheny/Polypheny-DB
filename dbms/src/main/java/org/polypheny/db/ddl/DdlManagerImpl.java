@@ -30,6 +30,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -80,6 +81,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationPartitionGroup;
 import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
+import org.polypheny.db.catalog.entity.logical.IdentityColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalForeignKey;
@@ -2663,17 +2665,31 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void createColumn( String columnName, LogicalTable table, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, PolyValue defaultValue, Statement statement ) {
+    public void createColumn( String columnName, LogicalTable table, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, PolyValue defaultValue, @Nullable IdentityColumn identity, Statement statement ) {
         checkIfTableModifiable( table );
         columnName = adjustNameIfNeeded( columnName, table.namespaceId );
         // Check if the column either allows null values or has a default value defined.
-        if ( defaultValue == null && !nullable ) {
+        if ( defaultValue == null && !nullable && identity == null ) {
             throw new GenericRuntimeException( "Column is not nullable and does not have a default value defined." );
+        }
+
+        if ( identity != null ) {
+            checkIfDdlPossible( table.entityType );
+            if ( type.collectionType() != null || defaultValue != null ) {
+                throw new GenericRuntimeException( "An identity column requires a scalar integer type and cannot have a separate default." );
+            }
+            identity.validateType( type.type() );
         }
 
         if ( catalog.getSnapshot().rel().getColumn( table.id, columnName ).isPresent() ) {
             throw new GenericRuntimeException( "There already exists a column with name %s on table %s", columnName, table.name );
         }
+        Transaction transaction = statement.getTransaction();
+        long expectedRows = identity == null ? 0 : transaction.getDataMigrator().countRowsForIdentity( transaction, table );
+        if ( identity != null ) {
+            catalog.getIdentitySequences().verifyCapacity( identity, expectedRows );
+        }
+
         //
         LogicalColumn beforeColumn;
         beforeColumn = beforeColumnName == null ? null : catalog.getSnapshot().rel().getColumn( table.id, beforeColumnName ).orElseThrow();
@@ -2692,7 +2708,7 @@ public class DdlManagerImpl extends DdlManager {
                 type.scale(),
                 type.dimension(),
                 type.cardinality(),
-                nullable,
+                nullable && identity == null,
                 type.elementsNullable(),
                 Collation.getDefaultCollation()
         );
@@ -2700,11 +2716,19 @@ public class DdlManagerImpl extends DdlManager {
         // Add default value
         LogicalColumn addedColumn = addDefaultValue( table.namespaceId, defaultValue, initialAddedColumn );
 
-        // Ask router on which stores this column shall be placed
-        List<DataStore<?>> stores = RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewRelField( addedColumn );
+        // Include every existing placement for identity backfill, including partitions hosted on different stores.
+        List<DataStore<?>> stores = identity == null
+                ? RoutingManager.getInstance().getCreatePlacementStrategy().getDataStoresForNewRelField( addedColumn )
+                : catalog.getSnapshot().alloc().getPlacementsFromLogical( table.id ).stream()
+                        .<DataStore<?>>map( placement -> AdapterManager.getInstance().getStore( placement.adapterId ).orElseThrow() )
+                        .distinct()
+                        .toList();
 
         // Add column on underlying data stores and insert default value
         statement.getTransaction().attachCommitAction( () -> {
+            if ( identity != null ) {
+                catalog.getIdentitySequences().preserveFieldId( addedColumn.id );
+            }
             for ( DataStore<?> store : stores ) {
                 AllocationPlacement placement = catalog.getSnapshot().alloc().getPlacement( store.getAdapterId(), table.id ).orElseThrow();
 
@@ -2724,11 +2748,49 @@ public class DdlManagerImpl extends DdlManager {
                             .addColumn( statement.getPrepareContext(), entity.id, addedColumn );
                 }
             }
+            if ( identity != null ) {
+                catalog.updateSnapshot();
+                transaction.getDataMigrator().backfillIdentity( transaction, table, addedColumn, identity, expectedRows );
+                catalog.getLogicalRel( table.namespaceId ).setIdentity( addedColumn.id, identity );
+            }
         } );
 
         catalog.updateSnapshot();
         // Reset plan cache implementation cache & routing cache
         statement.getQueryProcessor().resetCaches();
+    }
+
+
+    @Override
+    public void setColumnIdentity( LogicalTable table, LogicalColumn column, @Nullable IdentityColumn identity, boolean initializeExisting, Statement statement ) {
+        checkIfDdlPossible( table.entityType );
+        checkIfTableModifiable( table );
+        if ( identity != null && column.getIdentity() == null ) {
+            OptionalLong existing = statement.getTransaction().getDataMigrator()
+                    .getIdentitySeedBoundary( statement.getTransaction(), table, column, identity.increment() > 0 );
+            if ( initializeExisting && existing.isPresent()
+                    && (identity.increment() > 0 ? existing.getAsLong() >= identity.start() : existing.getAsLong() <= identity.start()) ) {
+                identity = seedAfterExisting( column.type, identity, existing.getAsLong() );
+            }
+        }
+        catalog.getLogicalRel( table.namespaceId ).setIdentity( column.id, identity );
+        statement.getQueryProcessor().resetCaches();
+    }
+
+
+    private IdentityColumn seedAfterExisting( PolyType type, IdentityColumn identity, long boundary ) {
+        try {
+            long next = Math.addExact( boundary, identity.increment() );
+            if ( next >= identity.min() && next <= identity.max() ) {
+                return identity.restart( next );
+            }
+        } catch ( ArithmeticException ignored ) {
+            // The next value exceeded BIGINT as well as the sequence bounds.
+        }
+        if ( identity.cycle() ) {
+            return identity.restart( identity.increment() > 0 ? identity.min() : identity.max() );
+        }
+        return identity.withOptions( type, OptionalLong.empty(), boundary, null, null, null, null, null );
     }
 
 
@@ -4328,7 +4390,11 @@ public class DdlManagerImpl extends DdlManager {
 
         Map<String, LogicalColumn> ids = new HashMap<>();
         for ( FieldInformation information : fields ) {
-            ids.put( information.name(), addColumn( namespaceId, information.name(), information.typeInformation(), information.collation(), information.defaultValue(), logical.id, information.position() ) );
+            LogicalColumn column = addColumn( namespaceId, information.name(), information.typeInformation(), information.collation(), information.defaultValue(), logical.id, information.position() );
+            if ( information.identity() != null ) {
+                column = catalog.getLogicalRel( namespaceId ).setIdentity( column.id, information.identity() );
+            }
+            ids.put( information.name(), column );
         }
 
         List<Long> pkIds = new ArrayList<>();
@@ -5309,7 +5375,7 @@ public class DdlManagerImpl extends DdlManager {
 
 
     @Override
-    public void truncate( LogicalTable table, Statement statement ) {
+    public void truncate( LogicalTable table, boolean restartIdentity, Statement statement ) {
         // Make sure that the table can be modified
         if ( !table.modifiable ) {
             throw new GenericRuntimeException( "Unable to modify a read-only table." );
@@ -5321,6 +5387,16 @@ public class DdlManagerImpl extends DdlManager {
         //  Execute truncate on all placements
         List<AllocationEntity> allocations = statement.getTransaction().getSnapshot().alloc().getFromLogical( table.id );
         allocations.forEach( a -> AdapterManager.getInstance().getAdapter( a.adapterId ).orElseThrow().truncate( statement.getPrepareContext(), a.id ) );
+        LogicalNamespace namespace = catalog.getSnapshot().getNamespace( table.namespaceId ).orElseThrow();
+        IndexManager.getInstance().stageTruncate( statement.getTransaction().getXid(), namespace, table );
+        if ( restartIdentity && table.entityType == EntityType.ENTITY ) {
+            for ( LogicalColumn column : catalog.getSnapshot().rel().getColumns( table.id ) ) {
+                if ( column.getIdentity() != null ) {
+                    catalog.getLogicalRel( table.namespaceId ).setIdentity( column.id, column.getIdentity().restart( null ) );
+                }
+            }
+            statement.getQueryProcessor().resetCaches();
+        }
     }
 
 

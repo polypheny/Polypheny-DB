@@ -1,0 +1,257 @@
+/*
+ * Copyright 2019-2026 The Polypheny Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.polypheny.db.catalog.identity;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import io.activej.codegen.DefiningClassLoader;
+import io.activej.serializer.BinarySerializer;
+import io.activej.serializer.SerializerFactory;
+import java.nio.ByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.OptionalLong;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.polypheny.db.catalog.entity.LogicalDefaultValue;
+import org.polypheny.db.catalog.entity.logical.IdentityColumn;
+import org.polypheny.db.catalog.entity.logical.IdentityColumn.Mode;
+import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.type.PolyType;
+
+class IdentitySequencesTest {
+
+    @TempDir
+    Path directory;
+
+
+    @Test
+    void fieldIdReservationSurvivesReloadAndIsMonotonic() {
+        IdentitySequences sequences = new IdentitySequences( directory );
+        assertEquals( 0, sequences.getFieldIdFloor() );
+        sequences.preserveFieldId( 41 );
+        sequences.preserveFieldId( 30 );
+        assertEquals( 42, new IdentitySequences( directory ).getFieldIdFloor() );
+
+        sequences.retain( Set.of() );
+        assertEquals( 42, new IdentitySequences( directory ).getFieldIdFloor() );
+    }
+
+
+    @Test
+    void persistedNextValueAndExhaustionSurviveReload() {
+        IdentityColumn identity = IdentityColumn.create( PolyType.BIGINT, Mode.BY_DEFAULT, Long.MAX_VALUE - 1, null, null, null, false );
+        IdentitySequences sequences = new IdentitySequences( directory );
+
+        assertEquals( Long.MAX_VALUE - 1, sequences.next( identity ) );
+
+        IdentitySequences reloaded = new IdentitySequences( directory );
+        assertEquals( OptionalLong.of( Long.MAX_VALUE ), reloaded.peek( identity ) );
+        assertEquals( Long.MAX_VALUE, reloaded.next( identity ) );
+
+        IdentitySequences exhausted = new IdentitySequences( directory );
+        assertEquals( OptionalLong.empty(), exhausted.peek( identity ) );
+        assertThrows( GenericRuntimeException.class, () -> exhausted.next( identity ) );
+    }
+
+
+    @Test
+    void restartKeepsConfiguredStartAndRetiresPreviousStateOnCommit() throws Exception {
+        IdentityColumn identity = IdentityColumn.create( PolyType.INTEGER, Mode.BY_DEFAULT, 6L, 3L, null, null, false );
+        IdentitySequences sequences = new IdentitySequences( directory );
+
+        assertEquals( List.of( 6L, 9L ), sequences.reserve( identity, 2 ) );
+        IdentityColumn restarted = identity.restart( 100L );
+        assertNotEquals( identity.id(), restarted.id() );
+        assertEquals( 100L, sequences.next( restarted ) );
+        assertEquals( OptionalLong.of( 12L ), sequences.peek( identity ) );
+        assertEquals( OptionalLong.of( 6L ), sequences.peek( restarted.restart( null ) ) );
+
+        sequences.retain( Set.of( restarted.id() ) );
+        assertFalse( Files.exists( directory.resolve( "identity-" + identity.id() + ".sequence" ) ) );
+        assertEquals( OptionalLong.of( 103L ), new IdentitySequences( directory ).peek( restarted ) );
+    }
+
+
+    @Test
+    void concurrentReservationsDoNotOverlap() throws Exception {
+        IdentityColumn identity = IdentityColumn.create( PolyType.INTEGER, Mode.ALWAYS, null, null, null, null, false );
+        IdentitySequences sequences = new IdentitySequences( directory );
+        ExecutorService workers = Executors.newFixedThreadPool( 4 );
+        try {
+            List<Callable<List<Long>>> requests = new ArrayList<>();
+            for ( int i = 0; i < 16; i++ ) {
+                requests.add( () -> sequences.reserve( identity, 5 ) );
+            }
+
+            Set<Long> allocated = new HashSet<>();
+            for ( Future<List<Long>> result : workers.invokeAll( requests ) ) {
+                allocated.addAll( result.get() );
+            }
+            assertEquals( 80, allocated.size() );
+            assertEquals( OptionalLong.of( 81 ), new IdentitySequences( directory ).peek( identity ) );
+        } finally {
+            workers.shutdownNow();
+        }
+    }
+
+
+    @Test
+    void descendingCycleAndOptionChangesPreserveNextValue() {
+        IdentityColumn identity = IdentityColumn.create( PolyType.SMALLINT, Mode.BY_DEFAULT, null, -2L, -3L, null, true );
+        IdentitySequences sequences = new IdentitySequences();
+        assertEquals( List.of( -1L, -3L, -1L ), sequences.reserve( identity, 3 ) );
+
+        IdentityColumn changed = sequences.reconfigure( PolyType.SMALLINT, identity, null, -1L, -4L, null, false );
+        assertEquals( List.of( -3L, -4L ), sequences.reserve( changed, 2 ) );
+        assertEquals( OptionalLong.empty(), sequences.peek( changed ) );
+
+        IdentityColumn expanded = sequences.reconfigure( PolyType.SMALLINT, changed, null, null, -5L, null, true );
+        assertEquals( List.of( -5L, -1L ), sequences.reserve( expanded, 2 ) );
+        assertEquals( -1L, sequences.next( expanded.restart( null ) ) );
+    }
+
+
+    @Test
+    void reversingDirectionUsesLastAllocatedValueAfterReload() {
+        IdentityColumn identity = IdentityColumn.create( PolyType.INTEGER, Mode.BY_DEFAULT, null, null, null, null, false );
+        assertEquals( 1L, new IdentitySequences( directory ).next( identity ) );
+
+        IdentitySequences reloaded = new IdentitySequences( directory );
+        IdentityColumn descending = reloaded.reconfigure( PolyType.INTEGER, identity, null, -1L, -100L, 100L, null );
+        assertEquals( List.of( 0L, -1L ), reloaded.reserve( descending, 2 ) );
+        IdentityColumn ascending = reloaded.reconfigure( PolyType.INTEGER, descending, null, 2L, null, null, null );
+        assertEquals( List.of( 1L, 3L ), reloaded.reserve( ascending, 2 ) );
+    }
+
+
+    @Test
+    void reversingDirectionKeepsAnUnconsumedRestart() {
+        IdentityColumn identity = IdentityColumn.create( PolyType.INTEGER, Mode.BY_DEFAULT, null, null, null, null, false );
+        IdentitySequences sequences = new IdentitySequences();
+        assertEquals( 1L, sequences.next( identity ) );
+
+        IdentityColumn restarted = identity.restart( 7L );
+        IdentityColumn descending = sequences.reconfigure( PolyType.INTEGER, restarted, null, -2L, null, null, null );
+        assertEquals( List.of( 7L, 5L ), sequences.reserve( descending, 2 ) );
+    }
+
+
+    @Test
+    void reversingDirectionHandlesOverflowAndCycling() {
+        IdentityColumn identity = IdentityColumn.create( PolyType.BIGINT, Mode.BY_DEFAULT,
+                Long.MIN_VALUE + 1, 1L, Long.MIN_VALUE, Long.MAX_VALUE, false );
+        IdentitySequences sequences = new IdentitySequences();
+        assertEquals( Long.MIN_VALUE + 1, sequences.next( identity ) );
+
+        IdentityColumn exhausted = sequences.reconfigure( PolyType.BIGINT, identity, null, Long.MIN_VALUE, null, null, false );
+        assertEquals( OptionalLong.empty(), sequences.peek( exhausted ) );
+        IdentityColumn cycled = sequences.reconfigure( PolyType.BIGINT, identity, null, Long.MIN_VALUE, null, null, true );
+        assertEquals( Long.MAX_VALUE, sequences.next( cycled ) );
+    }
+
+
+    @Test
+    void reconfiguringBoundsRecoversLastValueAfterReload() {
+        IdentityColumn identity = IdentityColumn.create( PolyType.INTEGER, Mode.BY_DEFAULT, 2L, 3L, 1L, 8L, false );
+        IdentitySequences sequences = new IdentitySequences( directory );
+        assertEquals( List.of( 2L, 5L, 8L ), sequences.reserve( identity, 3 ) );
+
+        IdentitySequences reloaded = new IdentitySequences( directory );
+        IdentityColumn expanded = reloaded.reconfigure( PolyType.INTEGER, identity, null, null, null, 13L, null );
+        assertEquals( OptionalLong.of( 11 ), reloaded.peek( expanded ) );
+        IdentityColumn reduced = new IdentitySequences( directory ).reconfigure( PolyType.INTEGER, expanded, null, null, null, 8L, true );
+        assertEquals( OptionalLong.of( 1 ), reloaded.peek( reduced ) );
+        IdentityColumn noCycle = reloaded.reconfigure( PolyType.INTEGER, reduced, null, null, null, null, false );
+        assertEquals( OptionalLong.empty(), reloaded.peek( noCycle ) );
+
+        IdentityColumn restarted = identity.restart( 7L );
+        IdentityColumn changed = reloaded.reconfigure( PolyType.INTEGER, restarted, null, 1L, null, null, true );
+        assertEquals( List.of( 7L, 8L, 1L ), reloaded.reserve( changed, 3 ) );
+        assertThrows( GenericRuntimeException.class,
+                () -> reloaded.reconfigure( PolyType.INTEGER, restarted, null, null, null, 6L, true ) );
+    }
+
+
+    @Test
+    void legacyCheckpointsRecoverPendingAndLastValues() throws Exception {
+        IdentityColumn identity = IdentityColumn.create( PolyType.INTEGER, Mode.BY_DEFAULT, 2L, 3L, 1L, 9L, false );
+        Path checkpoint = directory.resolve( "identity-" + identity.id() + ".sequence" );
+        Files.write( checkpoint, ByteBuffer.allocate( 2 + Long.BYTES ).put( (byte) 1 ).put( (byte) 1 ).putLong( 8L ).array() );
+        IdentitySequences pending = new IdentitySequences( directory );
+        assertEquals( OptionalLong.of( 8L ), pending.peek( identity ) );
+        IdentityColumn reduced = pending.reconfigure( PolyType.INTEGER, identity, null, null, null, 5L, true );
+        assertEquals( 1L, pending.next( reduced ) );
+
+        Files.write( checkpoint, ByteBuffer.allocate( 2 + Long.BYTES ).put( (byte) 1 ).put( (byte) 0 ).putLong( 0L ).array() );
+        IdentitySequences exhausted = new IdentitySequences( directory );
+        assertEquals( OptionalLong.empty(), exhausted.peek( identity ) );
+        IdentityColumn expanded = exhausted.reconfigure( PolyType.INTEGER, identity, null, null, null, 12L, null );
+        assertEquals( 11L, exhausted.next( expanded ) );
+    }
+
+
+    @Test
+    void oversizedReservationLeavesSequenceAtItsNextValue() {
+        IdentityColumn identity = IdentityColumn.create( PolyType.INTEGER, Mode.BY_DEFAULT, 2L, null, 1L, 3L, false );
+        IdentitySequences sequences = new IdentitySequences();
+
+        assertThrows( GenericRuntimeException.class, () -> sequences.verifyCapacity( identity, 3 ) );
+        sequences.verifyCapacity( identity, 2 );
+        assertThrows( GenericRuntimeException.class, () -> sequences.reserve( identity, 3 ) );
+        assertEquals( OptionalLong.of( 2L ), sequences.peek( identity ) );
+        assertEquals( List.of( 2L, 3L ), sequences.reserve( identity, 2 ) );
+    }
+
+
+    @Test
+    void generatedDefaultRoundTripsThroughCatalogCodec() {
+        IdentityColumn original = IdentityColumn.create( PolyType.INTEGER, Mode.ALWAYS, 7L, 4L, null, 123L, true ).restart( 101L );
+        IdentityColumn identity = original.withOptions( PolyType.INTEGER, OptionalLong.of( 105 ), 101L, null, null, null, null, null );
+        BinarySerializer<LogicalDefaultValue> codec = SerializerFactory.defaultInstance()
+                .create( DefiningClassLoader.create(), LogicalDefaultValue.class );
+        byte[] bytes = new byte[1024];
+
+        codec.encode( bytes, 0, LogicalDefaultValue.forIdentity( 8, PolyType.INTEGER, identity ) );
+        LogicalDefaultValue restored = codec.decode( bytes, 0 );
+        assertEquals( identity, restored.identity );
+        assertNull( restored.value );
+    }
+
+
+    @Test
+    void catalogCodecAcceptsIdentityDefinitionsWithoutLastValue() {
+        IdentityColumn identity = IdentityColumn.create( PolyType.INTEGER, Mode.ALWAYS, 7L, 4L, null, 123L, true ).restart( 101L );
+        LogicalDefaultValue withLastField = LogicalDefaultValue.forIdentity( 8, PolyType.INTEGER, identity );
+        String legacy = withLastField.typedJson.substring( 0, withLastField.typedJson.lastIndexOf( ',' ) );
+        LogicalDefaultValue restored = new LogicalDefaultValue( 8, PolyType.INTEGER, legacy, withLastField.functionName );
+        assertEquals( identity, restored.identity );
+    }
+
+}

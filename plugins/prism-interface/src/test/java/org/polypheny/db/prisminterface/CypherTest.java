@@ -34,6 +34,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -4994,14 +4995,22 @@ class CypherTest {
 
 
         Response send( Request.Builder request ) throws IOException {
+            return send( request, intermediate -> {
+            } );
+        }
+
+
+        Response send( Request.Builder request, Consumer<Response> onIntermediate ) throws IOException {
             long id = nextRequestId++;
             transport.sendMessage( request.setId( id ).build().toByteArray() );
-            Response response;
-            do {
-                response = Response.parseFrom( transport.receiveMessage() );
+            while ( true ) {
+                Response response = Response.parseFrom( transport.receiveMessage() );
                 assertEquals( id, response.getId() );
-            } while ( !response.getLast() );
-            return response;
+                if ( response.getLast() ) {
+                    return response;
+                }
+                onIntermediate.accept( response );
+            }
         }
 
 

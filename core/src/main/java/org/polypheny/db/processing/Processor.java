@@ -110,4 +110,10 @@ public abstract class Processor {
         return statement.isDdl() || Kind.DML.contains( statement.getKind() );
     }
 
+
+    /** Whether each binding must observe changes made by earlier bindings in its batch. */
+    public boolean requiresSequentialBatchExecution( Node statement, AlgDataType parameterRowType ) {
+        return false;
+    }
+
 }

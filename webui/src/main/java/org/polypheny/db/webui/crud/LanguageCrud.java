@@ -86,6 +86,7 @@ import org.polypheny.db.webui.models.PlacementModel;
 import org.polypheny.db.webui.models.PlacementModel.DocumentStore;
 import org.polypheny.db.webui.models.SortState;
 import org.polypheny.db.webui.models.catalog.FieldDefinition;
+import org.polypheny.db.webui.models.catalog.IdentityColumnModel;
 import org.polypheny.db.webui.models.catalog.UiColumnDefinition;
 import org.polypheny.db.webui.models.catalog.UiColumnDefinition.UiColumnDefinitionBuilder;
 import org.polypheny.db.webui.models.requests.QueryRequest;
@@ -173,20 +174,21 @@ public class LanguageCrud {
         if ( context.getTransactions().isEmpty() ) {
             context.addTransaction( transaction );
         }
-        List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context );
-
         List<Result<?, ?>> results = new ArrayList<>();
         TriFunction<ExecutedContext, UIRequest, Statement, ResultBuilder<?, ?, ?, ?>> builder = REGISTER.get( context.getLanguage() );
 
-        for ( ExecutedContext executedContext : executedContexts ) {
+        List<ExecutedContext> executedContexts = LanguageManager.getINSTANCE().anyQuery( context, executedContext -> {
             if ( executedContext.getException().isPresent() ) {
-                log.warn( "Caught exception", executedContext.getException().get() );
-                results.add( buildErrorResult( executedContext.getStatement().getTransaction(), executedContext, executedContext.getException().get() ).build() );
-                break;
+                Throwable error = executedContext.getException().get();
+                log.warn( "Caught exception", error );
+                results.add( buildErrorResult( executedContext.getStatement().getTransaction(), executedContext, error ).build() );
+                return false;
             }
 
-            results.add( builder.apply( executedContext, request, executedContext.getStatement() ).build() );
-        }
+            Result<?, ?> result = builder.apply( executedContext, request, executedContext.getStatement() ).build();
+            results.add( result );
+            return result.error == null;
+        } );
 
         commitAndFinish( executedContexts, queryAnalyzer, results, executedContexts.stream().map( ExecutedContext::getExecutionTime ).reduce( Long::sum ).orElse( -1L ) );
 
@@ -469,9 +471,9 @@ public class LanguageCrud {
             if ( table != null ) {
                 Optional<LogicalColumn> optional = catalog.getSnapshot().rel().getColumn( table.id, columnName );
                 if ( optional.isPresent() ) {
-                    if ( optional.get().defaultValue != null ) {
-                        dbCol.defaultValue( optional.get().defaultValue.value.toJson() );
-                    }
+                    LogicalColumn column = optional.get();
+                    dbCol.identity( IdentityColumnModel.from( column.getIdentity() ) );
+                    dbCol.defaultValue( IdentityColumnModel.dataHeaderDefault( column ) );
                 }
             }
             header.add( dbCol.build() );

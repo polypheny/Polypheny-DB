@@ -32,6 +32,7 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -44,9 +45,10 @@ import org.polypheny.jdbc.PolyphenyStatement;
 @Tag("adapter")
 public class JdbcStatementTest {
 
-    private static final String CREATE_TEST_TABLE = "CREATE TABLE IF NOT EXISTS my_table (id INT PRIMARY KEY, name VARCHAR(50))";
+    private static final String TEST_TABLE = "jdbc_statement_data";
+    private static final String CREATE_TEST_TABLE = "CREATE TABLE IF NOT EXISTS " + TEST_TABLE + " (id INT PRIMARY KEY, name VARCHAR(50))";
 
-    private static final String INSERT_TEST_DATA = "INSERT INTO my_table values(1, 'A'), (2, 'B'), (3, 'C'), (4, 'D')";
+    private static final String INSERT_TEST_DATA = "INSERT INTO " + TEST_TABLE + " values(1, 'A'), (2, 'B'), (3, 'C'), (4, 'D')";
 
 
     @BeforeAll
@@ -54,6 +56,14 @@ public class JdbcStatementTest {
         // Ensures that Polypheny-DB is running
         // noinspection ResultOfMethodCallIgnored
         TestHelper.getInstance();
+    }
+
+
+    @AfterAll
+    public static void dropTestTable() throws SQLException {
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement statement = jdbc.getConnection().createStatement() ) {
+            statement.executeUpdate( "DROP TABLE IF EXISTS " + TEST_TABLE );
+        }
     }
 
 
@@ -94,9 +104,9 @@ public class JdbcStatementTest {
         ) {
             statement.execute( CREATE_TEST_TABLE );
             statement.execute( INSERT_TEST_DATA );
-            ResultSet rs1 = statement.executeQuery( "SELECT * FROM my_table" );
+            ResultSet rs1 = statement.executeQuery( "SELECT * FROM " + TEST_TABLE );
             assertFalse( rs1.isClosed() );
-            ResultSet rs2 = statement.executeQuery( "SELECT * FROM my_table" );
+            ResultSet rs2 = statement.executeQuery( "SELECT * FROM " + TEST_TABLE );
             assertTrue( rs1.isClosed() );
             connection.rollback();
         }
@@ -127,7 +137,7 @@ public class JdbcStatementTest {
                     Statement statement = connection.createStatement();
             ) {
                 statement.execute( CREATE_TEST_TABLE );
-                int rowsChanged = statement.executeUpdate( "SELECT * FROM my_table" );
+                int rowsChanged = statement.executeUpdate( "SELECT * FROM " + TEST_TABLE );
                 connection.rollback();
             }
         } );
@@ -143,7 +153,7 @@ public class JdbcStatementTest {
         ) {
             statement.execute( CREATE_TEST_TABLE );
             statement.executeUpdate( INSERT_TEST_DATA );
-            ResultSet rs = statement.executeQuery( "SELECT * FROM my_table" );
+            ResultSet rs = statement.executeQuery( "SELECT * FROM " + TEST_TABLE );
             connection.rollback();
         }
     }
@@ -205,7 +215,7 @@ public class JdbcStatementTest {
         ) {
             statement.execute( CREATE_TEST_TABLE );
             statement.execute( INSERT_TEST_DATA );
-            assertTrue( statement.execute( "SELECT * FROM my_table" ) );
+            assertTrue( statement.execute( "SELECT * FROM " + TEST_TABLE ) );
             statement.getResultSet();
             connection.rollback();
         }
@@ -237,7 +247,7 @@ public class JdbcStatementTest {
         ) {
             statement.execute( CREATE_TEST_TABLE );
             statement.execute( INSERT_TEST_DATA );
-            statement.execute( "SELECT * FROM my_table" );
+            statement.execute( "SELECT * FROM " + TEST_TABLE );
             assertNotNull( statement.getResultSet() );
             assertEquals( -1, statement.getUpdateCount() );
             connection.rollback();
@@ -254,10 +264,10 @@ public class JdbcStatementTest {
                 Statement statement = connection.createStatement();
         ) {
             statement.execute( CREATE_TEST_TABLE );
-            statement.execute( "INSERT INTO my_table values(1, 'ABCDEFGHIJKLOMNOPQRSTUVWXYZ')" );
+            statement.execute( "INSERT INTO " + TEST_TABLE + " values(1, 'ABCDEFGHIJKLOMNOPQRSTUVWXYZ')" );
             statement.setMaxFieldSize( maxFieldSize );
             assertEquals( maxFieldSize, statement.getMaxFieldSize() );
-            ResultSet rs = statement.executeQuery( "SELECT * FROM my_table" );
+            ResultSet rs = statement.executeQuery( "SELECT * FROM " + TEST_TABLE );
             TestHelper.checkResultSet( rs, ImmutableList.of( new Object[]{ 1, "ABCD" } ) );
             connection.rollback();
         }
@@ -291,7 +301,7 @@ public class JdbcStatementTest {
             statement.execute( INSERT_TEST_DATA );
             statement.setMaxRows( maxRows );
             assertEquals( maxRows, statement.getMaxRows() );
-            ResultSet rs = statement.executeQuery( "SELECT * FROM my_table ORDER BY id" );
+            ResultSet rs = statement.executeQuery( "SELECT * FROM " + TEST_TABLE + " ORDER BY id" );
             TestHelper.checkResultSet( rs, ImmutableList.of(
                     new Object[]{ 1, "A" },
                     new Object[]{ 2, "B" }
@@ -313,7 +323,7 @@ public class JdbcStatementTest {
             statement.execute( INSERT_TEST_DATA );
             statement.setLargeMaxRows( maxRows );
             assertEquals( maxRows, statement.getLargeMaxRows() );
-            ResultSet rs = statement.executeQuery( "SELECT * FROM my_table ORDER BY id" );
+            ResultSet rs = statement.executeQuery( "SELECT * FROM " + TEST_TABLE + " ORDER BY id" );
             TestHelper.checkResultSet( rs, ImmutableList.of(
                     new Object[]{ 1, "A" },
                     new Object[]{ 2, "B" }
@@ -333,7 +343,7 @@ public class JdbcStatementTest {
             statement.execute( CREATE_TEST_TABLE );
             statement.execute( INSERT_TEST_DATA );
             assertEquals( 0, statement.getMaxRows() );
-            ResultSet rs = statement.executeQuery( "SELECT * FROM my_table" );
+            ResultSet rs = statement.executeQuery( "SELECT * FROM " + TEST_TABLE );
             TestHelper.checkResultSet( rs, ImmutableList.of(
                     new Object[]{ 1, "A" },
                     new Object[]{ 2, "B" },
@@ -394,7 +404,7 @@ public class JdbcStatementTest {
             statement.execute( CREATE_TEST_TABLE );
             statement.execute( INSERT_TEST_DATA );
             assertEquals( 0, statement.getMaxRows() );
-            statement.executeQuery( "SELECT * FROM my_table" );
+            statement.executeQuery( "SELECT * FROM " + TEST_TABLE );
             assertFalse( statement.getMoreResults() );
             connection.rollback();
         }
@@ -492,7 +502,7 @@ public class JdbcStatementTest {
             statement.execute( CREATE_TEST_TABLE );
             statement.execute( INSERT_TEST_DATA );
             assertEquals( ResultSet.TYPE_FORWARD_ONLY, statement.getResultSetType() );
-            ResultSet rs = statement.executeQuery( "SELECT * FROM my_table" );
+            ResultSet rs = statement.executeQuery( "SELECT * FROM " + TEST_TABLE );
             assertEquals( ResultSet.TYPE_FORWARD_ONLY, rs.getType() );
             connection.rollback();
         }
@@ -509,7 +519,7 @@ public class JdbcStatementTest {
             statement.execute( CREATE_TEST_TABLE );
             statement.execute( INSERT_TEST_DATA );
             assertEquals( ResultSet.TYPE_SCROLL_INSENSITIVE, statement.getResultSetType() );
-            ResultSet rs = statement.executeQuery( "SELECT * FROM my_table" );
+            ResultSet rs = statement.executeQuery( "SELECT * FROM " + TEST_TABLE );
             assertEquals( ResultSet.TYPE_SCROLL_INSENSITIVE, rs.getType() );
             connection.rollback();
         }
@@ -524,14 +534,14 @@ public class JdbcStatementTest {
                 Statement statement = connection.createStatement();
         ) {
             statement.execute( CREATE_TEST_TABLE );
-            statement.addBatch( "INSERT INTO my_table VALUES(1, 'A')" );
-            statement.addBatch( "INSERT INTO my_table VALUES(2, 'B')" );
-            statement.addBatch( "INSERT INTO my_table VALUES(3, 'C')" );
-            statement.addBatch( "INSERT INTO my_table VALUES(4, 'D')" );
+            statement.addBatch( "INSERT INTO " + TEST_TABLE + " VALUES(1, 'A')" );
+            statement.addBatch( "INSERT INTO " + TEST_TABLE + " VALUES(2, 'B')" );
+            statement.addBatch( "INSERT INTO " + TEST_TABLE + " VALUES(3, 'C')" );
+            statement.addBatch( "INSERT INTO " + TEST_TABLE + " VALUES(4, 'D')" );
             int[] rowUpdates = statement.executeBatch();
             int[] expected = { 1, 1, 1, 1 };
             assertArrayEquals( expected, rowUpdates );
-            ResultSet rs = statement.executeQuery( "SELECT * FROM my_table" );
+            ResultSet rs = statement.executeQuery( "SELECT * FROM " + TEST_TABLE );
             TestHelper.checkResultSet( rs, ImmutableList.of(
                     new Object[]{ 1, "A" },
                     new Object[]{ 2, "B" },
@@ -551,14 +561,14 @@ public class JdbcStatementTest {
                 Statement statement = connection.createStatement();
         ) {
             statement.execute( CREATE_TEST_TABLE );
-            statement.addBatch( "INSERT INTO my_table VALUES(1, 'A')" );
-            statement.addBatch( "INSERT INTO my_table VALUES(2, 'B')" );
-            statement.addBatch( "INSERT INTO my_table VALUES(3, 'C')" );
-            statement.addBatch( "INSERT INTO my_table VALUES(4, 'D')" );
+            statement.addBatch( "INSERT INTO " + TEST_TABLE + " VALUES(1, 'A')" );
+            statement.addBatch( "INSERT INTO " + TEST_TABLE + " VALUES(2, 'B')" );
+            statement.addBatch( "INSERT INTO " + TEST_TABLE + " VALUES(3, 'C')" );
+            statement.addBatch( "INSERT INTO " + TEST_TABLE + " VALUES(4, 'D')" );
             long[] rowUpdates = statement.executeLargeBatch();
             long[] expected = { 1, 1, 1, 1 };
             assertArrayEquals( expected, rowUpdates );
-            ResultSet rs = statement.executeQuery( "SELECT * FROM my_table" );
+            ResultSet rs = statement.executeQuery( "SELECT * FROM " + TEST_TABLE );
             TestHelper.checkResultSet( rs, ImmutableList.of(
                     new Object[]{ 1, "A" },
                     new Object[]{ 2, "B" },
@@ -578,13 +588,13 @@ public class JdbcStatementTest {
                 Statement statement = connection.createStatement();
         ) {
             statement.execute( CREATE_TEST_TABLE );
-            statement.addBatch( "INSERT INTO my_table VALUES(1, 'A')" );
-            statement.addBatch( "INSERT INTO my_table VALUES(2, 'B')" );
+            statement.addBatch( "INSERT INTO " + TEST_TABLE + " VALUES(1, 'A')" );
+            statement.addBatch( "INSERT INTO " + TEST_TABLE + " VALUES(2, 'B')" );
             statement.clearBatch();
-            statement.addBatch( "INSERT INTO my_table VALUES(3, 'C')" );
-            statement.addBatch( "INSERT INTO my_table VALUES(4, 'D')" );
+            statement.addBatch( "INSERT INTO " + TEST_TABLE + " VALUES(3, 'C')" );
+            statement.addBatch( "INSERT INTO " + TEST_TABLE + " VALUES(4, 'D')" );
             statement.executeBatch();
-            ResultSet rs = statement.executeQuery( "SELECT * FROM my_table" );
+            ResultSet rs = statement.executeQuery( "SELECT * FROM " + TEST_TABLE );
             TestHelper.checkResultSet( rs, ImmutableList.of(
                     new Object[]{ 3, "C" },
                     new Object[]{ 4, "D" }
@@ -616,7 +626,7 @@ public class JdbcStatementTest {
             statement.execute( CREATE_TEST_TABLE );
             statement.execute( INSERT_TEST_DATA );
             assertEquals( 0, statement.getMaxRows() );
-            statement.executeQuery( "SELECT * FROM my_table" );
+            statement.executeQuery( "SELECT * FROM " + TEST_TABLE );
             assertFalse( statement.getMoreResults( Statement.CLOSE_CURRENT_RESULT ) );
             connection.rollback();
         }
@@ -634,7 +644,7 @@ public class JdbcStatementTest {
                 statement.execute( CREATE_TEST_TABLE );
                 statement.execute( INSERT_TEST_DATA );
                 assertEquals( 0, statement.getMaxRows() );
-                statement.executeQuery( "SELECT * FROM my_table" );
+                statement.executeQuery( "SELECT * FROM " + TEST_TABLE );
                 assertFalse( statement.getMoreResults( Statement.KEEP_CURRENT_RESULT ) );
                 connection.rollback();
             }
@@ -653,7 +663,7 @@ public class JdbcStatementTest {
                 statement.execute( CREATE_TEST_TABLE );
                 statement.execute( INSERT_TEST_DATA );
                 assertEquals( 0, statement.getMaxRows() );
-                statement.executeQuery( "SELECT * FROM my_table" );
+                statement.executeQuery( "SELECT * FROM " + TEST_TABLE );
                 assertFalse( statement.getMoreResults( Statement.CLOSE_ALL_RESULTS ) );
                 connection.rollback();
             }
@@ -672,7 +682,7 @@ public class JdbcStatementTest {
                 statement.execute( CREATE_TEST_TABLE );
                 statement.execute( INSERT_TEST_DATA );
                 assertEquals( 0, statement.getMaxRows() );
-                statement.executeQuery( "SELECT * FROM my_table" );
+                statement.executeQuery( "SELECT * FROM " + TEST_TABLE );
                 assertFalse( statement.getMoreResults( 1234 ) );
                 connection.rollback();
             }
@@ -681,107 +691,12 @@ public class JdbcStatementTest {
 
 
     @Test
-    public void getGeneratedKeysTest() {
-        assertThrows( SQLFeatureNotSupportedException.class, () -> {
-            try (
-                    JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                    Connection connection = polyphenyDbConnection.getConnection();
-                    Statement statement = connection.createStatement();
-            ) {
-
-                statement.getGeneratedKeys();
-            }
-        } );
-    }
-
-
-    @Test
-    public void executeLargeUpdateWithAutogeneratedKeysTest() {
-        assertThrows( SQLFeatureNotSupportedException.class, () -> {
-            try (
-                    JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                    Connection connection = polyphenyDbConnection.getConnection();
-                    Statement statement = connection.createStatement();
-            ) {
-
-                statement.executeLargeUpdate( "INSERT INTO my_table (id, name) VALUES (1, 'John')", 1 );
-            }
-        } );
-    }
-
-
-    @Test
-    public void executeUpdateWithColumnIndexesTest() {
-        assertThrows( SQLFeatureNotSupportedException.class, () -> {
-            try (
-                    JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                    Connection connection = polyphenyDbConnection.getConnection();
-                    Statement statement = connection.createStatement();
-            ) {
-
-                statement.executeUpdate( "INSERT INTO my_table (id, name) VALUES (2, 'Jane')", new int[]{ 1 } );
-            }
-        } );
-    }
-
-
-    @Test
-    public void executeUpdateWithColumnNamesTest() {
-        assertThrows( SQLFeatureNotSupportedException.class, () -> {
-            try (
-                    JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                    Connection connection = polyphenyDbConnection.getConnection();
-                    Statement statement = connection.createStatement();
-            ) {
-
-                statement.executeUpdate( "INSERT INTO my_table (id, name) VALUES (3, 'Doe')", new String[]{ "id" } );
-            }
-        } );
-    }
-
-
-    @Test
-    public void executeWithIntTest() {
-        assertThrows( SQLFeatureNotSupportedException.class, () -> {
-            try (
-                    JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                    Connection connection = polyphenyDbConnection.getConnection();
-                    Statement statement = connection.createStatement();
-            ) {
-
-                statement.execute( "INSERT INTO my_table (id, name) VALUES (4, 'Smith')", 1 );
-            }
-        } );
-    }
-
-
-    @Test
-    public void executeWithIntArrayTest() {
-        assertThrows( SQLFeatureNotSupportedException.class, () -> {
-            try (
-                    JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                    Connection connection = polyphenyDbConnection.getConnection();
-                    Statement statement = connection.createStatement();
-            ) {
-
-                statement.execute( "INSERT INTO my_table (id, name) VALUES (5, 'Brown')", new int[]{ 1 } );
-            }
-        } );
-    }
-
-
-    @Test
-    public void executeWithStringArrayTest() {
-        assertThrows( SQLFeatureNotSupportedException.class, () -> {
-            try (
-                    JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                    Connection connection = polyphenyDbConnection.getConnection();
-                    Statement statement = connection.createStatement();
-            ) {
-
-                statement.execute( "INSERT INTO my_table (id, name) VALUES (6, 'Taylor')", new String[]{ "id" } );
-            }
-        } );
+    public void getGeneratedKeysBeforeExecutionReturnsEmptyResultSet() throws SQLException {
+        try ( JdbcConnection jdbc = new JdbcConnection( true );
+                Statement statement = jdbc.getConnection().createStatement();
+                ResultSet keys = statement.getGeneratedKeys() ) {
+            assertFalse( keys.next() );
+        }
     }
 
 
@@ -819,7 +734,7 @@ public class JdbcStatementTest {
             statement.execute( CREATE_TEST_TABLE );
             statement.execute( INSERT_TEST_DATA );
             assertFalse( statement.isCloseOnCompletion() );
-            ResultSet rs = statement.executeQuery( "SELECT * FROM my_table" );
+            ResultSet rs = statement.executeQuery( "SELECT * FROM " + TEST_TABLE );
             TestHelper.checkResultSet( rs, ImmutableList.of(
                     new Object[]{ 1, "A" },
                     new Object[]{ 2, "B" },
@@ -843,7 +758,7 @@ public class JdbcStatementTest {
             statement.execute( CREATE_TEST_TABLE );
             statement.execute( INSERT_TEST_DATA );
             statement.closeOnCompletion();
-            ResultSet rs = statement.executeQuery( "SELECT * FROM my_table" );
+            ResultSet rs = statement.executeQuery( "SELECT * FROM " + TEST_TABLE );
             TestHelper.checkResultSet( rs, ImmutableList.of(
                     new Object[]{ 1, "A" },
                     new Object[]{ 2, "B" },

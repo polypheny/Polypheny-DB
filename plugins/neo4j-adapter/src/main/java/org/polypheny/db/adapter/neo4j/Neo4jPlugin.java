@@ -223,7 +223,9 @@ public class Neo4jPlugin extends PolyPlugin {
 
             this.user = "neo4j";
             if ( !settings.containsKey( "password" ) ) {
-                this.pass = PasswordGenerator.generatePassword();
+                String generatedPassword = PasswordGenerator.generatePassword();
+                // The Docker entrypoint passes the password as a CLI argument, which cannot start with '-'.
+                this.pass = deployMode == DeployMode.DOCKER ? "n" + generatedPassword : generatedPassword;
                 settings.put( "password", this.pass );
                 updateSettings( settings );
             } else {
@@ -367,14 +369,15 @@ public class Neo4jPlugin extends PolyPlugin {
             String physicalName = getPhysicalFieldName( logicalColumn.id );
             PhysicalColumn column = adapterCatalog.createColumn( physicalName, allocId, physical.getFields().size() - 1, logicalColumn );
 
-            if ( logicalColumn.defaultValue != null ) {
+            LogicalDefaultValue defaultValue = logicalColumn.getLiteralDefaultValue();
+            if ( defaultValue != null ) {
                 transactionProvider.executeDataChange(
                         context.getStatement().getTransaction().getXid(),
                         String.format(
                                 "MATCH (n:%s) SET n += {%s:%s}",
                                 getPhysicalEntityName( logicalColumn.namespaceId, allocId ),
                                 getPhysicalFieldName( logicalColumn.id ),
-                                getDefaultAsNeo( logicalColumn.defaultValue, logicalColumn.type ) ) );
+                                getDefaultAsNeo( defaultValue, logicalColumn.type ) ) );
             }
 
             List<PhysicalField> fields = new ArrayList<>( physical.getFields() );

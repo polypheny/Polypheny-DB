@@ -365,8 +365,8 @@ public class MongoStore extends DataStore<DocAdapterCatalog> {
         physical.toBuilder().fields( fields ).build();
 
         Document field;
-        if ( logicalColumn.defaultValue != null ) {
-            LogicalDefaultValue defaultValue = logicalColumn.defaultValue;
+        LogicalDefaultValue defaultValue = logicalColumn.getLiteralDefaultValue();
+        if ( defaultValue != null ) {
 
             BsonValue value = BsonUtil.getAsBson( defaultValue.value, defaultValue.type, currentNamespace.getBucket() );
 

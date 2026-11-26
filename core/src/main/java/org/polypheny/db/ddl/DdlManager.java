@@ -29,6 +29,7 @@ import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.MaterializedCriteria;
+import org.polypheny.db.catalog.entity.logical.IdentityColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -244,7 +245,15 @@ public abstract class DdlManager {
      * @param defaultValue a default value for the column; can be null
      * @param statement the query statement
      */
-    public abstract void createColumn( String columnName, LogicalTable table, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, PolyValue defaultValue, Statement statement );
+    public void createColumn( String columnName, LogicalTable table, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, PolyValue defaultValue, Statement statement ) {
+        createColumn( columnName, table, beforeColumnName, afterColumnName, type, nullable, defaultValue, null, statement );
+    }
+
+
+    public abstract void createColumn( String columnName, LogicalTable table, String beforeColumnName, String afterColumnName, ColumnTypeInformation type, boolean nullable, PolyValue defaultValue, @Nullable IdentityColumn identity, Statement statement );
+
+
+    public abstract void setColumnIdentity( LogicalTable table, LogicalColumn column, @Nullable IdentityColumn identity, boolean initializeExisting, Statement statement );
 
 
     /**
@@ -639,7 +648,12 @@ public abstract class DdlManager {
      * @param table the table to be truncated
      * @param statement the used statement
      */
-    public abstract void truncate( LogicalTable table, Statement statement );
+    public void truncate( LogicalTable table, Statement statement ) {
+        truncate( table, false, statement );
+    }
+
+
+    public abstract void truncate( LogicalTable table, boolean restartIdentity, Statement statement );
 
 
     /**
@@ -729,7 +743,12 @@ public abstract class DdlManager {
      * Helper class which holds all information required for creating a column,
      * decoupled from a specific query language
      */
-    public record FieldInformation( String name, ColumnTypeInformation typeInformation, Collation collation, PolyValue defaultValue, int position ) {
+    public record FieldInformation(String name, ColumnTypeInformation typeInformation, Collation collation, PolyValue defaultValue, int position, @Nullable IdentityColumn identity) {
+
+        public FieldInformation( String name, ColumnTypeInformation typeInformation, Collation collation, PolyValue defaultValue, int position ) {
+            this( name, typeInformation, collation, defaultValue, position, null );
+        }
+
 
     }
 

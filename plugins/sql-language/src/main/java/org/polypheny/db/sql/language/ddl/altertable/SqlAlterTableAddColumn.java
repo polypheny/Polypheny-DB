@@ -40,6 +40,7 @@ import org.polypheny.db.sql.language.SqlLiteral;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlWriter;
 import org.polypheny.db.sql.language.ddl.SqlAlterTable;
+import org.polypheny.db.sql.language.ddl.SqlIdentitySpec;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
@@ -64,6 +65,8 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
     SqlIdentifier beforeColumnName;
     @Nullable
     SqlIdentifier afterColumnName;
+    @Nullable
+    SqlIdentitySpec identity;
 
 
     public SqlAlterTableAddColumn(
@@ -74,7 +77,8 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
             boolean nullable,
             @Nullable SqlNode defaultValue,
             @Nullable SqlIdentifier beforeColumnName,
-            @Nullable SqlIdentifier afterColumnName ) {
+            @Nullable SqlIdentifier afterColumnName,
+            @Nullable SqlIdentitySpec identity ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.column = Objects.requireNonNull( column );
@@ -83,6 +87,7 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
         this.defaultValue = defaultValue;
         this.beforeColumnName = beforeColumnName;
         this.afterColumnName = afterColumnName;
+        this.identity = identity;
     }
 
 
@@ -111,6 +116,9 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
             writer.keyword( "NULL" );
         } else {
             writer.keyword( "NOT NULL" );
+        }
+        if ( identity != null ) {
+            identity.unparse( writer );
         }
         if ( defaultValue != null ) {
             writer.keyword( "DEFAULT" );
@@ -143,14 +151,16 @@ public class SqlAlterTableAddColumn extends SqlAlterTable {
             getDataStoreInstance( allocation.adapterId );
         }
 
+        ColumnTypeInformation columnType = ColumnTypeInformation.fromDataTypeSpec( type );
         DdlManager.getInstance().createColumn(
                 column.getSimple(),
                 logicalTable,
                 beforeColumnName == null ? null : beforeColumnName.getSimple(),
                 afterColumnName == null ? null : afterColumnName.getSimple(),
-                ColumnTypeInformation.fromDataTypeSpec( type ),
+                columnType,
                 nullable,
                 defaultValue == null ? null : SqlLiteral.toPoly( defaultValue ),
+                identity == null ? null : identity.create( columnType ),
                 statement );
     }
 

@@ -22,16 +22,21 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.logical.IdentityColumn;
+import org.polypheny.db.catalog.entity.logical.IdentityColumn.Mode;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
@@ -41,6 +46,7 @@ import org.polypheny.db.catalog.impl.PolyCatalog;
 import org.polypheny.db.catalog.logistic.Collation;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
+import org.polypheny.db.catalog.persistance.FilePersister.CatalogPublicationException;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 
@@ -127,6 +133,52 @@ public class CatalogTransactionTest {
                 writer.rollback( null );
             }
         }
+    }
+
+
+    @Test
+    void failedDirectorySyncKeepsPublishedIdentityEpochAndFencesNewAllocations() {
+        AtomicBoolean failAfterPublication = new AtomicBoolean();
+        AtomicReference<String> published = new AtomicReference<>();
+        CatalogPublicationException failure = new CatalogPublicationException( new IOException( "Injected directory sync failure" ) );
+        PolyCatalog catalog = new PolyCatalog() {
+            @Override
+            protected void persistCatalog( String committedState ) {
+                published.set( committedState );
+                if ( failAfterPublication.get() ) {
+                    throw failure;
+                }
+            }
+        };
+        long namespace = catalog.createNamespace( "identity_publication", DataModel.RELATIONAL, false, false );
+        var relational = catalog.getLogicalRel( namespace );
+        LogicalTable table = relational.addTable( "test", EntityType.ENTITY, true );
+        LogicalColumn column = relational.addColumn( "id", table.id, 1, PolyType.BIGINT, null, null, null, null, null, false, true, null );
+        IdentityColumn initial = IdentityColumn.create( PolyType.BIGINT, Mode.BY_DEFAULT, null, null, null, null, false );
+        relational.setIdentity( column.id, initial );
+        catalog.change();
+        catalog.commit();
+
+        Runnable rollback = catalog.captureRollback();
+        IdentityColumn restarted = initial.restart( 500L );
+        relational.setIdentity( column.id, restarted );
+        catalog.change();
+        failAfterPublication.set( true );
+        assertSame( failure, assertThrows( CatalogPublicationException.class, catalog::commit ) );
+        String publishedState = published.get();
+
+        rollback.run();
+        assertEquals( restarted, catalog.getSnapshot().rel().getColumn( column.id ).orElseThrow().getIdentity() );
+        assertSame( failure, assertThrows( CatalogPublicationException.class, catalog::getIdentitySequences ) );
+
+        Runnable nextRollback = catalog.captureRollback();
+        catalog.createNamespace( "identity_unpublished", DataModel.RELATIONAL, false, false );
+        failAfterPublication.set( false );
+        catalog.getIdentitySequences();
+        assertEquals( publishedState, published.get() );
+        nextRollback.run();
+        assertTrue( catalog.getSnapshot().getNamespace( "identity_unpublished" ).isEmpty() );
+        assertEquals( restarted, catalog.getSnapshot().rel().getColumn( column.id ).orElseThrow().getIdentity() );
     }
 
 

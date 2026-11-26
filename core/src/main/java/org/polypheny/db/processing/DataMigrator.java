@@ -17,6 +17,7 @@
 package org.polypheny.db.processing;
 
 import java.util.List;
+import java.util.OptionalLong;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.catalog.entity.LogicalAdapter;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
@@ -25,6 +26,7 @@ import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
 import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
+import org.polypheny.db.catalog.entity.logical.IdentityColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
@@ -65,6 +67,12 @@ public interface DataMigrator {
             PartitionProperty targetProperty,
             List<AllocationTable> targetTables,
             LogicalTable table );
+
+    long countRowsForIdentity( Transaction transaction, LogicalTable table );
+
+    void backfillIdentity( Transaction transaction, LogicalTable table, LogicalColumn column, IdentityColumn identity, long expectedRows );
+
+    OptionalLong getIdentitySeedBoundary( Transaction transaction, LogicalTable table, LogicalColumn column, boolean ascending );
 
     AlgRoot buildInsertStatement( Statement statement, List<AllocationColumn> to, AllocationEntity allocation );
 

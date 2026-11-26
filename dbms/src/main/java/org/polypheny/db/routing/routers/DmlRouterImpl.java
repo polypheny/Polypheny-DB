@@ -18,6 +18,7 @@ package org.polypheny.db.routing.routers;
 
 
 import com.google.common.collect.ImmutableList;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -125,6 +126,14 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 throw new GenericRuntimeException( "Polypheny-DB does not support modifying views." );
             }
             throw new GenericRuntimeException( "Unknown table type: %s", table.entityType.name() );
+        }
+
+        boolean emptyInsert = modify.isInsert() && modify.getInput() instanceof LogicalRelValues values && values.getTuples().isEmpty();
+        boolean emptyIdentityUpdate = modify.isUpdate() && Integer.valueOf( 0 ).equals( statement.getMaterializedDmlRowCount() );
+        if ( emptyInsert || emptyIdentityUpdate ) {
+            AlgDataType countType = modify.getTupleType();
+            RexLiteral zero = cluster.getRexBuilder().makeExactLiteral( BigDecimal.ZERO, countType.getFields().get( 0 ).getType() );
+            return LogicalRelValues.create( cluster, countType, ImmutableList.of( ImmutableList.of( zero ) ) );
         }
 
         long pkid = table.primaryKey;
@@ -327,6 +336,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             }
         }
 
+        if ( modifies.isEmpty() ) {
+            throw new GenericRuntimeException( "No store placement can execute the write on '%s'.", table.name );
+        }
         if ( modifies.size() == 1 ) {
             return modifies.get( 0 );
         } else {
@@ -382,7 +394,8 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
             for ( Map.Entry<Long, List<ImmutableList<RexLiteral>>> partitionMapping : tuplesOnPartition.entrySet() ) {
                 Long currentPartitionId = partitionMapping.getKey();
 
-                if ( catalog.getSnapshot().alloc().getPartitionsFromLogical( table.id ).stream().noneMatch( p -> p.id == currentPartitionId ) ) {
+                Optional<AllocationEntity> target = catalog.getSnapshot().alloc().getAlloc( pkPlacement.id, currentPartitionId );
+                if ( target.isEmpty() ) {
                     continue;
                 }
 
@@ -393,7 +406,7 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                             (modify.getInput()).getTupleType(),
                             ImmutableList.copyOf( ImmutableList.of( row ) ) );
 
-                    AllocationEntity allocation = catalog.getSnapshot().alloc().getAlloc( pkPlacement.id, currentPartitionId ).orElseThrow();
+                    AllocationEntity allocation = target.get();
 
                     AlgNode input = buildDml(
                             newLogicalRelValues,
@@ -571,13 +584,9 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
                 } else {
                     throw new GenericRuntimeException( "Updating partition key is not allowed" );
                 }
-            }// WHERE clause only
-            else {
-                throw new GenericRuntimeException( "Updating partition key is not allowed" );
-
-                //Simply execute the UPDATE on all identified partitions
-                //Nothing to do
-                //worstCaseRouting = false;
+            } else {
+                // An equality inside a disjunction does not constrain the other branches.
+                accessedPartitions.addAll( property.partitionIds );
             }
         }// If only SET is specified
         // Changes the value of partition column of complete table to only reside on one partition
@@ -613,21 +622,21 @@ public class DmlRouterImpl extends BaseRouter implements DmlRouter {
         RoutedAlgBuilder builder = context.getRoutedAlgBuilder();
         builder = RoutingManager.getInstance().getFallbackRouter().routeFirst( constraint.getRight(), builder, context );
 
+        AlgNode action;
         if ( constraint.getLeft() instanceof LogicalRelModify logicalRelModify ) {
-            return LogicalConstraintEnforcer.create(
-                    routeRelationalDml( logicalRelModify, context.getStatement() ),
-                    builder.build(),
-                    constraint.getExceptionClasses(),
-                    constraint.getExceptionMessages() );
+            action = routeRelationalDml( logicalRelModify, context.getStatement() );
+        } else if ( constraint.getLeft() instanceof LogicalModifyCollect collect ) {
+            List<AlgNode> writes = collect.getInputs().stream()
+                    .map( LogicalRelModify.class::cast )
+                    .map( modify -> routeRelationalDml( modify, context.getStatement() ) )
+                    .toList();
+            action = LogicalModifyCollect.create( writes, collect.all );
         } else if ( constraint.getLeft() instanceof LogicalBatchIterator logicalBatchIterator ) {
-            return LogicalConstraintEnforcer.create(
-                    handleBatchIterator( logicalBatchIterator, context ),
-                    builder.build(),
-                    constraint.getExceptionClasses(),
-                    constraint.getExceptionMessages() );
+            action = handleBatchIterator( logicalBatchIterator, context );
         } else {
             throw new GenericRuntimeException( "The provided modify query for the ConstraintEnforcer was not recognized!" );
         }
+        return LogicalConstraintEnforcer.create( action, builder.build(), constraint.getExceptionClasses(), constraint.getExceptionMessages() );
     }
 
 

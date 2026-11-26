@@ -18,16 +18,32 @@ package org.polypheny.db.adapter;
 
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.ExtensionPoint;
+import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.InsertSourceOrdinals;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.IndexCategory;
+import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 
 @Slf4j
 public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> implements Modifiable, ExtensionPoint {
@@ -50,6 +66,69 @@ public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> imp
     public abstract IndexMethodModel getDefaultIndexMethod();
 
     public abstract List<FunctionalIndexInfo> getFunctionalIndexes( LogicalTable catalogTable );
+
+
+    public boolean supportsReadInsertSource() {
+        return false;
+    }
+
+
+    public static boolean isInsertSourceAssignmentType( PolyType type ) {
+        return PolyType.NUMERIC_TYPES.contains( type ) || type == PolyType.TIME || type == PolyType.TIMESTAMP;
+    }
+
+
+    /**
+     * Builds a read-only plan for a native INSERT's source, with destination assignments
+     * applied by the store before the coordinator materializes the rows.
+     */
+    public Optional<AlgNode> readInsertSource( AlgNode physicalInsert, List<AlgDataTypeField> targetFields, Set<Long> nativeTemporalFields ) {
+        return Optional.empty();
+    }
+
+
+    /** Adds provenance to a native INSERT preview or a source read by its streamer. */
+    public Optional<InsertSourceOrdinals> markInsertSource( AlgNode source, int firstOrdinal, List<AlgDataTypeField> identityFields ) {
+        return Optional.empty();
+    }
+
+
+    /** Converts numeric assignments before the coordinator routes or indexes the resulting keys. */
+    public List<PolyValue> castNumericAssignments( Transaction transaction, AlgCluster cluster, AlgDataType target, List<NumericAssignment> assignments ) {
+        return assignments.stream().map( assignment -> {
+            PolyValue value = assignment.value();
+            if ( value == null || value.isNull() ) {
+                return value;
+            }
+            return switch ( target.getPolyType() ) {
+                case TINYINT, SMALLINT, INTEGER -> PolyInteger.of( value.asNumber().intValue() );
+                case DECIMAL -> value;
+                case BIGINT -> PolyLong.of( value.asNumber().bigDecimalValue().setScale( 0, RoundingMode.DOWN ).longValueExact() );
+                case REAL, FLOAT -> PolyFloat.of( value.asNumber().floatValue() );
+                case DOUBLE -> PolyDouble.of( value.asNumber().doubleValue() );
+                default -> throw new IllegalArgumentException( "Unsupported numeric assignment target " + target );
+            };
+        } ).toList();
+    }
+
+
+    /** Applies the store's temporal precision before a materialized INSERT writes or reports values. */
+    public List<PolyValue> castTemporalAssignments( Transaction transaction, AlgCluster cluster, AlgDataType target, boolean nativePrecision,
+            List<TemporalAssignment> assignments ) {
+        return assignments.stream().map( TemporalAssignment::value ).toList();
+    }
+
+
+    public record NumericAssignment( PolyValue value, AlgDataType inputType, NumericExpression expression ) {
+    }
+
+
+    public record TemporalAssignment( PolyValue value, RexNode expression, Map<Long, PolyValue> parameters ) {
+    }
+
+
+    public record NumericExpression( RexNode node, Map<Long, PolyValue> parameters ) {
+    }
 
 
     public record IndexMethodModel(

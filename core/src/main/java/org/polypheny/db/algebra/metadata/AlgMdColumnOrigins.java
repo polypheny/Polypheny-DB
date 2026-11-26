@@ -47,6 +47,7 @@ import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.RelTableFunctionScan;
 import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Sort;
+import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
@@ -126,14 +127,17 @@ public class AlgMdColumnOrigins implements MetadataHandler<BuiltInMetadata.Colum
 
     public Set<AlgColumnOrigin> getColumnOrigins( SetOp alg, AlgMetadataQuery mq, int iOutputColumn ) {
         final Set<AlgColumnOrigin> set = new HashSet<>();
+        boolean hasOriginlessInput = false;
         for ( AlgNode input : alg.getInputs() ) {
             Set<AlgColumnOrigin> inputSet = mq.getColumnOrigins( input, iOutputColumn );
             if ( inputSet == null ) {
                 return null;
             }
+            hasOriginlessInput |= inputSet.isEmpty();
             set.addAll( inputSet );
         }
-        return set;
+        // A UNION can emit values from every branch, including literals with no origin.
+        return alg instanceof Union && hasOriginlessInput ? createDerivedColumnOrigins( set ) : set;
     }
 
 

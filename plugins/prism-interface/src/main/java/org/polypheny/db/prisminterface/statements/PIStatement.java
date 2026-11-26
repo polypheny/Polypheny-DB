@@ -29,6 +29,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.transaction.Statement;
+import org.polypheny.db.transaction.Statement.GeneratedKeySelection;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.prism.ColumnMeta;
 import org.polypheny.prism.Frame;
@@ -43,6 +44,8 @@ public abstract class PIStatement {
     protected final QueryLanguage language;
     @Setter
     private ResultCursor resultCursor;
+    @Setter
+    private GeneratedKeySelection generatedKeySelection;
     protected LogicalNamespace namespace;
 
 
@@ -73,6 +76,11 @@ public abstract class PIStatement {
             } else {
                 previous.getDataContext().resetParameterValues();
             }
+            Statement current = getStatement();
+            current.setInsertReturning( null );
+            current.setGeneratedKeysProjection( null );
+            current.setGeneratedKeySelection( generatedKeySelection );
+            current.setInsertedRows( List.of() );
             return execution.get();
         } catch ( Throwable failure ) {
             try {

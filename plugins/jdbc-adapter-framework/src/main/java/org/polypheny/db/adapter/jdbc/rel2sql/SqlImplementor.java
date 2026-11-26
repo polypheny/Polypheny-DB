@@ -339,16 +339,13 @@ public abstract class SqlImplementor {
         SqlNode node = null;
         for ( Ord<AlgNode> input : Ord.zip( alg.getInputs() ) ) {
             final Result result = visitChild( input.i, input.e );
-            if ( node == null ) {
-                node = input.getValue().unwrap( JdbcScan.class ).map( i -> result.asSelect( i.getEntity().getNodeList() ) )
-                        .orElse( result.asSelect() );
-            } else {
-                if ( input.getValue().unwrap( JdbcScan.class ).isPresent() ) {
-                    node = (SqlNode) operator.createCall( POS, node, result.asSelect( input.getValue().unwrap( JdbcScan.class ).get().getEntity().getNodeList() ) );
-                } else {
-                    node = (SqlNode) operator.createCall( POS, node, result.asSelect() );
-                }
+            SqlSelect operand = result.asSelect( input.e.unwrap( JdbcScan.class ).map( scan -> scan.getEntity().getNodeList() ).orElse( null ) );
+            SqlNodeList order = operand.getOrderList();
+            if ( operand.getOffset() != null || operand.getFetch() != null || (order != null && order.size() > 0) ) {
+                // Keep ordering and slicing on this input, inside the set operation.
+                operand = result.subSelect();
             }
+            node = node == null ? operand : (SqlNode) operator.createCall( POS, node, operand );
         }
         final List<Clause> clauses = Expressions.list( Clause.SET_OP );
         return result( node, clauses, alg, null );
@@ -1185,7 +1182,7 @@ public abstract class SqlImplementor {
 
 
         /**
-         * Converts a non-query node into a SELECT node. Set operators (UNION, INTERSECT, EXCEPT) remain as is.
+         * Wraps a node in a SELECT when it is not already a SELECT node.
          */
         public SqlSelect asSelect() {
             return asSelect( null );
@@ -1196,7 +1193,8 @@ public abstract class SqlImplementor {
             if ( node instanceof SqlSelect ) {
                 return (SqlSelect) node;
             }
-            if ( !dialect.hasImplicitTableAlias() ) {
+            // A derived set query has no implicit table name.
+            if ( !dialect.hasImplicitTableAlias() || node.isA( Kind.SET_QUERY ) ) {
                 return wrapSelect( asFrom(), sqlNodes );
             }
             return wrapSelect( node, sqlNodes );

@@ -140,7 +140,12 @@ public class SqlDdlNodes {
      * Creates a column declaration.
      */
     public static SqlNode column( ParserPos pos, SqlIdentifier name, SqlDataTypeSpec dataType, String collation, SqlNode expression, ColumnStrategy strategy ) {
-        return new SqlColumnDeclaration( pos, name, dataType, collation, expression, strategy );
+        return column( pos, name, dataType, collation, expression, strategy, null );
+    }
+
+
+    public static SqlNode column( ParserPos pos, SqlIdentifier name, SqlDataTypeSpec dataType, String collation, SqlNode expression, ColumnStrategy strategy, SqlIdentitySpec identity ) {
+        return new SqlColumnDeclaration( pos, name, dataType, collation, expression, strategy, identity );
     }
 
 

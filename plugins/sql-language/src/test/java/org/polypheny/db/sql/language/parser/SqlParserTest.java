@@ -22,6 +22,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -58,6 +59,8 @@ import org.polypheny.db.nodes.Node;
 import org.polypheny.db.sql.DiffTestCase;
 import org.polypheny.db.sql.SqlLanguageDependent;
 import org.polypheny.db.sql.language.SqlDialect;
+import org.polypheny.db.sql.language.SqlIdentifier;
+import org.polypheny.db.sql.language.SqlInsert;
 import org.polypheny.db.sql.language.SqlNode;
 import org.polypheny.db.sql.language.SqlSetOption;
 import org.polypheny.db.sql.language.dialect.AnsiSqlDialect;
@@ -3844,6 +3847,30 @@ public class SqlParserTest extends SqlLanguageDependent {
     @Test
     public void testSelectIsNotDdl() {
         sql( "select 1 from t" ).node( not( isDdl() ) );
+    }
+
+
+    @Test
+    public void testInsertReturningIsAContextualKeyword() throws NodeParseException {
+        assertEquals( Kind.SELECT, getSqlParser( "SELECT returning FROM returning" ).parseStmt().getKind() );
+        for ( String legacySource : List.of(
+                "SELECT i returning FROM src",
+                "SELECT i returning",
+                "SELECT i FROM src returning WHERE i > 0",
+                "SELECT i FROM src returning (i)" ) ) {
+            SqlInsert legacy = (SqlInsert) getSqlParser( "INSERT INTO returning " + legacySource ).parseStmt();
+            assertNull( legacy.getReturningColumns() );
+        }
+
+        for ( String source : List.of(
+                "VALUES (1)",
+                "SELECT i FROM src",
+                "SELECT i FROM src returning",
+                "SELECT i returning",
+                "SELECT i FROM (SELECT 1 returning) AS src(i)" ) ) {
+            SqlInsert insert = (SqlInsert) getSqlParser( "INSERT INTO returning " + source + " RETURNING returning" ).parseStmt();
+            assertEquals( "RETURNING", ((SqlIdentifier) insert.getReturningColumns().get( 0 )).getSimple() );
+        }
     }
 
 
