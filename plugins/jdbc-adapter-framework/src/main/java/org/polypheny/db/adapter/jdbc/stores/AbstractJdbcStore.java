@@ -26,6 +26,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
@@ -38,16 +39,19 @@ import org.polypheny.db.adapter.jdbc.JdbcImplementor;
 import org.polypheny.db.adapter.jdbc.JdbcRules.JdbcProjectRule;
 import org.polypheny.db.adapter.jdbc.JdbcSchema;
 import org.polypheny.db.adapter.jdbc.JdbcTable;
+import org.polypheny.db.adapter.jdbc.JdbcToEnumerableConverter;
 import org.polypheny.db.adapter.jdbc.JdbcUtils;
 import org.polypheny.db.adapter.jdbc.ResultSetEnumerable;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationGraph;
@@ -456,6 +460,18 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
         } catch ( Exception e ) {
             throw new GenericRuntimeException( e );
         }
+    }
+
+
+    @Override
+    public boolean supportsReadInsertSource() {
+        return dialect.supportsAliasedValues();
+    }
+
+
+    @Override
+    public Optional<AlgNode> readInsertSource( AlgNode physicalInsert, List<AlgDataTypeField> targetFields ) {
+        return JdbcToEnumerableConverter.readInsertSource( physicalInsert, targetFields );
     }
 
 

@@ -41,6 +41,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Objects;
@@ -58,6 +59,7 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.jdbc.JdbcRules.JdbcTableModify;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
@@ -69,12 +71,17 @@ import org.polypheny.db.algebra.enumerable.JavaTupleFormat;
 import org.polypheny.db.algebra.enumerable.PhysType;
 import org.polypheny.db.algebra.enumerable.PhysTypeImpl;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.functions.TemporalFunctions;
+import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
@@ -85,6 +92,10 @@ import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.schema.Schemas;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlDialect.CalendarPolicy;
+import org.polypheny.db.sql.language.SqlIdentifier;
+import org.polypheny.db.sql.language.SqlNode;
+import org.polypheny.db.sql.language.SqlNodeList;
+import org.polypheny.db.sql.language.SqlSelect;
 import org.polypheny.db.sql.language.util.SqlString;
 import org.polypheny.db.type.ArrayType;
 import org.polypheny.db.type.PolyType;
@@ -146,8 +157,45 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
     private static final Expression LOCAL_EXPRESSION = Expressions.field( null, JdbcToEnumerableConverter.class, "local" );
 
 
+    private final List<AlgDataTypeField> insertTargetFields;
+
+
     protected JdbcToEnumerableConverter( AlgCluster cluster, AlgTraitSet traits, AlgNode input ) {
+        this( cluster, traits, input, List.of() );
+    }
+
+
+    private JdbcToEnumerableConverter( AlgCluster cluster, AlgTraitSet traits, AlgNode input, List<AlgDataTypeField> insertTargetFields ) {
         super( cluster, ConventionTraitDef.INSTANCE, traits, input );
+        this.insertTargetFields = List.copyOf( insertTargetFields );
+    }
+
+
+    public static Optional<AlgNode> readInsertSource( AlgNode physicalInsert, List<AlgDataTypeField> targetFields ) {
+        if ( physicalInsert instanceof JdbcToEnumerableConverter converter && converter.getInput() instanceof JdbcTableModify insert
+                && insert.isInsert() && insert.getInput().getTupleType().getFieldCount() == targetFields.size() ) {
+            return Optional.of( new JdbcToEnumerableConverter( converter.getCluster(), converter.getTraitSet(), insert.getInput(), targetFields ) );
+        }
+        return Optional.empty();
+    }
+
+
+    @Override
+    protected AlgDataType deriveRowType() {
+        if ( insertTargetFields.isEmpty() ) {
+            return super.deriveRowType();
+        }
+        AlgDataTypeFactory factory = getCluster().getTypeFactory();
+        var output = factory.builder();
+        List<AlgDataTypeField> source = getInput().getTupleType().getFields();
+        for ( int i = 0; i < source.size(); i++ ) {
+            AlgDataTypeField field = source.get( i );
+            AlgDataType target = insertTargetFields.get( i ).getType();
+            AlgDataType type = PolyType.NUMERIC_TYPES.contains( target.getPolyType() )
+                    ? factory.createTypeWithNullability( target, true ) : field.getType();
+            output.add( field.getId(), field.getName(), field.getPhysicalName(), type );
+        }
+        return output.build();
     }
 
 
@@ -263,7 +311,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new JdbcToEnumerableConverter( getCluster(), traitSet, AbstractAlgNode.sole( inputs ) );
+        return new JdbcToEnumerableConverter( getCluster(), traitSet, AbstractAlgNode.sole( inputs ), insertTargetFields );
     }
 
 
@@ -468,7 +516,28 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
     private SqlString generateSql( SqlDialect dialect, JdbcSchema jdbcSchema ) {
         final JdbcImplementor jdbcImplementor = new JdbcImplementor( dialect, new JavaTypeFactoryImpl(), jdbcSchema );
         final JdbcImplementor.Result result = jdbcImplementor.visitChild( 0, getInput() );
-        return result.asStatement().toSqlString( dialect );
+        if ( insertTargetFields.isEmpty() ) {
+            return result.asStatement().toSqlString( dialect );
+        }
+
+        // Keep the complete source query below the assignment casts. In particular,
+        // the store must resolve the common type of a UNION before the destination cast.
+        ParserPos pos = ParserPos.ZERO;
+        List<SqlNode> aliasOperands = new ArrayList<>();
+        aliasOperands.add( result.asQueryOrValues() );
+        aliasOperands.add( new SqlIdentifier( "insert_source", pos ) );
+        List<SqlNode> columns = new ArrayList<>();
+        for ( int i = 0; i < insertTargetFields.size(); i++ ) {
+            SqlIdentifier column = new SqlIdentifier( "insert_value_" + i, pos );
+            aliasOperands.add( column );
+            AlgDataType target = insertTargetFields.get( i ).getType();
+            columns.add( PolyType.NUMERIC_TYPES.contains( target.getPolyType() )
+                    ? (SqlNode) OperatorRegistry.get( OperatorName.CAST ).createCall( pos, column, dialect.getCastSpec( target ) )
+                    : column );
+        }
+        SqlNode aliased = (SqlNode) OperatorRegistry.get( OperatorName.AS ).createCall( new SqlNodeList( aliasOperands, pos ) );
+        SqlSelect select = new SqlSelect( pos, SqlNodeList.EMPTY, new SqlNodeList( columns, pos ), aliased, null, null, null, null, null, null, null );
+        return select.toSqlString( dialect );
     }
 
 }

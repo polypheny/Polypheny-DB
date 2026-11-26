@@ -26,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.AdapterManager;
@@ -175,7 +176,12 @@ final class IdentityDmlMaterializer {
         }
 
         List<List<AssignmentInput>> assignmentInputs = new ArrayList<>();
-        List<List<PolyValue>> sourceRows = readRows( source, statement, parameterRowType, assignmentInputs );
+        Optional<List<List<PolyValue>>> nativeRows = Optional.empty();
+        if ( identities.isEmpty() && !isScalarInsertSource( source )
+                && statement.getQueryProcessor() instanceof AbstractQueryProcessor processor ) {
+            nativeRows = processor.readNativeInsertSource( modify, table, parameterRowType );
+        }
+        List<List<PolyValue>> sourceRows = nativeRows.orElseGet( () -> readRows( source, statement, parameterRowType, assignmentInputs ) );
         for ( IdentityField identity : identities ) {
             int count = (int) sourceRows.stream().filter( row -> row.get( identity.flagIndex() ).asBoolean().value ).count();
             if ( count == 0 ) {
@@ -190,7 +196,9 @@ final class IdentityDmlMaterializer {
             }
         }
 
-        convertNumericAssignments( modify, table, statement, targetFields, sourceRows, assignmentInputs );
+        if ( nativeRows.isEmpty() ) {
+            convertNumericAssignments( modify, table, statement, targetFields, sourceRows, assignmentInputs );
+        }
         ImmutableList.Builder<ImmutableList<RexLiteral>> tuples = ImmutableList.builder();
         List<List<PolyValue>> capturedRows = new ArrayList<>();
         GeneratedKeySelection keySelection = statement.getGeneratedKeySelection();
@@ -224,6 +232,13 @@ final class IdentityDmlMaterializer {
         statement.setMaterializedDmlRowCount( sourceRows.size() );
         AlgNode values = LogicalRelValues.create( modify.getCluster(), rowType, tuples.build() );
         return root.withAlg( modify.copy( modify.getTraitSet(), List.of( values ) ) );
+    }
+
+
+    private static boolean isScalarInsertSource( AlgNode source ) {
+        return source instanceof LogicalRelValues
+                || source instanceof LogicalRelProject project && project.getInput() instanceof LogicalRelValues values
+                && values.getTuples().size() == 1;
     }
 
 

@@ -22,10 +22,13 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.ExtensionPoint;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -60,6 +63,20 @@ public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> imp
     public abstract IndexMethodModel getDefaultIndexMethod();
 
     public abstract List<FunctionalIndexInfo> getFunctionalIndexes( LogicalTable catalogTable );
+
+
+    public boolean supportsReadInsertSource() {
+        return false;
+    }
+
+
+    /**
+     * Builds a read-only plan for a native INSERT's source, with destination numeric
+     * assignments applied by the store before the coordinator materializes the rows.
+     */
+    public Optional<AlgNode> readInsertSource( AlgNode physicalInsert, List<AlgDataTypeField> targetFields ) {
+        return Optional.empty();
+    }
 
 
     /** Converts numeric assignments before the coordinator routes or indexes the resulting keys. */

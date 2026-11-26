@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,15 +31,20 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.ResultIterator;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataContext.ParameterValue;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.index.Index;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.algebra.AlgCollation;
@@ -81,6 +87,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -99,8 +106,10 @@ import org.polypheny.db.monitoring.events.QueryEvent;
 import org.polypheny.db.monitoring.events.StatementEvent;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptUtil;
+import org.polypheny.db.plan.AlgPlanner.CannotPlanException;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
+import org.polypheny.db.plan.volcano.VolcanoPlanner;
 import org.polypheny.db.prepare.Prepare.PreparedResult;
 import org.polypheny.db.prepare.Prepare.PreparedResultImpl;
 import org.polypheny.db.processing.caching.ImplementationCache;
@@ -133,6 +142,7 @@ import org.polypheny.db.routing.dto.ProposedRoutingPlanImpl;
 import org.polypheny.db.routing.routers.CachedPlanRouter;
 import org.polypheny.db.routing.routers.SimpleRouter;
 import org.polypheny.db.runtime.Bindable;
+import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.runtime.Typed;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.schema.trait.ModelTraitDef;
@@ -140,6 +150,7 @@ import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.tools.Program;
 import org.polypheny.db.tools.Programs;
 import org.polypheny.db.tools.RoutedAlgBuilder;
+import org.polypheny.db.transaction.QueryExecutionScope;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.locking.AlgEntityLockablesExtractor;
@@ -589,6 +600,84 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
         // Finally, all optionals should be of certain values.
         return new ProposedImplementations( plans.stream().filter( Plan::isValid ).toList() );
+    }
+
+
+    Optional<List<List<PolyValue>>> readNativeInsertSource( LogicalRelModify insert, LogicalTable table, AlgDataType parameterRowType ) {
+        if ( !(getPlanner() instanceof VolcanoPlanner planner) ) {
+            return Optional.empty();
+        }
+        List<AlgDataTypeField> targetFields = table.getTupleType().getFields();
+        if ( targetFields.stream().noneMatch( field -> PolyType.NUMERIC_TYPES.contains( field.getType().getPolyType() ) ) ) {
+            return Optional.empty();
+        }
+        Snapshot snapshot = statement.getTransaction().getSnapshot();
+        List<AllocationPlacement> placements = snapshot.alloc().getPlacementsFromLogical( table.id );
+        if ( placements.size() != 1 || snapshot.alloc().getPartitionProperty( table.id ).orElseThrow().isPartitioned ) {
+            return Optional.empty();
+        }
+        AllocationPlacement placement = placements.get( 0 );
+        Optional<DataStore<?>> store = AdapterManager.getInstance().getStore( placement.adapterId );
+        if ( store.isEmpty() || !store.get().supportsReadInsertSource()
+                || snapshot.alloc().getColumns( placement.id ).size() != targetFields.size() ) {
+            return Optional.empty();
+        }
+
+        // Plan the ordinary DML without preparing or running its write, index or constraint actions.
+        // The enclosing INSERT already holds the necessary locks on both source and destination.
+        DataContext context = statement.getDataContext();
+        List<Map<Long, PolyValue>> originalValues = context.getParameterValues();
+        Map<Long, AlgDataType> originalTypes = Map.copyOf( context.getParameterTypes() );
+        try {
+            context.setParameterValues( new ArrayList<>( originalValues ) );
+            AlgNode routed = RoutingManager.getInstance().getDmlRouter().routeRelationalDml( insert, statement );
+            AlgRoot routedInsert = AlgRoot.of( routed, Kind.INSERT );
+            if ( originalValues.isEmpty() && RuntimeConfig.PARAMETERIZE_DML.getBoolean() ) {
+                Pair<AlgRoot, AlgDataType> parameters = parameterize( routedInsert, parameterRowType );
+                routedInsert = parameters.left;
+                parameterRowType = parameters.right;
+            }
+            AlgNode physicalInsert;
+            try {
+                physicalInsert = optimize( routedInsert, EnumerableConvention.INSTANCE );
+            } catch ( CannotPlanException e ) {
+                return Optional.empty();
+            } finally {
+                // The actual materialized INSERT has new row types and must not share
+                // equivalence sets with the preview of its original source.
+                planner.clearMemo();
+                insert.getCluster().invalidateMetadataQuery();
+            }
+            Optional<AlgNode> source = store.get().readInsertSource( physicalInsert, targetFields );
+            if ( source.isEmpty() ) {
+                return Optional.empty();
+            }
+            Bindable<PolyValue[]> read = implement( AlgRoot.of( source.get(), Kind.SELECT ), parameterRowType ).getBindable();
+            List<Map<Long, PolyValue>> bindings = context.getParameterValues();
+            List<List<PolyValue>> rows = new ArrayList<>();
+            for ( Map<Long, PolyValue> binding : bindings.isEmpty() ? List.<Map<Long, PolyValue>>of( Map.of() ) : bindings ) {
+                QueryExecutionScope.remainingTimeoutMillis();
+                context.setParameterValues( List.of( binding ) );
+                try ( Enumerator<PolyValue[]> result = read.bind( context ).enumerator() ) {
+                    while ( result.moveNext() ) {
+                        QueryExecutionScope.remainingTimeoutMillis();
+                        rows.add( new ArrayList<>( Arrays.asList( result.current() ) ) );
+                    }
+                } catch ( RuntimeException e ) {
+                    // The JDBC read wraps binding failures. Preserve the materialized
+                    // INSERT's numeric range error without changing ordinary JDBC binds.
+                    if ( ExceptionUtils.indexOfType( e, ArithmeticException.class ) >= 0
+                            || ExceptionUtils.indexOfType( e, NumberFormatException.class ) >= 0 ) {
+                        throw new PolyphenyDbException( "Numeric assignment is out of range.", e, "22003" );
+                    }
+                    throw e;
+                }
+            }
+            return Optional.of( rows );
+        } finally {
+            context.setParameterTypes( originalTypes );
+            context.setParameterValues( originalValues );
+        }
     }
 
 

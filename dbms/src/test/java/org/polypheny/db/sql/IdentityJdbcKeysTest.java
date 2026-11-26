@@ -767,6 +767,115 @@ class IdentityJdbcKeysTest {
 
 
     @Test
+    void unionCoercionPrecedesNumericAssignmentForBothProjections() throws SQLException {
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
+            sql.executeUpdate( "CREATE TABLE projected_union_numeric (id INTEGER PRIMARY KEY, qty BIGINT)" );
+            String insert = "INSERT INTO projected_union_numeric VALUES "
+                    + "(? + 1, CAST(? AS DOUBLE)), (? + 2, CAST(? AS DECIMAL(19,0)))";
+            try ( PreparedStatement plain = jdbc.getConnection().prepareStatement( insert );
+                    PreparedStatement keys = jdbc.getConnection().prepareStatement( insert, new String[]{ "qty" } );
+                    PreparedStatement returning = jdbc.getConnection().prepareStatement( insert + " RETURNING qty" ) ) {
+                BigDecimal max = BigDecimal.valueOf( Long.MAX_VALUE );
+                rejectUnionOverflow( plain, keys, returning, max );
+                try ( ResultSet stored = sql.executeQuery( "SELECT id FROM projected_union_numeric" ) ) {
+                    assertFalse( stored.next() );
+                }
+
+                BigDecimal aboveDoublePrecision = new BigDecimal( "9007199254740993" );
+                bindMixedNumericRows( plain, 0, aboveDoublePrecision );
+                assertEquals( 2, plain.executeUpdate() );
+                List<Long> expected = readWideValues( sql, "SELECT qty FROM projected_union_numeric ORDER BY id" );
+                assertEquals( List.of( 1L, 9007199254740992L ), expected );
+                bindMixedNumericRows( keys, 10, aboveDoublePrecision );
+                assertEquals( 2, keys.executeUpdate() );
+                try ( ResultSet projected = keys.getGeneratedKeys() ) {
+                    assertEquals( expected, readWideValues( projected ) );
+                }
+                bindMixedNumericRows( returning, 20, aboveDoublePrecision );
+                try ( ResultSet projected = returning.executeQuery() ) {
+                    assertEquals( expected, readWideValues( projected ) );
+                }
+                assertEquals( expected, readWideValues( sql, "SELECT qty FROM projected_union_numeric WHERE id > 10 AND id < 20 ORDER BY id" ) );
+                assertEquals( expected, readWideValues( sql, "SELECT qty FROM projected_union_numeric WHERE id > 20 ORDER BY id" ) );
+            } finally {
+                sql.executeUpdate( "DROP TABLE projected_union_numeric" );
+            }
+        }
+    }
+
+
+    private static void rejectUnionOverflow( PreparedStatement plain, PreparedStatement keys,
+            PreparedStatement returning, BigDecimal value ) throws SQLException {
+        bindMixedNumericRows( plain, 0, value );
+        assertEquals( "22003", assertThrows( SQLException.class, plain::executeUpdate ).getSQLState() );
+        bindMixedNumericRows( keys, 10, value );
+        assertEquals( "22003", assertThrows( SQLException.class, keys::executeUpdate ).getSQLState() );
+        bindMixedNumericRows( returning, 20, value );
+        assertEquals( "22003", assertThrows( SQLException.class, returning::executeQuery ).getSQLState() );
+    }
+
+
+    private static void bindMixedNumericRows( PreparedStatement sql, int idOffset, BigDecimal decimal ) throws SQLException {
+        sql.setInt( 1, idOffset );
+        sql.setDouble( 2, 1 );
+        sql.setInt( 3, idOffset );
+        sql.setBigDecimal( 4, decimal );
+    }
+
+
+    @Test
+    void insertSelectProjectionsUseTheOrdinaryNativeRounding() throws SQLException {
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
+            sql.executeUpdate( "CREATE TABLE projected_select_source (id INTEGER PRIMARY KEY)" );
+            try {
+                sql.executeUpdate( "INSERT INTO projected_select_source VALUES (1), (2)" );
+                sql.executeUpdate( "CREATE TABLE projected_select_numeric (id INTEGER PRIMARY KEY, qty BIGINT)" );
+                try {
+                    for ( boolean parameterize : new boolean[]{ false, true } ) {
+                        sql.executeUpdate( "ALTER CONFIG 'runtime/parameterizeDML' SET " + parameterize );
+                        String insert = "INSERT INTO projected_select_numeric SELECT id + ";
+                        String source = ", CAST(42.5 AS DOUBLE) + CAST(0.0 AS DOUBLE) FROM projected_select_source";
+                        assertEquals( 2, sql.executeUpdate( insert + "0" + source ) );
+                        List<Long> expected = readWideValues( sql, "SELECT qty FROM projected_select_numeric ORDER BY id" );
+                        assertEquals( 2, sql.executeUpdate( insert + "10" + source, new String[]{ "qty" } ) );
+                        try ( ResultSet projected = sql.getGeneratedKeys() ) {
+                            assertEquals( expected, readWideValues( projected ) );
+                        }
+                        try ( ResultSet projected = sql.executeQuery( insert + "20" + source + " RETURNING qty" ) ) {
+                            assertEquals( expected, readWideValues( projected ) );
+                        }
+                        assertEquals( expected, readWideValues( sql, "SELECT qty FROM projected_select_numeric WHERE id > 10 AND id < 20 ORDER BY id" ) );
+                        assertEquals( expected, readWideValues( sql, "SELECT qty FROM projected_select_numeric WHERE id > 20 ORDER BY id" ) );
+                        sql.executeUpdate( "DELETE FROM projected_select_numeric" );
+                    }
+                } finally {
+                    sql.executeUpdate( "ALTER CONFIG 'runtime/parameterizeDML' SET true" );
+                    sql.executeUpdate( "DROP TABLE projected_select_numeric" );
+                }
+            } finally {
+                sql.executeUpdate( "DROP TABLE projected_select_source" );
+            }
+        }
+    }
+
+
+    private static List<Long> readWideValues( Statement statement, String query ) throws SQLException {
+        try ( ResultSet rows = statement.executeQuery( query ) ) {
+            return readWideValues( rows );
+        }
+    }
+
+
+    private static List<Long> readWideValues( ResultSet rows ) throws SQLException {
+        List<Long> values = new ArrayList<>();
+        while ( rows.next() ) {
+            values.add( rows.getObject( 1, Long.class ) );
+        }
+        return values;
+    }
+
+
+    @Test
     void approximateProjectionsKeepStoredCarriersAndSpecialFloatingValues() throws SQLException {
         try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
             sql.executeUpdate( "CREATE TABLE native_projected_float (id INTEGER PRIMARY KEY, real_num REAL, double_num DOUBLE)" );
