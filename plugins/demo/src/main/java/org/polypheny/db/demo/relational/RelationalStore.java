@@ -61,6 +61,8 @@ public class RelationalStore extends DemoStore {
 
     @Override
     public void loadData() {
+        log.info( "Loading relational data" );
+
         for (Table<? extends IPreperable> table: this.tables) {
             try {
                 String query = table.getPreparedStatementInsertQuery();

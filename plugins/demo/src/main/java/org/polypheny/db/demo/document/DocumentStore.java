@@ -40,23 +40,14 @@ import java.util.stream.Stream;
 
 @Slf4j
 public class DocumentStore extends DemoStore {
-    public static class FileCollectionPair {
-        public String path;
-        public String collection;
-
-        FileCollectionPair(String path, String collection ) {
-            this.path = path;
-            this.collection = collection;
-        }
-    }
-
-    private final static FileCollectionPair ARTISTS = new FileCollectionPair( "artists.jsonl", "artist" );
-    private final static FileCollectionPair LABELS = new FileCollectionPair( "labels.jsonl", "label" );
-    private final static FileCollectionPair MASTERS = new FileCollectionPair( "masters.jsonl", "master" );
-    private final static FileCollectionPair RELEASES = new FileCollectionPair( "releases.jsonl", "release" );
+    // All the local files path (in the resource directory) together with the collection of the data in the document DB
+    private final static FileCollectionPair ARTISTS = new FileCollectionPair( "/document/artists.jsonl", "artist" );
+    private final static FileCollectionPair LABELS = new FileCollectionPair( "/document/labels.jsonl", "label" );
+    private final static FileCollectionPair MASTERS = new FileCollectionPair( "/document/masters.jsonl", "master" );
+    private final static FileCollectionPair RELEASES = new FileCollectionPair( "/document/releases.jsonl", "release" );
+    private final static FileCollectionPair[] local_files = new FileCollectionPair[]{ARTISTS, LABELS, MASTERS, RELEASES};
 
     private final FileCollectionPair[] files;
-    private final FileCollectionPair[] local_files = new FileCollectionPair[]{ARTISTS, LABELS, MASTERS, RELEASES};
     private final Function<String, Stream<String>> fileLoader;
 
     private final TransactionManager transactionManager;
@@ -82,8 +73,9 @@ public class DocumentStore extends DemoStore {
 
         if ( this.dataStore.isPresent() ) {
             List<DataStore<?>> stores = List.of( this.dataStore.get() );
+            // Create all the collections
             for ( FileCollectionPair group: this.files) {
-                ddlManager.createCollection( this.namespaceId, group.collection, true, stores, PlacementType.AUTOMATIC, statement );
+                ddlManager.createCollection( this.namespaceId, group.collection(), true, stores, PlacementType.AUTOMATIC, statement );
             }
         } else {
             log.warn( "No datastore present in {}. Unable to create collections", this.name );
@@ -119,36 +111,20 @@ public class DocumentStore extends DemoStore {
             throw new RuntimeException( e );
         }
         for ( FileCollectionPair group : this.files) {
-            String file_path = group.path;
-            String collection = group.collection;
-            try (InputStream is = Files.newInputStream(Path.of(file_path))) {
+            List<String> batchBuffer = new ArrayList<>(batchSize);
 
-                try (MappingIterator<JsonNode> it = objectMapper.readerFor(JsonNode.class).readValues(is)) {
+            this.fileLoader.apply( group.path() ).forEach( line -> {
+                batchBuffer.add(line.replace("\n", "").replace("\r", ""));
 
-                    List<String> batchBuffer = new ArrayList<>(batchSize);
-
-                    while (it.hasNext()) {
-                        JsonNode node = it.next();
-                        // Clean newline characters from individual JSON objects
-                        batchBuffer.add(node.toString().replace("\n", "").replace("\r", ""));
-
-                        if (batchBuffer.size() >= batchSize) {
-                            executeBatch( polyStatement, collection, batchBuffer);
-                            batchBuffer.clear();
-                        }
-                    }
-
-                    // Flush remaining documents in the batch buffer
-                    if (!batchBuffer.isEmpty()) {
-                        executeBatch( polyStatement, collection, batchBuffer);
-                    }
-
-                } catch (Exception e) {
-                    throw new RuntimeException("Error processing file iterator: " + file_path, e);
+                if (batchBuffer.size() >= batchSize) {
+                    executeBatch( polyStatement, group.collection(), batchBuffer);
+                    batchBuffer.clear();
                 }
 
-            } catch (Exception e) {
-                throw new RuntimeException("Error reading file: " + file_path, e);
+            } );
+
+            if (!batchBuffer.isEmpty()) {
+                executeBatch( polyStatement, group.collection(), batchBuffer);
             }
         }
     }

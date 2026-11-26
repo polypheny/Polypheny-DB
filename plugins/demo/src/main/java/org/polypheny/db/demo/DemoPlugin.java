@@ -66,9 +66,10 @@ public class DemoPlugin extends PolyPlugin {
 
         List<DemoStore> demoStores = new ArrayList<>();
 
-        demoStores.add(new DocumentStore( transactionManager, false ));
-        demoStores.add(new GraphStore( transactionManager, true ));
+        log.info( "Building demo stores" );
         demoStores.add(new RelationalStore( transactionManager, true ));
+        demoStores.add(new DocumentStore( transactionManager, true ));
+        // demoStores.add(new GraphStore( transactionManager, true ));
 
         Transaction transaction = this.transactionManager.startTransaction( Catalog.defaultUserId, new QueryAnalyzer(), "Demo" );
         Statement statement = transaction.createStatement();

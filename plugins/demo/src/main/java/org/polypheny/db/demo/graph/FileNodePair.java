@@ -16,28 +16,5 @@
 
 package org.polypheny.db.demo.graph;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
-public abstract class CypherObject {
-    List<Field<?>> queryParts = new ArrayList<>();
-
-    void addQueryPart( Field<?> part ) {
-        queryParts.add( part );
-    }
-
-    String getQueryPart() {
-        return queryParts.stream().map( part -> {
-            if ( part.isNull() ) {
-                return null;
-            }
-
-            return part.get();
-        } ).filter( Objects::nonNull ).collect( Collectors.joining(",") );
-    }
-
-
-    abstract String query();
+public record FileNodePair(String path, String node) {
 }

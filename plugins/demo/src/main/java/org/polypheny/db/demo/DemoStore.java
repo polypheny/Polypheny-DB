@@ -60,6 +60,7 @@ public abstract class DemoStore {
     protected Connection connection;
 
     protected DemoStore(String name, String language, DataModel dataModel, String adapterName ) {
+        System.out.println("HERE");
         this.name = name;
         this.language = language;
         this.dataModel = dataModel;
@@ -68,6 +69,13 @@ public abstract class DemoStore {
         try {
             DriverManager.registerDriver( new PolyphenyDriver() );
             this.connection = DriverManager.getConnection( "jdbc:polypheny://localhost:20590", "pa", "" );
+            if (this.connection == null) {
+                log.error( "No connection available to jdbc:polypheny://localhost:20590");
+                System.exit( 1 );
+            }
+            else {
+                log.info( "Successfully established connection to polyheny" );
+            }
 
         }
         catch ( SQLException e ) {
@@ -76,8 +84,8 @@ public abstract class DemoStore {
     }
 
     public Optional<PolyConnection> getPolyConnection() throws SQLException {
-        if ( connection.isWrapperFor( PolyConnection.class )) {
-            return Optional.of(connection.unwrap( PolyConnection.class ));
+        if ( this.connection.isWrapperFor( PolyConnection.class )) {
+            return Optional.of( this.connection.unwrap( PolyConnection.class ));
         }
         else {
             log.error( "JDBC driver connection not a PolyConnection" );
