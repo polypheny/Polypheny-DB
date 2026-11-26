@@ -306,7 +306,7 @@ public class JdbcConnectionTest {
     @Test
     public void illegalTimeoutBelowZeroTest() throws SQLException {
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
-            assertThrows( SQLException.class, () -> jdbcConnection.getConnection().setNetworkTimeout( null, -42 ) );
+            assertThrows( SQLException.class, () -> jdbcConnection.getConnection().setNetworkTimeout( Runnable::run, -42 ) );
         }
     }
 
@@ -316,7 +316,8 @@ public class JdbcConnectionTest {
         int timeout = 20000;
         try ( JdbcConnection jdbcConnection = new JdbcConnection( true ) ) {
             Connection connection = jdbcConnection.getConnection();
-            connection.setNetworkTimeout( null, timeout );
+            assertThrows( SQLException.class, () -> connection.setNetworkTimeout( null, timeout ) );
+            connection.setNetworkTimeout( Runnable::run, timeout );
             assertEquals( timeout, connection.getNetworkTimeout() );
         }
     }
