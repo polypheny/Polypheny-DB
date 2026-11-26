@@ -41,6 +41,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -156,7 +158,6 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             Integer[].class,
             DataContext.class );
     private static final Expression UTC_EXPRESSION = Expressions.field( null, JdbcToEnumerableConverter.class, "utc" );
-    private static final Expression LOCAL_EXPRESSION = Expressions.field( null, JdbcToEnumerableConverter.class, "local" );
 
 
     private final List<AlgDataTypeField> insertTargetFields;
@@ -494,12 +495,12 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             //  add nullability stuff as well
             case ARRAY -> getPreprocessArrayExpression( resultSet_, i, dialect, fieldType );
             case DATE -> Expressions.call( resultSet_, "getDate", Expressions.constant( i + 1 ), UTC_EXPRESSION );
-            case TIME -> Expressions.call( resultSet_, "getTime", Expressions.constant( i + 1 ), LOCAL_EXPRESSION );
+            case TIME -> Expressions.call( JdbcToEnumerableConverter.class, "readTime", resultSet_, Expressions.constant( i + 1 ) );
             case TIMESTAMP -> Expressions.call( resultSet_, "getTimestamp", Expressions.constant( i + 1 ), UTC_EXPRESSION );
             case FILE, AUDIO, IMAGE, VIDEO -> Expressions.call( resultSet_, BuiltInMethod.RESULTSET_GETBYTES.method, Expressions.constant( i + 1 ) );
             default -> Expressions.call( resultSet_, jdbcGetMethod( primitive ), Expressions.constant( i + 1 ) );
         };
-        final Expression poly = getOfPolyExpression( fieldType, source, resultSet_, i, dialect );
+        final Expression poly = polyType == PolyType.TIME ? source : getOfPolyExpression( fieldType, source, resultSet_, i, dialect );
 
         //source is null if an expression was already added to the builder.
         if ( poly != null ) {
@@ -515,6 +516,23 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
         }
 
 
+    }
+
+
+    public static PolyTime readTime( ResultSet result, int index ) throws SQLException {
+        // java.sql.Time conversion can discard the fraction even when the store kept it.
+        String text = result.getString( index );
+        if ( text == null ) {
+            return PolyTime.of( (Integer) null );
+        }
+        try {
+            return PolyTime.of( (int) (LocalTime.parse( text ).toNanoOfDay() / 1_000_000) );
+        } catch ( DateTimeParseException e ) {
+            if ( text.startsWith( "24:" ) ) {
+                throw new SQLException( "The store returned a TIME outside the supported day.", "22008", e );
+            }
+            return PolyTime.ofNullable( result.getTime( index, Calendar.getInstance( TemporalFunctions.LOCAL_TZ ) ) );
+        }
     }
 
 

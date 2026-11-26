@@ -157,6 +157,10 @@ public class LogicalColumn implements PolyObject, Comparable<LogicalColumn> {
             elementType = typeFactory.createPolyType( type, length, scale );
         } else if ( length != null && type.allowsPrecNoScale() ) {
             elementType = typeFactory.createPolyType( type, length );
+        } else if ( type == PolyType.TIMESTAMP && collectionsType == null ) {
+            // Native unqualified TIMESTAMP columns can store the full millisecond value.
+            // Bind and look up these keys with the same precision as their stored values.
+            elementType = typeFactory.createPolyType( type, PolyType.MAX_DATETIME_PRECISION );
         } else {
             assert type.allowsNoPrecNoScale();
             elementType = typeFactory.createPolyType( type );

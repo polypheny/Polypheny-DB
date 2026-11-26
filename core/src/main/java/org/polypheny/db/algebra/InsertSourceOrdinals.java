@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import org.polypheny.db.algebra.core.Calc;
+import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Union;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -59,12 +60,18 @@ public record InsertSourceOrdinals( AlgNode plan, int branchCount ) {
             return new InsertSourceOrdinals( original.copy( original.getTraitSet(), input.plan, expressions,
                     rowType( source ) ), input.branchCount );
         }
-        if ( source instanceof Calc original && original.getProgram().getCondition() == null ) {
+        if ( source instanceof Filter original ) {
+            InsertSourceOrdinals input = add( original.getInput(), firstOrdinal, project, boundary );
+            return new InsertSourceOrdinals( original.copy( original.getTraitSet(), input.plan, original.getCondition() ), input.branchCount );
+        }
+        if ( source instanceof Calc original ) {
             InsertSourceOrdinals input = add( original.getInput(), firstOrdinal, project, boundary );
             List<RexNode> expressions = new ArrayList<>();
             original.getProgram().getProjectList().forEach( ref -> expressions.add( original.getProgram().expandLocalRef( ref ) ) );
             expressions.add( rex.makeInputRef( input.plan, original.getInput().getTupleType().getFieldCount() ) );
-            RexProgram program = RexProgram.create( input.plan.getTupleType(), expressions, null, rowType( source ), rex );
+            RexNode condition = original.getProgram().getCondition() == null ? null
+                    : original.getProgram().expandLocalRef( original.getProgram().getCondition() );
+            RexProgram program = RexProgram.create( input.plan.getTupleType(), expressions, condition, rowType( source ), rex );
             return new InsertSourceOrdinals( original.copy( original.getTraitSet(), input.plan, program ), input.branchCount );
         }
 

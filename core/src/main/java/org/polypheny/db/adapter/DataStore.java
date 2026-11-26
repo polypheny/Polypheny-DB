@@ -105,6 +105,12 @@ public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> imp
     }
 
 
+    /** Applies the store's temporal precision before a materialized INSERT writes or reports values. */
+    public List<PolyValue> castTemporalAssignments( Transaction transaction, AlgCluster cluster, AlgDataType target, List<PolyValue> values ) {
+        return values;
+    }
+
+
     public record NumericAssignment( PolyValue value, AlgDataType inputType, NumericExpression expression ) {
     }
 

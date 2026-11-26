@@ -21,12 +21,16 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.TimeZone;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
@@ -95,6 +99,7 @@ import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.numerical.PolyLong;
+import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 
 
 @Slf4j
@@ -484,6 +489,19 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
     @Override
     public List<PolyValue> castNumericAssignments( Transaction transaction, AlgCluster cluster, AlgDataType target, List<NumericAssignment> assignments ) {
+        return castAssignments( transaction, cluster, target, assignments, (assignment, bindings) -> numericAssignmentSource( cluster, assignment, bindings ) );
+    }
+
+
+    @Override
+    public List<PolyValue> castTemporalAssignments( Transaction transaction, AlgCluster cluster, AlgDataType target, List<PolyValue> values ) {
+        AlgDataType input = cluster.getTypeFactory().createPolyType( target.getPolyType(), PolyType.MAX_DATETIME_PRECISION );
+        return castAssignments( transaction, cluster, target, values, (value, bindings) -> bindAssignment( input, value, bindings ) );
+    }
+
+
+    private <T> List<PolyValue> castAssignments( Transaction transaction, AlgCluster cluster, AlgDataType target, List<T> assignments,
+            BiFunction<T, List<ParameterValue>, RexNode> source ) {
         transaction.registerInvolvedAdapter( this );
         List<PolyValue> converted = new ArrayList<>( assignments.size() );
         final int batchSize = 128;
@@ -495,8 +513,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
                 List<ParameterValue> bindings = new ArrayList<>( count );
                 List<String> names = new ArrayList<>( count );
                 for ( int i = 0; i < count; i++ ) {
-                    NumericAssignment assignment = assignments.get( offset + i );
-                    expressions.add( numericAssignmentSource( cluster, assignment, bindings ) );
+                    expressions.add( source.apply( assignments.get( offset + i ), bindings ) );
                     names.add( "bound_value_" + i );
                 }
                 LogicalRelProject sources = LogicalRelProject.create( LogicalRelValues.createOneRow( cluster ), expressions, names );
@@ -529,7 +546,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
                     }
                     try ( ResultSet row = select.executeQuery() ) {
                         if ( !row.next() ) {
-                            throw new GenericRuntimeException( "The numeric assignment cast returned no row." );
+                            throw new GenericRuntimeException( "The native assignment cast returned no row." );
                         }
                         for ( int i = 1; i <= count; i++ ) {
                             PolyValue value = switch ( target.getPolyType() ) {
@@ -538,7 +555,12 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
                                 case DECIMAL -> PolyBigDecimal.of( row.getBigDecimal( i ) );
                                 case REAL, FLOAT -> PolyFloat.of( row.getFloat( i ) );
                                 case DOUBLE -> PolyDouble.of( row.getDouble( i ) );
-                                default -> throw new IllegalArgumentException( "Unsupported numeric assignment target " + target );
+                                case TIME -> JdbcToEnumerableConverter.readTime( row, i );
+                                case TIMESTAMP -> {
+                                    Timestamp timestamp = row.getTimestamp( i, Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ) );
+                                    yield timestamp == null ? PolyNull.NULL : PolyTimestamp.of( timestamp );
+                                }
+                                default -> throw new IllegalArgumentException( "Unsupported assignment target " + target );
                             };
                             converted.add( row.wasNull() ? PolyNull.NULL : value );
                         }
@@ -567,9 +589,13 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
                 }
             } );
         }
-        AlgDataType input = assignment.inputType();
+        return bindAssignment( assignment.inputType(), assignment.value(), bindings );
+    }
+
+
+    private static RexNode bindAssignment( AlgDataType input, PolyValue value, List<ParameterValue> bindings ) {
         int index = bindings.size();
-        bindings.add( new ParameterValue( index, input, assignment.value() ) );
+        bindings.add( new ParameterValue( index, input, value ) );
         return new RexDynamicParam( input, index );
     }
 
