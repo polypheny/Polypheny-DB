@@ -266,6 +266,8 @@ public class RexToLixTranslator {
         Expression convert = null;
         convert = switch ( targetType.getPolyType() ) {
             case ANY -> operand;
+            // Numeric types share the PolyNumber Java class, but a DECIMAL cast must widen integers.
+            case DECIMAL -> Expressions.call( PolyBigDecimal.class, "convert", Expressions.convert_( operand, PolyValue.class ) );
             case DATE -> switch ( sourceType.getPolyType() ) {
                 case CHAR, VARCHAR -> Expressions.call( BuiltInMethod.STRING_TO_DATE.method, operand );
                 case TIMESTAMP -> Expressions.call( PolyDate.class, "of", Expressions.call( operand, "LongValue" ) );
@@ -815,7 +817,7 @@ public class RexToLixTranslator {
         }
         if ( Types.isAssignableFrom( PolyValue.class, toType ) ) {
             operand = Expressions.convert_( operand, PolyValue.class );
-            if ( toType == PolyNumber.class && !Types.isAssignableFrom( toType, operand.type ) ) {
+            if ( toType == PolyNumber.class ) {
                 return Expressions.call( PolyBigDecimal.class, "convert", operand );
             } else if ( toType == PolyString.class ) {
                 return Expressions.call( PolyString.class, "convert", operand );
@@ -827,8 +829,6 @@ public class RexToLixTranslator {
                 return Expressions.call( PolyDocument.class, "convert", operand );
             } else if ( toType == PolyValue.class ) {
                 return Expressions.convert_( operand, toType ); // document
-            } else if ( toType == PolyNumber.class ) {
-                return Expressions.convert_( operand, toType ); // number
             } else if ( toType == PolyDate.class ) {
                 return Expressions.call( PolyDate.class, "convert", operand );
             } else if ( toType == PolyTimestamp.class ) {
@@ -1021,11 +1021,18 @@ public class RexToLixTranslator {
 
         private final Expression expression;
         private final PhysType type;
+        private final boolean preserveNumericTypes;
 
 
         public InputGetterImpl( Expression expression, PhysType type ) {
+            this( expression, type, false );
+        }
+
+
+        public InputGetterImpl( Expression expression, PhysType type, boolean preserveNumericTypes ) {
             this.expression = expression;
             this.type = type;
+            this.preserveNumericTypes = preserveNumericTypes;
         }
 
 
@@ -1038,6 +1045,10 @@ public class RexToLixTranslator {
                 throw new GenericRuntimeException( "Index too high" );
             }
             final Expression left = list.append( "current", expression );
+            if ( preserveNumericTypes && (storageType == PolyNumber.class || storageType == null && physType.fieldClass( index ) == PolyNumber.class) ) {
+                Expression value = physType.fieldReference( left, index, PolyValue.class );
+                return Expressions.call( PolyNumber.class, "convert", value );
+            }
             return physType.fieldReference( left, index, storageType );
 
         }

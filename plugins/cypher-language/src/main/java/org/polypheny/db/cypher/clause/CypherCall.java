@@ -24,6 +24,7 @@ import org.polypheny.db.cypher.CypherCallResultItem;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Node;
+import org.polypheny.db.type.entity.PolyValue;
 
 
 @Getter
@@ -35,6 +36,8 @@ public class CypherCall extends CypherClause {
     private final List<String> namespace;
     private final String name;
     private final List<CypherExpression> arguments;
+    @Nullable
+    private final List<PolyValue> implicitArguments;
     private final boolean yieldAll;
     private final List<CypherCallResultItem> items;
     @Nullable
@@ -52,6 +55,13 @@ public class CypherCall extends CypherClause {
             boolean yieldAll,
             List<CypherCallResultItem> items,
             CypherWhere where ) {
+        this( pos, nextPos, procedurePos, resultPos, namespace, name, arguments, null, yieldAll, items, where );
+    }
+
+
+    private CypherCall( ParserPos pos, ParserPos nextPos, ParserPos procedurePos, ParserPos resultPos,
+            List<String> namespace, String name, List<CypherExpression> arguments, @Nullable List<PolyValue> implicitArguments,
+            boolean yieldAll, List<CypherCallResultItem> items, CypherWhere where ) {
         super( pos );
         this.nextPos = nextPos;
         this.procedurePos = procedurePos;
@@ -59,9 +69,15 @@ public class CypherCall extends CypherClause {
         this.namespace = namespace;
         this.name = name;
         this.arguments = arguments;
+        this.implicitArguments = implicitArguments;
         this.yieldAll = yieldAll;
         this.items = items;
         this.where = where;
+    }
+
+
+    public CypherCall withImplicitArguments( List<PolyValue> values ) {
+        return new CypherCall( getPos(), nextPos, procedurePos, resultPos, namespace, name, null, List.copyOf( values ), yieldAll, items, where );
     }
 
 

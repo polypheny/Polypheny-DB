@@ -21,9 +21,8 @@ import com.mongodb.MongoCommandException;
 import com.mongodb.TransactionOptions;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoClient;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.transaction.PolyXid;
@@ -37,9 +36,9 @@ import org.polypheny.db.transaction.PolyXid;
 public class TransactionProvider {
 
     @Setter
-    private MongoClient client;
+    private volatile MongoClient client;
 
-    private final Map<PolyXid, ClientSession> sessions = new HashMap<>();
+    private final ConcurrentMap<PolyXid, ClientSession> sessions = new ConcurrentHashMap<>();
 
 
     public TransactionProvider( MongoClient client ) {
@@ -54,25 +53,29 @@ public class TransactionProvider {
      * @return the corresponding session, which holds the information of the transaction
      */
     public ClientSession startTransaction( PolyXid xid, boolean withTrx ) {
-        TransactionOptions options = TransactionOptions.builder().build();
+        return sessions.compute( xid, ( ignored, session ) -> {
+            if ( session != null ) {
+                if ( withTrx && !session.hasActiveTransaction() ) {
+                    session.startTransaction();
+                }
+                return session;
+            }
 
-        ClientSession session;
-        if ( !sessions.containsKey( xid ) ) {
-            session = client.startSession();
-            if ( withTrx ) {
-                session.startTransaction( options );
+            ClientSession created = client.startSession();
+            try {
+                if ( withTrx ) {
+                    created.startTransaction( TransactionOptions.builder().build() );
+                }
+                return created;
+            } catch ( RuntimeException failure ) {
+                try {
+                    created.close();
+                } catch ( RuntimeException cleanupFailure ) {
+                    failure.addSuppressed( cleanupFailure );
+                }
+                throw failure;
             }
-            synchronized ( this ) {
-                sessions.put( xid, session );
-            }
-        } else {
-            session = sessions.get( xid );
-            if ( withTrx && !session.hasActiveTransaction() ) {
-                session.startTransaction();
-            }
-        }
-
-        return session;
+        } );
     }
 
 
@@ -84,35 +87,27 @@ public class TransactionProvider {
      * @param xid the corresponding PolyXid for the transaction
      */
     public void commit( PolyXid xid ) {
-        if ( sessions.containsKey( xid ) ) {
-            ClientSession session = sessions.get( xid );
-            try {
-                if ( session.hasActiveTransaction() ) {
-                    session.commitTransaction();
-                }
-            } catch ( MongoClientException | MongoCommandException e ) {
-                if ( session.hasActiveTransaction() ) {
-                    session.abortTransaction();
-                }
-            } finally {
-                synchronized ( this ) {
-                    session.close();
-                    sessions.remove( xid );
+        ClientSession session = sessions.remove( xid );
+        if ( session != null ) {
+            try ( session ) {
+                try {
+                    if ( session.hasActiveTransaction() ) {
+                        session.commitTransaction();
+                    }
+                } catch ( MongoClientException | MongoCommandException failure ) {
+                    try {
+                        if ( session.hasActiveTransaction() ) {
+                            session.abortTransaction();
+                        }
+                    } catch ( RuntimeException cleanupFailure ) {
+                        failure.addSuppressed( cleanupFailure );
+                    }
+                    throw failure;
                 }
             }
         } else {
             log.info( "No-op commit" );
         }
-    }
-
-
-    /**
-     * Commits open transactions, this is normally called before DDsL as MongoDB
-     * requires this
-     */
-    public void commitAll() {
-        // Copy the keyset because this::commit modifies sessions
-        Set.copyOf( sessions.keySet() ).forEach( this::commit );
     }
 
 
@@ -124,16 +119,14 @@ public class TransactionProvider {
      * @param xid the corresponding PolyXid
      */
     public void rollback( PolyXid xid ) {
-        if ( sessions.containsKey( xid ) ) {
-            try ( ClientSession session = sessions.get( xid ) ) {
-                session.abortTransaction();
+        ClientSession session = sessions.remove( xid );
+        if ( session != null ) {
+            try ( session ) {
+                if ( session.hasActiveTransaction() ) {
+                    session.abortTransaction();
+                }
             } catch ( MongoClientException e ) {
                 // empty on purpose
-            } finally {
-                synchronized ( this ) {
-                    sessions.get( xid ).close();
-                    sessions.remove( xid );
-                }
             }
         } else {
             log.info( "No-op rollback" );
@@ -142,10 +135,8 @@ public class TransactionProvider {
 
 
     public ClientSession getSession( PolyXid xid ) {
-        if ( !sessions.containsKey( xid ) ) {
-            return startTransaction( xid, true );
-        }
-        return sessions.get( xid );
+        ClientSession session = sessions.get( xid );
+        return session == null ? startTransaction( xid, true ) : session;
     }
 
 }

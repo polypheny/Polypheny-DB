@@ -35,6 +35,11 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.prisminterface.CypherTest.PrismConnection;
+import org.polypheny.db.prisminterface.utils.PolyValueSerializer;
+import org.polypheny.db.type.entity.PolyNull;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.prism.ExecuteUnparameterizedStatementRequest;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.ProtoInteger;
@@ -183,6 +188,44 @@ class CypherPatternPropertyEvaluationTest {
                            exists((a)-[:R {score:a.mark - 5}]->(:B {mark:a.mark + 1})) AS anonymousMismatch
                     """, "repeatedMatch", "repeatedMismatch", "skippedSecondCheck", "anonymousMatch", "anonymousMismatch" );
             assertBooleans( values, true, false, false, true, false );
+            connection.checkTransactions( 0 );
+        }
+    }
+
+
+    @Test
+    void bindsWholePropertyMapsForNodeAndRelationshipCreation() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
+            ProtoValue first = PolyValueSerializer.serialize( new PolyDictionary( Map.of(
+                    PolyString.of( "k" ), PolyInteger.of( 1 ),
+                    PolyString.of( "ignored" ), PolyNull.NULL ) ) );
+            int standalone = prepareNamedCypher( connection, NAMESPACE,
+                    "CREATE (n:MapNode $props) RETURN n.k AS k, size(keys(n)) AS fields" ).getStatementId();
+            Response created = expect( executeNamedCypher( connection, standalone, Map.of( "props", first ) ), Response.TypeCase.STATEMENT_RESULT );
+            Row node = singleRow( relationalFrame( created.getStatementResult().getFrame(), true, List.of( "k", "fields" ) ) );
+            assertEquals( 1, integerValue( node.getValues( 0 ) ) );
+            assertEquals( 1, integerValue( node.getValues( 1 ) ) );
+
+            int streamed = prepareNamedCypher( connection, NAMESPACE, """
+                    UNWIND [1,2] AS row
+                    CREATE (n:MapNode $props)-[r:MAP_EDGE $edge]->()
+                    RETURN row, n.k AS k, r.weight AS weight ORDER BY row
+                    """ ).getStatementId();
+            ProtoValue edge = PolyValueSerializer.serialize( new PolyDictionary( Map.of(
+                    PolyString.of( "weight" ), PolyInteger.of( 9 ) ) ) );
+            for ( int value : List.of( 4, 8 ) ) {
+                ProtoValue props = PolyValueSerializer.serialize( new PolyDictionary( Map.of(
+                        PolyString.of( "k" ), PolyInteger.of( value ) ) ) );
+                Response result = expect( executeNamedCypher( connection, streamed, Map.of( "props", props, "edge", edge ) ),
+                        Response.TypeCase.STATEMENT_RESULT );
+                List<Row> rows = relationalFrame( result.getStatementResult().getFrame(), true, List.of( "row", "k", "weight" ) ).getRowsList();
+                assertEquals( 2, rows.size() );
+                for ( int i = 0; i < rows.size(); i++ ) {
+                    assertEquals( i + 1, integerValue( rows.get( i ).getValues( 0 ) ) );
+                    assertEquals( value, integerValue( rows.get( i ).getValues( 1 ) ) );
+                    assertEquals( 9, integerValue( rows.get( i ).getValues( 2 ) ) );
+                }
+            }
             connection.checkTransactions( 0 );
         }
     }

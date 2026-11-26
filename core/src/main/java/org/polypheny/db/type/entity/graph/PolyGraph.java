@@ -40,6 +40,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import lombok.Getter;
 import lombok.NonNull;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -208,14 +210,58 @@ public class PolyGraph extends GraphObject {
 
     /** Finds one shortest matching trail for each pair of structurally matching endpoints. */
     public Iterable<PolyPath> matchShortestPaths( PolyPath pattern ) {
+        return matchShortestPaths( pattern, false );
+    }
+
+
+    /** Finds every shortest matching trail for each pair of structurally matching endpoints. */
+    public Iterable<PolyPath> matchAllShortestPaths( PolyPath pattern ) {
+        return matchShortestPaths( pattern, true );
+    }
+
+
+    private Iterable<PolyPath> matchShortestPaths( PolyPath pattern, boolean all ) {
         PolyEdge template = pattern.getEdges().get( 0 );
         if ( template.hasEmptyRange() || template.getMinLength() > edges.size() ) {
             return List.of();
         }
         Map<PolyString, List<PolyEdge>> incident = incidentEdges();
-        return () -> nodes.values().stream()
-                .filter( node -> node.labelAndPropertyMatch( pattern.getNodes().get( 0 ) ) )
-                .flatMap( start -> shortestFrom( pattern, start, incident ).stream() ).iterator();
+        return () -> {
+            Stream<PolyPath> shortest = nodes.values().stream()
+                    .filter( node -> node.labelAndPropertyMatch( pattern.getNodes().get( 0 ) ) )
+                    .flatMap( start -> shortestFrom( pattern, start, incident ).stream() );
+            return (all ? shortest.flatMap( path -> StreamSupport.stream( pathsTiedWith( pattern, path, incident ).spliterator(), false ) )
+                    : shortest).iterator();
+        };
+    }
+
+
+    public List<PolyPath> pathsTiedWith( PolyPath pattern, PolyPath shortest, @Nullable Predicate<PolyPath> condition ) {
+        return StreamSupport.stream( pathsTiedWith( pattern, shortest, incidentEdges() ).spliterator(), false )
+                .filter( condition == null ? path -> true : condition )
+                .toList();
+    }
+
+
+    private Iterable<PolyPath> pathsTiedWith( PolyPath pattern, PolyPath shortest, Map<PolyString, List<PolyEdge>> incident ) {
+        // The first traversal fixes the distance. Enumerate ties only up to that distance.
+        PolyEdge template = pattern.getEdges().get( 0 );
+        PolyPath exact = pattern;
+        if ( template.fromTo() != null ) {
+            int hops = shortest.getEdges().size();
+            PolyEdge edge = new PolyEdge( template.id, template.properties, template.labels, template.left, template.right,
+                    template.direction, template.getVariableName() );
+            edge.fromTo( Pair.of( hops, hops ) );
+            PolyNode first = pattern.getNodes().get( 0 );
+            PolyNode last = pattern.getNodes().get( 1 );
+            exact = PolyPath.create( List.of( Pair.of( first.getVariableName(), first ), Pair.of( last.getVariableName(), last ) ),
+                    List.of( Pair.of( edge.getVariableName(), edge ) ) );
+        }
+        List<PolyNode> endpoints = shortest.getNodes();
+        PolyNode start = nodes.get( endpoints.get( 0 ).id );
+        PolyString end = endpoints.get( endpoints.size() - 1 ).id;
+        PolyPath bounded = exact;
+        return () -> new PathMatches( bounded, incident, List.of( start ).iterator(), end );
     }
 
 

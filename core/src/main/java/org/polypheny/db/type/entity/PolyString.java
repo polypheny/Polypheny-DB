@@ -141,7 +141,13 @@ public class PolyString extends PolyValue {
 
     @Override
     public Expression asExpression() {
-        return Expressions.new_( PolyString.class, Expressions.constant( value ) );
+        Expression text = Expressions.constant( value );
+        if ( value != null && value.contains( "\n\r" ) ) {
+            // linq4j drops the carriage return when writing this sequence as a Java string constant.
+            String escaped = value.replace( "\\", "\\\\" ).replace( "\r", "\\r" );
+            text = Expressions.call( Expressions.constant( escaped ), "translateEscapes" );
+        }
+        return Expressions.new_( PolyString.class, text );
     }
 
 

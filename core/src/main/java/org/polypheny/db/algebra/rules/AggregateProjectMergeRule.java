@@ -109,8 +109,14 @@ public class AggregateProjectMergeRule extends AlgOptRule {
         }
 
         final ImmutableBitSet newGroupSet = aggregate.getGroupSet().permute( map );
+        final boolean hasGroupingSets = aggregate.getGroupType() != Group.SIMPLE;
+        if ( (hasGroupingSets || aggregate.indicator) && newGroupSet.cardinality() != aggregate.getGroupCount() ) {
+            // Aliases of the same field can occur in different grouping sets. Combining them
+            // would erase their individual grouping membership or duplicate rows.
+            return null;
+        }
         ImmutableList<ImmutableBitSet> newGroupingSets = null;
-        if ( aggregate.getGroupType() != Group.SIMPLE ) {
+        if ( hasGroupingSets ) {
             newGroupingSets = ImmutableBitSet.ORDERING.immutableSortedCopy( ImmutableBitSet.permute( aggregate.getGroupSets(), map ) );
         }
 

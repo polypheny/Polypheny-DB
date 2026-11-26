@@ -30,7 +30,7 @@ import org.polypheny.db.plan.Convention;
 import org.polypheny.db.util.ImmutableBitSet;
 
 
-/** Evaluates a returning Cypher CALL for each input row. */
+/** Evaluates a Cypher subquery for each input row. */
 public final class LogicalLpgCall extends Correlate implements LpgAlg {
 
     public static final ConverterRule TO_ENUMERABLE = new ConverterRule(
@@ -42,13 +42,18 @@ public final class LogicalLpgCall extends Correlate implements LpgAlg {
             return EnumerableCorrelate.create(
                     convert( call.getLeft(), call.getLeft().getTraitSet().replace( EnumerableConvention.INSTANCE ) ),
                     convert( call.getRight(), call.getRight().getTraitSet().replace( EnumerableConvention.INSTANCE ) ),
-                    call.getCorrelationId(), call.getRequiredColumns(), call.getJoinType() );
+                    call.getCorrelationId(), call.getRequiredColumns(), call.getJoinType(), true );
         }
     };
 
 
     public LogicalLpgCall( AlgNode outer, AlgNode body, CorrelationId correlation, ImmutableBitSet requiredColumns ) {
-        this( outer.getTraitSet(), outer, body, correlation, requiredColumns, SemiJoinType.INNER );
+        this( outer, body, correlation, requiredColumns, SemiJoinType.INNER );
+    }
+
+
+    public LogicalLpgCall( AlgNode outer, AlgNode body, CorrelationId correlation, ImmutableBitSet requiredColumns, SemiJoinType joinType ) {
+        this( outer.getTraitSet(), outer, body, correlation, requiredColumns, joinType );
     }
 
 

@@ -49,6 +49,8 @@ import org.polypheny.db.algebra.metadata.AlgMdDistribution;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.polyalg.arguments.RexArg;
+import org.polypheny.db.catalog.logistic.DataModel;
+import org.polypheny.db.functions.Functions;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -123,6 +125,13 @@ public class EnumerableLimit extends SingleAlg implements EnumerableAlg {
         final PhysType physType = PhysTypeImpl.of( implementor.getTypeFactory(), getTupleType(), result.format() );
 
         Expression v = builder.append( "child", result.block() );
+        if ( getModel() == DataModel.GRAPH && (isWideBound( offset ) || isWideBound( fetch )) ) {
+            long skip = offset == null ? 0L : RexLiteral.longValue( offset );
+            long limit = fetch == null ? -1L : RexLiteral.longValue( fetch );
+            Expression window = Expressions.call( Functions.class, "skipAndTakeGraphRows", v, Expressions.constant( skip ), Expressions.constant( limit ) );
+            builder.add( Expressions.return_( null, window ) );
+            return implementor.result( physType, builder.toBlock() );
+        }
         if ( offset != null ) {
             v = builder.append(
                     "offset",
@@ -136,6 +145,11 @@ public class EnumerableLimit extends SingleAlg implements EnumerableAlg {
 
         builder.add( Expressions.return_( null, v ) );
         return implementor.result( physType, builder.toBlock() );
+    }
+
+
+    private static boolean isWideBound( RexNode bound ) {
+        return bound instanceof RexLiteral && RexLiteral.longValue( bound ) > Integer.MAX_VALUE;
     }
 
 

@@ -40,7 +40,7 @@ import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.util.Pair;
 
 
-/** Lowers shortestPath(...) when the endpoints come from an enclosing row. */
+/** Lowers shortest-path values when the endpoints come from an enclosing row. */
 final class CypherShortestPathValue {
 
     private CypherShortestPathValue() {
@@ -53,7 +53,8 @@ final class CypherShortestPathValue {
         CypherNodePattern last = path.getNodes().get( 1 );
         CypherRelPattern relationship = path.getEdges().get( 0 );
         if ( first.getVariable() == null || last.getVariable() == null ) {
-            throw new CypherSyntaxException( "shortestPath() in an expression requires two bound node variables." );
+            String name = shortest.isAll() ? "allShortestPaths()" : "shortestPath()";
+            throw new CypherSyntaxException( name + " in an expression requires two bound node variables." );
         }
         RexNode start = first.getVariable().getRex( context, type ).right;
         RexNode end = last.getVariable().getRex( context, type ).right;
@@ -68,9 +69,11 @@ final class CypherShortestPathValue {
         RexNode endProperties = prepareProperties( last.getProperties(), right.right, context, type );
         PolyPath template = PolyPath.create( List.of( left, right ), List.of( edge ) );
         AlgDataType pathType = context.typeFactory.createPathType( template.getPathType( context.typeFactory ) );
-        AlgDataType nullablePath = context.typeFactory.createTypeWithNullability( pathType, true );
-        RexNode result = context.rexBuilder.makeCall( nullablePath,
-                OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_SHORTEST_PATH_VALUE ),
+        AlgDataType resultType = shortest.isAll() ? context.typeFactory.createArrayType( pathType, -1 ) : pathType;
+        AlgDataType nullableResult = context.typeFactory.createTypeWithNullability( resultType, true );
+        OperatorName operator = shortest.isAll() ? OperatorName.CYPHER_ALL_SHORTEST_PATHS_VALUE : OperatorName.CYPHER_SHORTEST_PATH_VALUE;
+        RexNode result = context.rexBuilder.makeCall( nullableResult,
+                OperatorRegistry.get( QueryLanguage.from( "cypher" ), operator ),
                 List.of( graph, new RexLiteral( template, pathType, PolyType.PATH ), start, end, boundRelationship,
                         startProperties, relationshipProperties, endProperties ) );
 
@@ -80,8 +83,8 @@ final class CypherShortestPathValue {
         }
         RexNode condition = RexUtil.composeConjunction( context.rexBuilder, predicates.stream()
                 .map( predicate -> context.booleanPredicate( predicate.getRex( context, RexType.FILTER ).right ) ).toList() );
-        return context.rexBuilder.makeCall( nullablePath, OperatorRegistry.get( OperatorName.CASE ),
-                List.of( condition, result, context.rexBuilder.makeNullLiteral( nullablePath ) ) );
+        return context.rexBuilder.makeCall( nullableResult, OperatorRegistry.get( OperatorName.CASE ),
+                List.of( condition, result, context.rexBuilder.makeNullLiteral( nullableResult ) ) );
     }
 
 

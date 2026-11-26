@@ -57,7 +57,7 @@ public class LogicalLpgShortestPathJoin extends BiAlg implements LpgAlg {
             AlgNode left = convert( join.left, join.left.getTraitSet().replace( EnumerableConvention.INSTANCE ) );
             AlgNode right = convert( join.right, join.right.getTraitSet().replace( EnumerableConvention.INSTANCE ) );
             return new EnumerableShortestPathJoin( join.getTraitSet().replace( EnumerableConvention.INSTANCE ), left, right,
-                    join.condition, join.optional, join.pathColumns, join.groupColumns );
+                    join.condition, join.optional, join.pathColumns, join.groupColumns, join.allTies );
         }
     };
 
@@ -65,20 +65,23 @@ public class LogicalLpgShortestPathJoin extends BiAlg implements LpgAlg {
     private final boolean optional;
     private final List<Integer> pathColumns;
     private final List<Integer> groupColumns;
+    private final List<Boolean> allTies;
 
 
-    public LogicalLpgShortestPathJoin( AlgNode left, AlgNode right, RexNode condition, boolean optional, List<Integer> pathColumns, List<Integer> groupColumns ) {
-        this( left.getTraitSet(), left, right, condition, optional, pathColumns, groupColumns );
+    public LogicalLpgShortestPathJoin( AlgNode left, AlgNode right, RexNode condition, boolean optional, List<Integer> pathColumns,
+            List<Integer> groupColumns, List<Boolean> allTies ) {
+        this( left.getTraitSet(), left, right, condition, optional, pathColumns, groupColumns, allTies );
     }
 
 
     protected LogicalLpgShortestPathJoin( AlgTraitSet traits, AlgNode left, AlgNode right, RexNode condition, boolean optional,
-            List<Integer> pathColumns, List<Integer> groupColumns ) {
+            List<Integer> pathColumns, List<Integer> groupColumns, List<Boolean> allTies ) {
         super( left.getCluster(), traits, left, right );
         this.condition = condition;
         this.optional = optional;
         this.pathColumns = List.copyOf( pathColumns );
         this.groupColumns = List.copyOf( groupColumns );
+        this.allTies = List.copyOf( allTies );
     }
 
 
@@ -118,28 +121,28 @@ public class LogicalLpgShortestPathJoin extends BiAlg implements LpgAlg {
 
 
     protected LogicalLpgShortestPathJoin withInputsAndCondition( AlgTraitSet traits, AlgNode left, AlgNode right, RexNode condition ) {
-        return new LogicalLpgShortestPathJoin( traits, left, right, condition, optional, pathColumns, groupColumns );
+        return new LogicalLpgShortestPathJoin( traits, left, right, condition, optional, pathColumns, groupColumns, allTies );
     }
 
 
     @Override
     public AlgWriter explainTerms( AlgWriter writer ) {
         return super.explainTerms( writer ).item( "condition", condition ).item( "optional", optional )
-                .item( "pathColumns", pathColumns ).item( "groupColumns", groupColumns );
+                .item( "pathColumns", pathColumns ).item( "groupColumns", groupColumns ).item( "allTies", allTies );
     }
 
 
     private static final class EnumerableShortestPathJoin extends LogicalLpgShortestPathJoin implements EnumerableAlg {
 
         private EnumerableShortestPathJoin( AlgTraitSet traits, AlgNode left, AlgNode right, RexNode condition, boolean optional,
-                List<Integer> pathColumns, List<Integer> groupColumns ) {
-            super( traits, left, right, condition, optional, pathColumns, groupColumns );
+                List<Integer> pathColumns, List<Integer> groupColumns, List<Boolean> allTies ) {
+            super( traits, left, right, condition, optional, pathColumns, groupColumns, allTies );
         }
 
 
         @Override
         protected LogicalLpgShortestPathJoin withInputsAndCondition( AlgTraitSet traits, AlgNode left, AlgNode right, RexNode condition ) {
-            return new EnumerableShortestPathJoin( traits, left, right, condition, isOptional(), getPathColumns(), getGroupColumns() );
+            return new EnumerableShortestPathJoin( traits, left, right, condition, isOptional(), getPathColumns(), getGroupColumns(), getAllTies() );
         }
 
 
@@ -153,9 +156,11 @@ public class LogicalLpgShortestPathJoin extends BiAlg implements LpgAlg {
             Expression leftRows = leftChild.physType().convertTo( builder.append( "outerRows", leftChild.block() ), leftType );
             Expression rightRows = rightChild.physType().convertTo( builder.append( "candidateRows", rightChild.block() ), rightType );
             Expression matches = EnumUtils.generatePredicate( implementor, getCluster().getRexBuilder(), left, right, leftType, rightType, getCondition() );
+            Expression allTies = Expressions.newArrayInit( boolean.class,
+                    getAllTies().stream().map( flag -> (Expression) Expressions.constant( flag, boolean.class ) ).toList() );
             Expression output = Expressions.call( CypherShortestPathRows.class, "join", leftRows, rightRows, matches,
                     Expressions.constant( isOptional() ), Expressions.constant( right.getTupleType().getFieldCount() ),
-                    indexes( getPathColumns() ), indexes( getGroupColumns() ) );
+                    indexes( getPathColumns() ), indexes( getGroupColumns() ), allTies );
             builder.add( Expressions.return_( null, output ) );
             return implementor.result( rowArray( implementor, getTupleType() ), builder.toBlock() );
         }

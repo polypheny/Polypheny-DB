@@ -28,6 +28,7 @@ import java.io.PrintWriter;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.StandardCopyOption;
 import java.util.Comparator;
 import java.util.List;
@@ -89,10 +90,7 @@ public class FileStore extends DataStore<RelAdapterCatalog> {
     // Standards
     public static final Charset CHARSET = StandardCharsets.UTF_8;
 
-    /**
-     * Hash function to use the hash of a primary key to name a file.
-     * If you change this function, make sure to change the offset in the {@link FileStore#commitOrRollback} method!
-     */
+    /** Hash function to use the hash of a primary key to name a file. */
     public static final HashFunction SHA = Hashing.sha256();
 
     @Getter
@@ -301,19 +299,33 @@ public class FileStore extends DataStore<RelAdapterCatalog> {
     @Override
     public void validateCommit( PolyXid xid ) {
         String insertPrefix = "_ins_" + SHA.hashString( xid.toString(), CHARSET ) + "_";
-        File[] folders = rootDir.listFiles( File::isDirectory );
-        if ( folders == null ) {
-            throw new GenericRuntimeException( "Could not read the file store before committing" );
-        }
-        for ( File folder : folders ) {
-            File[] staged = folder.listFiles( file -> !file.isHidden() && file.getName().startsWith( insertPrefix ) );
-            if ( staged == null ) {
-                throw new GenericRuntimeException( "Could not read staged files in " + folder );
-            }
-            for ( File file : staged ) {
+        for ( File folder : listStoreFolders() ) {
+            for ( File file : listStagedFiles( folder, insertPrefix ) ) {
                 requireUnusedCommitTarget( file, new File( folder, file.getName().substring( insertPrefix.length() ) ), this::getPrimaryKeyFolders );
             }
         }
+    }
+
+
+    private File[] listStoreFolders() {
+        File[] folders = rootDir.listFiles( File::isDirectory );
+        if ( folders == null ) {
+            throw new GenericRuntimeException( "Could not read the file store in " + rootDir );
+        }
+        return folders;
+    }
+
+
+    static File[] listStagedFiles( File folder, String prefix ) {
+        File[] staged = folder.listFiles( file -> !file.isHidden() && file.getName().startsWith( prefix ) );
+        if ( staged != null ) {
+            return staged;
+        }
+        // A concurrent drop can remove an unrelated column after the store directory was listed.
+        if ( Files.notExists( folder.toPath(), LinkOption.NOFOLLOW_LINKS ) ) {
+            return new File[0];
+        }
+        throw new GenericRuntimeException( "Could not read staged files in " + folder );
     }
 
 
@@ -426,45 +438,25 @@ public class FileStore extends DataStore<RelAdapterCatalog> {
 
     public void commitOrRollback( final PolyXid xid, final boolean commit ) {
         String xidHash = SHA.hashString( xid.toString(), CHARSET ).toString();
-        final String deletePrefix;
-        final String movePrefix;
-        if ( commit ) {
-            deletePrefix = "_del_" + xidHash;
-            movePrefix = "_ins_" + xidHash;
-        } else {
-            deletePrefix = "_ins_" + xidHash;
-            movePrefix = "_del_" + xidHash;
-        }
-        if ( rootDir.listFiles() != null ) {
-            for ( File columnFolder : rootDir.listFiles( File::isDirectory ) ) {
-                for ( File data : columnFolder.listFiles( f -> !f.isHidden() && f.getName().startsWith( deletePrefix ) ) ) {
-                    data.delete();
-                }
-                File data = null;
-                File target = null;
-                File[] fileList = columnFolder.listFiles( f -> !f.isHidden() && f.getName().startsWith( movePrefix ) );
-                if ( fileList == null ) {
-                    return;
-                }
+        String insertPrefix = "_ins_" + xidHash + "_";
+        String deletePrefix = "_del_" + xidHash + "_";
+        String discardPrefix = commit ? deletePrefix : insertPrefix;
+        String movePrefix = commit ? insertPrefix : deletePrefix;
+        for ( File columnFolder : listStoreFolders() ) {
+            for ( File data : listStagedFiles( columnFolder, discardPrefix ) ) {
+                data.delete();
+            }
+            for ( File data : listStagedFiles( columnFolder, movePrefix ) ) {
+                File target = new File( columnFolder, data.getName().substring( movePrefix.length() ) );
                 try {
-                    for ( File file : fileList ) {
-                        data = file;
-                        String hash = data.getName().substring( 70 );// 3 + 3 + 64 (three underlines + "ins" + xid hash)
-                        target = new File( columnFolder, hash );
-                        if ( commit ) {
-                            requireUnusedCommitTarget( data, target, this::getPrimaryKeyFolders );
-                            Files.move( data.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING );
-                        } else {
-                            Files.move( data.toPath(), target.toPath() );
-                        }
+                    if ( commit ) {
+                        requireUnusedCommitTarget( data, target, this::getPrimaryKeyFolders );
+                        Files.move( data.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING );
+                    } else {
+                        Files.move( data.toPath(), target.toPath() );
                     }
                 } catch ( IOException e ) {
-                    if ( target == null ) {
-                        throw new GenericRuntimeException( "Could not commit because moving of files failed", e );
-                    } else {
-                        throw new GenericRuntimeException( "Could not commit because moving of files failed, trying to move "
-                                + data.getAbsolutePath() + " to " + target.getAbsolutePath(), e );
-                    }
+                    throw new GenericRuntimeException( "Could not move staged file " + data.getAbsolutePath() + " to " + target.getAbsolutePath(), e );
                 }
             }
         }

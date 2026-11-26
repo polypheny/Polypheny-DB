@@ -40,6 +40,7 @@ import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Correlate;
 import org.polypheny.db.algebra.core.Filter;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptRuleOperand;
@@ -113,6 +114,10 @@ public class FilterProjectTransposeRule extends AlgOptRule {
         final Filter filter = call.alg( 0 );
         final Project project = call.alg( 1 );
 
+        // Cypher WHERE and the following projection must see the same value of each WITH alias.
+        if ( project.getModel() == DataModel.GRAPH && project.getProjects().stream().anyMatch( expression -> !RexUtil.isDeterministic( expression ) ) ) {
+            return;
+        }
         if ( RexOver.containsOver( project.getProjects(), null ) ) {
             // In general a filter cannot be pushed below a windowing calculation.
             // Applying the filter before the aggregation function changes the results of the windowing invocation.

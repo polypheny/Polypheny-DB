@@ -17,6 +17,7 @@
 package org.polypheny.db.cypher.expression;
 
 import java.util.List;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -26,6 +27,7 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
 
@@ -33,23 +35,20 @@ import org.polypheny.db.util.Pair;
 public class CypherGate extends CypherExpression {
 
     private final Gate gate;
-    private List<CypherExpression> expressions;
-    private CypherExpression left;
-    private CypherExpression right;
+    private final List<CypherExpression> expressions;
 
 
-    public CypherGate( ParserPos pos, Gate gate, CypherExpression left, CypherExpression right ) {
+    public CypherGate( ParserPos pos, Gate gate, CypherExpression left, @Nullable CypherExpression right ) {
         super( pos );
         this.gate = gate;
-        this.left = left;
-        this.right = right;
+        this.expressions = gate == Gate.NOT ? List.of( left ) : List.of( left, right );
     }
 
 
     public CypherGate( Gate gate, List<CypherExpression> expressions ) {
         super( ParserPos.ZERO );
         this.gate = gate;
-        this.expressions = expressions;
+        this.expressions = List.copyOf( expressions );
     }
 
 
@@ -61,13 +60,12 @@ public class CypherGate extends CypherExpression {
             case NOT -> OperatorName.NOT;
             case XOR -> OperatorName.NOT_EQUALS;
         };
-        RexNode lhs = context.booleanPredicate( left.getRex( context, RexType.FILTER ).right );
-        List<RexNode> operands = gate == Gate.NOT
-                ? List.of( lhs )
-                : List.of( lhs, context.booleanPredicate( right.getRex( context, RexType.FILTER ).right ) );
+        List<RexNode> operands = expressions.stream()
+                .map( expression -> context.booleanPredicate( expression.getRex( context, RexType.FILTER ).right ) )
+                .toList();
         boolean nullable = operands.stream().anyMatch( operand -> operand.getType().isNullable() );
         AlgDataType resultType = context.typeFactory.createTypeWithNullability( context.booleanType, nullable );
-        return Pair.of( null, new RexCall( resultType, OperatorRegistry.get( operatorName ), operands ) );
+        return Pair.of( null, RexUtil.flatten( context.rexBuilder, new RexCall( resultType, OperatorRegistry.get( operatorName ), operands ) ) );
     }
 
 

@@ -35,11 +35,8 @@ public class CypherShortestPathPattern extends CypherPattern {
 
 
     public CypherEveryPathPattern getSingleSegment() {
-        if ( all ) {
-            throw new CypherSyntaxException( "allShortestPaths() is not supported." );
-        }
         if ( !(pathPattern instanceof CypherEveryPathPattern path) || path.getEdges().size() != 1 ) {
-            throw new CypherSyntaxException( "shortestPath() requires exactly one relationship pattern." );
+            throw new CypherSyntaxException( (all ? "allShortestPaths()" : "shortestPath()") + " requires exactly one relationship pattern." );
         }
         return path;
     }

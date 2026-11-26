@@ -82,6 +82,93 @@ class CypherShortestPathTest extends CypherTestTemplate {
 
 
     @Test
+    void returnsAllShortestTiesAndSupportsTheRelationshipListAlias() {
+        GraphResult result = execute( """
+                MATCH p=allShortestPaths((:Origin)-[:ROAD* {cost:1}]->(:Destination))
+                RETURN last(nodes(p)).key AS destination, nodes(p)[1].key AS via,
+                       size(rels(p)) AS hops, rels(p) = relationships(p) AS aliasMatches
+                ORDER BY destination, via
+                """ );
+        assertEquals( 3, result.getData().length );
+        assertEquals( "b", cell( result, 0, 0 ).asString().value );
+        assertEquals( "x", cell( result, 0, 1 ).asString().value );
+        assertEquals( "b", cell( result, 1, 0 ).asString().value );
+        assertEquals( "y", cell( result, 1, 1 ).asString().value );
+        assertEquals( "c", cell( result, 2, 0 ).asString().value );
+        for ( int i = 0; i < result.getData().length; i++ ) {
+            assertEquals( 2, number( result, i, 2 ) );
+            assertTrue( cell( result, i, 3 ).asBoolean().value );
+        }
+        assertEquals( 0, count( "MATCH p=allShortestPaths((:Destination)-[:ROAD*]->(:Origin)) RETURN count(p)" ) );
+        assertEquals( 2, count( """
+                MATCH p=allShortestPaths((:Destination {key:'b'})<-[:ROAD*2..2]-(:Origin))
+                RETURN count(p)
+                """ ) );
+    }
+
+
+    @Test
+    void appliesPathPredicatesBeforeKeepingTiesForEachOptionalInputRow() {
+        GraphResult result = execute( """
+                MATCH (a:Origin), (b:Destination {key:'b'})
+                UNWIND [0,1,1,2] AS minimum
+                OPTIONAL MATCH p=allShortestPaths((a)-[:ROAD*]->(b))
+                WHERE length(p) > minimum
+                RETURN minimum, length(p) AS hops ORDER BY minimum
+                """ );
+        assertEquals( 6, result.getData().length );
+        assertEquals( 1, number( result, 0, 1 ) );
+        for ( int i = 1; i < 5; i++ ) {
+            assertEquals( 2, number( result, i, 1 ) );
+        }
+        assertNull( cell( result, 5, 1 ) );
+    }
+
+
+    @Test
+    void appliesExistsBeforeSelectingShortestPathsAndAddingOptionalRows() {
+        assertEquals( 2, count( """
+                MATCH p=shortestPath((:Origin)-[:ROAD*]->(:Destination {key:'b'}))
+                WHERE EXISTS { WITH length(p) AS hops WHERE hops = 2 RETURN hops }
+                RETURN length(p)
+                """ ) );
+        GraphResult result = execute( """
+                MATCH (a:Origin), (b:Destination {key:'b'})
+                UNWIND [0,1,1,2] AS minimum
+                OPTIONAL MATCH p=allShortestPaths((a)-[:ROAD*]->(b))
+                WHERE EXISTS { WITH length(p) AS hops WHERE hops > minimum RETURN hops }
+                RETURN minimum, length(p) AS hops ORDER BY minimum
+                """ );
+        assertEquals( 6, result.getData().length );
+        assertEquals( 1, number( result, 0, 1 ) );
+        for ( int row = 1; row < 5; row++ ) {
+            assertEquals( 2, number( result, row, 1 ) );
+        }
+        assertNull( cell( result, 5, 1 ) );
+    }
+
+
+    @Test
+    void returnsAListOfShortestPathsForBoundEndpointsInAnExpression() {
+        assertEquals( 2, count( """
+                MATCH (a:Origin), (b:Destination {key:'b'})
+                RETURN size(allShortestPaths((a)-[:ROAD* {cost:1}]->(b)))
+                """ ) );
+        assertEquals( 0, count( """
+                MATCH (a:Origin), (b:Disconnected)
+                RETURN size(allShortestPaths((a)-[:ROAD*]->(b)))
+                """ ) );
+        GraphResult missing = execute( """
+                MATCH (a:Origin)
+                OPTIONAL MATCH (b:Missing)
+                RETURN allShortestPaths((a)-[:ROAD*]->(b))
+                """ );
+        assertEquals( 1, missing.getData().length );
+        assertNull( cell( missing, 0, 0 ) );
+    }
+
+
+    @Test
     void filtersTiesAndLongerAlternativesBeforeSelectingAShortestMatch() {
         assertEquals( 2, count( """
                 MATCH (a:Origin), (b:Destination {key:'b'}), p=shortestPath((a)-[:ROAD*]->(b))

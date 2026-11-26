@@ -38,6 +38,7 @@ import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
@@ -53,6 +54,7 @@ import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.functions.Functions;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
@@ -65,6 +67,8 @@ import org.polypheny.db.util.Pair;
  * Implementation of {@link org.polypheny.db.algebra.core.Values} in {@link EnumerableConvention enumerable calling convention}.
  */
 public class EnumerableValues extends Values implements EnumerableAlg {
+
+    private static final int MAX_LITERALS_PER_METHOD = 1024;
 
     /**
      * Creates an EnumerableValues.
@@ -132,13 +136,27 @@ public class EnumerableValues extends Values implements EnumerableAlg {
             }
             expressions.add( physType.record( literals ) );
         }
-        builder.add(
-                Expressions.return_(
-                        null,
-                        Expressions.call(
-                                BuiltInMethod.AS_ENUMERABLE.method,
-                                Expressions.newArrayInit( Primitive.box( rowClass ), 2, expressions ) ) ) );
+        int rowsPerMethod = MAX_LITERALS_PER_METHOD / Math.max( 1, fields.size() );
+        rowsPerMethod = Math.max( 1, rowsPerMethod );
+        Expression values;
+        if ( expressions.size() > rowsPerMethod ) {
+            // Keep literal initialization below the JVM's per-method bytecode limit.
+            List<Expression> chunks = new ArrayList<>();
+            for ( int from = 0; from < expressions.size(); from += rowsPerMethod ) {
+                List<Expression> rows = expressions.subList( from, Math.min( from + rowsPerMethod, expressions.size() ) );
+                chunks.add( Expressions.lambda( Function0.class, enumerable( rowClass, rows ) ) );
+            }
+            values = Expressions.call( Functions.class, "concatenateValueChunks", Expressions.newArrayInit( Function0.class, chunks ) );
+        } else {
+            values = enumerable( rowClass, expressions );
+        }
+        builder.add( Expressions.return_( null, values ) );
         return implementor.result( physType, builder.toBlock() );
+    }
+
+
+    private static Expression enumerable( Type rowClass, List<Expression> rows ) {
+        return Expressions.call( BuiltInMethod.AS_ENUMERABLE.method, Expressions.newArrayInit( Primitive.box( rowClass ), 2, rows ) );
     }
 
 }

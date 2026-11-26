@@ -63,6 +63,7 @@ import org.polypheny.db.algebra.core.SemiJoin;
 import org.polypheny.db.algebra.core.SetOp;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.relational.RelScan;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
 import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalRelJoin;
@@ -461,6 +462,12 @@ public class AlgFieldTrimmer implements AlgProducingVisitor3<TrimResult, Immutab
         // leave the Sort unchanged in case we have dynamic limits
         if ( sort.offset instanceof RexDynamicParam || sort.fetch instanceof RexDynamicParam ) {
             return result( sort, inputMapping );
+        }
+
+        if ( sort instanceof LogicalLpgSort ) {
+            AlgCollation mapped = RexUtil.apply( inputMapping, collation );
+            Sort trimmed = sort.copy( sort.getTraitSet().replace( mapped ), newInput, mapped, null, sort.offset, sort.fetch );
+            return result( trimmed, inputMapping );
         }
 
         algBuilder.push( newInput );

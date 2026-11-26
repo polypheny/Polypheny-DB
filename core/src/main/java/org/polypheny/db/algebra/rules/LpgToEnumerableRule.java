@@ -156,17 +156,14 @@ public class LpgToEnumerableRule extends AlgOptRule {
 
     private void convertSort( AlgOptRuleCall call ) {
         LogicalLpgSort sort = call.alg( 0 );
-        //AlgTraitSet out = sort.getTraitSet().replace( EnumerableConvention.INSTANCE );
         AlgNode input = AlgOptRule.convert( sort.getInput(), EnumerableConvention.INSTANCE );
-
-        AlgNode node;
-        if ( sort.getCollation().getFieldCollations().isEmpty() ) {
-            node = EnumerableLimit.create( input, sort.getRexSkip(), sort.getRexLimit() );
-        } else {
-            node = EnumerableSort.create( input, sort.getCollation(), sort.getRexSkip(), sort.getRexLimit() );
+        if ( !sort.getCollation().getFieldCollations().isEmpty() ) {
+            input = EnumerableSort.create( input, sort.getCollation(), null, null );
         }
-
-        call.transformTo( node );
+        if ( sort.offset != null || sort.fetch != null ) {
+            input = new EnumerableLimit( sort.getCluster(), input.getTraitSet(), input, sort.offset, sort.fetch );
+        }
+        call.transformTo( input );
     }
 
 

@@ -18,10 +18,12 @@ package org.polypheny.db.algebra.logical.lpg;
 
 import java.util.List;
 import lombok.Getter;
+import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.lpg.LpgProject;
+import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
@@ -48,7 +50,10 @@ public class LogicalLpgProject extends LpgProject {
 
 
     public static LogicalLpgProject create( AlgNode input, List<? extends RexNode> projects, List<PolyString> names ) {
-        return new LogicalLpgProject( input.getCluster(), input.getTraitSet(), input, projects, names );
+        AlgCluster cluster = input.getCluster();
+        AlgTraitSet traits = input.getTraitSet().replaceIfs( AlgCollationTraitDef.INSTANCE,
+                () -> AlgMdCollation.project( cluster.getMetadataQuery(), input, projects ) );
+        return new LogicalLpgProject( cluster, traits, input, projects, names );
     }
 
 
