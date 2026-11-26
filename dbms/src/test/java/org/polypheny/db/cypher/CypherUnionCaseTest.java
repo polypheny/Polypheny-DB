@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper.CypherConnection;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.webui.models.results.GraphResult;
@@ -189,7 +190,7 @@ class CypherUnionCaseTest extends CypherTestTemplate {
                 UNWIND [0] AS n
                 RETURN CASE WHEN n = 0 THEN EXISTS { WITH n WHERE 1 / n > 0 RETURN n }
                             ELSE false END AS selected
-                """, "Division by zero" );
+                """, "by zero" );
     }
 
 
@@ -228,7 +229,9 @@ class CypherUnionCaseTest extends CypherTestTemplate {
                 """ );
         assertEquals( 2, result.getData().length );
         assertTrue( cell( result, 0, 1 ).asList().isEmpty() );
-        assertEquals( 1, cell( result, 1, 1 ).asList().get( 0 ).asNumber().intValue() );
+        PolyValue selected = cell( result, 1, 1 ).asList().get( 0 );
+        assertTrue( PolyType.INT_TYPES.contains( selected.getType() ) );
+        assertEquals( 1, selected.asNumber().intValue() );
         assertEquals( false, cell( result, 0, 2 ).asList().get( 0 ).asBoolean().value );
         assertEquals( true, cell( result, 1, 2 ).asList().get( 0 ).asBoolean().value );
     }

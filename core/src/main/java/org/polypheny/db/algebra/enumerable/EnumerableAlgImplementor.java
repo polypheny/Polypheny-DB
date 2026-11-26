@@ -398,8 +398,16 @@ public class EnumerableAlgImplementor extends JavaAlgImplementor {
 
 
     public void registerCorrelVariable( final String name, final ParameterExpression pe, final BlockBuilder corrBlock, final PhysType physType ) {
+        registerCorrelVariable( name, pe, corrBlock, physType, false );
+    }
+
+
+    public void registerCorrelVariable( final String name, final ParameterExpression pe, final BlockBuilder corrBlock, final PhysType physType, boolean preserveNumericTypes ) {
+        RexToLixTranslator.InputGetter getter = preserveNumericTypes
+                ? new RexToLixTranslator.InputGetterImpl( pe, physType, true )
+                : ( list, index, storageType ) -> physType.fieldReference( pe, index, storageType );
         corrVars.put( name, ( list, index, storageType ) -> {
-            Expression fieldReference = physType.fieldReference( pe, index, storageType );
+            Expression fieldReference = getter.field( corrBlock, index, storageType );
             return corrBlock.append( name + "_" + index, fieldReference );
         } );
     }

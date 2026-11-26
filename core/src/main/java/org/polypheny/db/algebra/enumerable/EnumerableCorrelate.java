@@ -60,6 +60,9 @@ import org.polypheny.db.util.ImmutableBitSet;
  */
 public class EnumerableCorrelate extends Correlate implements EnumerableAlg {
 
+    private final boolean preserveNumericTypes;
+
+
     public EnumerableCorrelate(
             AlgCluster cluster,
             AlgTraitSet traits,
@@ -68,7 +71,21 @@ public class EnumerableCorrelate extends Correlate implements EnumerableAlg {
             CorrelationId correlationId,
             ImmutableBitSet requiredColumns,
             SemiJoinType joinType ) {
+        this( cluster, traits, left, right, correlationId, requiredColumns, joinType, false );
+    }
+
+
+    private EnumerableCorrelate(
+            AlgCluster cluster,
+            AlgTraitSet traits,
+            AlgNode left,
+            AlgNode right,
+            CorrelationId correlationId,
+            ImmutableBitSet requiredColumns,
+            SemiJoinType joinType,
+            boolean preserveNumericTypes ) {
         super( cluster, traits, left, right, correlationId, requiredColumns, joinType );
+        this.preserveNumericTypes = preserveNumericTypes;
     }
 
 
@@ -81,10 +98,21 @@ public class EnumerableCorrelate extends Correlate implements EnumerableAlg {
             CorrelationId correlationId,
             ImmutableBitSet requiredColumns,
             SemiJoinType joinType ) {
+        return create( left, right, correlationId, requiredColumns, joinType, false );
+    }
+
+
+    public static EnumerableCorrelate create(
+            AlgNode left,
+            AlgNode right,
+            CorrelationId correlationId,
+            ImmutableBitSet requiredColumns,
+            SemiJoinType joinType,
+            boolean preserveNumericTypes ) {
         final AlgCluster cluster = left.getCluster();
         final AlgMetadataQuery mq = cluster.getMetadataQuery();
         final AlgTraitSet traitSet = cluster.traitSetOf( EnumerableConvention.INSTANCE ).replaceIfs( AlgCollationTraitDef.INSTANCE, () -> AlgMdCollation.enumerableCorrelate( mq, left, right, joinType ) );
-        return new EnumerableCorrelate( cluster, traitSet, left, right, correlationId, requiredColumns, joinType );
+        return new EnumerableCorrelate( cluster, traitSet, left, right, correlationId, requiredColumns, joinType, preserveNumericTypes );
     }
 
 
@@ -96,7 +124,7 @@ public class EnumerableCorrelate extends Correlate implements EnumerableAlg {
             CorrelationId correlationId,
             ImmutableBitSet requiredColumns,
             SemiJoinType joinType ) {
-        return new EnumerableCorrelate( getCluster(), traitSet, left, right, correlationId, requiredColumns, joinType );
+        return new EnumerableCorrelate( getCluster(), traitSet, left, right, correlationId, requiredColumns, joinType, preserveNumericTypes );
     }
 
 
@@ -118,7 +146,7 @@ public class EnumerableCorrelate extends Correlate implements EnumerableAlg {
             corrRef = (ParameterExpression) corrBlock.append( getCorrelVariable(), Expressions.unbox( corrArg ) );
         }
 
-        implementor.registerCorrelVariable( getCorrelVariable(), corrRef, corrBlock, leftResult.physType() );
+        implementor.registerCorrelVariable( getCorrelVariable(), corrRef, corrBlock, leftResult.physType(), preserveNumericTypes );
 
         final Result rightResult = implementor.visitChild( this, 1, (EnumerableAlg) right, pref );
 
