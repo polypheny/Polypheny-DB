@@ -212,6 +212,11 @@ class CypherExistsTest extends CypherTestTemplate {
                 """ );
         assertEquals( List.of( "Lin", "Lin" ), cell( result, 0, 0 ).asList().stream().map( item -> item.asString().value ).toList() );
         assertEquals( List.of( true, false, false ), cell( result, 0, 1 ).asList().stream().map( item -> item.asBoolean().value ).toList() );
+        GraphResult anonymous = execute( """
+                MATCH (:Person {name:'Lin'})
+                RETURN [n IN [1] WHERE EXISTS { RETURN n }] AS matching
+                """ );
+        assertEquals( 1, cell( anonymous, 0, 0 ).asList().get( 0 ).asNumber().intValue() );
     }
 
 

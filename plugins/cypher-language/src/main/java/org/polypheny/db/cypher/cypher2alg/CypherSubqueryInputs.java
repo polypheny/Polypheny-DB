@@ -39,6 +39,8 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgDataTypeField;
+import org.polypheny.db.algebra.type.AlgDataTypeFieldImpl;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
@@ -275,8 +277,7 @@ final class CypherSubqueryInputs extends AlgShuttleImpl {
             outerNames.add( PolyString.of( resultName ) );
             AlgNode input = LogicalLpgProject.create( rows, outerValues, outerNames );
 
-            AlgDataType iterationType = cluster.getTypeFactory().builder().addAll( rows.getTupleType().getFields() )
-                    .add( resultName, null, element.getType() ).build();
+            AlgDataType iterationType = appendListField( resultName, element.getType() );
             CorrelationId correlation = cluster.createCorrel();
             RexNode binding = rexBuilder.makeCorrel( iterationType, correlation );
             RexShuttle scoped = new RexShuttle() {
@@ -300,10 +301,17 @@ final class CypherSubqueryInputs extends AlgShuttleImpl {
                 value = call.operands.get( 3 ).accept( scoped );
             }
             body = LogicalLpgProject.create( body, List.of( value ), List.of( PolyString.of( resultName ) ) ).accept( CypherSubqueryInputs.this );
-            AlgDataType resultType = cluster.getTypeFactory().builder().addAll( rows.getTupleType().getFields() )
-                    .add( resultName, null, call.getType() ).build();
+            AlgDataType resultType = appendListField( resultName, call.getType() );
             rows = new LogicalLpgListSubquery( input, body, correlation, iterationType, resultType, operator );
             return rexBuilder.makeInputRef( rows, elementIndex );
+        }
+
+
+        private AlgDataType appendListField( String name, AlgDataType type ) {
+            // Anonymous MATCH columns still occupy row positions but have no field name to intern.
+            List<AlgDataTypeField> fields = new ArrayList<>( rows.getTupleType().getFields() );
+            fields.add( new AlgDataTypeFieldImpl( -1L, name, fields.size(), type ) );
+            return new AlgRecordType( fields );
         }
 
     }
