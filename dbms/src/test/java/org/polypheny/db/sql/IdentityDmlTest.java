@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -51,9 +52,26 @@ import org.polypheny.db.transaction.Transaction;
 @Tag("adapter")
 class IdentityDmlTest {
 
+    private static final String RELATIONAL_FIXTURE = "identity_dml_relational_store";
+    private static String relationalStore;
+
+
     @BeforeAll
-    static void start() {
+    static void start() throws SQLException {
         TestHelper.getInstance();
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
+            relationalStore = TestHelper.useJdbcTestStore( RELATIONAL_FIXTURE, sql );
+        }
+    }
+
+
+    @AfterAll
+    static void dropRelationalFixture() throws SQLException {
+        if ( RELATIONAL_FIXTURE.equals( relationalStore ) ) {
+            try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
+                TestHelper.dropAdapter( RELATIONAL_FIXTURE, sql );
+            }
+        }
     }
 
 
@@ -66,7 +84,8 @@ class IdentityDmlTest {
                 statement.executeUpdate( "CREATE TABLE identity_dml (id BIGSERIAL PRIMARY KEY, label VARCHAR(40) NOT NULL DEFAULT 'default row')" );
                 assertEquals( 3, statement.executeUpdate( "INSERT INTO identity_dml VALUES (DEFAULT, 'first'), (50, 'explicit'), (DEFAULT, 'second')" ) );
                 assertEquals( 1, statement.executeUpdate( "INSERT INTO identity_dml DEFAULT VALUES" ) );
-                assertEquals( 2, statement.executeUpdate( "INSERT INTO identity_dml (label) SELECT label || ' copy' FROM identity_dml WHERE id < 3" ) );
+                assertEquals( 2, statement.executeUpdate( "INSERT INTO identity_dml (label)"
+                        + " SELECT CASE id WHEN 1 THEN 'first copy' ELSE 'second copy' END FROM identity_dml WHERE id < 3" ) );
                 try ( PreparedStatement insert = connection.prepareStatement( "INSERT INTO identity_dml (label) VALUES (?)" ) ) {
                     insert.setString( 1, "batch first" );
                     insert.addBatch();
@@ -242,7 +261,8 @@ class IdentityDmlTest {
         try ( JdbcConnection jdbc = new JdbcConnection( true );
                 Statement statement = jdbc.getConnection().createStatement() ) {
             try {
-                statement.executeUpdate( "CREATE TABLE identity_before_update (pk INTEGER PRIMARY KEY, seq SERIAL, u INTEGER, CONSTRAINT identity_before_u UNIQUE (u))" );
+                statement.executeUpdate( "CREATE TABLE identity_before_update (pk INTEGER PRIMARY KEY, seq SERIAL, u INTEGER, CONSTRAINT identity_before_u UNIQUE (u))"
+                        + " ON STORE " + relationalStore );
                 assertEquals( 2, statement.executeUpdate( "INSERT INTO identity_before_update (pk, u) VALUES (1, 1), (2, 2)" ) );
                 assertEquals( 2, statement.executeUpdate( "UPDATE identity_before_update SET seq = DEFAULT, u = CASE u WHEN 1 THEN 11 ELSE 12 END WHERE pk > 0" ) );
                 SQLException violation = assertThrows( SQLException.class, () -> statement.executeUpdate( "UPDATE identity_before_update SET seq = DEFAULT, u = 99" ) );
@@ -381,7 +401,14 @@ class IdentityDmlTest {
                     }
                     assertArrayEquals( new int[]{ 1, 1 }, insert.executeBatch() );
                 }
-                assertEquals( 3, singleLong( statement, "SELECT COUNT(*) FROM identity_select_batch WHERE id = n + 1" ) );
+                try ( ResultSet rows = statement.executeQuery( "SELECT id, n FROM identity_select_batch ORDER BY id" ) ) {
+                    for ( int id = 1; id <= 3; id++ ) {
+                        assertTrue( rows.next() );
+                        assertEquals( id, rows.getInt( 1 ) );
+                        assertEquals( id - 1, rows.getInt( 2 ) );
+                    }
+                    assertFalse( rows.next() );
+                }
             } finally {
                 statement.executeUpdate( "DROP TABLE IF EXISTS identity_select_batch" );
             }
@@ -476,7 +503,7 @@ class IdentityDmlTest {
         try ( JdbcConnection jdbc = new JdbcConnection( true );
                 Statement statement = jdbc.getConnection().createStatement() ) {
             try {
-                statement.executeUpdate( "CREATE TABLE identity_reordered (id SERIAL PRIMARY KEY, payload INTEGER)" );
+                statement.executeUpdate( "CREATE TABLE identity_reordered (id SERIAL PRIMARY KEY, payload INTEGER) ON STORE " + relationalStore );
                 Transaction transaction = TestHelper.getInstance().getTransaction();
                 try {
                     String sql = "INSERT INTO identity_reordered (payload) VALUES (500)";

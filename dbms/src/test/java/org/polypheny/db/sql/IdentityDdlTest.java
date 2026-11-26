@@ -149,8 +149,10 @@ class IdentityDdlTest {
     void identityBackfillRejectsDuplicatePrimaryKeysBeforeAddingColumn() throws SQLException {
         try ( JdbcConnection jdbc = new JdbcConnection( true );
                 Statement sql = jdbc.getConnection().createStatement() ) {
+            TestHelper.addHsqldb( "identity_duplicate_store", sql );
             try {
-                sql.executeUpdate( "CREATE TABLE identity_duplicate_pk (pk INTEGER PRIMARY KEY, label INTEGER)" );
+                // The fixture needs to store duplicate keys before running the backfill check.
+                sql.executeUpdate( "CREATE TABLE identity_duplicate_pk (pk INTEGER PRIMARY KEY, label INTEGER) ON STORE identity_duplicate_store" );
                 sql.executeUpdate( "INSERT INTO identity_duplicate_pk VALUES (1, 10), (1, 20)" );
                 SQLException failure = assertThrows( SQLException.class, () -> sql.executeUpdate(
                         "ALTER TABLE identity_duplicate_pk ADD COLUMN generated_id SERIAL" ) );
@@ -158,7 +160,11 @@ class IdentityDdlTest {
                 assertThrows( SQLException.class, () -> sql.executeQuery( "SELECT generated_id FROM identity_duplicate_pk" ) );
                 assertEquals( List.of( 10L, 20L ), numbers( sql, "SELECT label FROM identity_duplicate_pk ORDER BY label" ) );
             } finally {
-                sql.executeUpdate( "DROP TABLE IF EXISTS identity_duplicate_pk" );
+                try {
+                    sql.executeUpdate( "DROP TABLE IF EXISTS identity_duplicate_pk" );
+                } finally {
+                    TestHelper.dropAdapter( "identity_duplicate_store", sql );
+                }
             }
         }
     }

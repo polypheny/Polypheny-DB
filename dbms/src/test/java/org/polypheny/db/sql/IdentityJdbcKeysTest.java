@@ -41,6 +41,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -53,9 +54,31 @@ import org.polypheny.db.catalog.Catalog;
 @Tag("adapter")
 class IdentityJdbcKeysTest {
 
+    private static final String JDBC_ASSIGNMENT_STORE = "identity_jdbc_assignment_store";
+    private static String numericStore;
+
+
     @BeforeAll
-    static void start() {
+    static void start() throws SQLException {
         TestHelper.getInstance();
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
+            numericStore = TestHelper.useJdbcTestStore( JDBC_ASSIGNMENT_STORE, sql );
+        }
+    }
+
+
+    @AfterAll
+    static void dropAssignmentStore() throws SQLException {
+        if ( JDBC_ASSIGNMENT_STORE.equals( numericStore ) ) {
+            try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
+                TestHelper.dropAdapter( JDBC_ASSIGNMENT_STORE, sql );
+            }
+        }
+    }
+
+
+    private static String numericPlacement() {
+        return " ON STORE " + numericStore;
     }
 
 
@@ -198,7 +221,7 @@ class IdentityJdbcKeysTest {
     void preparedProjectionsReturnStoredDecimalAssignments( boolean identity ) throws SQLException {
         try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
             sql.executeUpdate( "CREATE TABLE projected_decimal (id " + (identity ? "BIGSERIAL" : "BIGINT")
-                    + " PRIMARY KEY, amount DECIMAL(12,4))" );
+                    + " PRIMARY KEY, amount DECIMAL(12,4))" + numericPlacement() );
             try {
                 String insert = "INSERT INTO projected_decimal (id, amount) VALUES (?, ?), (?, ?)";
                 BigDecimal first = new BigDecimal( "1.234567" );
@@ -239,7 +262,8 @@ class IdentityJdbcKeysTest {
     @ValueSource(booleans = { false, true })
     void preparedProjectionsReturnStoredIntegralAssignments( boolean floatingAndScaledInputs ) throws SQLException {
         try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
-            sql.executeUpdate( "CREATE TABLE projected_integral (id INTEGER PRIMARY KEY, small_num SMALLINT, ordinary_num INTEGER, wide_num BIGINT)" );
+            sql.executeUpdate( "CREATE TABLE projected_integral (id INTEGER PRIMARY KEY, small_num SMALLINT, ordinary_num INTEGER, wide_num BIGINT)"
+                    + numericPlacement() );
             try {
                 String insert = "INSERT INTO projected_integral (id, small_num, ordinary_num, wide_num) VALUES (?, ?, ?, ?)";
                 try ( PreparedStatement plain = jdbc.getConnection().prepareStatement( insert );
@@ -278,7 +302,7 @@ class IdentityJdbcKeysTest {
     @Test
     void preparedProjectionsReturnTheStoredValueAndTypeForZeroScaleDecimalAssignments() throws SQLException {
         try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
-            sql.executeUpdate( "CREATE TABLE projected_zero_scale (id INTEGER PRIMARY KEY, amount INTEGER)" );
+            sql.executeUpdate( "CREATE TABLE projected_zero_scale (id INTEGER PRIMARY KEY, amount INTEGER)" + numericPlacement() );
             try {
                 String insert = "INSERT INTO projected_zero_scale VALUES (?, ?), (?, ?)";
                 try ( PreparedStatement plain = jdbc.getConnection().prepareStatement( insert );
@@ -334,7 +358,7 @@ class IdentityJdbcKeysTest {
     @ValueSource(longs = { 2147483648L, -2147483649L })
     void rejectsAProjectedInsertWithAnOutOfRangeLongAssignment( long overflow ) throws SQLException {
         try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
-            sql.executeUpdate( "CREATE TABLE projected_overflow (id INTEGER PRIMARY KEY, qty INTEGER)" );
+            sql.executeUpdate( "CREATE TABLE projected_overflow (id INTEGER PRIMARY KEY, qty INTEGER)" + numericPlacement() );
             try {
                 String insert = "INSERT INTO projected_overflow VALUES (1, 42), (2, ?)";
                 try ( PreparedStatement plain = jdbc.getConnection().prepareStatement( insert );
@@ -361,7 +385,7 @@ class IdentityJdbcKeysTest {
     void preparedProjectionsRespectDeclaredIntegerWidthsAndExactDecimalValues() throws SQLException {
         try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
             sql.executeUpdate( "CREATE TABLE projected_numeric_types (id INTEGER PRIMARY KEY, narrow_num INTEGER, small_num SMALLINT, "
-                    + "wide_num BIGINT, scaled_num DECIMAL(12,4), exact_num DECIMAL(20,0))" );
+                    + "wide_num BIGINT, scaled_num DECIMAL(12,4), exact_num DECIMAL(20,0))" + numericPlacement() );
             try {
                 String insert = "INSERT INTO projected_numeric_types VALUES (?, ?, ?, ?, ?, ?)";
                 String fields = "narrow_num, small_num, wide_num, scaled_num, exact_num";
@@ -466,7 +490,7 @@ class IdentityJdbcKeysTest {
     @Test
     void rejectsOutOfRangeBigintBeforeWritingAnyProjectedRow() throws SQLException {
         try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
-            sql.executeUpdate( "CREATE TABLE projected_bigint_range (id INTEGER PRIMARY KEY, qty BIGINT)" );
+            sql.executeUpdate( "CREATE TABLE projected_bigint_range (id INTEGER PRIMARY KEY, qty BIGINT)" + numericPlacement() );
             try {
                 String insert = "INSERT INTO projected_bigint_range VALUES (1, 42), (2, ?)";
                 try ( PreparedStatement plain = jdbc.getConnection().prepareStatement( insert );
@@ -494,7 +518,7 @@ class IdentityJdbcKeysTest {
     @Test
     void floatingIntegerAssignmentsMatchOrdinaryParameterConversion() throws SQLException {
         try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
-            sql.executeUpdate( "CREATE TABLE projected_integer_cast (id INTEGER PRIMARY KEY, qty INTEGER)" );
+            sql.executeUpdate( "CREATE TABLE projected_integer_cast (id INTEGER PRIMARY KEY, qty INTEGER)" + numericPlacement() );
             try {
                 String insert = "INSERT INTO projected_integer_cast VALUES (?, ?)";
                 try ( PreparedStatement plain = jdbc.getConnection().prepareStatement( insert );
@@ -535,7 +559,8 @@ class IdentityJdbcKeysTest {
     @Test
     void rawComputedNumericAssignmentsUseNativeCastsBeforeProjectingKeys() throws SQLException {
         try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
-            sql.executeUpdate( "CREATE TABLE native_projected_expr (id INTEGER PRIMARY KEY, narrow_num SMALLINT, ordinary_num INTEGER)" );
+            sql.executeUpdate( "CREATE TABLE native_projected_expr (id INTEGER PRIMARY KEY, narrow_num SMALLINT, ordinary_num INTEGER)"
+                    + numericPlacement() );
             try {
                 for ( boolean parameterize : new boolean[]{ true, false } ) {
                     sql.executeUpdate( "ALTER CONFIG 'runtime/parameterizeDML' SET " + parameterize );
@@ -574,7 +599,8 @@ class IdentityJdbcKeysTest {
     @Test
     void foldedDoubleAssignmentsKeepOrdinaryLiteralRounding() throws SQLException {
         try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
-            sql.executeUpdate( "CREATE TABLE folded_projected_rounding (id INTEGER PRIMARY KEY, narrow INTEGER, wide BIGINT)" );
+            sql.executeUpdate( "CREATE TABLE folded_projected_rounding (id INTEGER PRIMARY KEY, narrow INTEGER, wide BIGINT)"
+                    + numericPlacement() );
             try {
                 String prefix = "INSERT INTO folded_projected_rounding VALUES ";
                 String folded = ", CAST(42.5 AS DOUBLE), CAST(-42.5 AS DOUBLE))";
@@ -639,7 +665,7 @@ class IdentityJdbcKeysTest {
     void projectedNumericExpressionsUseTheOrdinaryWriteSemantics() throws SQLException {
         try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
             sql.executeUpdate( "CREATE TABLE projected_numeric_expr (id INTEGER PRIMARY KEY, narrow INTEGER, wide BIGINT, "
-                    + "real_num REAL, double_num DOUBLE, amount DECIMAL(12,4), nested_amount DECIMAL(12,4))" );
+                    + "real_num REAL, double_num DOUBLE, amount DECIMAL(12,4), nested_amount DECIMAL(12,4))" + numericPlacement() );
             try {
                 for ( boolean parameterize : new boolean[]{ true, false } ) {
                     sql.executeUpdate( "ALTER CONFIG 'runtime/parameterizeDML' SET " + parameterize );
@@ -778,7 +804,7 @@ class IdentityJdbcKeysTest {
                 TestHelper.addHsqldb( replica, sql );
             }
             try {
-                sql.executeUpdate( "CREATE TABLE projected_union_numeric (id INTEGER PRIMARY KEY, qty BIGINT) ON STORE hsqldb" );
+                sql.executeUpdate( "CREATE TABLE projected_union_numeric (id INTEGER PRIMARY KEY, qty BIGINT)" + numericPlacement() );
                 try {
                     if ( replicated ) {
                         sql.executeUpdate( "ALTER TABLE projected_union_numeric ADD PLACEMENT ON STORE " + replica );
@@ -786,7 +812,7 @@ class IdentityJdbcKeysTest {
                     String insert = "INSERT INTO projected_union_numeric VALUES "
                             + "(? + 1, CAST(? AS DOUBLE)), (? + 2, CAST(? AS DECIMAL(19,0)))";
                     if ( streamed ) {
-                        sql.executeUpdate( "CREATE TABLE projected_union_source (id INTEGER PRIMARY KEY) ON STORE hsqldb" );
+                        sql.executeUpdate( "CREATE TABLE projected_union_source (id INTEGER PRIMARY KEY)" + numericPlacement() );
                         try {
                             sql.executeUpdate( "INSERT INTO projected_union_source VALUES (1), (2)" );
                             String streamedInsert = "INSERT INTO projected_union_numeric SELECT id + ?, CAST(? AS DOUBLE) "
@@ -914,10 +940,10 @@ class IdentityJdbcKeysTest {
     @Test
     void insertSelectProjectionsUseTheOrdinaryNativeRounding() throws SQLException {
         try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
-            sql.executeUpdate( "CREATE TABLE projected_select_source (id INTEGER PRIMARY KEY)" );
+            sql.executeUpdate( "CREATE TABLE projected_select_source (id INTEGER PRIMARY KEY)" + numericPlacement() );
             try {
                 sql.executeUpdate( "INSERT INTO projected_select_source VALUES (1), (2)" );
-                sql.executeUpdate( "CREATE TABLE projected_select_numeric (id INTEGER PRIMARY KEY, qty BIGINT)" );
+                sql.executeUpdate( "CREATE TABLE projected_select_numeric (id INTEGER PRIMARY KEY, qty BIGINT)" + numericPlacement() );
                 try {
                     for ( boolean parameterize : new boolean[]{ false, true } ) {
                         sql.executeUpdate( "ALTER CONFIG 'runtime/parameterizeDML' SET " + parameterize );
@@ -966,7 +992,8 @@ class IdentityJdbcKeysTest {
     @Test
     void approximateProjectionsKeepStoredCarriersAndSpecialFloatingValues() throws SQLException {
         try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
-            sql.executeUpdate( "CREATE TABLE native_projected_float (id INTEGER PRIMARY KEY, real_num REAL, double_num DOUBLE)" );
+            sql.executeUpdate( "CREATE TABLE native_projected_float (id INTEGER PRIMARY KEY, real_num REAL, double_num DOUBLE)"
+                    + numericPlacement() );
             try {
                 String insert = "INSERT INTO native_projected_float VALUES (?, ?, ?)";
                 String fields = "real_num, double_num";
@@ -1023,7 +1050,7 @@ class IdentityJdbcKeysTest {
     void readsBackIntegralProjectionsWithAFractionalPrimaryKey() throws SQLException {
         try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
             sql.executeUpdate( "CREATE TABLE projected_integral_key (bucket INTEGER NOT NULL, id SMALLINT NOT NULL, "
-                    + "amount INTEGER, PRIMARY KEY(bucket, id))" );
+                    + "amount INTEGER, PRIMARY KEY(bucket, id))" + numericPlacement() );
             try {
                 String insert = "INSERT INTO projected_integral_key (bucket, id, amount) VALUES (?, ?, ?)";
                 try ( PreparedStatement plain = jdbc.getConnection().prepareStatement( insert );
@@ -1081,7 +1108,8 @@ class IdentityJdbcKeysTest {
             insert.setBigDecimal( 2, new BigDecimal( "-7.75" ) );
             insert.setBigDecimal( 3, new BigDecimal( "42.6" ) );
         }
-        insert.setBigDecimal( 4, new BigDecimal( "9007199254740993.75" ) );
+        // Both rounding and truncating stores retain the odd BIGINT above double precision.
+        insert.setBigDecimal( 4, new BigDecimal( "9007199254740993.25" ) );
     }
 
 
@@ -1204,7 +1232,8 @@ class IdentityJdbcKeysTest {
     @Test
     void readsBackTheInsertedDecimalPrimaryKeyInsteadOfAnAdjacentRow() throws SQLException {
         try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
-            sql.executeUpdate( "CREATE TABLE projected_decimal_key (bucket INTEGER NOT NULL, id DECIMAL(12,4) NOT NULL, amount DECIMAL(12,4), PRIMARY KEY(bucket, id))" );
+            sql.executeUpdate( "CREATE TABLE projected_decimal_key (bucket INTEGER NOT NULL, id DECIMAL(12,4) NOT NULL, amount DECIMAL(12,4), PRIMARY KEY(bucket, id))"
+                    + numericPlacement() );
             try {
                 String insert = "INSERT INTO projected_decimal_key (bucket, id, amount) VALUES (?, ?, ?)";
                 try ( PreparedStatement plain = jdbc.getConnection().prepareStatement( insert );

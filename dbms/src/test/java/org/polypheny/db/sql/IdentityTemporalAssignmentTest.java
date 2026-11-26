@@ -48,6 +48,10 @@ import org.polypheny.db.util.temporal.DateTimeUtils;
 @Tag("adapter")
 class IdentityTemporalAssignmentTest {
 
+    // DefaultInserter uses this name for every configured default store type.
+    private static final String DEFAULT_STORE = "hsqldb";
+
+
     @BeforeAll
     static void start() {
         TestHelper.getInstance();
@@ -139,7 +143,7 @@ class IdentityTemporalAssignmentTest {
 
 
     @ParameterizedTest
-    @ValueSource(strings = { "temporal_replica", "postgresql" })
+    @ValueSource(strings = { "temporal_replica", DEFAULT_STORE })
     void disagreeingTemporalReplicasStayUnchanged( String placementToDrop ) throws SQLException {
         assumeTrue( "postgresql".equals( PolyphenyDb.defaultStoreName ) );
         String table = "temporal_replica_values";
@@ -148,7 +152,7 @@ class IdentityTemporalAssignmentTest {
             try {
                 sql.executeUpdate( "CREATE TABLE " + table + " (id INTEGER PRIMARY KEY, stamp TIMESTAMP(2)) ON STORE temporal_replica" );
                 try {
-                    sql.executeUpdate( "ALTER TABLE " + table + " ADD PLACEMENT ON STORE postgresql" );
+                    sql.executeUpdate( "ALTER TABLE " + table + " ADD PLACEMENT ON STORE " + DEFAULT_STORE );
                     String insert = "INSERT INTO " + table + " VALUES (1, TIMESTAMP '2024-12-31 23:59:59.995')";
                     SQLException disagreement = assertThrows( SQLException.class, () -> sql.executeUpdate( insert, new String[]{ "stamp" } ) );
                     assertEquals( "22000", disagreement.getSQLState() );
@@ -327,7 +331,7 @@ class IdentityTemporalAssignmentTest {
             try {
                 sql.executeUpdate( "CREATE TABLE " + table + " (id INTEGER PRIMARY KEY, stamp TIMESTAMP(3), clock_val TIME(3)) ON STORE temporal_source_replica" );
                 try {
-                    sql.executeUpdate( "ALTER TABLE " + table + " ADD PLACEMENT ON STORE postgresql" );
+                    sql.executeUpdate( "ALTER TABLE " + table + " ADD PLACEMENT ON STORE " + DEFAULT_STORE );
                     sql.executeUpdate( "ALTER CONFIG 'runtime/parameterizeDML' SET " + parameterize );
                     String insert = "INSERT INTO " + table + " VALUES (";
                     String returning = " RETURNING stamp, clock_val";

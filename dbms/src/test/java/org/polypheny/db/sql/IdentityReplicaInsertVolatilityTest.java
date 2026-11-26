@@ -43,6 +43,10 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 @Tag("adapter")
 class IdentityReplicaInsertVolatilityTest {
 
+    // DefaultInserter uses this name for every configured default store type.
+    private static final String DEFAULT_STORE = "hsqldb";
+
+
     @BeforeAll
     static void start() {
         TestHelper.getInstance();
@@ -59,8 +63,7 @@ class IdentityReplicaInsertVolatilityTest {
             try {
                 sql.executeUpdate( "CREATE TABLE " + table + " (id INTEGER PRIMARY KEY, qty BIGINT) ON STORE " + store );
                 try {
-                    String initialStore = PolyphenyDb.defaultStoreName;
-                    sql.executeUpdate( "ALTER TABLE " + table + " ADD PLACEMENT ON STORE " + initialStore );
+                    sql.executeUpdate( "ALTER TABLE " + table + " ADD PLACEMENT ON STORE " + DEFAULT_STORE );
                     String insert = "INSERT INTO " + table
                             + " VALUES (? + CASE WHEN CURRENT_DATE > DATE '2000-01-01' THEN 0 ELSE 10 END, CAST(? AS DOUBLE)), "
                             + "(?, CAST(? AS DECIMAL(19,0)))";
@@ -110,7 +113,7 @@ class IdentityReplicaInsertVolatilityTest {
             try {
                 sql.executeUpdate( "CREATE TABLE " + table + " (id INTEGER PRIMARY KEY, qty DECIMAL(5,2)) ON STORE " + store );
                 try {
-                    sql.executeUpdate( "ALTER TABLE " + table + " ADD PLACEMENT ON STORE postgresql" );
+                    sql.executeUpdate( "ALTER TABLE " + table + " ADD PLACEMENT ON STORE " + DEFAULT_STORE );
                     String insert = "INSERT INTO " + table + " VALUES (?, CASE WHEN CURRENT_DATE > DATE '2000-01-01' "
                             + "THEN CAST(NULL AS DECIMAL(7,3)) ELSE CAST(2 AS DECIMAL(7,3)) END), (?, CAST(? AS DECIMAL(7,3)))";
                     Connection connection = jdbc.getConnection();
@@ -148,20 +151,20 @@ class IdentityReplicaInsertVolatilityTest {
 
     @Test
     void volatileFilterPreservesNativeUnionRangeAndPrecision() throws SQLException {
-        String initialStore = PolyphenyDb.defaultStoreName;
-        assumeTrue( List.of( "hsqldb", "postgresql" ).contains( initialStore ) );
+        String defaultStoreType = PolyphenyDb.defaultStoreName;
+        assumeTrue( List.of( "hsqldb", "postgresql" ).contains( defaultStoreType ) );
         try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
             String store = "volatile_filter_replica";
             String source = "volatile_filter_source";
             String table = "volatile_filter_target";
             TestHelper.addHsqldb( store, sql );
             try {
-                sql.executeUpdate( "CREATE TABLE " + source + " (id INTEGER PRIMARY KEY) ON STORE " + initialStore );
+                sql.executeUpdate( "CREATE TABLE " + source + " (id INTEGER PRIMARY KEY) ON STORE " + DEFAULT_STORE );
                 try {
                     sql.executeUpdate( "INSERT INTO " + source + " VALUES (1), (2)" );
                     sql.executeUpdate( "CREATE TABLE " + table + " (id INTEGER PRIMARY KEY, qty BIGINT) ON STORE " + store );
                     try {
-                        sql.executeUpdate( "ALTER TABLE " + table + " ADD PLACEMENT ON STORE " + initialStore );
+                        sql.executeUpdate( "ALTER TABLE " + table + " ADD PLACEMENT ON STORE " + DEFAULT_STORE );
                         String insertInto = "INSERT INTO " + table + " ";
                         String filteredSource = "SELECT id AS id, CAST(? AS DOUBLE) AS qty FROM " + source
                                 + " WHERE id=1 AND CURRENT_DATE > DATE '2000-01-01'";
@@ -191,7 +194,7 @@ class IdentityReplicaInsertVolatilityTest {
                                 assertEquals( expected, readPairs( stored ) );
                             }
 
-                            if ( initialStore.equals( "postgresql" ) ) {
+                            if ( defaultStoreType.equals( "postgresql" ) ) {
                                 sql.executeUpdate( "DELETE FROM " + table );
                                 assertFilteredReplicaDisagreement( connection, insert );
                                 // The original source key does not appear in the inserted row.
@@ -232,12 +235,12 @@ class IdentityReplicaInsertVolatilityTest {
         try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
             TestHelper.addHsqldb( replica, sql );
             try {
-                sql.executeUpdate( "CREATE TABLE " + source + " (clock_val TIME(3) PRIMARY KEY, id INTEGER) ON STORE postgresql" );
+                sql.executeUpdate( "CREATE TABLE " + source + " (clock_val TIME(3) PRIMARY KEY, id INTEGER) ON STORE " + DEFAULT_STORE );
                 try {
                     sql.executeUpdate( "INSERT INTO " + source + " VALUES (TIME '12:34:56.789', 1), (TIME '12:35:00', 2)" );
                     sql.executeUpdate( "CREATE TABLE " + table + " (id INTEGER PRIMARY KEY, qty BIGINT, clock_val TIME) ON STORE " + replica );
                     try {
-                        sql.executeUpdate( "ALTER TABLE " + table + " ADD PLACEMENT ON STORE postgresql" );
+                        sql.executeUpdate( "ALTER TABLE " + table + " ADD PLACEMENT ON STORE " + DEFAULT_STORE );
                         String insert = "INSERT INTO " + table + " SELECT id AS id, CAST(? AS DOUBLE) AS qty, clock_val AS clock_val FROM " + source
                                 + " WHERE id=1 AND CURRENT_DATE > DATE '2000-01-01' UNION ALL "
                                 + "SELECT id AS id, CAST(? AS DECIMAL(19,0)) AS qty, clock_val AS clock_val FROM " + source + " WHERE id=2";
@@ -281,11 +284,11 @@ class IdentityReplicaInsertVolatilityTest {
             String table = "random_filter_target";
             TestHelper.addHsqldb( store, sql );
             try {
-                sql.executeUpdate( "CREATE TABLE " + source + " (id INTEGER PRIMARY KEY) ON STORE hsqldb" );
+                sql.executeUpdate( "CREATE TABLE " + source + " (id INTEGER PRIMARY KEY) ON STORE " + DEFAULT_STORE );
                 try {
                     String values = IntStream.rangeClosed( 1, 24 ).mapToObj( value -> "(" + value + ")" ).collect( Collectors.joining( ", " ) );
                     sql.executeUpdate( "INSERT INTO " + source + " VALUES " + values );
-                    sql.executeUpdate( "CREATE TABLE " + table + " (id INTEGER PRIMARY KEY, qty BIGINT) ON STORE hsqldb" );
+                    sql.executeUpdate( "CREATE TABLE " + table + " (id INTEGER PRIMARY KEY, qty BIGINT) ON STORE " + DEFAULT_STORE );
                     try {
                         sql.executeUpdate( "ALTER TABLE " + table + " ADD PLACEMENT ON STORE " + store );
                         String insert = "INSERT INTO " + table + " SELECT id AS id, CAST(id AS BIGINT) AS qty FROM " + source

@@ -84,7 +84,8 @@ public final class LogicalRelModify extends RelModify<Entity> {
 
     /** Name of the extra Boolean input field for a column defaulted before INSERT routing. */
     public static String identityDefaultFieldName( long columnId ) {
-        return "$polypheny$identity$" + columnId;
+        // Use the generated projection prefix so adapters normalize and read the name consistently.
+        return "$fpolypheny$identity$" + columnId;
     }
 
 

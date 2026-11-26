@@ -92,7 +92,8 @@ public class MonetdbStore extends AbstractJdbcStore {
 
         if ( settings.getOrDefault( "deploymentId", "" ).isEmpty() ) {
             if ( settings.getOrDefault( "password", "polypheny" ).equals( "polypheny" ) ) {
-                settings.put( "password", PasswordGenerator.generatePassword() );
+                // The image passes this value to monetdb create -p, which rejects a leading '-'.
+                settings.put( "password", "m" + PasswordGenerator.generatePassword() );
                 updateSettings( settings );
             }
 

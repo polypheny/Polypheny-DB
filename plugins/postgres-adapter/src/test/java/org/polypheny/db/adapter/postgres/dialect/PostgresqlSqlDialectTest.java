@@ -17,6 +17,7 @@
 package org.polypheny.db.adapter.postgres.dialect;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -30,6 +31,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -40,9 +42,18 @@ import org.junit.jupiter.api.Test;
 import org.polypheny.db.adapter.postgres.PostgresqlSqlDialect;
 import org.polypheny.db.adapter.postgres.source.PostgresqlFeature;
 import org.polypheny.db.adapter.postgres.source.PostgresqlSource;
+import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.rex.RexCall;
+import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlDbFeature;
+import org.polypheny.db.sql.language.SqlDynamicParam;
+import org.polypheny.db.sql.language.fun.SqlCastFunction;
+import org.polypheny.db.sql.language.fun.SqlRandFunction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.VectorType;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
@@ -154,6 +165,28 @@ public class PostgresqlSqlDialectTest {
         PostgresqlSqlDialect d = new PostgresqlSqlDialect();
         d.addSupportedFeatures( PostgresqlSource.detectFeatures( conn ) );
         assertTrue( d.supportsVector() );
+    }
+
+
+    @Test
+    void onlyUnseededRandUsesPostgresqlRandom() {
+        PostgresqlSqlDialect dialect = new PostgresqlSqlDialect();
+        AlgDataType resultType = AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.DOUBLE );
+        AlgDataType seedType = AlgDataTypeFactory.DEFAULT.createPolyType( PolyType.INTEGER );
+        SqlRandFunction rand = new SqlRandFunction();
+        rand.setOperatorName( OperatorName.RAND );
+        RexCall unseeded = new RexCall( resultType, rand, List.of() );
+        RexCall seeded = new RexCall( resultType, rand, new RexDynamicParam( seedType, 0 ) );
+        SqlCall seededSql = (SqlCall) rand.createCall( ParserPos.ZERO, new SqlDynamicParam( 0, ParserPos.ZERO ) );
+        Project project = mock( Project.class );
+        when( project.getProjects() ).thenReturn( List.of( new RexCall( resultType, new SqlCastFunction(), seeded ) ) );
+
+        assertTrue( dialect.supportsRexCall( project, unseeded ) );
+        assertTrue( dialect.rewriteRexCall( unseeded, (SqlCall) rand.createCall( ParserPos.ZERO ) )
+                .toSqlString( dialect ).getSql().matches( "\"?pg_catalog\"?\\.\"?random\"?\\(\\)" ) );
+        assertFalse( dialect.supportsRexCall( project, seeded ) );
+        assertFalse( dialect.supportsProject( project ) );
+        assertSame( seededSql, dialect.rewriteRexCall( seeded, seededSql ) );
     }
 
     // ---- vectorPushdownTypeIsPresent ----------------------------------------------------------------

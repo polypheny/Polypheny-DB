@@ -28,9 +28,11 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.adapter.postgres.source.PostgresqlFeature;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.FunctionCategory;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
+import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeSystem;
@@ -63,6 +65,7 @@ import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.type.inference.ReturnTypes;
+import org.polypheny.db.util.UnsupportedRexCallVisitor;
 
 /**
  * A <code>SqlDialect</code> implementation for the PostgreSQL database.
@@ -74,6 +77,8 @@ public class PostgresqlSqlDialect extends SqlDialect {
             new SqlIdentifier( List.of( "pg_catalog", "bpcharout" ), ParserPos.ZERO ), null, null, null, null, FunctionCategory.SYSTEM );
     private static final SqlFunction TEXT_IN = new SqlFunction(
             new SqlIdentifier( List.of( "pg_catalog", "textin" ), ParserPos.ZERO ), null, null, null, null, FunctionCategory.SYSTEM );
+    private static final SqlFunction RANDOM = new SqlFunction(
+            new SqlIdentifier( List.of( "pg_catalog", "random" ), ParserPos.ZERO ), ReturnTypes.DOUBLE, null, null, null, FunctionCategory.SYSTEM );
 
     /**
      * PostgreSQL type system.
@@ -219,8 +224,31 @@ public class PostgresqlSqlDialect extends SqlDialect {
 
 
     @Override
+    public boolean supportsRexCall( AlgNode alg, RexCall rexCall ) {
+        return !isSeededRand( rexCall ) && super.supportsRexCall( alg, rexCall );
+    }
+
+
+    @Override
+    public boolean supportsProject( Project project ) {
+        // Scalar assignment previews check this directly, outside the JDBC conversion rules.
+        return super.supportsProject( project ) && project.getProjects().stream().noneMatch(
+                expression -> UnsupportedRexCallVisitor.containsUnsupportedCall( expression, List.of( PostgresqlSqlDialect::isSeededRand ) ) );
+    }
+
+
+    private static boolean isSeededRand( RexCall rexCall ) {
+        return rexCall.getOperator().getOperatorName() == OperatorName.RAND && !rexCall.getOperands().isEmpty();
+    }
+
+
+    @Override
     public SqlCall rewriteRexCall( RexCall rexCall, SqlCall sqlCall ) {
-        if ( rexCall.getOperator().getOperatorName() == OperatorName.REPLACE ) {
+        OperatorName operator = rexCall.getOperator().getOperatorName();
+        if ( operator == OperatorName.RAND && rexCall.getOperands().isEmpty() ) {
+            return (SqlCall) RANDOM.createCall( sqlCall.getPos() );
+        }
+        if ( operator == OperatorName.REPLACE ) {
             for ( int i = 0; i < rexCall.getOperands().size(); i++ ) {
                 AlgDataType operandType = rexCall.getOperands().get( i ).getType();
                 if ( operandType.getPolyType() == PolyType.CHAR && operandType.getPrecision() != 0 ) {

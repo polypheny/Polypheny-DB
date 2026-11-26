@@ -225,7 +225,7 @@ public class NeoRelationalImplementor extends AlgShuttleImpl {
         int i = 0;
         for ( RexNode project : neoProject.getProjects() ) {
             Translator translator = new Translator( neoProject.getTupleType(), last.getTupleType(), new HashMap<>(), implementor, null, true );
-            String res = project.accept( translator );
+            String res = project instanceof RexLiteral literal && literal.isNull() ? "null" : project.accept( translator );
             assert res != null : "Unsupported operation encountered for projects in Neo4j.";
 
             nodes.add( as_( literal_( PolyString.of( res ) ), literal_( PolyString.of( fields.get( i ).getName() ) ) ) );
