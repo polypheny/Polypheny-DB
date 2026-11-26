@@ -61,22 +61,34 @@ public class LockableImpl implements Lockable {
                 }
             }
         } catch ( InterruptedException e ) {
-            concurrencyLock.unlock();
-            transaction.releaseAllLocks();
+            releaseAfterFailedAcquire( transaction );
             throw new DeadlockException( MessageFormat.format( "Transaction {0} encountered a deadlock while acquiring a lock of type {1} on entry {2}.", transaction.getId(), lockType, this ) );
         } catch ( DeadlockException e ) {
-            concurrencyLock.unlock();
-            transaction.releaseAllLocks();
+            releaseAfterFailedAcquire( transaction );
             throw e;
         } catch ( Throwable t ) {
-            concurrencyLock.unlock();
             log.error( "Unexpected exception while acquiring lock", t );
-            transaction.releaseAllLocks();
+            releaseAfterFailedAcquire( transaction );
             throw t;
         } finally {
             if ( concurrencyLock.isHeldByCurrentThread() ) {
                 concurrencyLock.unlock();
             }
+        }
+    }
+
+
+    private void releaseAfterFailedAcquire( Transaction transaction ) {
+        DeadlockHandler.INSTANCE.remove( this, transaction );
+        concurrencyCondition.signalAll();
+        concurrencyLock.unlock();
+        try {
+            // The transaction registers the requested lock only after acquire returns.
+            if ( !isRoot() ) {
+                parent.release( transaction );
+            }
+        } finally {
+            transaction.releaseAllLocks();
         }
     }
 

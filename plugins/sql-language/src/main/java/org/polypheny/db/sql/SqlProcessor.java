@@ -253,10 +253,13 @@ public class SqlProcessor extends Processor {
 
     @Override
     public boolean requiresSequentialBatchExecution( Node statement, AlgDataType parameterRowType ) {
+        // A zero-width parameter matrix loses the number of update commands.
+        if ( parameterRowType.getFieldCount() == 0 && Kind.DML.contains( statement.getKind() ) ) {
+            return true;
+        }
         if ( statement instanceof SqlInsert insert && insert.getSchemaType() == DataModel.RELATIONAL ) {
-            // A zero-width parameter matrix loses its number of bindings. SELECT sources
-            // must also observe preceding writes, including when reading the target table.
-            return parameterRowType.getFieldCount() == 0 || insert.getSource().getKind() != Kind.VALUES;
+            // SELECT sources must observe preceding writes, including when reading the target table.
+            return insert.getSource().getKind() != Kind.VALUES;
         }
         // Identity defaults resolve the row and its other assignments before write routing.
         return statement instanceof SqlUpdate update

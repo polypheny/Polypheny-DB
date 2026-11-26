@@ -532,6 +532,94 @@ class IdentityJdbcKeysTest {
 
 
     @Test
+    void rawComputedNumericAssignmentsUseNativeCastsBeforeProjectingKeys() throws SQLException {
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
+            sql.executeUpdate( "CREATE TABLE native_projected_expr (id INTEGER PRIMARY KEY, narrow_num SMALLINT, ordinary_num INTEGER)" );
+            try {
+                for ( boolean parameterize : new boolean[]{ true, false } ) {
+                    sql.executeUpdate( "ALTER CONFIG 'runtime/parameterizeDML' SET " + parameterize );
+                    String prefix = "INSERT INTO native_projected_expr VALUES ";
+                    String expressions = ", CAST(42.75 AS DOUBLE), CAST(42.75 AS DECIMAL(12,4)))";
+                    assertEquals( 1, sql.executeUpdate( prefix + "(1" + expressions ) );
+                    List<Object> expected;
+                    try ( ResultSet stored = sql.executeQuery( "SELECT narrow_num, ordinary_num FROM native_projected_expr WHERE id = 1" ) ) {
+                        assertTrue( stored.next() );
+                        expected = List.of( stored.getObject( 1 ), stored.getObject( 2 ) );
+                    }
+                    assertEquals( 1, sql.executeUpdate( prefix + "(2" + expressions, new String[]{ "narrow_num", "ordinary_num" } ) );
+                    try ( ResultSet keys = sql.getGeneratedKeys() ) {
+                        assertNumericWidths( keys, expected );
+                    }
+                    try ( ResultSet returning = sql.executeQuery( prefix + "(3" + expressions + " RETURNING narrow_num, ordinary_num" ) ) {
+                        assertNumericWidths( returning, expected );
+                    }
+                    String overflow = prefix + "(4, 1, CAST(2147483648.75 AS DOUBLE))";
+                    assertThrows( SQLException.class, () -> sql.executeUpdate( overflow ) );
+                    assertEquals( "22003", assertThrows( SQLException.class, () -> sql.executeUpdate( overflow, new String[]{ "id" } ) ).getSQLState() );
+                    assertEquals( "22003", assertThrows( SQLException.class, () -> sql.executeQuery( overflow + " RETURNING ordinary_num" ) ).getSQLState() );
+                    try ( ResultSet stored = sql.executeQuery( "SELECT id FROM native_projected_expr WHERE id = 4" ) ) {
+                        assertFalse( stored.next() );
+                    }
+                    sql.executeUpdate( "DELETE FROM native_projected_expr" );
+                }
+            } finally {
+                sql.executeUpdate( "ALTER CONFIG 'runtime/parameterizeDML' SET true" );
+                sql.executeUpdate( "DROP TABLE native_projected_expr" );
+            }
+        }
+    }
+
+
+    @Test
+    void approximateProjectionsKeepStoredCarriersAndNonFiniteValues() throws SQLException {
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
+            sql.executeUpdate( "CREATE TABLE native_projected_float (id INTEGER PRIMARY KEY, real_num REAL, double_num DOUBLE)" );
+            try {
+                String insert = "INSERT INTO native_projected_float VALUES (?, ?, ?)";
+                String fields = "real_num, double_num";
+                for ( boolean parameterize : new boolean[]{ true, false } ) {
+                    sql.executeUpdate( "ALTER CONFIG 'runtime/parameterizeDML' SET " + parameterize );
+                    try ( PreparedStatement plain = jdbc.getConnection().prepareStatement( insert );
+                            PreparedStatement keys = jdbc.getConnection().prepareStatement( insert, new String[]{ "real_num", "double_num" } );
+                            PreparedStatement returning = jdbc.getConnection().prepareStatement( insert + " RETURNING " + fields ) ) {
+                        int id = 0;
+                        for ( double sample : new double[]{ 0.1, Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY } ) {
+                            bindApproximate( plain, ++id, sample );
+                            assertEquals( 1, plain.executeUpdate() );
+                            List<Object> expected;
+                            try ( ResultSet stored = sql.executeQuery( "SELECT " + fields + " FROM native_projected_float WHERE id = " + id ) ) {
+                                assertTrue( stored.next() );
+                                expected = List.of( stored.getObject( 1 ), stored.getObject( 2 ) );
+                            }
+                            bindApproximate( keys, ++id, sample );
+                            assertEquals( 1, keys.executeUpdate() );
+                            try ( ResultSet projected = keys.getGeneratedKeys() ) {
+                                assertNumericWidths( projected, expected );
+                            }
+                            bindApproximate( returning, ++id, sample );
+                            try ( ResultSet projected = returning.executeQuery() ) {
+                                assertNumericWidths( projected, expected );
+                            }
+                        }
+                    }
+                    sql.executeUpdate( "DELETE FROM native_projected_float" );
+                }
+            } finally {
+                sql.executeUpdate( "ALTER CONFIG 'runtime/parameterizeDML' SET true" );
+                sql.executeUpdate( "DROP TABLE native_projected_float" );
+            }
+        }
+    }
+
+
+    private static void bindApproximate( PreparedStatement insert, int id, double sample ) throws SQLException {
+        insert.setInt( 1, id );
+        insert.setDouble( 2, sample );
+        insert.setFloat( 3, (float) sample );
+    }
+
+
+    @Test
     void readsBackIntegralProjectionsWithAFractionalPrimaryKey() throws SQLException {
         try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
             sql.executeUpdate( "CREATE TABLE projected_integral_key (bucket INTEGER NOT NULL, id SMALLINT NOT NULL, "

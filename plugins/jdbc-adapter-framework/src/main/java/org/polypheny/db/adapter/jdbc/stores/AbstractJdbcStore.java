@@ -17,10 +17,10 @@
 package org.polypheny.db.adapter.jdbc.stores;
 
 
-import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -37,6 +37,7 @@ import org.polypheny.db.adapter.jdbc.JdbcImplementor;
 import org.polypheny.db.adapter.jdbc.JdbcSchema;
 import org.polypheny.db.adapter.jdbc.JdbcTable;
 import org.polypheny.db.adapter.jdbc.JdbcUtils;
+import org.polypheny.db.adapter.jdbc.ResultSetEnumerable;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
@@ -60,15 +61,23 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.prepare.Context;
 import org.polypheny.db.rex.RexDynamicParam;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.sql.language.SqlDbFeature;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlLiteral;
 import org.polypheny.db.transaction.PolyXid;
+import org.polypheny.db.transaction.QueryExecutionScope;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.VectorType;
+import org.polypheny.db.type.entity.PolyNull;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 
 
 @Slf4j
@@ -439,42 +448,59 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
 
     @Override
-    public List<Long> castBigintAssignments( Transaction transaction, AlgCluster cluster, List<BigDecimal> values ) {
+    public List<PolyValue> castNumericAssignments( Transaction transaction, AlgCluster cluster, AlgDataType target, List<NumericAssignment> assignments ) {
         transaction.registerInvolvedAdapter( this );
-        AlgDataType bigint = cluster.getTypeFactory().createPolyType( PolyType.BIGINT );
-        List<Long> converted = new ArrayList<>( values.size() );
+        List<PolyValue> converted = new ArrayList<>( assignments.size() );
         final int batchSize = 128;
         try {
             ConnectionHandler handler = connectionFactory.getOrCreateConnectionHandler( transaction.getXid() );
-            for ( int offset = 0; offset < values.size(); offset += batchSize ) {
-                int count = Math.min( batchSize, values.size() - offset );
-                List<RexDynamicParam> parameters = new ArrayList<>( count );
+            for ( int offset = 0; offset < assignments.size(); offset += batchSize ) {
+                int count = Math.min( batchSize, assignments.size() - offset );
+                List<RexNode> expressions = new ArrayList<>( count );
                 List<String> names = new ArrayList<>( count );
                 for ( int i = 0; i < count; i++ ) {
-                    parameters.add( new RexDynamicParam( bigint, i ) );
+                    AlgDataType input = assignments.get( offset + i ).inputType();
+                    RexDynamicParam parameter = new RexDynamicParam( input, i );
+                    expressions.add( input.getPolyType() == target.getPolyType()
+                            ? parameter : cluster.getRexBuilder().makeAbstractCast( target, parameter ) );
                     names.add( "bound_value_" + i );
                 }
-                // The ordinary INSERT uses this same dialect parameter CAST and setBigDecimal binding.
-                LogicalRelProject casts = LogicalRelProject.create( LogicalRelValues.createOneRow( cluster ), parameters, names );
+                LogicalRelProject casts = LogicalRelProject.create( LogicalRelValues.createOneRow( cluster ), expressions, names );
                 JdbcImplementor implementor = new JdbcImplementor( dialect, transaction.getTypeFactory(), currentJdbcSchema );
                 String sql = implementor.visitChild( 0, casts ).asStatement().toSqlString( dialect ).getSql();
                 try ( PreparedStatement select = handler.prepareStatement( sql ) ) {
+                    long remaining = QueryExecutionScope.remainingTimeoutMillis();
+                    if ( remaining > 0 ) {
+                        try {
+                            select.setQueryTimeout( (int) Math.min( Integer.MAX_VALUE, 1 + (remaining - 1) / 1000 ) );
+                        } catch ( SQLFeatureNotSupportedException e ) {
+                            log.debug( "The adapter does not support a native assignment query timeout", e );
+                        }
+                    }
                     for ( int i = 0; i < count; i++ ) {
-                        select.setBigDecimal( i + 1, values.get( offset + i ) );
+                        NumericAssignment input = assignments.get( offset + i );
+                        ResultSetEnumerable.setDynamicParam( select, i + 1, input.value(), input.inputType(), handler );
                     }
                     try ( ResultSet row = select.executeQuery() ) {
                         if ( !row.next() ) {
-                            throw new GenericRuntimeException( "The BIGINT assignment cast returned no row." );
+                            throw new GenericRuntimeException( "The numeric assignment cast returned no row." );
                         }
                         for ( int i = 1; i <= count; i++ ) {
-                            converted.add( row.getLong( i ) );
+                            PolyValue value = switch ( target.getPolyType() ) {
+                                case TINYINT, SMALLINT, INTEGER -> PolyInteger.of( row.getInt( i ) );
+                                case BIGINT -> PolyLong.of( row.getLong( i ) );
+                                case REAL, FLOAT -> PolyFloat.of( row.getFloat( i ) );
+                                case DOUBLE -> PolyDouble.of( row.getDouble( i ) );
+                                default -> throw new IllegalArgumentException( "Unsupported numeric assignment target " + target );
+                            };
+                            converted.add( row.wasNull() ? PolyNull.NULL : value );
                         }
                     }
                 }
             }
             return converted;
         } catch ( SQLException e ) {
-            throw new PolyphenyDbException( "BIGINT assignment failed: " + e.getMessage(), e, e.getSQLState() );
+            throw new PolyphenyDbException( target.getPolyType() + " assignment failed: " + e.getMessage(), e, e.getSQLState() );
         } catch ( ConnectionHandlerException e ) {
             throw new GenericRuntimeException( e );
         }

@@ -29,6 +29,7 @@ import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.prisminterface.statements.StatementManager;
+import org.polypheny.db.transaction.QueryExecutionScope;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.TransactionException;
 import org.polypheny.db.transaction.TransactionManager;
@@ -120,6 +121,11 @@ public class PIClient {
     }
 
 
+    boolean supportsQueryTimeouts() {
+        return prismMinorVersion >= 5;
+    }
+
+
     boolean supportsClientInfoRemoval() {
         return prismMinorVersion >= 5 && transactionBoundaryEvents;
     }
@@ -134,6 +140,7 @@ public class PIClient {
         if ( hasNoTransaction() ) {
             currentTransaction = transactionManager.startTransaction( catalogUser.id, namespace.id, null, "PrismInterface" );
         }
+        QueryExecutionScope.statementStarted( currentTransaction );
         return currentTransaction;
     }
 
@@ -141,6 +148,7 @@ public class PIClient {
     public Transaction startIsolatedReadTransaction() {
         Transaction transaction = transactionManager.startTransaction( catalogUser.id, namespace.id, null, "PrismInterface" );
         isolatedReadTransactions.add( transaction );
+        QueryExecutionScope.statementStarted( transaction );
         return transaction;
     }
 
@@ -209,6 +217,16 @@ public class PIClient {
 
     public void rollbackCurrentTransaction( @Nullable String reason ) throws PIServiceException {
         finishAllTransactions( transaction -> rollbackTransaction( transaction, reason ) );
+    }
+
+
+    void rollbackTimedOutQuery( Transaction transaction ) {
+        String reason = "Prism query timed out";
+        if ( transaction == currentTransaction || isolatedReadTransactions.contains( transaction ) ) {
+            finishTransaction( transaction, owned -> rollbackTransaction( owned, reason ) );
+        } else if ( transaction.isActive() ) {
+            rollbackTransaction( transaction, reason );
+        }
     }
 
 

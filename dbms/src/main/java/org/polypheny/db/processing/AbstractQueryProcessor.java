@@ -446,7 +446,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             AlgRoot routedRoot = plan.proposedRoutingPlan().getRoutedRoot();
             AlgRoot parameterizedRoot;
             if ( statement.getDataContext().getParameterValues().isEmpty()
-                    && (RuntimeConfig.PARAMETERIZE_DML.getBoolean() || !routedRoot.kind.belongsTo( Kind.DML )) ) {
+                    && (RuntimeConfig.PARAMETERIZE_DML.getBoolean() || !routedRoot.kind.belongsTo( Kind.DML )
+                    || (statement.getMaterializedDmlRowCount() != null && requiresFloatingLiteralBinding( routedRoot.alg ))) ) {
                 Pair<AlgRoot, AlgDataType> parameterized = parameterize( routedRoot, parameterRowType );
                 parameterizedRoot = parameterized.left;
             } else {
@@ -1079,6 +1080,16 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             statement.getRoutingDuration().stop( "Route Cached Plan" );
         }
         return plan;
+    }
+
+
+    private static boolean requiresFloatingLiteralBinding( AlgNode node ) {
+        if ( node instanceof LogicalRelValues values && values.getTuples().stream().flatMap( List::stream ).anyMatch( literal ->
+                PolyType.APPROX_TYPES.contains( literal.getPolyType() ) && literal.getValue() != null && !literal.getValue().isNull()
+                        && !Double.isFinite( literal.getValue().asNumber().doubleValue() ) ) ) {
+            return true;
+        }
+        return node.getInputs().stream().anyMatch( AbstractQueryProcessor::requiresFloatingLiteralBinding );
     }
 
 

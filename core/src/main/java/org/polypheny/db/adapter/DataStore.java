@@ -18,7 +18,6 @@ package org.polypheny.db.adapter;
 
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,12 +25,18 @@ import java.util.Map;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.ExtensionPoint;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.IndexCategory;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 
 @Slf4j
 public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> implements Modifiable, ExtensionPoint {
@@ -56,9 +61,19 @@ public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> imp
     public abstract List<FunctionalIndexInfo> getFunctionalIndexes( LogicalTable catalogTable );
 
 
-    /** Converts fractional BIGINT assignments before the coordinator routes or indexes the resulting keys. */
-    public List<Long> castBigintAssignments( Transaction transaction, AlgCluster cluster, List<BigDecimal> values ) {
-        return values.stream().map( value -> value.setScale( 0, RoundingMode.DOWN ).longValueExact() ).toList();
+    /** Converts numeric assignments before the coordinator routes or indexes the resulting keys. */
+    public List<PolyValue> castNumericAssignments( Transaction transaction, AlgCluster cluster, AlgDataType target, List<NumericAssignment> assignments ) {
+        return assignments.stream().<PolyValue>map( assignment -> switch ( target.getPolyType() ) {
+            case TINYINT, SMALLINT, INTEGER -> PolyInteger.of( assignment.value().asNumber().intValue() );
+            case BIGINT -> PolyLong.of( assignment.value().asNumber().bigDecimalValue().setScale( 0, RoundingMode.DOWN ).longValueExact() );
+            case REAL, FLOAT -> PolyFloat.of( assignment.value().asNumber().floatValue() );
+            case DOUBLE -> PolyDouble.of( assignment.value().asNumber().doubleValue() );
+            default -> throw new IllegalArgumentException( "Unsupported numeric assignment target " + target );
+        } ).toList();
+    }
+
+
+    public record NumericAssignment( PolyValue value, AlgDataType inputType ) {
     }
 
 

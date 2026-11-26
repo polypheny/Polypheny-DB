@@ -238,7 +238,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             log.trace( "This transaction has already been finished!" );
             return;
         }
-        try {
+        try ( QueryExecutionScope.InterruptionPause ignored = QueryExecutionScope.transactionFinishing( true ) ) {
             commitChanges( onCommit );
         } catch ( RuntimeException | Error failure ) {
             if ( isActive() ) {
@@ -336,32 +336,34 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
             log.trace( "This transaction has already been finished!" );
             return;
         }
-        try {
-            if ( reason != null ) {
-                log.warn( "Rolling back because: \"{}\" transaction {} ", reason, xid );
-            }
-
+        try ( QueryExecutionScope.InterruptionPause ignored = QueryExecutionScope.transactionFinishing( false ) ) {
             try {
-                for ( Adapter<?> adapter : involvedAdapters ) {
-                    adapter.rollback( xid );
+                if ( reason != null ) {
+                    log.warn( "Rolling back because: \"{}\" transaction {} ", reason, xid );
                 }
-                IndexManager.getInstance().rollback( this.xid );
+
+                try {
+                    for ( Adapter<?> adapter : involvedAdapters ) {
+                        adapter.rollback( xid );
+                    }
+                    IndexManager.getInstance().rollback( this.xid );
+                } finally {
+                    if ( rollbackCatalog != null ) {
+                        rollbackCatalog.run();
+                    }
+                }
+                statements.forEach( statement -> {
+                    if ( statement.getMonitoringEvent() != null ) {
+                        StatementEvent eventData = statement.getMonitoringEvent();
+                        eventData.setCommitted( false );
+                        MonitoringServiceProvider.getInstance().monitorEvent( eventData );
+                    }
+                    statement.close();
+                } );
             } finally {
-                if ( rollbackCatalog != null ) {
-                    rollbackCatalog.run();
-                }
+                isRolledBack = true;
+                finishTransaction();
             }
-            statements.forEach( statement -> {
-                if ( statement.getMonitoringEvent() != null ) {
-                    StatementEvent eventData = statement.getMonitoringEvent();
-                    eventData.setCommitted( false );
-                    MonitoringServiceProvider.getInstance().monitorEvent( eventData );
-                }
-                statement.close();
-            } );
-        } finally {
-            isRolledBack = true;
-            finishTransaction();
         }
     }
 
@@ -408,6 +410,7 @@ public class TransactionImpl implements Transaction, Comparable<Object> {
         if ( !isActive() ) {
             throw new IllegalStateException( "Transaction is not active!" );
         }
+        QueryExecutionScope.statementStarted( this );
         StatementImpl statement = new StatementImpl( this );
         statements.add( statement );
         return statement;

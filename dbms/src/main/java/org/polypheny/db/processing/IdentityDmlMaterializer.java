@@ -30,6 +30,7 @@ import java.util.Set;
 import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.DataStore.NumericAssignment;
 import org.polypheny.db.adapter.index.Index;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.algebra.AlgNode;
@@ -75,6 +76,8 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
+import org.polypheny.db.type.entity.numerical.PolyDouble;
+import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.Pair;
@@ -168,7 +171,8 @@ final class IdentityDmlMaterializer {
             throw new GenericRuntimeException( "Invalid insert row layout for table '%s'.", table.name );
         }
 
-        List<List<PolyValue>> sourceRows = readRows( source, statement, parameterRowType );
+        List<List<AlgDataType>> assignmentInputs = new ArrayList<>();
+        List<List<PolyValue>> sourceRows = readRows( source, statement, parameterRowType, assignmentInputs );
         for ( IdentityField identity : identities ) {
             int count = (int) sourceRows.stream().filter( row -> row.get( identity.flagIndex() ).asBoolean().value ).count();
             if ( count == 0 ) {
@@ -183,7 +187,7 @@ final class IdentityDmlMaterializer {
             }
         }
 
-        convertBigintAssignments( modify, table, statement, targetFields, sourceRows );
+        convertNumericAssignments( modify, table, statement, targetFields, sourceRows, assignmentInputs );
         ImmutableList.Builder<ImmutableList<RexLiteral>> tuples = ImmutableList.builder();
         List<List<PolyValue>> capturedRows = new ArrayList<>();
         GeneratedKeySelection keySelection = statement.getGeneratedKeySelection();
@@ -201,7 +205,7 @@ final class IdentityDmlMaterializer {
                 for ( AlgDataTypeField field : targetFields ) {
                     int index = field.getIndex();
                     PolyType type = field.getType().getPolyType();
-                    if ( type == PolyType.DECIMAL || PolyType.INT_TYPES.contains( type ) ) {
+                    if ( PolyType.NUMERIC_TYPES.contains( type ) ) {
                         captured.set( index, inserted.get( index ).getValue() );
                     }
                 }
@@ -220,19 +224,28 @@ final class IdentityDmlMaterializer {
     }
 
 
-    private static void convertBigintAssignments( LogicalRelModify modify, LogicalTable table, Statement statement,
-            List<AlgDataTypeField> fields, List<List<PolyValue>> rows ) {
-        Map<AlgDataTypeField, Map<Integer, BigDecimal>> fractionalFields = new LinkedHashMap<>();
+    private static void convertNumericAssignments( LogicalRelModify modify, LogicalTable table, Statement statement,
+            List<AlgDataTypeField> fields, List<List<PolyValue>> rows, List<List<AlgDataType>> assignmentInputs ) {
+        Map<AlgDataTypeField, Map<Integer, NumericAssignment>> nativeAssignments = new LinkedHashMap<>();
         for ( AlgDataTypeField field : fields ) {
-            if ( field.getType().getPolyType() != PolyType.BIGINT ) {
+            PolyType target = field.getType().getPolyType();
+            if ( !PolyType.NUMERIC_TYPES.contains( target ) || target == PolyType.DECIMAL ) {
                 continue;
             }
-            Map<Integer, BigDecimal> fractional = new LinkedHashMap<>();
+            Map<Integer, NumericAssignment> assignments = new LinkedHashMap<>();
             int index = field.getIndex();
             for ( int i = 0; i < rows.size(); i++ ) {
                 List<PolyValue> row = rows.get( i );
                 PolyValue value = row.get( index );
-                if ( value == null || value.isNull() || !value.isNumber() || value.isInteger() || value.isLong() ) {
+                if ( value == null || value.isNull() || !value.isNumber() ) {
+                    continue;
+                }
+                AlgDataType inputType = assignmentInputs.get( i ).get( index );
+                if ( inputType != null && inputType.getPolyType() != target ) {
+                    assignments.put( i, new NumericAssignment( value, inputType ) );
+                    continue;
+                }
+                if ( target != PolyType.BIGINT || value.isInteger() || value.isLong() ) {
                     continue;
                 }
                 try {
@@ -240,33 +253,33 @@ final class IdentityDmlMaterializer {
                     if ( number.stripTrailingZeros().scale() <= 0 ) {
                         row.set( index, PolyLong.of( number.longValueExact() ) );
                     } else {
-                        fractional.put( i, number );
+                        assignments.put( i, new NumericAssignment( value, field.getType() ) );
                     }
                 } catch ( ArithmeticException | NumberFormatException e ) {
                     throw numericAssignmentOutOfRange( field, value, e );
                 }
             }
-            if ( !fractional.isEmpty() ) {
-                fractionalFields.put( field, fractional );
+            if ( !assignments.isEmpty() ) {
+                nativeAssignments.put( field, assignments );
             }
         }
-        if ( fractionalFields.isEmpty() ) {
+        if ( nativeAssignments.isEmpty() ) {
             return;
         }
         PartitionProperty partitions = statement.getTransaction().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
         AlgDataTypeField partitionField = partitions.isPartitioned
                 ? fields.stream().filter( field -> field.getId() == partitions.partitionColumnId ).findFirst().orElseThrow() : null;
-        List<AlgDataTypeField> conversionOrder = fractionalFields.keySet().stream()
+        List<AlgDataTypeField> conversionOrder = nativeAssignments.keySet().stream()
                 .sorted( Comparator.comparing( field -> field != partitionField ) ).toList();
         for ( AlgDataTypeField field : conversionOrder ) {
-            convertFractionalBigints( modify, table, statement, field, partitionField, partitions, rows, fractionalFields.get( field ) );
+            convertOnPlacement( modify, table, statement, field, partitionField, partitions, rows, nativeAssignments.get( field ) );
         }
     }
 
 
-    private static void convertFractionalBigints( LogicalRelModify modify, LogicalTable table, Statement statement,
+    private static void convertOnPlacement( LogicalRelModify modify, LogicalTable table, Statement statement,
             AlgDataTypeField field, AlgDataTypeField partitionField, PartitionProperty partitions,
-            List<List<PolyValue>> rows, Map<Integer, BigDecimal> fractional ) {
+            List<List<PolyValue>> rows, Map<Integer, NumericAssignment> assignments ) {
         Snapshot snapshot = statement.getTransaction().getSnapshot();
         PartitionManager partitionManager = partitions.isPartitioned
                 ? PartitionManagerFactory.getInstance().getPartitionManager( partitions.partitionType ) : null;
@@ -279,15 +292,14 @@ final class IdentityDmlMaterializer {
                 placements.computeIfAbsent( placement.adapterId, id -> new ArrayList<>() ).add( placement );
             }
         }
-        Map<Integer, Long> converted = new HashMap<>();
+        Map<Integer, PolyValue> converted = new HashMap<>();
         for ( Map.Entry<Long, List<AllocationPlacement>> store : placements.entrySet() ) {
-            List<Integer> candidates = fractional.keySet().stream().filter( row -> {
+            List<Integer> candidates = assignments.keySet().stream().filter( row -> {
                 if ( partitionField == null ) {
                     return true;
                 }
                 PolyValue input = rows.get( row ).get( partitionField.getIndex() );
-                // A fractional partition key is cast by the placement selected for the original
-                // assignment. The materialized row is then routed on the resulting integer key.
+                // Cast a partition key on the original placement before re-routing on the stored key.
                 PolyValue key = partitionField == field ? input : toLiteral( input, partitionField ).getValue();
                 long partition = targetPartition( table, partitions, partitionManager, key, boundPartitionKey );
                 return hasPartition( snapshot, store.getValue(), partition );
@@ -295,37 +307,37 @@ final class IdentityDmlMaterializer {
             if ( candidates.isEmpty() ) {
                 continue;
             }
-            List<Long> assigned;
+            List<PolyValue> assigned;
             try {
                 assigned = AdapterManager.getInstance().getStore( store.getKey() ).orElseThrow()
-                        .castBigintAssignments( statement.getTransaction(), modify.getCluster(), candidates.stream().map( fractional::get ).toList() );
+                        .castNumericAssignments( statement.getTransaction(), modify.getCluster(), field.getType(), candidates.stream().map( assignments::get ).toList() );
             } catch ( ArithmeticException e ) {
-                throw new PolyphenyDbException( "A BIGINT assignment is out of range for column '" + field.getName() + "'.", e, "22003" );
+                throw new PolyphenyDbException( "A numeric assignment is out of range for column '" + field.getName() + "'.", e, "22003" );
             }
             for ( int i = 0; i < candidates.size(); i++ ) {
-                Long value = assigned.get( i );
-                Long previous = converted.putIfAbsent( candidates.get( i ), value );
+                PolyValue value = assigned.get( i );
+                PolyValue previous = converted.putIfAbsent( candidates.get( i ), value );
                 if ( previous != null && !previous.equals( value ) ) {
-                    throw new PolyphenyDbException( "Store placements disagree on the BIGINT assignment to column '" + field.getName() + "'.", null, "22000" );
+                    throw new PolyphenyDbException( "Store placements disagree on the numeric assignment to column '" + field.getName() + "'.", null, "22000" );
                 }
             }
         }
-        if ( converted.size() != fractional.size() ) {
-            throw new PolyphenyDbException( "Could not identify a store for the BIGINT assignment to column '" + field.getName() + "'.", null, "22000" );
+        if ( converted.size() != assignments.size() ) {
+            throw new PolyphenyDbException( "Could not identify a store for the numeric assignment to column '" + field.getName() + "'.", null, "22000" );
         }
         if ( partitionField == field ) {
-            for ( Map.Entry<Integer, Long> assignment : converted.entrySet() ) {
+            for ( Map.Entry<Integer, PolyValue> assignment : converted.entrySet() ) {
                 PolyValue input = rows.get( assignment.getKey() ).get( field.getIndex() );
                 long original = targetPartition( table, partitions, partitionManager, input, boundPartitionKey );
-                long canonical = targetPartition( table, partitions, partitionManager, PolyLong.of( assignment.getValue() ), false );
+                long canonical = targetPartition( table, partitions, partitionManager, assignment.getValue(), false );
                 if ( original != canonical && !partitionAdapters( snapshot, tablePlacements, original )
                         .equals( partitionAdapters( snapshot, tablePlacements, canonical ) ) ) {
-                    throw new PolyphenyDbException( "The BIGINT assignment to partition column '" + field.getName()
+                    throw new PolyphenyDbException( "The numeric assignment to partition column '" + field.getName()
                             + "' would move the row to a different set of stores.", null, "22000" );
                 }
             }
         }
-        converted.forEach( ( row, value ) -> rows.get( row ).set( field.getIndex(), PolyLong.of( value ) ) );
+        converted.forEach( ( row, value ) -> rows.get( row ).set( field.getIndex(), value ) );
     }
 
 
@@ -457,7 +469,7 @@ final class IdentityDmlMaterializer {
         context.resetParameterValues();
         try {
             List<List<PolyValue>> stored = new ArrayList<>();
-            readRows( projected, statement, parameterRowType, Map.of(), stored );
+            readRows( projected, statement, parameterRowType, Map.of(), stored, null );
             return stored;
         } finally {
             context.setParameterTypes( originalTypes );
@@ -722,6 +734,12 @@ final class IdentityDmlMaterializer {
         if ( type.getPolyType() == PolyType.DECIMAL ) {
             return new RexLiteral( PolyBigDecimal.convert( value ), type, PolyType.DECIMAL, true );
         }
+        if ( value.isNumber() && (type.getPolyType() == PolyType.REAL || type.getPolyType() == PolyType.FLOAT) ) {
+            return new RexLiteral( PolyFloat.of( value.asNumber().floatValue() ), type, type.getPolyType(), true );
+        }
+        if ( value.isNumber() && type.getPolyType() == PolyType.DOUBLE ) {
+            return new RexLiteral( PolyDouble.of( value.asNumber().doubleValue() ), type, PolyType.DOUBLE, true );
+        }
         if ( value.isNumber() && (type.getPolyType() == PolyType.TINYINT || type.getPolyType() == PolyType.SMALLINT || type.getPolyType() == PolyType.INTEGER) ) {
             try {
                 return new RexLiteral( PolyInteger.of( value.asNumber().intValue() ), type, type.getPolyType(), true );
@@ -740,31 +758,38 @@ final class IdentityDmlMaterializer {
 
 
     private static List<List<PolyValue>> readRows( AlgNode source, Statement statement, AlgDataType parameterRowType ) {
+        return readRows( source, statement, parameterRowType, null );
+    }
+
+
+    private static List<List<PolyValue>> readRows( AlgNode source, Statement statement, AlgDataType parameterRowType,
+            List<List<AlgDataType>> assignmentInputs ) {
         DataContext dataContext = statement.getDataContext();
         List<Map<Long, PolyValue>> parameters = dataContext.getParameterValues();
         List<List<PolyValue>> rows = new ArrayList<>();
         if ( parameters.isEmpty() ) {
-            readRows( source, statement, parameterRowType, Map.of(), rows );
+            readRows( source, statement, parameterRowType, Map.of(), rows, assignmentInputs );
             return rows;
         }
         for ( Map<Long, PolyValue> binding : parameters ) {
-            readRows( source, statement, parameterRowType, binding, rows );
+            readRows( source, statement, parameterRowType, binding, rows, assignmentInputs );
         }
         return rows;
     }
 
 
     private static void readRows(
-            AlgNode source, Statement statement, AlgDataType parameterRowType, Map<Long, PolyValue> binding, List<List<PolyValue>> rows ) {
+            AlgNode source, Statement statement, AlgDataType parameterRowType, Map<Long, PolyValue> binding,
+            List<List<PolyValue>> rows, List<List<AlgDataType>> assignmentInputs ) {
         if ( source instanceof LogicalRelUnion union && union.all ) {
             for ( AlgNode input : union.getInputs() ) {
-                readRows( input, statement, parameterRowType, binding, rows );
+                readRows( input, statement, parameterRowType, binding, rows, assignmentInputs );
             }
             return;
         }
         if ( source instanceof LogicalRelValues values ) {
             for ( ImmutableList<RexLiteral> tuple : values.getTuples() ) {
-                rows.add( new ArrayList<>( tuple.stream().map( RexLiteral::getValue ).toList() ) );
+                addSourceRow( rows, assignmentInputs, source, tuple, new ArrayList<>( tuple.stream().map( RexLiteral::getValue ).toList() ) );
             }
             return;
         }
@@ -775,7 +800,7 @@ final class IdentityDmlMaterializer {
             for ( RexNode expression : project.getProjects() ) {
                 row.add( expression instanceof RexLiteral literal ? literal.getValue() : binding.get( ((RexDynamicParam) expression).getIndex() ) );
             }
-            rows.add( row );
+            addSourceRow( rows, assignmentInputs, source, project.getProjects(), row );
             return;
         }
 
@@ -788,11 +813,47 @@ final class IdentityDmlMaterializer {
             context.setParameterValues( binding.isEmpty() ? List.of() : List.of( binding ) );
             AlgRoot query = AlgRoot.of( source, Kind.SELECT );
             PolyImplementation implementation = statement.getQueryProcessor().prepareQuery( query, parameterRowType, false, true, false );
-            rows.addAll( implementation.execute( statement, -1 ).getAllRowsAndClose() );
+            List<? extends RexNode> expressions = source instanceof LogicalRelProject project ? project.getProjects() : List.of();
+            for ( List<PolyValue> row : implementation.execute( statement, -1 ).getAllRowsAndClose() ) {
+                addSourceRow( rows, assignmentInputs, source, expressions, row );
+            }
         } finally {
             context.setParameterTypes( originalTypes );
             context.setParameterValues( originalValues );
         }
+    }
+
+
+    private static void addSourceRow( List<List<PolyValue>> rows, List<List<AlgDataType>> assignmentInputs,
+            AlgNode source, List<? extends RexNode> expressions, List<PolyValue> row ) {
+        rows.add( row );
+        if ( assignmentInputs == null ) {
+            return;
+        }
+        AlgDataTypeFactory typeFactory = source.getCluster().getTypeFactory();
+        boolean parameterizedValues = source instanceof LogicalRelValues && RuntimeConfig.PARAMETERIZE_DML.getBoolean();
+        List<AlgDataType> inputs = new ArrayList<>( row.size() );
+        for ( int i = 0; i < row.size(); i++ ) {
+            RexNode expression = i < expressions.size() ? expressions.get( i ) : null;
+            PolyValue value = row.get( i );
+            // A null input type uses the destination's normal JDBC binding. An evaluated expression
+            // or unparameterized literal needs a physical assignment from its source type instead.
+            if ( value == null || value.isNull() || !value.isNumber() || expression instanceof RexDynamicParam || parameterizedValues ) {
+                inputs.add( null );
+                continue;
+            }
+            PolyType sourceType = expression != null && PolyType.APPROX_TYPES.contains( expression.getType().getPolyType() )
+                    ? expression.getType().getPolyType() : value.getType();
+            if ( sourceType == PolyType.DECIMAL ) {
+                BigDecimal decimal = value.asNumber().bigDecimalValue();
+                int scale = Math.max( decimal.scale(), 0 );
+                int precision = Math.max( decimal.precision() - Math.min( decimal.scale(), 0 ), scale );
+                inputs.add( typeFactory.createPolyType( PolyType.DECIMAL, precision, scale ) );
+            } else {
+                inputs.add( typeFactory.createPolyType( sourceType ) );
+            }
+        }
+        assignmentInputs.add( inputs );
     }
 
 

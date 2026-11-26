@@ -42,8 +42,8 @@ class PIRequestReader implements Closeable {
     }
 
 
-    public BlockingQueue<Optional<byte[]>> addConnection( Transport transport, long connectionId ) throws ClosedChannelException {
-        BlockingQueue<Optional<byte[]>> queue = new LinkedBlockingQueue<>();
+    public BlockingQueue<Optional<ReceivedRequest>> addConnection( Transport transport, long connectionId ) throws ClosedChannelException {
+        BlockingQueue<Optional<ReceivedRequest>> queue = new LinkedBlockingQueue<>();
         SelectableChannel chan = transport.getChannel();
         chan.register( selector, SelectionKey.OP_READ, new Connection( transport, queue, connectionId ) );
         selector.wakeup();
@@ -51,7 +51,7 @@ class PIRequestReader implements Closeable {
     }
 
 
-    private void putIgnoreInterrupt( BlockingQueue<Optional<byte[]>> q, byte[] element ) {
+    private void putIgnoreInterrupt( BlockingQueue<Optional<ReceivedRequest>> q, ReceivedRequest element ) {
         try {
             q.put( Optional.ofNullable( element ) );
         } catch ( InterruptedException e ) {
@@ -69,7 +69,7 @@ class PIRequestReader implements Closeable {
                         Optional<byte[]> maybeMessage = c.transport.tryReceiveMessage();
                         if ( maybeMessage.isPresent() ) {
                             byte[] msg = maybeMessage.get();
-                            putIgnoreInterrupt( c.queue, msg );
+                            putIgnoreInterrupt( c.queue, new ReceivedRequest( msg, System.nanoTime() ) );
                         }
                     } catch ( IOException e ) {
                         putIgnoreInterrupt( c.queue, null );
@@ -93,7 +93,12 @@ class PIRequestReader implements Closeable {
     }
 
 
-    private record Connection( Transport transport, BlockingQueue<Optional<byte[]>> queue, long connectionId ) {
+    record ReceivedRequest( byte[] payload, long receivedAtNanos ) {
+
+    }
+
+
+    private record Connection( Transport transport, BlockingQueue<Optional<ReceivedRequest>> queue, long connectionId ) {
 
     }
 

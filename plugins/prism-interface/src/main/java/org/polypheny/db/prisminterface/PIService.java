@@ -32,6 +32,7 @@ import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
+import org.polypheny.db.prisminterface.PIRequestReader.ReceivedRequest;
 import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
 import org.polypheny.db.prisminterface.statements.BatchProgress;
 import org.polypheny.db.prisminterface.statements.PIPreparedIndexedStatement;
@@ -45,6 +46,7 @@ import org.polypheny.db.prisminterface.utils.PrismValueDeserializer;
 import org.polypheny.db.prisminterface.utils.PropertyUtils;
 import org.polypheny.db.prisminterface.utils.VersionUtils;
 import org.polypheny.db.sql.language.SqlJdbcFunctionCall;
+import org.polypheny.db.transaction.QueryExecutionScope.InterruptionPause;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.DeadlockException;
@@ -118,6 +120,7 @@ class PIService {
     private final Transport con;
     private final PIRequestReader reader;
     private String uuid = null;
+    private PIQueryDeadline queryDeadline;
 
 
     private PIService( Transport con, long connectionId, ClientManager clientManager, PIRequestReader reader ) {
@@ -146,9 +149,9 @@ class PIService {
     }
 
 
-    private boolean handleFirstMessage( BlockingQueue<Optional<byte[]>> waiting ) throws IOException {
+    private boolean handleFirstMessage( BlockingQueue<Optional<ReceivedRequest>> waiting ) throws IOException {
         boolean success = false;
-        Request firstReq = readOneMessage( waiting );
+        Request firstReq = Request.parseFrom( readOneMessage( waiting ).payload() );
 
         if ( firstReq.getTypeCase() != TypeCase.CONNECTION_REQUEST ) {
             if ( Catalog.mode == RunMode.BENCHMARK ) {
@@ -173,17 +176,26 @@ class PIService {
     }
 
 
-    private Response handleRequest( Request req ) throws IOException {
+    private Response handleRequest( Request req, long receivedAtNanos ) throws IOException {
         PIClient client = uuid == null ? null : clientManager.getClient( uuid );
         List<Transaction> observed = client == null ? List.of() : client.observeTransactionBoundaries( req.getTypeCase() == TypeCase.COMMIT_REQUEST );
         Response r;
-        try {
-            r = handleMessage( req, client );
-        } catch ( Throwable t ) {
-            if ( Catalog.mode == RunMode.BENCHMARK && !(t instanceof DeadlockException) ) {
-                log.error( "Request failed: ", t );
+        try ( PIQueryDeadline deadline = PIQueryDeadline.start( req, client, receivedAtNanos ) ) {
+            queryDeadline = deadline;
+            try {
+                checkQueryDeadline();
+                r = handleMessage( req, client );
+                completeQuery();
+            } catch ( Throwable failure ) {
+                PIServiceException cancellation = finishFailedQuery( failure );
+                Throwable terminalFailure = cancellation == null ? failure : cancellation;
+                if ( Catalog.mode == RunMode.BENCHMARK && !(terminalFailure instanceof DeadlockException) ) {
+                    log.error( "Request failed: ", terminalFailure );
+                }
+                r = createErrorResponse( req.getId(), terminalFailure );
             }
-            r = createErrorResponse( req.getId(), t );
+        } finally {
+            queryDeadline = null;
         }
         if ( observed.stream().anyMatch( transaction -> !transaction.isActive() ) && !r.hasCommitResponse() && !r.hasRollbackResponse()
                 && req.getTypeCase() != TypeCase.DISCONNECT_REQUEST ) {
@@ -203,7 +215,7 @@ class PIService {
 
 
     private void handleMessages() throws IOException {
-        BlockingQueue<Optional<byte[]>> waiting = reader.addConnection( con, connectionId );
+        BlockingQueue<Optional<ReceivedRequest>> waiting = reader.addConnection( con, connectionId );
 
         if ( !handleFirstMessage( waiting ) ) {
             return;
@@ -211,8 +223,8 @@ class PIService {
 
         try {
             while ( true ) {
-                Request req = readOneMessage( waiting );
-                Response r = handleRequest( req );
+                ReceivedRequest message = readOneMessage( waiting );
+                Response r = handleRequest( Request.parseFrom( message.payload() ), message.receivedAtNanos() );
                 if ( r.getTypeCase() == Response.TypeCase.DISCONNECT_RESPONSE ) {
                     break;
                 }
@@ -247,22 +259,41 @@ class PIService {
 
 
     private void sendOneMessage( Response r ) throws IOException {
-        con.sendMessage( r.toByteArray() );
+        try ( InterruptionPause ignored = queryDeadline == null ? null : queryDeadline.pauseInterruptions() ) {
+            con.sendMessage( r.toByteArray() );
+        }
     }
 
 
-    private Request readOneMessage( BlockingQueue<Optional<byte[]>> waiting ) throws IOException {
-        byte[] msg;
+    private void checkQueryDeadline() {
+        if ( queryDeadline != null ) {
+            queryDeadline.check();
+        }
+    }
+
+
+    private void completeQuery() {
+        if ( queryDeadline != null ) {
+            queryDeadline.complete();
+        }
+    }
+
+
+    private PIServiceException finishFailedQuery( Throwable failure ) {
+        return queryDeadline == null ? null : queryDeadline.finish( failure );
+    }
+
+
+    private ReceivedRequest readOneMessage( BlockingQueue<Optional<ReceivedRequest>> waiting ) throws IOException {
         while ( true ) {
             try {
-                msg = waiting.take().orElseThrow( EOFException::new );
-                break;
+                return waiting.take().orElseThrow( EOFException::new );
             } catch ( InterruptedException e ) {
                 // retry
             }
         }
-        return Request.parseFrom( msg );
     }
+
 
 
     private Response handleMessage( Request req, PIClient client ) throws IOException {
@@ -350,6 +381,9 @@ class PIService {
                 .setSupportsGeneratedKeys( true );
         boolean isCompatible = checkApiVersion( request );
         responseBuilder.setIsCompatible( isCompatible );
+        if ( isCompatible && request.getMinorApiVersion() >= 5 ) {
+            PIQueryDeadline.advertise( responseBuilder );
+        }
         ConnectionResponse ConnectionResponse = responseBuilder.build();
         // reject incompatible client
         if ( !isCompatible ) {
@@ -469,6 +503,7 @@ class PIService {
         PIUnparameterizedStatement statement = client.getStatementManager().createUnparameterizedStatement( request );
         Response mid = responseObserver.makeResponse( PrismUtils.createResult( statement ), false );
         sendOneMessage( mid );
+        checkQueryDeadline();
         StatementResult result = statement.execute(
                 request.hasFetchSize()
                         ? request.getFetchSize()
@@ -489,18 +524,27 @@ class PIService {
                 // The ID acknowledgment precedes progress, even if validation fails before the first member.
                 sendOneMessage( acknowledgment );
             }
+            checkQueryDeadline();
             List<Node> parsedStatements = batch.validate();
             if ( !reportsProgress ) {
                 sendOneMessage( acknowledgment );
             }
-            return responseObserver.makeResponse( batch.executeBatch( parsedStatements, progress ) );
+            checkQueryDeadline();
+            StatementBatchResponse result = batch.executeBatch( parsedStatements, progress );
+            completeQuery();
+            return responseObserver.makeResponse( result );
         } catch ( Throwable failure ) {
+            PIServiceException cancellation = finishFailedQuery( failure );
+            Throwable terminalFailure = cancellation == null ? failure : cancellation;
             try {
                 client.getStatementManager().closeStatementOrBatch( batch.getBatchId() );
             } catch ( RuntimeException closeFailure ) {
-                failure.addSuppressed( closeFailure );
+                terminalFailure.addSuppressed( closeFailure );
             }
-            sendBatchProgressOnFailure( client, responseObserver, progress, failure );
+            sendBatchProgressOnFailure( client, responseObserver, progress, terminalFailure );
+            if ( cancellation != null ) {
+                throw cancellation;
+            }
             throw failure;
         }
     }
@@ -535,9 +579,15 @@ class PIService {
                 List<List<PolyValue>> bindings = request.getParametersList().stream()
                         .map( binding -> PrismValueDeserializer.deserializeParameterList( binding.getParametersList() ) )
                         .toList();
-                return resultObserver.makeResponse( statement.executeSequentialBatch( bindings, progress ) );
+                StatementBatchResponse result = statement.executeSequentialBatch( bindings, progress );
+                completeQuery();
+                return resultObserver.makeResponse( result );
             } catch ( Throwable failure ) {
-                sendBatchProgressOnFailure( client, resultObserver, progress, failure );
+                PIServiceException cancellation = finishFailedQuery( failure );
+                sendBatchProgressOnFailure( client, resultObserver, progress, cancellation == null ? failure : cancellation );
+                if ( cancellation != null ) {
+                    throw cancellation;
+                }
                 throw failure;
             }
         }
