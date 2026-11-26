@@ -234,6 +234,128 @@ class IdentityJdbcKeysTest {
     }
 
 
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void preparedProjectionsReturnStoredIntegralAssignments( boolean floatingAndScaledInputs ) throws SQLException {
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
+            sql.executeUpdate( "CREATE TABLE projected_integral (id INTEGER PRIMARY KEY, small_num SMALLINT, ordinary_num INTEGER, wide_num BIGINT)" );
+            try {
+                String insert = "INSERT INTO projected_integral (id, small_num, ordinary_num, wide_num) VALUES (?, ?, ?, ?)";
+                try ( PreparedStatement plain = jdbc.getConnection().prepareStatement( insert );
+                        PreparedStatement keys = jdbc.getConnection().prepareStatement( insert, new String[]{ "small_num", "ordinary_num", "wide_num" } );
+                        PreparedStatement returning = jdbc.getConnection().prepareStatement( insert + " RETURNING small_num, ordinary_num, wide_num" ) ) {
+                    bindIntegralProjection( plain, 1, floatingAndScaledInputs );
+                    assertEquals( 1, plain.executeUpdate() );
+                    List<Number> expected;
+                    try ( ResultSet rows = sql.executeQuery( "SELECT small_num, ordinary_num, wide_num FROM projected_integral WHERE id = 1" ) ) {
+                        expected = readIntegralProjection( rows );
+                    }
+                    assertEquals( 9_007_199_254_740_993L, expected.get( 2 ) );
+
+                    bindIntegralProjection( keys, 2, floatingAndScaledInputs );
+                    assertEquals( 1, keys.executeUpdate() );
+                    try ( ResultSet rows = keys.getGeneratedKeys() ) {
+                        assertEquals( expected, readIntegralProjection( rows ) );
+                    }
+                    bindIntegralProjection( returning, 3, floatingAndScaledInputs );
+                    try ( ResultSet rows = returning.executeQuery() ) {
+                        assertEquals( expected, readIntegralProjection( rows ) );
+                    }
+                    for ( int id : new int[]{ 2, 3 } ) {
+                        try ( ResultSet rows = sql.executeQuery( "SELECT small_num, ordinary_num, wide_num FROM projected_integral WHERE id = " + id ) ) {
+                            assertEquals( expected, readIntegralProjection( rows ) );
+                        }
+                    }
+                }
+            } finally {
+                sql.executeUpdate( "DROP TABLE projected_integral" );
+            }
+        }
+    }
+
+
+    @Test
+    void readsBackIntegralProjectionsWithAFractionalPrimaryKey() throws SQLException {
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
+            sql.executeUpdate( "CREATE TABLE projected_integral_key (bucket INTEGER NOT NULL, id SMALLINT NOT NULL, "
+                    + "amount INTEGER, PRIMARY KEY(bucket, id))" );
+            try {
+                String insert = "INSERT INTO projected_integral_key (bucket, id, amount) VALUES (?, ?, ?)";
+                try ( PreparedStatement plain = jdbc.getConnection().prepareStatement( insert );
+                        PreparedStatement keys = jdbc.getConnection().prepareStatement( insert, new String[]{ "id", "amount" } );
+                        PreparedStatement returning = jdbc.getConnection().prepareStatement( insert + " RETURNING amount" ) ) {
+                    bindFractionalPrimaryKey( plain, 0 );
+                    assertEquals( 1, plain.executeUpdate() );
+                    short expectedId;
+                    int expectedAmount;
+                    try ( ResultSet stored = sql.executeQuery( "SELECT id, amount FROM projected_integral_key WHERE bucket = 0" ) ) {
+                        assertTrue( stored.next() );
+                        expectedId = stored.getShort( 1 );
+                        expectedAmount = stored.getInt( 2 );
+                        assertFalse( stored.next() );
+                    }
+                    int adjacent = expectedId == 6 ? 7 : 6;
+                    sql.executeUpdate( "INSERT INTO projected_integral_key VALUES (1, " + adjacent + ", 99), (2, " + adjacent + ", 99)" );
+
+                    bindFractionalPrimaryKey( keys, 1 );
+                    assertEquals( 1, keys.executeUpdate() );
+                    try ( ResultSet rows = keys.getGeneratedKeys() ) {
+                        assertTrue( rows.next() );
+                        assertEquals( expectedId, rows.getShort( 1 ) );
+                        assertEquals( expectedAmount, rows.getInt( 2 ) );
+                        assertFalse( rows.next() );
+                    }
+
+                    bindFractionalPrimaryKey( returning, 2 );
+                    try ( ResultSet rows = returning.executeQuery() ) {
+                        assertTrue( rows.next() );
+                        assertEquals( expectedAmount, rows.getInt( 1 ) );
+                        assertFalse( rows.next() );
+                    }
+                }
+            } finally {
+                sql.executeUpdate( "DROP TABLE projected_integral_key" );
+            }
+        }
+    }
+
+
+    private static void bindFractionalPrimaryKey( PreparedStatement insert, int bucket ) throws SQLException {
+        insert.setInt( 1, bucket );
+        insert.setBigDecimal( 2, new BigDecimal( "6.75" ) );
+        insert.setBigDecimal( 3, new BigDecimal( "31.6" ) );
+    }
+
+
+    private static void bindIntegralProjection( PreparedStatement insert, int id, boolean floatingAndScaledInputs ) throws SQLException {
+        insert.setInt( 1, id );
+        if ( floatingAndScaledInputs ) {
+            insert.setDouble( 2, -7.75 );
+            insert.setBigDecimal( 3, new BigDecimal( "42.00" ) );
+        } else {
+            insert.setBigDecimal( 2, new BigDecimal( "-7.75" ) );
+            insert.setBigDecimal( 3, new BigDecimal( "42.6" ) );
+        }
+        insert.setBigDecimal( 4, new BigDecimal( "9007199254740993.75" ) );
+    }
+
+
+    private static List<Number> readIntegralProjection( ResultSet rows ) throws SQLException {
+        assertTrue( rows.next() );
+        int small = rows.getShort( 1 );
+        int ordinary = rows.getInt( 2 );
+        long wide = rows.getLong( 3 );
+        assertEquals( Integer.valueOf( small ), rows.getObject( 1, Integer.class ) );
+        assertEquals( Integer.valueOf( ordinary ), rows.getObject( 2, Integer.class ) );
+        assertEquals( Long.valueOf( wide ), rows.getObject( 3, Long.class ) );
+        assertEquals( Integer.toString( small ), rows.getString( 1 ) );
+        assertEquals( Integer.toString( ordinary ), rows.getString( 2 ) );
+        assertEquals( Long.toString( wide ), rows.getString( 3 ) );
+        assertFalse( rows.next() );
+        return List.of( small, ordinary, wide );
+    }
+
+
     @Test
     void readsBackTheInsertedDecimalPrimaryKeyInsteadOfAnAdjacentRow() throws SQLException {
         try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
