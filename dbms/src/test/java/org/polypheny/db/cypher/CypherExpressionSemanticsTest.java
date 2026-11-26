@@ -74,6 +74,25 @@ class CypherExpressionSemanticsTest extends CypherTestTemplate {
 
 
     @Test
+    void ordersByTheProjectedAggregateExpressionInReturnAndWith() {
+        for ( String projection : List.of(
+                "RETURN n, count(*) + 1 AS score ORDER BY count(*) + 1 DESC",
+                "WITH n, count(*) + 1 AS score ORDER BY count(*) + 1 DESC RETURN n, score" ) ) {
+            GraphResult result = execute( "UNWIND [2, 1, 1] AS n " + projection );
+            assertEquals( 2, result.getData().length );
+            assertEquals( 1, cell( result, 0, 0 ).asNumber().intValue() );
+            assertEquals( 3, cell( result, 0, 1 ).asNumber().intValue() );
+            assertEquals( 2, cell( result, 1, 0 ).asNumber().intValue() );
+            assertEquals( 2, cell( result, 1, 1 ).asNumber().intValue() );
+        }
+        assertQueryError( """
+                UNWIND [2, 1, 1] AS n
+                RETURN n, count(*) + 1 AS score ORDER BY sum(n) + 1 DESC
+                """, "The aggregation used to order rows must also be projected" );
+    }
+
+
+    @Test
     void missingPropertiesOnlyAffectTheirOwnBooleanBranch() {
         String match = "MATCH (:Origin)-[*]->(b:Destination) WHERE ";
         for ( String predicate : List.of( "b.missing = 1 OR b.name = 'B'",

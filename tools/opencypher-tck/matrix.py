@@ -3,18 +3,20 @@
 
 import argparse
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import closing, contextmanager
+from contextlib import ExitStack, closing, contextmanager
 from hashlib import sha256
 import json
 import os
 from pathlib import Path
 import shlex
 import shutil
+import signal
 import subprocess
 import sys
 from tempfile import TemporaryDirectory
 from time import monotonic, sleep
 from urllib.request import Request, urlopen
+from uuid import uuid4
 from zipfile import ZipFile
 
 from run import TOTAL
@@ -27,6 +29,7 @@ STORE_NAMES = {
     "monetdb": "MonetDB", "postgresql": "PostgreSQL", "neo4j": "Neo4j",
 }
 EMBEDDED = {"hsqldb", "file"}
+DRIVER_LABEL = "org.polypheny.opencypher-tck.driver"
 
 
 def wait_for_fixture(process, path, log, timeout):
@@ -83,6 +86,54 @@ def verify_store_image(home, adapter, expected):
     return {"container": name, "image": image, "repo_digests": digests}
 
 
+def remove_owned_containers(docker, selector, environment, name_prefix=""):
+    def owned_ids():
+        result = subprocess.run(
+            [docker, "container", "ls", "--all", "--no-trunc", "--filter", selector, "--format", "{{.ID}} {{.Names}}"],
+            env=environment, capture_output=True, text=True, timeout=20,
+        )
+        if result.returncode:
+            raise RuntimeError(f"Could not list Docker containers for {selector}: {result.stderr.strip()}")
+        return [container for container, name in (line.split(maxsplit=1) for line in result.stdout.splitlines())
+                if name.startswith(name_prefix)]
+
+    try:
+        owned = owned_ids()
+        if owned:
+            result = subprocess.run([docker, "container", "rm", "--force", "--volumes", *owned],
+                                    env=environment, capture_output=True, text=True, timeout=20)
+            # An auto-removing driver container can disappear between listing and removal.
+            if result.returncode and owned_ids():
+                raise RuntimeError(f"Could not remove Docker containers for {selector}: {result.stderr.strip()}")
+    except (OSError, subprocess.TimeoutExpired) as error:
+        raise RuntimeError(f"Could not clean up Docker containers for {selector}: {error}") from error
+
+
+@contextmanager
+def fixture_process(command, home, environment, output, container_prefix):
+    process = subprocess.Popen(command, cwd=home, env=environment, stdout=output, stderr=subprocess.STDOUT)
+    try:
+        yield process
+    finally:
+        failed = sys.exc_info()[0] is not None
+        try:
+            if process.poll() is None:
+                process.terminate()
+                try:
+                    process.wait(timeout=20)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait()
+        finally:
+            if container_prefix is not None:
+                try:
+                    remove_owned_containers("docker", f"name={container_prefix}", environment, container_prefix)
+                except RuntimeError as error:
+                    print(error, file=output, flush=True)
+                    if not failed:
+                        raise
+
+
 @contextmanager
 def startup_lock(path):
     if path is None:
@@ -108,37 +159,54 @@ def fixture(args, jar, store, store_version, logs):
         config.parent.mkdir(parents=True)
         config.write_text(f'"runtime/webuiServerPort" = {args.web_port}\n', encoding="utf-8")
         command = [args.java, "-ea", "-Xmx2g", "-jar", str(jar), "-mode", "dev", "-daemon", "-defaultStore", store]
+        container_prefix = None
         if store in EMBEDDED:
             command.append("-noAutoDocker")
+        else:
+            fixture_uuid = str(uuid4())
+            (home / ".polypheny/uuid").write_text(fixture_uuid, encoding="utf-8")
+            container_prefix = f"polypheny_{fixture_uuid}_"
         environment = dict(os.environ, POLYPHENY_HOME=temporary, TZ="UTC")
-        with server_log.open("w", encoding="utf-8") as output:
-            process = None
+        with server_log.open("w", encoding="utf-8") as output, ExitStack() as cleanup:
+            with startup_lock(args.startup_lock), ExitStack() as startup:
+                process = startup.enter_context(fixture_process(command, home, environment, output, container_prefix))
+                wait_for_fixture(process, socket_path, server_log, args.startup_timeout)
+                adapter = bootstrap(socket_path, args.prism_port, args.web_port, store, args.startup_lock is not None)
+                if store not in EMBEDDED:
+                    adapter.update(verify_store_image(home, adapter, store_version))
+                # Release the startup lock only after the default ports are released or startup is unwound.
+                cleanup.enter_context(startup.pop_all())
+            yield adapter
+
+
+def stop_driver_group(process):
+    for action in (signal.SIGTERM, signal.SIGKILL):
+        try:
+            os.killpg(process.pid, action)
+        except ProcessLookupError:
+            break
+        if action == signal.SIGTERM:
             try:
-                with startup_lock(args.startup_lock):
-                    process = subprocess.Popen(command, cwd=home, env=environment,
-                                               stdout=output, stderr=subprocess.STDOUT)
-                    wait_for_fixture(process, socket_path, server_log, args.startup_timeout)
-                    adapter = bootstrap(socket_path, args.prism_port, args.web_port, store, args.startup_lock is not None)
-                    if store not in EMBEDDED:
-                        adapter.update(verify_store_image(home, adapter, store_version))
-                yield adapter
-            finally:
-                if process is not None and process.poll() is None:
-                    process.terminate()
-                    try:
-                        process.wait(timeout=20)
-                    except subprocess.TimeoutExpired:
-                        process.kill()
-                        process.wait()
+                process.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                pass
+    process.wait()
 
 
 def run_driver(args, store, store_version, logs, driver):
     label = driver["name"]
     detail = logs / f"{label}.jsonl"
     output_path = logs / f"{label}.log"
+    bridge = driver["command"]
+    docker_selector = None
+    if Path(bridge[0]).name == "docker" and (bridge[1:2] == ["run"] or bridge[1:3] == ["container", "run"]):
+        run = 1 if bridge[1] == "run" else 2
+        label_value = f"{DRIVER_LABEL}={uuid4()}"
+        docker_selector = f"label={label_value}"
+        bridge = [*bridge[:run + 1], "--label", label_value, *bridge[run + 1:]]
     command = [
         sys.executable, str(SUITE / "run.py"), "--features", str(args.features),
-        "--driver-command", shlex.join(driver["command"]), "--driver-version", driver["version"],
+        "--driver-command", shlex.join(bridge), "--driver-version", driver["version"],
         "--server-version", args.server_version, "--store", store, "--store-version", store_version,
         "--jsonl", str(detail),
     ]
@@ -148,12 +216,27 @@ def run_driver(args, store, store_version, logs, driver):
     exit_status, reason = None, None
     with output_path.open("w", encoding="utf-8") as output:
         try:
-            exit_status = subprocess.run(command, stdout=output, stderr=subprocess.STDOUT,
-                                         env=environment, timeout=args.driver_timeout).returncode
-        except subprocess.TimeoutExpired:
-            reason = f"Driver run exceeded {args.driver_timeout}s"
+            with subprocess.Popen(command, stdout=output, stderr=subprocess.STDOUT,
+                                  env=environment, start_new_session=True) as process:
+                try:
+                    exit_status = process.wait(timeout=args.driver_timeout)
+                except subprocess.TimeoutExpired:
+                    reason = f"Driver run exceeded {args.driver_timeout}s"
+                    stop_driver_group(process)
+                except BaseException:
+                    stop_driver_group(process)
+                    raise
+                if exit_status is not None and exit_status < 0:
+                    stop_driver_group(process)
+        finally:
+            if docker_selector is not None:
+                try:
+                    remove_owned_containers(bridge[0], docker_selector, environment)
+                except RuntimeError as error:
+                    print(error, file=output, flush=True)
+                    reason = f"{reason}. {error}" if reason else str(error)
     summary = {}
-    if detail.exists():
+    if reason is None and detail.exists():
         for line in detail.read_text(encoding="utf-8").splitlines():
             event = json.loads(line)
             if event["event"] == "summary":
@@ -209,17 +292,23 @@ def main():
         for store, store_version in stores.items():
             logs = args.out / store
             logs.mkdir()
+            pending = set(driver_names)
             try:
                 with fixture(args, jar, store, store_version, logs) as adapter:
                     (logs / "adapter.json").write_text(wire_json(adapter) + "\n", encoding="utf-8")
                     with ThreadPoolExecutor(max_workers=args.parallel_drivers) as workers:
                         results = workers.map(lambda driver: run_driver(args, store, store_version, logs, driver), drivers)
                         for result in results:
+                            pending.remove(result["driver"])
                             print(wire_json(result), file=summary, flush=True)
                             print(wire_json(result), flush=True)
                             success &= result["status"] == "passed"
             except (OSError, RuntimeError) as error:
+                if not pending:
+                    print(f"{store} fixture cleanup failed: {error}", file=sys.stderr, flush=True)
                 for driver in drivers:
+                    if driver["name"] not in pending:
+                        continue
                     result = {"store": store, "store_version": store_version, "driver": driver["name"],
                               "driver_version": driver["version"], "status": "blocked", "reason": str(error),
                               "log": str(logs / "server.log")}

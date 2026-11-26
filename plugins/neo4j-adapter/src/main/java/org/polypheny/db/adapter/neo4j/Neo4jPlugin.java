@@ -353,7 +353,8 @@ public class Neo4jPlugin extends PolyPlugin {
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             PhysicalEntity physical = adapterCatalog.fromAllocation( allocId, PhysicalEntity.class );
 
-            transactionProvider.executeDdl(
+            transactionProvider.executeDataChange(
+                    context.getStatement().getTransaction().getXid(),
                     String.format( "MATCH (n:%s) DELETE n", physical.name ) );
         }
 
@@ -366,11 +367,13 @@ public class Neo4jPlugin extends PolyPlugin {
             PhysicalColumn column = adapterCatalog.createColumn( physicalName, allocId, physical.getFields().size() - 1, logicalColumn );
 
             if ( logicalColumn.defaultValue != null ) {
-                transactionProvider.executeDdl( String.format(
-                        "MATCH (n:%s) SET n += {%s:%s}",
-                        getPhysicalEntityName( logicalColumn.namespaceId, allocId ),
-                        getPhysicalFieldName( logicalColumn.id ),
-                        getDefaultAsNeo( logicalColumn.defaultValue, logicalColumn.type ) ) );
+                transactionProvider.executeDataChange(
+                        context.getStatement().getTransaction().getXid(),
+                        String.format(
+                                "MATCH (n:%s) SET n += {%s:%s}",
+                                getPhysicalEntityName( logicalColumn.namespaceId, allocId ),
+                                getPhysicalFieldName( logicalColumn.id ),
+                                getDefaultAsNeo( logicalColumn.defaultValue, logicalColumn.type ) ) );
             }
 
             List<PhysicalField> fields = new ArrayList<>( physical.getFields() );
@@ -401,7 +404,8 @@ public class Neo4jPlugin extends PolyPlugin {
                 adapterCatalog.dropColumn( f.allocId, f.id );
             } );
 
-            transactionProvider.executeDdl(
+            transactionProvider.executeDataChange(
+                    context.getStatement().getTransaction().getXid(),
                     String.format( "MATCH (n:%s) REMOVE n.%s", physical.name, column.name ) );
 
             adapterCatalog.replacePhysical(
@@ -438,7 +442,7 @@ public class Neo4jPlugin extends PolyPlugin {
                     .map( id -> String.format( "n.%s", getPhysicalFieldName( id ) ) )
                     .collect( Collectors.joining( ", " ) );
 
-            transactionProvider.executeDdl( String.format(
+            transactionProvider.executeSchemaChange( String.format(
                     "CREATE INDEX %s IF NOT EXISTS FOR (n:%s) on (%s)",
                     physicalIndexName + "_" + physical.id + "_" + index.id,
                     getPhysicalEntityName( index.key.namespaceId, physical.id ),
@@ -477,7 +481,7 @@ public class Neo4jPlugin extends PolyPlugin {
         public void dropIndex( Context context, LogicalIndex index, long allocId ) {
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
 
-            transactionProvider.executeDdl(
+            transactionProvider.executeSchemaChange(
                     String.format( "DROP INDEX %s IF EXISTS", index.physicalName + "_" + allocId + "_" + index.id ) );
 
         }
@@ -527,7 +531,8 @@ public class Neo4jPlugin extends PolyPlugin {
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
 
             NeoEntity physical = adapterCatalog.fromAllocation( allocId, NeoEntity.class );
-            transactionProvider.executeDdl(
+            transactionProvider.executeDataChange(
+                    context.getStatement().getTransaction().getXid(),
                     String.format( "MATCH (n:%s) DETACH DELETE n", physical.name ) );
 
         }
@@ -556,7 +561,8 @@ public class Neo4jPlugin extends PolyPlugin {
         public void dropGraph( Context context, AllocationGraph allocation ) {
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             PhysicalGraph physical = adapterCatalog.fromAllocation( allocation.id, PhysicalGraph.class );
-            transactionProvider.executeDdl(
+            transactionProvider.executeDataChange(
+                    context.getStatement().getTransaction().getXid(),
                     String.format( "MATCH (n:%s) DETACH DELETE n", getMappingLabel( physical.id ) ) );
         }
 

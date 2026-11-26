@@ -1,0 +1,8 @@
+{
+  "hsqldb": "2.7.3",
+  "file": "embedded 0.10.1-SNAPSHOT",
+  "neo4j": "polypheny/neo@sha256:84892ec2353a602f1bdc50140160cc2e7adad694af25c842e52b6f03060e82bd",
+  "postgresql": "polypheny/postgres-pgvector-postgis@sha256:4d3d595ba50eee24079e98eb2bfbf9546bcc68aa7a1cba2fe084bfdda490ff34",
+  "mongodb": "polypheny/mongo@sha256:fe8ba76e022c223a42e24628dbabbda9a25a3950db1460cb13382a362af37d14",
+  "monetdb": "polypheny/monet@sha256:ce86a6ca688473b088c7eae4cd8e79294b275b849f2194c6be58a73900b54b9c"
+}

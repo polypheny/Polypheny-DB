@@ -108,7 +108,13 @@ public class TransactionProvider {
     }
 
 
-    void executeDdl( String query ) {
+    void executeDataChange( PolyXid xid, String query ) {
+        // Data changes that implement DDL must see the caller's uncommitted writes.
+        get( xid ).run( query ).consume();
+    }
+
+
+    void executeSchemaChange( String query ) {
         // Neo4j schema commands use a dedicated transaction. Closing it must leave
         // all registered user transactions and their result cursors open.
         try ( Session session = db.session(); Transaction transaction = session.beginTransaction() ) {

@@ -16,6 +16,7 @@
 package org.polypheny.db.cypher;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -30,6 +31,30 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 
 @Tag("adapter")
 class Neo4jDdlIsolationTest {
+
+    @Test
+    void truncateIncludesRowsWrittenByItsOwnTransaction() throws SQLException {
+        assumeTrue( "neo4j".equalsIgnoreCase( System.getProperty( "store.default" ) ) );
+        TestHelper.getInstance();
+        String table = "ddl_truncate_" + UUID.randomUUID().toString().replace( "-", "" );
+
+        try ( JdbcConnection admin = new JdbcConnection( true ); Statement ddl = admin.getConnection().createStatement() ) {
+            ddl.executeUpdate( "CREATE TABLE " + table + " (id INT NOT NULL, PRIMARY KEY(id))" );
+            try {
+                assertEquals( 1, ddl.executeUpdate( "INSERT INTO " + table + " VALUES (1)" ) );
+                try ( JdbcConnection writer = new JdbcConnection( false ); Statement statements = writer.getConnection().createStatement() ) {
+                    assertEquals( 1, statements.executeUpdate( "INSERT INTO " + table + " VALUES (42)" ) );
+                    statements.executeUpdate( "TRUNCATE TABLE " + table );
+                }
+                try ( ResultSet rows = ddl.executeQuery( "SELECT id FROM " + table ) ) {
+                    assertFalse( rows.next(), "TRUNCATE must remove both committed and pending rows" );
+                }
+            } finally {
+                ddl.executeUpdate( "DROP TABLE " + table );
+            }
+        }
+    }
+
 
     @Test
     void droppingAnotherNamespaceLeavesWritesUncommitted() throws SQLException {

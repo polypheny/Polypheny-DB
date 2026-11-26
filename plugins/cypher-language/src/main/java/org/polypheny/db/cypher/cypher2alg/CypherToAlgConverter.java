@@ -20,6 +20,7 @@ import static org.polypheny.db.cypher.CypherPathMatchUtil.isRelationshipList;
 
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -781,13 +782,7 @@ public class CypherToAlgConverter {
 
     private static Optional<PlanKey> expressionKey( CypherExpression expression, Map<String, RexNode> sourceBindings, CypherContext context ) {
         try {
-            // Use the existing structural Rex representation in the input scope. Aggregate
-            // keys include their operation and argument without adding another aggregate call.
-            if ( expression instanceof CypherAggregate aggregate ) {
-                RexNode argument = aggregate.getTarget() == null ? null : context.resolveInScope( aggregate.getTarget(), RexType.PROJECT, sourceBindings::get, null );
-                return PlanKey.of( aggregate.op, aggregate.isDistinct(), argument );
-            }
-            return PlanKey.of( context.resolveInScope( expression, RexType.PROJECT, sourceBindings::get, null ) );
+            return context.projectionExpressionKey( expression, sourceBindings::get );
         } catch ( GenericRuntimeException | UnsupportedOperationException ex ) {
             // A failed probe is not a query error. Resolve the expression normally to apply
             // output aliases and report any errors in the resulting scope.
@@ -1709,7 +1704,7 @@ public class CypherToAlgConverter {
         private final Stack<AlgNode> stack = new Stack<>();
         // named projects, null if no name provided
         private final Queue<Pair<PolyString, RexNode>> rexQueue = new LinkedList<>();
-        private final List<ProjectionAggregate> projectionAggregates = new ArrayList<>();
+        private List<ProjectionAggregate> projectionAggregates = new ArrayList<>();
         private boolean acceptingAggregates;
         private final Map<PolyString, PolyNode> nodes = new HashMap<>();
         // Paths still represented by a single match column. The value says whether the path itself has a user alias.
@@ -1971,6 +1966,20 @@ public class CypherToAlgConverter {
                 return action.get();
             } finally {
                 acceptingAggregates = previous;
+            }
+        }
+
+
+        private Optional<PlanKey> projectionExpressionKey( CypherExpression expression, Function<String, RexNode> variables ) {
+            List<ProjectionAggregate> previous = projectionAggregates;
+            projectionAggregates = new ArrayList<>();
+            try {
+                RexNode value = withAggregates( true, () -> resolveInScope( expression, RexType.PROJECT, variables, null ) );
+                // The Rex tree contains positional aggregate references. Pair it with the calls they refer to.
+                return PlanKey.of( value, projectionAggregates.stream().map( aggregate -> Arrays.asList(
+                        aggregate.call().getAggregation().getOperatorName(), aggregate.call().isDistinct(), aggregate.operand() ) ).toList() );
+            } finally {
+                projectionAggregates = previous;
             }
         }
 

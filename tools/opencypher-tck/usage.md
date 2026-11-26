@@ -4,7 +4,7 @@ The suite runs 1,747 active scenarios from the selected graph, pattern,
 boolean, conditional, quantifier, MATCH, MERGE, SET and ORDER BY features.
 It uses the upstream openCypher tag `1.0.0-M23` at
 `007895aff5f33097d67b2e48a0a2babd6bd18590`. The runner verifies a digest of
-the 70 feature files. It records the one upstream `@ignore` example as excluded.
+the 70 feature files. It records the one upstream `@ignore` scenario as excluded.
 
 The tests create and drop a fresh graph namespace for each scenario. The
 client submits setup, tested statements, control statements and graph
@@ -62,16 +62,42 @@ Add all six driver commands from the driver build guide.
 ]
 ```
 
-Use a separate JSON object mapping stores to versions. The embedded values
-are HSQLDB `2.7.3` and File `embedded 0.10.1-SNAPSHOT` for this server.
-For each configured external store, use the image repository digest from
-`docker image inspect`. The matrix runner verifies that digest against the
-container started for the fixture.
+The [store manifest](stores-m23.json) pins the two embedded stores and the
+four Docker images used for the acceptance run. The adapters request local
+image tags. On the dedicated Docker daemon used by the Polypheny connector,
+pull the manifest's pinned images and assign the adapter tags before starting
+the launcher. MonetDB requires Linux amd64 or amd64 emulation.
+
+```sh
+python - <<'PY'
+import json
+from pathlib import Path
+import subprocess
+
+stores = json.loads(Path("tools/opencypher-tck/stores-m23.json").read_text())
+tags = {
+    "mongodb": "polypheny/mongo:latest",
+    "monetdb": "polypheny/monet:latest",
+    "neo4j": "polypheny/neo:latest",
+    "postgresql": "polypheny/postgres-pgvector-postgis:17-debian",
+}
+for store, tag in tags.items():
+    image = stores[store]
+    platform = ["--platform", "linux/amd64"] if store == "monetdb" else []
+    subprocess.run(["docker", "pull", *platform, image], check=True)
+    subprocess.run(["docker", "image", "tag", image, tag], check=True)
+PY
+```
+
+The runner verifies each launched Docker store against the manifest before
+starting its clients. Set `DOCKER_HOST`, if needed, so the Docker CLI used by
+the runner inspects the same daemon as the Polypheny connector.
 
 ```sh
 python tools/opencypher-tck/matrix.py \
     --jar dbms/build/libs/dbms-0.10.1-SNAPSHOT.jar \
-    --features openCypher/tck/features --drivers drivers.json --stores stores.json \
+    --features openCypher/tck/features --drivers drivers.json \
+    --stores tools/opencypher-tck/stores-m23.json \
     --server-version "$SERVER_REVISION" --out m23-results
 ```
 
@@ -88,3 +114,7 @@ Unix sockets, set `--fixture-root` accordingly. To run several store groups
 on the same Unix host, give each runner distinct `--prism-port` and
 `--web-port` values and pass the same `--startup-lock` file. The fixture
 then releases the default query interfaces after configuring its test port.
+
+For a containerized driver bridge, put `docker run` or `docker container run`
+directly in the driver's command array and keep stdin open. This lets the
+launcher identify and remove its bridge container during teardown.
