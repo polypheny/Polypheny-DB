@@ -46,8 +46,8 @@ import org.polypheny.db.TestHelper.JdbcConnection;
 @Slf4j
 public class JdbcMetaTest {
 
-    private static final String CREATE_TEST_TABLE = "CREATE TABLE IF NOT EXISTS my_table (id INT PRIMARY KEY, some_value INT)";
-    private static final String INSERT_TEST_DATA = "INSERT INTO my_table (id, some_value) VALUES " +
+    private static final String NULL_SORT_TABLE = "jdbc_meta_null_sort";
+    private static final String INSERT_TEST_DATA = "INSERT INTO " + NULL_SORT_TABLE + " (id, some_value) VALUES " +
             "(1, 10), " +
             "(2, NULL), " +
             "(3, 5), " +
@@ -355,36 +355,32 @@ public class JdbcMetaTest {
 
     @Test
     public void testSortNullsAtEnd() throws SQLException {
-        try (
-                JdbcConnection polyphenyDbConnection = new JdbcConnection( false );
-                Connection connection = polyphenyDbConnection.getConnection();
-                Statement statement = connection.createStatement()
-        ) {
-            statement.execute( CREATE_TEST_TABLE );
-            statement.executeUpdate( INSERT_TEST_DATA );
-
-            ResultSet rs = statement.executeQuery( "SELECT * FROM my_table ORDER BY some_value IS NULL, some_value" );
-
-            boolean trigger = false;
-            while ( rs.next() ) {
-                int value = rs.getInt( "some_value" );
-                if ( value == 0 ) {
-                    trigger = true;
-                } else if ( trigger ) {
-                    fail( "Values are not sorted correctly." );
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement statement = jdbc.getConnection().createStatement() ) {
+            statement.executeUpdate( "CREATE TABLE " + NULL_SORT_TABLE + " (id INT PRIMARY KEY, some_value INT)" );
+            try {
+                statement.executeUpdate( INSERT_TEST_DATA );
+                String query = "SELECT * FROM " + NULL_SORT_TABLE + " ORDER BY some_value IS NULL, some_value";
+                try ( ResultSet rows = statement.executeQuery( query ) ) {
+                    assertNullsAtEnd( rows );
                 }
+                try ( ResultSet rows = statement.executeQuery( query ) ) {
+                    assertNullsAtEnd( rows );
+                }
+            } finally {
+                statement.executeUpdate( "DROP TABLE " + NULL_SORT_TABLE );
             }
+        }
+    }
 
-            ResultSet rs2 = statement.executeQuery( "SELECT * FROM my_table ORDER BY some_value IS NULL, some_value" );
 
-            trigger = false;
-            while ( rs2.next() ) {
-                int value = rs2.getInt( "some_value" );
-                if ( value == 0 ) {
-                    trigger = true;
-                } else if ( trigger ) {
-                    fail( "Values are not sorted correctly." );
-                }
+    private static void assertNullsAtEnd( ResultSet rows ) throws SQLException {
+        boolean sawNull = false;
+        while ( rows.next() ) {
+            rows.getInt( "some_value" );
+            if ( rows.wasNull() ) {
+                sawNull = true;
+            } else if ( sawNull ) {
+                fail( "Values are not sorted correctly." );
             }
         }
     }
