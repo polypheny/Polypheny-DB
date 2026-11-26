@@ -48,6 +48,8 @@ public class PIClient {
     private final int prismMinorVersion;
     @Setter
     private boolean partialBatchResults;
+    @Setter
+    private boolean transactionBoundaryEvents;
     @Getter
     private final StatementManager statementManager;
     @Getter
@@ -102,6 +104,12 @@ public class PIClient {
 
     public boolean supportsPartialBatchResults() {
         return prismMinorVersion >= 5 && partialBatchResults;
+    }
+
+
+    @Nullable Transaction observedManualTransaction() {
+        return prismMinorVersion >= 5 && transactionBoundaryEvents && !isAutoCommit && !hasNoTransaction()
+                ? currentTransaction : null;
     }
 
 

@@ -234,7 +234,7 @@ final class IdentityDmlMaterializer {
         return switch ( type.getPolyType() ) {
             case DECIMAL -> PolyTypeUtil.hasScale( type ) && value.asNumber().bigDecimalValue().scale() != type.getScale();
             case TINYINT, SMALLINT, INTEGER, BIGINT -> switch ( value.getType() ) {
-                case DECIMAL -> value.asBigDecimal().value.scale() != 0;
+                case DECIMAL -> true;
                 case REAL, FLOAT, DOUBLE -> Double.isFinite( value.asNumber().doubleValue() );
                 default -> false;
             };

@@ -45,6 +45,7 @@ import org.polypheny.db.prisminterface.utils.PrismValueDeserializer;
 import org.polypheny.db.prisminterface.utils.PropertyUtils;
 import org.polypheny.db.prisminterface.utils.VersionUtils;
 import org.polypheny.db.sql.language.SqlJdbcFunctionCall;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.RunMode;
@@ -173,14 +174,28 @@ class PIService {
 
 
     private Response handleRequest( Request req ) throws IOException {
+        PIClient client = uuid == null ? null : clientManager.getClient( uuid );
+        Transaction observed = client == null ? null : client.observedManualTransaction();
         Response r;
         try {
-            r = handleMessage( req );
+            r = handleMessage( req, client );
         } catch ( Throwable t ) {
             if ( Catalog.mode == RunMode.BENCHMARK && !(t instanceof DeadlockException) ) {
                 log.error( "Request failed: ", t );
             }
             r = createErrorResponse( req.getId(), t );
+        }
+        if ( observed != null && !observed.isActive() && !r.hasCommitResponse() && !r.hasRollbackResponse()
+                && req.getTypeCase() != TypeCase.DISCONNECT_REQUEST ) {
+            // An explicit success acknowledges the boundary itself. For every other terminal reply,
+            // report the ended transaction first so the client can invalidate local cursors.
+            Response.Builder boundary = Response.newBuilder().setId( req.getId() );
+            if ( observed.isRolledBack() ) {
+                boundary.setRollbackResponse( RollbackResponse.getDefaultInstance() );
+            } else {
+                boundary.setCommitResponse( CommitResponse.getDefaultInstance() );
+            }
+            sendOneMessage( boundary.build() );
         }
         sendOneMessage( r );
         return r;
@@ -250,8 +265,7 @@ class PIService {
     }
 
 
-    private Response handleMessage( Request req ) throws IOException {
-        PIClient client = uuid == null ? null : clientManager.getClient( uuid );
+    private Response handleMessage( Request req, PIClient client ) throws IOException {
         if ( client == null ) {
             throw new PIServiceException( "Clients must be authenticated before sending any messages", "28000" );
         }
@@ -654,6 +668,8 @@ class PIService {
         properties.getPropertiesMap().forEach( ( key, value ) -> {
             if ( PIClientInfoProperties.PARTIAL_BATCH_RESULTS.equals( key ) ) {
                 client.setPartialBatchResults( "true".equals( value ) );
+            } else if ( PIClientInfoProperties.TRANSACTION_BOUNDARY_EVENTS.equals( key ) ) {
+                client.setTransactionBoundaryEvents( "true".equals( value ) );
             } else {
                 client.getPIClientInfoProperties().setProperty( key, value );
             }

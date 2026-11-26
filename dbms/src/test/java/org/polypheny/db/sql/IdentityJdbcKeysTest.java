@@ -275,6 +275,61 @@ class IdentityJdbcKeysTest {
 
 
     @Test
+    void preparedProjectionsReturnTheStoredValueAndTypeForZeroScaleDecimalAssignments() throws SQLException {
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
+            sql.executeUpdate( "CREATE TABLE projected_zero_scale (id INTEGER PRIMARY KEY, amount INTEGER)" );
+            try {
+                String insert = "INSERT INTO projected_zero_scale VALUES (?, ?), (?, ?)";
+                try ( PreparedStatement plain = jdbc.getConnection().prepareStatement( insert );
+                        PreparedStatement keys = jdbc.getConnection().prepareStatement( insert, new String[]{ "amount" } );
+                        PreparedStatement returning = jdbc.getConnection().prepareStatement( insert + " RETURNING amount" ) ) {
+                    bindZeroScaleProjection( plain, 1 );
+                    assertEquals( 2, plain.executeUpdate() );
+                    List<Object> expected = new ArrayList<>();
+                    try ( ResultSet stored = sql.executeQuery( "SELECT amount FROM projected_zero_scale ORDER BY id" ) ) {
+                        while ( stored.next() ) {
+                            expected.add( stored.getObject( 1 ) );
+                        }
+                    }
+                    assertEquals( 2, expected.size() );
+
+                    bindZeroScaleProjection( keys, 3 );
+                    assertEquals( 2, keys.executeUpdate() );
+                    try ( ResultSet rows = keys.getGeneratedKeys() ) {
+                        assertIntegralProjectionMatchesStored( rows, expected );
+                    }
+
+                    bindZeroScaleProjection( returning, 5 );
+                    try ( ResultSet rows = returning.executeQuery() ) {
+                        assertIntegralProjectionMatchesStored( rows, expected );
+                    }
+                }
+            } finally {
+                sql.executeUpdate( "DROP TABLE projected_zero_scale" );
+            }
+        }
+    }
+
+
+    private static void bindZeroScaleProjection( PreparedStatement insert, int firstId ) throws SQLException {
+        insert.setInt( 1, firstId );
+        insert.setBigDecimal( 2, new BigDecimal( "42" ) );
+        insert.setInt( 3, firstId + 1 );
+        insert.setBigDecimal( 4, new BigDecimal( "2147483648" ) );
+    }
+
+
+    private static void assertIntegralProjectionMatchesStored( ResultSet rows, List<Object> expected ) throws SQLException {
+        for ( Object stored : expected ) {
+            assertTrue( rows.next() );
+            assertEquals( stored, rows.getObject( 1 ) );
+            assertEquals( stored, rows.getObject( 1, Integer.class ) );
+        }
+        assertFalse( rows.next() );
+    }
+
+
+    @Test
     void readsBackIntegralProjectionsWithAFractionalPrimaryKey() throws SQLException {
         try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
             sql.executeUpdate( "CREATE TABLE projected_integral_key (bucket INTEGER NOT NULL, id SMALLINT NOT NULL, "

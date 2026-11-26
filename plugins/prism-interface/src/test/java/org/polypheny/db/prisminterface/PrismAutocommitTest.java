@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.Closeable;
 import java.io.IOException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeAll;
@@ -33,8 +34,12 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.prisminterface.CypherTest.PrismConnection;
+import org.polypheny.prism.ClientInfoProperties;
 import org.polypheny.prism.CloseResultRequest;
 import org.polypheny.prism.CloseStatementRequest;
+import org.polypheny.prism.CommitRequest;
+import org.polypheny.prism.ConnectionProperties;
+import org.polypheny.prism.ConnectionPropertiesUpdateRequest;
 import org.polypheny.prism.ExecuteIndexedStatementBatchRequest;
 import org.polypheny.prism.ExecuteIndexedStatementRequest;
 import org.polypheny.prism.ExecuteNamedStatementRequest;
@@ -129,6 +134,56 @@ class PrismAutocommitTest {
             assertEquals( initiallyActive + 2, activeTransactions() );
         }
         assertEquals( initiallyActive, activeTransactions() );
+    }
+
+
+    @Test
+    void publishesImplicitManualTransactionBoundariesOnlyForOptedInClients() throws IOException {
+        String table = "prismautocommitboundary";
+        try ( PrismConnection connection = new PrismConnection( false, 5 ) ) {
+            openCursor( connection, SQL_NAMESPACE, "sql", SQL_PAGE_QUERY );
+            List<Response.TypeCase> intermediateTypes = new ArrayList<>();
+            Response withoutOptIn = connection.send( statementRequest( SQL_NAMESPACE, "sql", "DROP TABLE IF EXISTS " + table ),
+                    response -> intermediateTypes.add( response.getTypeCase() ) );
+            expect( withoutOptIn, Response.TypeCase.STATEMENT_RESPONSE );
+            assertEquals( List.of( Response.TypeCase.STATEMENT_RESPONSE ), intermediateTypes );
+
+            expect( connection.send( Request.newBuilder().setSetClientInfoPropertiesRequest( ClientInfoProperties.newBuilder()
+                            .putProperties( PIClientInfoProperties.TRANSACTION_BOUNDARY_EVENTS, "true" ) ) ),
+                    Response.TypeCase.SET_CLIENT_INFO_PROPERTIES_RESPONSE );
+            int cursor = openCursor( connection, SQL_NAMESPACE, "sql", SQL_PAGE_QUERY );
+            intermediateTypes.clear();
+            Response committed = connection.send( statementRequest( SQL_NAMESPACE, "sql", "DROP TABLE IF EXISTS " + table ),
+                    response -> intermediateTypes.add( response.getTypeCase() ) );
+            expect( committed, Response.TypeCase.STATEMENT_RESPONSE );
+            assertEquals( List.of( Response.TypeCase.STATEMENT_RESPONSE, Response.TypeCase.COMMIT_RESPONSE ), intermediateTypes );
+            expect( connection.fetchResponse( cursor, 1 ), Response.TypeCase.ERROR_RESPONSE );
+
+            cursor = openCursor( connection, SQL_NAMESPACE, "sql", SQL_PAGE_QUERY );
+            intermediateTypes.clear();
+            Response rolledBack = connection.send( statementRequest( SQL_NAMESPACE, "sql", "SELECT * FROM " + table ),
+                    response -> intermediateTypes.add( response.getTypeCase() ) );
+            expect( rolledBack, Response.TypeCase.ERROR_RESPONSE );
+            assertEquals( "42P01", rolledBack.getErrorResponse().getDetails().getState() );
+            assertEquals( List.of( Response.TypeCase.STATEMENT_RESPONSE, Response.TypeCase.ROLLBACK_RESPONSE ), intermediateTypes );
+            expect( connection.fetchResponse( cursor, 1 ), Response.TypeCase.ERROR_RESPONSE );
+        }
+    }
+
+
+    @Test
+    void explicitCommitInAutocommitClosesPagedResultsBeforeChangingMode() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 5 ) ) {
+            int first = openCursor( connection, SQL_NAMESPACE, "sql", SQL_PAGE_QUERY );
+            int second = openCursor( connection, SQL_NAMESPACE, "sql", SQL_PAGE_QUERY );
+            expect( connection.send( Request.newBuilder().setCommitRequest( CommitRequest.getDefaultInstance() ) ),
+                    Response.TypeCase.COMMIT_RESPONSE );
+            expect( connection.send( Request.newBuilder().setConnectionPropertiesUpdateRequest( ConnectionPropertiesUpdateRequest.newBuilder()
+                            .setConnectionProperties( ConnectionProperties.newBuilder().setIsAutoCommit( false ) ) ) ),
+                    Response.TypeCase.CONNECTION_PROPERTIES_UPDATE_RESPONSE );
+            expect( connection.fetchResponse( first, 1 ), Response.TypeCase.ERROR_RESPONSE );
+            expect( connection.fetchResponse( second, 1 ), Response.TypeCase.ERROR_RESPONSE );
+        }
     }
 
 
