@@ -31,6 +31,7 @@ import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.IndexCategory;
 import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
@@ -73,7 +74,7 @@ public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> imp
     }
 
 
-    public record NumericAssignment( PolyValue value, AlgDataType inputType ) {
+    public record NumericAssignment( PolyValue value, AlgDataType inputType, RexLiteral literal ) {
     }
 
 

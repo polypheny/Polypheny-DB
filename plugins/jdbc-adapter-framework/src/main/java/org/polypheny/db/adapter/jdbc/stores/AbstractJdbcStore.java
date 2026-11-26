@@ -457,12 +457,19 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
             for ( int offset = 0; offset < assignments.size(); offset += batchSize ) {
                 int count = Math.min( batchSize, assignments.size() - offset );
                 List<RexNode> expressions = new ArrayList<>( count );
+                List<NumericAssignment> bindings = new ArrayList<>( count );
                 List<String> names = new ArrayList<>( count );
                 for ( int i = 0; i < count; i++ ) {
-                    AlgDataType input = assignments.get( offset + i ).inputType();
-                    RexDynamicParam parameter = new RexDynamicParam( input, i );
-                    expressions.add( input.getPolyType() == target.getPolyType()
-                            ? parameter : cluster.getRexBuilder().makeAbstractCast( target, parameter ) );
+                    NumericAssignment assignment = assignments.get( offset + i );
+                    if ( assignment.literal() != null ) {
+                        expressions.add( cluster.getRexBuilder().makeAbstractCast( target, assignment.literal() ) );
+                    } else {
+                        AlgDataType input = assignment.inputType();
+                        RexDynamicParam parameter = new RexDynamicParam( input, bindings.size() );
+                        bindings.add( assignment );
+                        expressions.add( input.getPolyType() == target.getPolyType()
+                                ? parameter : cluster.getRexBuilder().makeAbstractCast( target, parameter ) );
+                    }
                     names.add( "bound_value_" + i );
                 }
                 LogicalRelProject casts = LogicalRelProject.create( LogicalRelValues.createOneRow( cluster ), expressions, names );
@@ -477,8 +484,8 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
                             log.debug( "The adapter does not support a native assignment query timeout", e );
                         }
                     }
-                    for ( int i = 0; i < count; i++ ) {
-                        NumericAssignment input = assignments.get( offset + i );
+                    for ( int i = 0; i < bindings.size(); i++ ) {
+                        NumericAssignment input = bindings.get( i );
                         ResultSetEnumerable.setDynamicParam( select, i + 1, input.value(), input.inputType(), handler );
                     }
                     try ( ResultSet row = select.executeQuery() ) {

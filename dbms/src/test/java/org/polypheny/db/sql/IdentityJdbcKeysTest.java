@@ -571,7 +571,71 @@ class IdentityJdbcKeysTest {
 
 
     @Test
-    void approximateProjectionsKeepStoredCarriersAndNonFiniteValues() throws SQLException {
+    void foldedDoubleAssignmentsKeepOrdinaryLiteralRounding() throws SQLException {
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
+            sql.executeUpdate( "CREATE TABLE folded_projected_rounding (id INTEGER PRIMARY KEY, narrow INTEGER, wide BIGINT)" );
+            try {
+                String prefix = "INSERT INTO folded_projected_rounding VALUES ";
+                String folded = ", CAST(42.5 AS DOUBLE), CAST(-42.5 AS DOUBLE))";
+                String fields = "narrow, wide";
+                for ( boolean parameterize : new boolean[]{ true, false } ) {
+                    sql.executeUpdate( "ALTER CONFIG 'runtime/parameterizeDML' SET " + parameterize );
+                    for ( boolean boundId : new boolean[]{ false, true } ) {
+                        List<Object> expected;
+                        if ( boundId ) {
+                            try ( PreparedStatement plain = jdbc.getConnection().prepareStatement( prefix + "(?" + folded );
+                                    PreparedStatement keys = jdbc.getConnection().prepareStatement( prefix + "(?" + folded, new String[]{ "narrow", "wide" } );
+                                    PreparedStatement returning = jdbc.getConnection().prepareStatement( prefix + "(?" + folded + " RETURNING " + fields ) ) {
+                                plain.setInt( 1, 1 );
+                                assertEquals( 1, plain.executeUpdate() );
+                                expected = readFoldedProjection( sql, fields );
+                                keys.setInt( 1, 2 );
+                                assertEquals( 1, keys.executeUpdate() );
+                                try ( ResultSet projected = keys.getGeneratedKeys() ) {
+                                    assertNumericWidths( projected, expected );
+                                }
+                                returning.setInt( 1, 3 );
+                                try ( ResultSet projected = returning.executeQuery() ) {
+                                    assertNumericWidths( projected, expected );
+                                }
+                            }
+                        } else {
+                            assertEquals( 1, sql.executeUpdate( prefix + "(1" + folded ) );
+                            expected = readFoldedProjection( sql, fields );
+                            assertEquals( 1, sql.executeUpdate( prefix + "(2" + folded, new String[]{ "narrow", "wide" } ) );
+                            try ( ResultSet projected = sql.getGeneratedKeys() ) {
+                                assertNumericWidths( projected, expected );
+                            }
+                            try ( ResultSet projected = sql.executeQuery( prefix + "(3" + folded + " RETURNING " + fields ) ) {
+                                assertNumericWidths( projected, expected );
+                            }
+                        }
+                        for ( int id : new int[]{ 2, 3 } ) {
+                            try ( ResultSet stored = sql.executeQuery( "SELECT " + fields + " FROM folded_projected_rounding WHERE id = " + id ) ) {
+                                assertNumericWidths( stored, expected );
+                            }
+                        }
+                        sql.executeUpdate( "DELETE FROM folded_projected_rounding" );
+                    }
+                }
+            } finally {
+                sql.executeUpdate( "ALTER CONFIG 'runtime/parameterizeDML' SET true" );
+                sql.executeUpdate( "DROP TABLE folded_projected_rounding" );
+            }
+        }
+    }
+
+
+    private static List<Object> readFoldedProjection( Statement sql, String fields ) throws SQLException {
+        try ( ResultSet stored = sql.executeQuery( "SELECT " + fields + " FROM folded_projected_rounding WHERE id = 1" ) ) {
+            assertTrue( stored.next() );
+            return List.of( stored.getObject( 1 ), stored.getObject( 2 ) );
+        }
+    }
+
+
+    @Test
+    void approximateProjectionsKeepStoredCarriersAndSpecialFloatingValues() throws SQLException {
         try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
             sql.executeUpdate( "CREATE TABLE native_projected_float (id INTEGER PRIMARY KEY, real_num REAL, double_num DOUBLE)" );
             try {
@@ -583,7 +647,7 @@ class IdentityJdbcKeysTest {
                             PreparedStatement keys = jdbc.getConnection().prepareStatement( insert, new String[]{ "real_num", "double_num" } );
                             PreparedStatement returning = jdbc.getConnection().prepareStatement( insert + " RETURNING " + fields ) ) {
                         int id = 0;
-                        for ( double sample : new double[]{ 0.1, Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY } ) {
+                        for ( double sample : new double[]{ 0.1, -0.0, Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY } ) {
                             bindApproximate( plain, ++id, sample );
                             assertEquals( 1, plain.executeUpdate() );
                             List<Object> expected;
@@ -591,14 +655,21 @@ class IdentityJdbcKeysTest {
                                 assertTrue( stored.next() );
                                 expected = List.of( stored.getObject( 1 ), stored.getObject( 2 ) );
                             }
-                            bindApproximate( keys, ++id, sample );
+                            int keyedId = ++id;
+                            bindApproximate( keys, keyedId, sample );
                             assertEquals( 1, keys.executeUpdate() );
                             try ( ResultSet projected = keys.getGeneratedKeys() ) {
                                 assertNumericWidths( projected, expected );
                             }
-                            bindApproximate( returning, ++id, sample );
+                            int returningId = ++id;
+                            bindApproximate( returning, returningId, sample );
                             try ( ResultSet projected = returning.executeQuery() ) {
                                 assertNumericWidths( projected, expected );
+                            }
+                            for ( int projectedId : new int[]{ keyedId, returningId } ) {
+                                try ( ResultSet stored = sql.executeQuery( "SELECT " + fields + " FROM native_projected_float WHERE id = " + projectedId ) ) {
+                                    assertNumericWidths( stored, expected );
+                                }
                             }
                         }
                     }

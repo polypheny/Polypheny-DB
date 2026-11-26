@@ -92,7 +92,8 @@ jobs:
             ./gradlew "-Dmaven.repo.local=$MAVEN_DIR" "-PpolyphenyUiZip=$UI_ARCHIVE" \
               :dbms:assemble :core:test --tests '*Identity*' --tests '*DurableFile*' \
               :dbms:test --tests 'org.polypheny.db.sql.Identity*' --tests '*IdentityWebUiTest' --tests '*JdbcStatementTest' \
-              --tests '*JdbcPreparedStatementsTest' --tests '*CatalogTransactionTest' --tests '*UniqueConstraintTest'
+              --tests '*JdbcPreparedStatementsTest' --tests '*CatalogTransactionTest' --tests '*UniqueConstraintTest' \
+              --tests '*LockableImplTest'
 
           POLYPHENY_HOME="$RUNNER_TEMP/identity-sql-home" \
             ./gradlew "-Dmaven.repo.local=$MAVEN_DIR" "-PpolyphenyUiZip=$UI_ARCHIVE" \

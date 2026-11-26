@@ -1086,10 +1086,16 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     private static boolean requiresFloatingLiteralBinding( AlgNode node ) {
         if ( node instanceof LogicalRelValues values && values.getTuples().stream().flatMap( List::stream ).anyMatch( literal ->
                 PolyType.APPROX_TYPES.contains( literal.getPolyType() ) && literal.getValue() != null && !literal.getValue().isNull()
-                        && !Double.isFinite( literal.getValue().asNumber().doubleValue() ) ) ) {
+                        && requiresFloatingLiteralBinding( literal.getValue().asNumber().doubleValue() ) ) ) {
             return true;
         }
         return node.getInputs().stream().anyMatch( AbstractQueryProcessor::requiresFloatingLiteralBinding );
+    }
+
+
+    private static boolean requiresFloatingLiteralBinding( double value ) {
+        // Native SQL literal rendering goes through BigDecimal, which has neither non-finite values nor signed zero.
+        return !Double.isFinite( value ) || Double.doubleToRawLongBits( value ) == Long.MIN_VALUE;
     }
 
 
