@@ -61,7 +61,7 @@ class PrismQueryTimeoutTest {
 
     private static final String NAMESPACE = Catalog.DEFAULT_NAMESPACE_NAME;
     private static final String TABLE = "prism_query_timeout_test";
-    private static final String UPDATE = "UPDATE " + TABLE + " SET payload = payload + ";
+    private static final String UPDATE = "UPDATE " + TABLE + " SET payload = %s WHERE id = 1";
 
 
     @BeforeAll
@@ -69,7 +69,8 @@ class PrismQueryTimeoutTest {
         TestHelper.getInstance();
         try ( PrismConnection admin = new PrismConnection( true, 5 ) ) {
             admin.execute( NAMESPACE, "sql", "CREATE TABLE " + TABLE + " (id INTEGER PRIMARY KEY, payload INTEGER)", -1 );
-            admin.execute( NAMESPACE, "sql", "INSERT INTO " + TABLE + " VALUES (1, 0)", -1 );
+            // Keep the seed integral on File, which stores the carrier of the supplied value.
+            admin.execute( NAMESPACE, "sql", "INSERT INTO " + TABLE + " VALUES (CAST(1 AS INTEGER), CAST(0 AS INTEGER))", -1 );
         }
     }
 
@@ -109,8 +110,8 @@ class PrismQueryTimeoutTest {
     private static void verifyTimeoutAndReuse( Execution execution ) throws Exception {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         try ( PrismConnection client = new PrismConnection( true, 5 ) ) {
-            Request.Builder operation = request( client, execution );
             int previous = readPayload( client );
+            Request.Builder operation = request( client, execution, previous + 1 );
             Transaction holder = TestHelper.getInstance().getTransactionManager().startTransaction( Catalog.defaultUserId, null, "Prism timeout test" );
             try {
                 Lockable resource = execution == Execution.DIRECT
@@ -147,11 +148,11 @@ class PrismQueryTimeoutTest {
                 Transaction holder = TestHelper.getInstance().getTransactionManager().startTransaction( Catalog.defaultUserId, null, "Prism timeout test" );
                 try {
                     holder.acquireLockable( LockablesRegistry.GLOBAL_SCHEMA_LOCKABLE, LockType.EXCLUSIVE );
-                    send( socket, 2, Request.newBuilder().setExecuteUnparameterizedStatementRequest( directUpdate( 1 ) ) );
+                    send( socket, 2, Request.newBuilder().setExecuteUnparameterizedStatementRequest( directUpdate( previous + 1 ) ) );
                     Response acknowledgment = Response.parseFrom( socket.receiveMessage() );
                     assertEquals( 2, acknowledgment.getId() );
                     assertTrue( acknowledgment.hasStatementResponse() && !acknowledgment.getLast() );
-                    send( socket, 3, withTimeout( Request.newBuilder().setExecuteUnparameterizedStatementRequest( directUpdate( 10 ) ) ) );
+                    send( socket, 3, withTimeout( Request.newBuilder().setExecuteUnparameterizedStatementRequest( directUpdate( previous + 10 ) ) ) );
                     TimeUnit.MILLISECONDS.sleep( 500 );
                 } finally {
                     holder.rollback( null );
@@ -175,10 +176,10 @@ class PrismQueryTimeoutTest {
         try ( PrismConnection observer = new PrismConnection( true, 5 ); FragmentedTransport socket = new FragmentedTransport() ) {
             int previous = readPayload( observer );
             connectManual( socket );
-            send( socket, 2, Request.newBuilder().setExecuteUnparameterizedStatementRequest( directUpdate( 1 ) ) );
+            send( socket, 2, Request.newBuilder().setExecuteUnparameterizedStatementRequest( directUpdate( previous + 1 ) ) );
             assertEquals( 1, receive( socket, 2 ).getStatementResponse().getResult().getScalar() );
 
-            Request timed = withTimeout( Request.newBuilder().setExecuteUnparameterizedStatementRequest( directUpdate( 10 ) ) ).setId( 3 ).build();
+            Request timed = withTimeout( Request.newBuilder().setExecuteUnparameterizedStatementRequest( directUpdate( previous + 10 ) ) ).setId( 3 ).build();
             socket.sendWithSplitHeader( timed );
             Response expired = Response.parseFrom( socket.receiveMessage() );
             assertEquals( 3, expired.getId() );
@@ -224,20 +225,22 @@ class PrismQueryTimeoutTest {
     }
 
 
-    private static ExecuteUnparameterizedStatementRequest directUpdate( int amount ) {
+    private static ExecuteUnparameterizedStatementRequest directUpdate( int payload ) {
         return ExecuteUnparameterizedStatementRequest.newBuilder()
-                .setNamespaceName( NAMESPACE ).setLanguageName( "sql" ).setStatement( UPDATE + amount ).build();
+                .setNamespaceName( NAMESPACE ).setLanguageName( "sql" ).setStatement( UPDATE.formatted( payload ) ).build();
     }
 
 
     private static int readPayload( PrismConnection client ) throws Exception {
-        return client.execute( NAMESPACE, "sql", "SELECT payload FROM " + TABLE, -1 ).getResult()
-                .getFrame().getRelationalFrame().getRows( 0 ).getValues( 0 ).getInteger().getInteger();
+        ProtoValue payload = client.execute( NAMESPACE, "sql", "SELECT payload FROM " + TABLE, -1 ).getResult()
+                .getFrame().getRelationalFrame().getRows( 0 ).getValues( 0 );
+        assertTrue( payload.hasInteger(), () -> "Expected an INTEGER payload, got " + payload.getValueCase() );
+        return payload.getInteger().getInteger();
     }
 
 
-    private static Request.Builder request( PrismConnection client, Execution execution ) throws Exception {
-        ExecuteUnparameterizedStatementRequest direct = directUpdate( 1 );
+    private static Request.Builder request( PrismConnection client, Execution execution, int payload ) throws Exception {
+        ExecuteUnparameterizedStatementRequest direct = directUpdate( payload );
         if ( execution == Execution.DIRECT ) {
             return Request.newBuilder().setExecuteUnparameterizedStatementRequest( direct );
         }
@@ -246,11 +249,11 @@ class PrismQueryTimeoutTest {
                     ExecuteUnparameterizedStatementBatchRequest.newBuilder().addStatements( direct ) );
         }
         Response prepared = client.send( Request.newBuilder().setPrepareIndexedStatementRequest( PrepareStatementRequest.newBuilder()
-                .setNamespaceName( NAMESPACE ).setLanguageName( "sql" ).setStatement( UPDATE + "?" ) ) );
+                .setNamespaceName( NAMESPACE ).setLanguageName( "sql" ).setStatement( UPDATE.formatted( "?" ) ) ) );
         assertEquals( Response.TypeCase.PREPARED_STATEMENT_SIGNATURE, prepared.getTypeCase(), () -> prepared.getErrorResponse().getMessage() );
         int statementId = prepared.getPreparedStatementSignature().getStatementId();
         IndexedParameters parameters = IndexedParameters.newBuilder().addParameters( ProtoValue.newBuilder()
-                .setInteger( ProtoInteger.newBuilder().setInteger( 1 ) ) ).build();
+                .setInteger( ProtoInteger.newBuilder().setInteger( payload ) ) ).build();
         if ( execution == Execution.PREPARED ) {
             return Request.newBuilder().setExecuteIndexedStatementRequest( ExecuteIndexedStatementRequest.newBuilder()
                     .setStatementId( statementId ).setParameters( parameters ) );
