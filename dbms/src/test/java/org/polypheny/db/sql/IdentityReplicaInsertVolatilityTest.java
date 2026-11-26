@@ -191,14 +191,9 @@ class IdentityReplicaInsertVolatilityTest {
 
                             if ( initialStore.equals( "postgresql" ) ) {
                                 sql.executeUpdate( "DELETE FROM " + table );
-                                for ( PreparedStatement statement : List.of( keys, returning ) ) {
-                                    // Both previews select source id=1. HSQLDB truncates
-                                    // this DOUBLE assignment to 42 and PostgreSQL rounds to 43.
-                                    statement.setDouble( 1, 42.75 );
-                                    statement.setBigDecimal( 2, BigDecimal.valueOf( 42 ) );
-                                }
-                                assertEquals( "22000", assertThrows( SQLException.class, keys::executeUpdate ).getSQLState() );
-                                assertEquals( "22000", assertThrows( SQLException.class, returning::executeQuery ).getSQLState() );
+                                assertFilteredReplicaDisagreement( connection, insert );
+                                // The original source key does not appear in the inserted row.
+                                assertFilteredReplicaDisagreement( connection, insert.replace( "SELECT id AS id", "SELECT id + 10 AS id" ) );
                                 try ( ResultSet stored = sql.executeQuery( "SELECT id FROM " + table ) ) {
                                     assertFalse( stored.next() );
                                 }
@@ -213,6 +208,55 @@ class IdentityReplicaInsertVolatilityTest {
             } finally {
                 TestHelper.dropAdapter( store, sql );
             }
+        }
+    }
+
+
+    @Test
+    void filteredReplicaKeysAreReadBeforeTemporalDestinationAssignment() throws SQLException {
+        assumeTrue( "postgresql".equals( PolyphenyDb.defaultStoreName ) );
+        String source = "temporal_filter_source";
+        String table = "temporal_filter_target";
+        String replica = "temporal_filter_replica";
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
+            TestHelper.addHsqldb( replica, sql );
+            try {
+                sql.executeUpdate( "CREATE TABLE " + source + " (clock_val TIME(3) PRIMARY KEY, id INTEGER) ON STORE postgresql" );
+                try {
+                    sql.executeUpdate( "INSERT INTO " + source + " VALUES (TIME '12:34:56.789', 1), (TIME '12:35:00', 2)" );
+                    sql.executeUpdate( "CREATE TABLE " + table + " (id INTEGER PRIMARY KEY, qty BIGINT, clock_val TIME) ON STORE " + replica );
+                    try {
+                        sql.executeUpdate( "ALTER TABLE " + table + " ADD PLACEMENT ON STORE postgresql" );
+                        String insert = "INSERT INTO " + table + " SELECT id AS id, CAST(? AS DOUBLE) AS qty, clock_val AS clock_val FROM " + source
+                                + " WHERE id=1 AND CURRENT_DATE > DATE '2000-01-01' UNION ALL "
+                                + "SELECT id AS id, CAST(? AS DECIMAL(19,0)) AS qty, clock_val AS clock_val FROM " + source + " WHERE id=2";
+                        assertFilteredReplicaDisagreement( jdbc.getConnection(), insert );
+                        try ( ResultSet stored = sql.executeQuery( "SELECT id FROM " + table ) ) {
+                            assertFalse( stored.next() );
+                        }
+                    } finally {
+                        sql.executeUpdate( "DROP TABLE " + table );
+                    }
+                } finally {
+                    sql.executeUpdate( "DROP TABLE " + source );
+                }
+            } finally {
+                TestHelper.dropAdapter( replica, sql );
+            }
+        }
+    }
+
+
+    private static void assertFilteredReplicaDisagreement( Connection connection, String insert ) throws SQLException {
+        try ( PreparedStatement keys = connection.prepareStatement( insert, new String[]{ "id", "qty" } );
+                PreparedStatement returning = connection.prepareStatement( insert + " RETURNING id, qty" ) ) {
+            for ( PreparedStatement statement : List.of( keys, returning ) ) {
+                // HSQLDB assigns 42, whereas PostgreSQL assigns 43 for this DOUBLE input.
+                statement.setDouble( 1, 42.75 );
+                statement.setBigDecimal( 2, BigDecimal.valueOf( 42 ) );
+            }
+            assertEquals( "22000", assertThrows( SQLException.class, keys::executeUpdate ).getSQLState() );
+            assertEquals( "22000", assertThrows( SQLException.class, returning::executeQuery ).getSQLState() );
         }
     }
 

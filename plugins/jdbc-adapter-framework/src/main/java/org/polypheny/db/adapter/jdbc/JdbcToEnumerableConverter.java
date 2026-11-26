@@ -192,12 +192,12 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
     }
 
 
-    public static Optional<InsertSourceOrdinals> markInsertSource( AlgNode source, int firstOrdinal ) {
+    public static Optional<InsertSourceOrdinals> markInsertSource( AlgNode source, int firstOrdinal, List<AlgDataTypeField> identityFields ) {
         if ( !(source instanceof JdbcToEnumerableConverter converter) ) {
             return Optional.empty();
         }
         InsertSourceOrdinals nativeSource = InsertSourceOrdinals.add(
-                converter.getInput(), firstOrdinal, JdbcProject::create, (input, ordinal) -> Optional.empty() );
+                converter.getInput(), firstOrdinal, identityFields, JdbcProject::create, (input, ordinal) -> Optional.empty() );
         return Optional.of( new InsertSourceOrdinals(
                 new JdbcToEnumerableConverter( converter.getCluster(), converter.getTraitSet(), nativeSource.plan(),
                         converter.insertTargetFields, converter.nativeTemporalFields ),

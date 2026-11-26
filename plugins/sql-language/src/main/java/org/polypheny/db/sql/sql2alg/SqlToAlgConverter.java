@@ -2734,7 +2734,13 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
                     } else {
                         replaceSubQueries( bb, expression, AlgOptUtil.Logic.TRUE_FALSE_UNKNOWN );
                         RexLiteral literal = convertLiteralInValuesList( expression, bb, targetRowType, i );
-                        expressions.add( literal == null ? rexBuilder.ensureType( targetType, bb.convertExpression( expression ), false ) : literal );
+                        if ( literal != null ) {
+                            expressions.add( literal );
+                        } else {
+                            RexNode value = convertIdentityValuesExpression( bb, expression );
+                            expressions.add( preservesTemporalSourcePrecision( targetType, value )
+                                    ? value : rexBuilder.ensureType( targetType, value, false ) );
+                        }
                     }
                 }
                 AlgNode source = bb.root == null ? LogicalRelValues.createOneRow( cluster ) : bb.root;
@@ -2752,7 +2758,46 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
     }
 
 
+    private RexNode convertIdentityValuesExpression( Blackboard bb, SqlNode expression ) {
+        RexNode converted = bb.convertExpression( expression );
+        if ( !(expression instanceof SqlCall cast) || cast.getKind() != Kind.CAST
+                || !isTemporalAssignmentType( converted.getType().getPolyType() ) ) {
+            return converted;
+        }
+        if ( converted instanceof RexLiteral literal && !RexLiteral.isNullLiteral( literal ) ) {
+            SqlNode operand = cast.operand( 0 );
+            if ( operand.getKind() == Kind.CAST ) {
+                RexNode innerCast = convertIdentityValuesExpression( bb, operand );
+                if ( innerCast.isA( Kind.CAST ) ) {
+                    return rexBuilder.makeAbstractCast( literal.getType(), innerCast );
+                }
+            }
+        } else if ( !(converted instanceof RexDynamicParam) ) {
+            return converted;
+        }
+        // A cast folded into a literal or parameter still constrains its precision.
+        // Keep that requirement visible to the identity assignment stage.
+        return converted.getType().getPrecision() < PolyType.MAX_DATETIME_PRECISION
+                ? rexBuilder.makeCall( converted.getType(), OperatorRegistry.get( OperatorName.CAST ), converted )
+                : converted;
+    }
+
+
+    private static boolean preservesTemporalSourcePrecision( AlgDataType target, RexNode source ) {
+        AlgDataType sourceType = source.getType();
+        return source.isA( Kind.CAST ) && isTemporalAssignmentType( target.getPolyType() )
+                && target.getPolyType() == sourceType.getPolyType()
+                && sourceType.getPrecision() != target.getPrecision();
+    }
+
+
+    private static boolean isTemporalAssignmentType( PolyType type ) {
+        return type == PolyType.TIME || type == PolyType.TIMESTAMP;
+    }
+
+
     private AlgNode projectInsertWithDefaults( SqlInsert call, LogicalTable table, List<String> targetNames, AlgNode source, List<RexNode> supplied ) {
+        boolean values = !call.isDefaultValues() && call.getSource().getKind() == Kind.VALUES;
         List<RexNode> expressions = new ArrayList<>();
         List<RexNode> identityDefaults = new ArrayList<>();
         List<String> names = new ArrayList<>();
@@ -2774,7 +2819,9 @@ public class SqlToAlgConverter implements NodeToAlgConverter {
             if ( expression == null ) {
                 expression = columnDefault( column, field.getType() );
             }
-            expressions.add( rexBuilder.ensureType( field.getType(), expression, true ) );
+            // The materializer applies the destination precision after the source CAST.
+            expressions.add( values && preservesTemporalSourcePrecision( field.getType(), expression )
+                    ? expression : rexBuilder.ensureType( field.getType(), expression, true ) );
             names.add( field.getName() );
         }
         expressions.addAll( identityDefaults );

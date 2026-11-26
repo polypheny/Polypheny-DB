@@ -88,7 +88,7 @@ public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> imp
 
 
     /** Adds provenance to a native INSERT preview or a source read by its streamer. */
-    public Optional<InsertSourceOrdinals> markInsertSource( AlgNode source, int firstOrdinal ) {
+    public Optional<InsertSourceOrdinals> markInsertSource( AlgNode source, int firstOrdinal, List<AlgDataTypeField> identityFields ) {
         return Optional.empty();
     }
 

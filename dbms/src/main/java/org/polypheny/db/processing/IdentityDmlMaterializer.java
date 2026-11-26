@@ -199,9 +199,12 @@ final class IdentityDmlMaterializer {
             }
             List<Long> values = Catalog.getInstance().getIdentitySequences().reserve( identity.definition(), count );
             int index = 0;
-            for ( List<PolyValue> row : sourceRows ) {
+            for ( int rowIndex = 0; rowIndex < sourceRows.size(); rowIndex++ ) {
+                List<PolyValue> row = sourceRows.get( rowIndex );
                 if ( row.get( identity.flagIndex() ).asBoolean().value ) {
                     row.set( identity.columnIndex(), PolyValue.fromType( values.get( index++ ), identity.type() ) );
+                    // The generated value already has the destination type. Discard the source placeholder's assignment.
+                    assignmentInputs.get( rowIndex ).set( identity.columnIndex(), null );
                 }
             }
         }

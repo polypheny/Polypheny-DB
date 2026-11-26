@@ -637,12 +637,17 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
         List<Long> keyIds = snapshot.rel().getPrimaryKey( table.primaryKey ).orElseThrow().fieldIds;
         List<InsertSourceBranch> branches = placements.size() > 1
-                ? insertSourceBranches( insert.getInput(), snapshot, insertSourceColumns( insert.getInput(), targetFields ) )
-                : List.of( InsertSourceBranch.STABLE );
-        // Keep the original UNION's common typing. A trailing ordinal identifies each
-        // branch's comparison rules without evaluating its expressions separately.
-        boolean marked = branches.size() > 1 && branches.stream()
-                .anyMatch( branch -> branch.variableSelection() || !branch.volatileFields().isEmpty() );
+                ? insertSourceBranches( insert.getInput(), snapshot ) : List.of( InsertSourceBranch.STABLE );
+        List<AlgDataTypeField> identityFields = branches.stream().filter( InsertSourceBranch::variableSelection )
+                .flatMap( branch -> branch.identityFields().stream() ).distinct().toList();
+        Map<Long, Integer> identityIndexes = new HashMap<>();
+        for ( int i = 0; i < identityFields.size(); i++ ) {
+            identityIndexes.put( identityFields.get( i ).getId(), targetFields.size() + i );
+        }
+        // Do not split the native UNION or compare using values after destination casts.
+        // Its trailing metadata carries unchanged source keys and branch ordinals.
+        boolean marked = !identityFields.isEmpty() || (branches.size() > 1 && branches.stream()
+                .anyMatch( branch -> branch.variableSelection() || !branch.volatileFields().isEmpty() ));
         List<InsertSourceComparison> comparisons = (marked ? branches : List.of( branches.get( 0 ) )).stream()
                 .map( branch -> new InsertSourceComparison(
                         targetFields.stream()
@@ -650,7 +655,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                                 .filter( field -> keyIds.contains( field.getId() ) || DataStore.isInsertSourceAssignmentType( field.getType().getPolyType() ) )
                                 .map( AlgDataTypeField::getIndex )
                                 .toList(),
-                        branch.variableSelection(), branch.identityFields() ) )
+                        branch.variableSelection(), branch.variableSelection()
+                                ? branch.identityFields().stream().map( field -> identityIndexes.get( field.getId() ) ).toList()
+                                : List.of() ) )
                 .toList();
 
         // Plan the ordinary DML without preparing or running its write, index or constraint actions.
@@ -688,11 +695,11 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     if ( source.isPresent() ) {
                         AlgNode preview = source.get();
                         if ( marked && streamer == null ) {
-                            preview = requireInsertSourceOrdinals( store.markInsertSource( preview, 0 ), branches.size() );
+                            preview = requireInsertSourceOrdinals( store.markInsertSource( preview, 0, identityFields ), branches.size() );
                         }
                         Bindable<PolyValue[]> read = implement( AlgRoot.of( preview, Kind.SELECT ), parameterRowType ).getBindable();
                         reads.add( streamer == null ? new InsertSourceRead( read, null, List.of(), false )
-                                : streamedInsertSource( read, streamer.getProvider(), parameterRowType, stores, marked ? branches.size() : 0 ) );
+                                : streamedInsertSource( read, streamer.getProvider(), parameterRowType, stores, marked ? branches.size() : 0, identityFields ) );
                         break;
                     }
                 }
@@ -716,7 +723,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 if ( marked ) {
                     // The adapter need not return UNION ALL branches in source order.
                     first.sort( Comparator.comparingInt( AbstractQueryProcessor::insertSourceOrdinal ) );
-                    first.forEach( row -> row.remove( row.size() - 1 ) );
+                    first.forEach( row -> row.subList( targetFields.size(), row.size() ).clear() );
                 }
                 rows.addAll( first );
             }
@@ -733,72 +740,40 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private record InsertSourceBranch( Set<Integer> volatileFields, boolean variableSelection, List<Integer> identityFields ) {
+    private record InsertSourceBranch( Set<Integer> volatileFields, boolean variableSelection, List<AlgDataTypeField> identityFields ) {
 
         private static final InsertSourceBranch STABLE = new InsertSourceBranch( Set.of(), false, List.of() );
 
     }
 
 
-    private record InsertSourceColumn( int targetField, int sourceField ) {
-    }
-
-
-    private static List<InsertSourceColumn> insertSourceColumns( AlgNode source, List<AlgDataTypeField> targetFields ) {
-        return targetFields.stream()
-                .filter( field -> sameInsertSourceType( source, field.getIndex(), field.getType() ) )
-                .map( field -> new InsertSourceColumn( field.getIndex(), field.getIndex() ) )
-                .toList();
-    }
-
-
-    private static List<InsertSourceBranch> insertSourceBranches( AlgNode source, Snapshot snapshot, List<InsertSourceColumn> columns ) {
+    private static List<InsertSourceBranch> insertSourceBranches( AlgNode source, Snapshot snapshot ) {
         if ( source instanceof LogicalRelUnion union && union.all ) {
-            return union.getInputs().stream()
-                    .flatMap( input -> insertSourceBranches( input, snapshot, columns.stream()
-                            .filter( column -> sameInsertSourceType( input, column.sourceField(),
-                                    source.getTupleType().getFields().get( column.sourceField() ).getType() ) )
-                            .toList() ).stream() )
-                    .toList();
+            return union.getInputs().stream().flatMap( input -> insertSourceBranches( input, snapshot ).stream() ).toList();
         }
         if ( source instanceof LogicalRelProject project ) {
-            List<InsertSourceColumn> inputColumns = new ArrayList<>();
-            for ( InsertSourceColumn column : columns ) {
-                RexNode expression = project.getProjects().get( column.sourceField() );
-                if ( expression instanceof RexIndexRef ref && sameInsertSourceType( project.getInput(), ref.getIndex(), expression.getType() ) ) {
-                    inputColumns.add( new InsertSourceColumn( column.targetField(), ref.getIndex() ) );
-                }
-            }
-            return insertSourceBranches( project.getInput(), snapshot, inputColumns ).stream()
+            return insertSourceBranches( project.getInput(), snapshot ).stream()
                     .map( branch -> new InsertSourceBranch( volatileProjectColumns( project, branch.volatileFields() ),
                             branch.variableSelection(), branch.identityFields() ) )
                     .toList();
         }
         if ( source instanceof LogicalRelFilter filter ) {
-            return insertSourceBranches( filter.getInput(), snapshot, columns ).stream()
+            return insertSourceBranches( filter.getInput(), snapshot ).stream()
                     .map( branch -> new InsertSourceBranch( branch.volatileFields(),
                             branch.variableSelection() || isVolatileInsertExpression( filter.getCondition(), branch.volatileFields() ),
                             branch.identityFields() ) )
                     .toList();
         }
-        // Other operators can obscure which rows and fields depend on volatility.
-        // For comparable identities, require a complete, unconverted source key.
+        // Joins, aggregate and other opaque operators cannot prove a source identity.
         if ( source instanceof LogicalRelScan scan && scan.getEntity() instanceof LogicalTable table && table.primaryKey != null ) {
             List<Long> key = snapshot.rel().getPrimaryKey( table.primaryKey ).orElseThrow().fieldIds;
-            Map<Long, Integer> tracked = new HashMap<>();
-            columns.forEach( column -> tracked.putIfAbsent( source.getTupleType().getFields().get( column.sourceField() ).getId(),
-                    column.targetField() ) );
-            if ( tracked.keySet().containsAll( key ) ) {
-                return List.of( new InsertSourceBranch( Set.of(), false, key.stream().map( tracked::get ).toList() ) );
+            List<AlgDataTypeField> fields = source.getTupleType().getFields().stream()
+                    .filter( field -> key.contains( field.getId() ) ).toList();
+            if ( fields.size() == key.size() ) {
+                return List.of( new InsertSourceBranch( Set.of(), false, fields ) );
             }
         }
         return List.of( new InsertSourceBranch( Set.of(), hasVolatileInsertExpression( source ), List.of() ) );
-    }
-
-
-    private static boolean sameInsertSourceType( AlgNode source, int field, AlgDataType type ) {
-        return PolyTypeUtil.equalSansNullability( source.getCluster().getTypeFactory(),
-                source.getTupleType().getFields().get( field ).getType(), type );
     }
 
 
@@ -842,15 +817,15 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
 
 
     private InsertSourceRead streamedInsertSource( Bindable<PolyValue[]> collector, AlgNode provider, AlgDataType parameterRowType,
-            List<DataStore<?>> stores, int branches ) {
+            List<DataStore<?>> stores, int branches, List<AlgDataTypeField> identityFields ) {
         List<AlgDataType> types = Functions.streamerParameterTypes(
                 provider.getTupleType().getFields().stream().map( field -> field.getType().getPolyType() ).toList() );
         boolean marked = branches > 0;
         if ( marked ) {
-            InsertSourceOrdinals annotated = InsertSourceOrdinals.add( provider, 0,
+            InsertSourceOrdinals annotated = InsertSourceOrdinals.add( provider, 0, identityFields,
                     (input, expressions, rowType) -> EnumerableCalc.create( input,
                             RexProgram.create( input.getTupleType(), expressions, null, rowType, input.getCluster().getRexBuilder() ) ),
-                    (input, firstOrdinal) -> stores.stream().map( store -> store.markInsertSource( input, firstOrdinal ) )
+                    (input, firstOrdinal) -> stores.stream().map( store -> store.markInsertSource( input, firstOrdinal, identityFields ) )
                             .flatMap( Optional::stream ).findFirst() );
             provider = requireInsertSourceOrdinals( Optional.of( annotated ), branches );
         }
@@ -881,7 +856,8 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                     }
                     List<List<PolyValue>> castRows = readNativeInsertBinding( collector, context );
                     if ( marked ) {
-                        castRows.forEach( cast -> cast.add( row.get( row.size() - 1 ) ) );
+                        List<PolyValue> metadata = row.subList( streamedTypes.size(), row.size() );
+                        castRows.forEach( cast -> cast.addAll( metadata ) );
                     }
                     rows.addAll( castRows );
                 }
@@ -950,8 +926,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             int branch = marked ? insertSourceOrdinal( row ) : 0;
             InsertSourceComparison comparison = comparisons.get( branch );
             if ( comparison.variableSelection() ) {
-                if ( !comparison.identityFields().isEmpty() ) {
-                    InsertSourceIdentity identity = new InsertSourceIdentity( branch, comparison.identityFields().stream().map( row::get ).toList() );
+                List<PolyValue> sourceKey = comparison.identityFields().stream().map( row::get ).toList();
+                if ( !sourceKey.isEmpty() && sourceKey.stream().noneMatch( value -> value == null || value.isNull() ) ) {
+                    InsertSourceIdentity identity = new InsertSourceIdentity( branch, sourceKey );
                     variable.computeIfAbsent( identity, ignored -> new HashMap<>() )
                             .merge( comparison.fields().stream().map( row::get ).toList(), 1L, Long::sum );
                 }

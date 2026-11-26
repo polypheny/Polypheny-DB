@@ -483,8 +483,8 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
 
     @Override
-    public Optional<InsertSourceOrdinals> markInsertSource( AlgNode source, int firstOrdinal ) {
-        return JdbcToEnumerableConverter.markInsertSource( source, firstOrdinal );
+    public Optional<InsertSourceOrdinals> markInsertSource( AlgNode source, int firstOrdinal, List<AlgDataTypeField> identityFields ) {
+        return JdbcToEnumerableConverter.markInsertSource( source, firstOrdinal, identityFields );
     }
 
 
