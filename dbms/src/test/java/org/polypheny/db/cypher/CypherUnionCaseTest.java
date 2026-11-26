@@ -166,6 +166,75 @@ class CypherUnionCaseTest extends CypherTestTemplate {
 
 
     @Test
+    void evaluatesExistentialConditionsAndResultsOnlyForReachedCaseBranches() {
+        GraphResult result = execute( """
+                UNWIND [0, 1, 2] AS n
+                RETURN n,
+                       CASE WHEN n > 0 THEN EXISTS { WITH n WHERE 1 / n >= 1 RETURN n }
+                            ELSE false END AS guarded,
+                       CASE WHEN n = 0 THEN true
+                            WHEN EXISTS { WITH n WHERE 1 / n >= 1 RETURN n } THEN true
+                            WHEN null THEN EXISTS { WITH n WHERE 1 / (n - n) > 0 RETURN n }
+                            ELSE false END AS laterCondition,
+                       CASE WHEN true THEN true
+                            ELSE EXISTS { WITH n WHERE 1 / (n - n) > 0 RETURN n } END AS unusedFallback
+                ORDER BY n
+                """ );
+        assertEquals( 3, result.getData().length );
+        assertEquals( List.of( false, true, false ), booleanColumn( result, 1 ) );
+        assertEquals( List.of( true, true, false ), booleanColumn( result, 2 ) );
+        assertEquals( List.of( true, true, true ), booleanColumn( result, 3 ) );
+
+        assertQueryError( """
+                UNWIND [0] AS n
+                RETURN CASE WHEN n = 0 THEN EXISTS { WITH n WHERE 1 / n > 0 RETURN n }
+                            ELSE false END AS selected
+                """, "Division by zero" );
+    }
+
+
+    @Test
+    void preservesSimpleCaseEqualityAndSkipsExistentialResults() {
+        GraphResult result = execute( """
+                UNWIND [0, 1] AS n
+                RETURN n,
+                       CASE n WHEN 0 THEN true
+                              WHEN 1 THEN EXISTS { WITH n WHERE n = 1 RETURN n }
+                              WHEN EXISTS { WITH n WHERE 1 / (n - n) > 0 RETURN n } THEN false
+                              ELSE false END AS selected,
+                       CASE null WHEN null THEN EXISTS { WITH n WHERE 1 / (n - n) > 0 RETURN n }
+                                 ELSE false END AS nullSelector,
+                       CASE n WHEN 1 THEN EXISTS { WITH n WHERE n = 1 RETURN n } END AS noFallback
+                ORDER BY n
+                """ );
+        assertEquals( 2, result.getData().length );
+        assertEquals( List.of( true, true ), booleanColumn( result, 1 ) );
+        assertEquals( List.of( false, false ), booleanColumn( result, 2 ) );
+        assertNull( cell( result, 0, 3 ) );
+        assertEquals( true, cell( result, 1, 3 ).asBoolean().value );
+    }
+
+
+    @Test
+    void keepsExistentialCaseBranchesLazyInAndAroundListComprehensions() {
+        GraphResult result = execute( """
+                UNWIND [0, 1] AS n
+                RETURN n,
+                       CASE WHEN n = 0 THEN []
+                            ELSE [x IN [n] WHERE EXISTS { WITH x WHERE 1 / x > 0 RETURN x }] END AS kept,
+                       [x IN [n] | CASE WHEN x = 0 THEN false
+                                       ELSE EXISTS { WITH x WHERE 1 / x > 0 RETURN x } END] AS elements
+                ORDER BY n
+                """ );
+        assertEquals( 2, result.getData().length );
+        assertTrue( cell( result, 0, 1 ).asList().isEmpty() );
+        assertEquals( 1, cell( result, 1, 1 ).asList().get( 0 ).asNumber().intValue() );
+        assertEquals( false, cell( result, 0, 2 ).asList().get( 0 ).asBoolean().value );
+        assertEquals( true, cell( result, 1, 2 ).asList().get( 0 ).asBoolean().value );
+    }
+
+
+    @Test
     void casePreservesListValuesAndWorksInPredicates() {
         GraphResult result = execute( """
                 UNWIND [true, false] AS flag
@@ -180,6 +249,11 @@ class CypherUnionCaseTest extends CypherTestTemplate {
 
     private static List<Integer> numbers( GraphResult result ) {
         return Arrays.stream( result.getData() ).map( row -> value( row[0] ).asNumber().intValue() ).sorted().toList();
+    }
+
+
+    private static List<Boolean> booleanColumn( GraphResult result, int column ) {
+        return Arrays.stream( result.getData() ).map( row -> value( row[column] ).asBoolean().value ).toList();
     }
 
 

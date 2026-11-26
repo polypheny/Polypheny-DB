@@ -223,7 +223,13 @@ final class CypherSubqueryInputs extends AlgShuttleImpl {
                 return existing;
             }
             if ( !(call instanceof Exists subquery) ) {
-                if ( isListScope( call.getOperator().getOperatorName() )
+                OperatorName operator = call.getOperator().getOperatorName();
+                if ( operator == OperatorName.CYPHER_CASE && containsExists( call ) ) {
+                    RexNode reference = lowerCase( call );
+                    lowered.put( call, reference );
+                    return reference;
+                }
+                if ( isListScope( operator )
                         && call.operands.subList( 2, call.operands.size() ).stream().anyMatch( CypherSubqueryInputs::containsExists ) ) {
                     RexNode reference = lowerListScope( call );
                     lowered.put( call, reference );
@@ -255,6 +261,63 @@ final class CypherSubqueryInputs extends AlgShuttleImpl {
             RexNode reference = rexBuilder.makeInputRef( rows, originalWidth );
             lowered.put( subquery, reference );
             return reference;
+        }
+
+
+        private RexNode lowerCase( RexCall call ) {
+            List<RexNode> original = call.operands;
+            boolean simple = original.size() % 2 == 0;
+            RexNode remaining = rexBuilder.makeLiteral( true );
+            RexNode selector = simple ? evaluateWhen( original.get( 0 ), remaining ) : null;
+            List<RexNode> result = new ArrayList<>();
+            for ( int i = simple ? 1 : 0; i < original.size() - 1; i += 2 ) {
+                RexNode test = original.get( i );
+                if ( selector != null ) {
+                    test = rexBuilder.makeCall( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EQUALS ), selector, test );
+                }
+                RexNode matched = evaluateWhen( rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_TRUE ), test ), remaining );
+                RexNode selected = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_TRUE ), matched );
+                RexNode value = original.get( i + 1 );
+                result.add( selected );
+                result.add( containsExists( value ) ? evaluateWhen( value, selected ) : value );
+
+                // An evaluated test has a definite truth value. A skipped test is null.
+                remaining = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_FALSE ), matched );
+            }
+            RexNode fallback = original.get( original.size() - 1 );
+            result.add( containsExists( fallback ) ? evaluateWhen( fallback, remaining ) : fallback );
+            return call.clone( call.getType(), result );
+        }
+
+
+        private RexNode evaluateWhen( RexNode expression, RexNode guard ) {
+            if ( guard.isAlwaysTrue() ) {
+                RexNode value = expression.accept( this );
+                int index = width( rows );
+                List<RexNode> values = new ArrayList<>( columns( rows, 0, index ) );
+                List<PolyString> names = new ArrayList<>( names( rows ) );
+                values.add( value );
+                names.add( PolyString.of( "$caseValue" + index ) );
+                rows = LogicalLpgProject.create( rows, values, names );
+                return rexBuilder.makeInputRef( rows, index );
+            }
+
+            int index = width( rows );
+            CorrelationId correlation = cluster.createCorrel();
+            RexNode outer = rexBuilder.makeCorrel( rows.getTupleType(), correlation );
+            RexShuttle scoped = new RexShuttle() {
+                @Override
+                public RexNode visitIndexRef( RexIndexRef ref ) {
+                    return rexBuilder.makeFieldAccess( outer, ref.getIndex() );
+                }
+            };
+            AlgNode unit = LogicalLpgValues.create( cluster, cluster.traitSet(), new AlgRecordType( List.of() ), ImmutableList.of( ImmutableList.of() ) );
+            AlgNode active = LogicalLpgFilter.create( unit, guard.accept( scoped ) );
+            // Lower over the guarded input so neither the branch nor its subquery captures run for an inactive row.
+            AlgNode body = LogicalLpgProject.create( active, List.of( expression.accept( scoped ) ), List.of( PolyString.of( "$caseValue" + index ) ) )
+                    .accept( CypherSubqueryInputs.this );
+            rows = new LogicalLpgCall( rows, body, correlation, ImmutableBitSet.range( index ), SemiJoinType.LEFT );
+            return rexBuilder.makeInputRef( rows, index );
         }
 
 
