@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -58,6 +59,12 @@ class ConcurrentPrismDdlTest {
     private static final String SECOND_GRAPH = "catalogownershipsecondgraph";
 
 
+    @BeforeAll
+    static void startDatabase() {
+        TestHelper.getInstance();
+    }
+
+
     @AfterAll
     static void dropGraphs() throws IOException {
         try ( PrismConnection connection = new PrismConnection( true, 3 ) ) {
@@ -70,7 +77,6 @@ class ConcurrentPrismDdlTest {
 
     @Test
     void committingAnIndependentReadDoesNotPersistAbortedDdl() throws Exception {
-        TestHelper.getInstance();
         Catalog catalog = Catalog.getInstance();
         CountDownLatch graphAllocated = new CountDownLatch( 1 );
         CountDownLatch allowGraphAbort = new CountDownLatch( 1 );
@@ -118,7 +124,6 @@ class ConcurrentPrismDdlTest {
 
     @Test
     void failedGraphDdlRestoresTheLiveAdapterCatalog() throws Exception {
-        TestHelper.getInstance();
         Catalog catalog = Catalog.getInstance();
         AtomicReference<AllocationEntity> createdAllocation = new AtomicReference<>();
         PropertyChangeListener failGraphDdl = change -> {
@@ -158,7 +163,6 @@ class ConcurrentPrismDdlTest {
 
     @Test
     void rollbackOfAnIndependentReadDoesNotDiscardPendingGraphDdl() throws Exception {
-        TestHelper.getInstance();
         Catalog catalog = Catalog.getInstance();
         CountDownLatch graphAllocated = new CountDownLatch( 1 );
         CountDownLatch allowGraphCommit = new CountDownLatch( 1 );
