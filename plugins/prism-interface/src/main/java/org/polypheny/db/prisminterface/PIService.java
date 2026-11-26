@@ -650,6 +650,10 @@ class PIService {
         ClientInfoProperties.Builder responseBuilder = ClientInfoProperties.newBuilder();
         PIClientInfoProperties PIClientInfoProperties = client.getPIClientInfoProperties();
         PIClientInfoProperties.stringPropertyNames().forEach( s -> responseBuilder.putProperties( s, PIClientInfoProperties.getProperty( s ) ) );
+        if ( client.supportsClientInfoRemoval() ) {
+            // An empty control value advertises removal support without changing the Prism map format.
+            responseBuilder.putProperties( PIClientInfoProperties.REMOVE_CLIENT_INFO_PROPERTY, "" );
+        }
         return responseObserver.makeResponse( responseBuilder.build() );
     }
 
@@ -670,6 +674,10 @@ class PIService {
                 client.setPartialBatchResults( "true".equals( value ) );
             } else if ( PIClientInfoProperties.TRANSACTION_BOUNDARY_EVENTS.equals( key ) ) {
                 client.setTransactionBoundaryEvents( "true".equals( value ) );
+            } else if ( PIClientInfoProperties.REMOVE_CLIENT_INFO_PROPERTY.equals( key ) ) {
+                if ( client.supportsClientInfoRemoval() && !value.isEmpty() ) {
+                    client.getPIClientInfoProperties().remove( value );
+                }
             } else {
                 client.getPIClientInfoProperties().setProperty( key, value );
             }

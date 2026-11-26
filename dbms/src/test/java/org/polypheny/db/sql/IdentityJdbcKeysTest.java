@@ -414,6 +414,124 @@ class IdentityJdbcKeysTest {
 
 
     @Test
+    void projectedBigintAssignmentsUseTheStoresCastBeforeRouting() throws SQLException {
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
+            sql.executeUpdate( "CREATE TABLE projected_bigint_cast_control (id INTEGER PRIMARY KEY, qty BIGINT)" );
+            try {
+                sql.executeUpdate( "CREATE TABLE projected_bigint_cast_keys (id INTEGER NOT NULL, qty BIGINT NOT NULL, PRIMARY KEY (id, qty)) "
+                        + "PARTITION BY HASH (qty) PARTITIONS 3" );
+                try {
+                    String insert = "INSERT INTO projected_bigint_cast_keys VALUES (?, ?)";
+                    try ( PreparedStatement plain = jdbc.getConnection().prepareStatement( "INSERT INTO projected_bigint_cast_control VALUES (?, ?)" );
+                            PreparedStatement keys = jdbc.getConnection().prepareStatement( insert, new String[]{ "qty" } );
+                            PreparedStatement returning = jdbc.getConnection().prepareStatement( insert + " RETURNING qty" ) ) {
+                        for ( int sign : new int[]{ 1, -1 } ) {
+                            BigDecimal value = BigDecimal.valueOf( sign * 42.75 );
+                            plain.setInt( 1, sign );
+                            plain.setBigDecimal( 2, value );
+                            assertEquals( 1, plain.executeUpdate() );
+                            long expected;
+                            try ( ResultSet stored = sql.executeQuery( "SELECT qty FROM projected_bigint_cast_control WHERE id = " + sign ) ) {
+                                assertTrue( stored.next() );
+                                expected = stored.getLong( 1 );
+                            }
+                            keys.setInt( 1, sign );
+                            keys.setBigDecimal( 2, value );
+                            assertEquals( 1, keys.executeUpdate() );
+                            try ( ResultSet projected = keys.getGeneratedKeys() ) {
+                                assertNumericWidths( projected, List.of( expected ) );
+                            }
+                            returning.setInt( 1, sign * 2 );
+                            returning.setDouble( 2, value.doubleValue() );
+                            try ( ResultSet projected = returning.executeQuery() ) {
+                                assertNumericWidths( projected, List.of( expected ) );
+                            }
+                            try ( ResultSet stored = sql.executeQuery( "SELECT count(*) FROM projected_bigint_cast_keys WHERE qty = " + expected ) ) {
+                                assertTrue( stored.next() );
+                                assertEquals( 2, stored.getInt( 1 ) );
+                            }
+                        }
+                    }
+                } finally {
+                    sql.executeUpdate( "DROP TABLE projected_bigint_cast_keys" );
+                }
+            } finally {
+                sql.executeUpdate( "DROP TABLE projected_bigint_cast_control" );
+            }
+        }
+    }
+
+
+    @Test
+    void rejectsOutOfRangeBigintBeforeWritingAnyProjectedRow() throws SQLException {
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
+            sql.executeUpdate( "CREATE TABLE projected_bigint_range (id INTEGER PRIMARY KEY, qty BIGINT)" );
+            try {
+                String insert = "INSERT INTO projected_bigint_range VALUES (1, 42), (2, ?)";
+                try ( PreparedStatement plain = jdbc.getConnection().prepareStatement( insert );
+                        PreparedStatement keys = jdbc.getConnection().prepareStatement( insert, new String[]{ "id" } );
+                        PreparedStatement returning = jdbc.getConnection().prepareStatement( insert + " RETURNING qty" ) ) {
+                    plain.setBigDecimal( 1, new BigDecimal( "9223372036854775808" ) );
+                    assertThrows( SQLException.class, plain::executeUpdate );
+                    keys.setBigDecimal( 1, new BigDecimal( "-9223372036854775809" ) );
+                    assertEquals( "22003", assertThrows( SQLException.class, keys::executeUpdate ).getSQLState() );
+                    returning.setDouble( 1, 0x1.0p63 );
+                    assertEquals( "22003", assertThrows( SQLException.class, returning::executeQuery ).getSQLState() );
+                    returning.setDouble( 1, Double.NaN );
+                    assertEquals( "22003", assertThrows( SQLException.class, returning::executeQuery ).getSQLState() );
+                }
+                try ( ResultSet stored = sql.executeQuery( "SELECT id FROM projected_bigint_range" ) ) {
+                    assertFalse( stored.next() );
+                }
+            } finally {
+                sql.executeUpdate( "DROP TABLE projected_bigint_range" );
+            }
+        }
+    }
+
+
+    @Test
+    void floatingIntegerAssignmentsMatchOrdinaryParameterConversion() throws SQLException {
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
+            sql.executeUpdate( "CREATE TABLE projected_integer_cast (id INTEGER PRIMARY KEY, qty INTEGER)" );
+            try {
+                String insert = "INSERT INTO projected_integer_cast VALUES (?, ?)";
+                try ( PreparedStatement plain = jdbc.getConnection().prepareStatement( insert );
+                        PreparedStatement keys = jdbc.getConnection().prepareStatement( insert, new String[]{ "qty" } );
+                        PreparedStatement returning = jdbc.getConnection().prepareStatement( insert + " RETURNING qty" ) ) {
+                    List<Double> values = List.of( 2147483648d, -2147483649d, Double.NaN );
+                    for ( int i = 0; i < values.size(); i++ ) {
+                        int id = i * 3;
+                        double value = values.get( i );
+                        plain.setInt( 1, id );
+                        plain.setDouble( 2, value );
+                        assertEquals( 1, plain.executeUpdate() );
+                        int expected;
+                        try ( ResultSet stored = sql.executeQuery( "SELECT qty FROM projected_integer_cast WHERE id = " + id ) ) {
+                            assertTrue( stored.next() );
+                            expected = stored.getInt( 1 );
+                        }
+                        keys.setInt( 1, id + 1 );
+                        keys.setDouble( 2, value );
+                        assertEquals( 1, keys.executeUpdate() );
+                        try ( ResultSet projected = keys.getGeneratedKeys() ) {
+                            assertNumericWidths( projected, List.of( expected ) );
+                        }
+                        returning.setInt( 1, id + 2 );
+                        returning.setDouble( 2, value );
+                        try ( ResultSet projected = returning.executeQuery() ) {
+                            assertNumericWidths( projected, List.of( expected ) );
+                        }
+                    }
+                }
+            } finally {
+                sql.executeUpdate( "DROP TABLE projected_integer_cast" );
+            }
+        }
+    }
+
+
+    @Test
     void readsBackIntegralProjectionsWithAFractionalPrimaryKey() throws SQLException {
         try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
             sql.executeUpdate( "CREATE TABLE projected_integral_key (bucket INTEGER NOT NULL, id SMALLINT NOT NULL, "

@@ -120,6 +120,11 @@ public class PIClient {
     }
 
 
+    boolean supportsClientInfoRemoval() {
+        return prismMinorVersion >= 5 && transactionBoundaryEvents;
+    }
+
+
     public boolean wantsRelationalCypherResults() {
         return PIClientInfoProperties.RELATIONAL_FORMAT.equals( this.PIClientInfoProperties.getProperty( PIClientInfoProperties.CYPHER_RESULT_FORMAT ) );
     }

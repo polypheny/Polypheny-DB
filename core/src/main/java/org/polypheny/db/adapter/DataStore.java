@@ -18,6 +18,8 @@ package org.polypheny.db.adapter;
 
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +30,8 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.IndexCategory;
+import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.transaction.Transaction;
 
 @Slf4j
 public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> implements Modifiable, ExtensionPoint {
@@ -50,6 +54,12 @@ public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> imp
     public abstract IndexMethodModel getDefaultIndexMethod();
 
     public abstract List<FunctionalIndexInfo> getFunctionalIndexes( LogicalTable catalogTable );
+
+
+    /** Converts fractional BIGINT assignments before the coordinator routes or indexes the resulting keys. */
+    public List<Long> castBigintAssignments( Transaction transaction, AlgCluster cluster, List<BigDecimal> values ) {
+        return values.stream().map( value -> value.setScale( 0, RoundingMode.DOWN ).longValueExact() ).toList();
+    }
 
 
     public record IndexMethodModel(

@@ -17,6 +17,9 @@
 package org.polypheny.db.adapter.jdbc.stores;
 
 
+import java.math.BigDecimal;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -30,11 +33,15 @@ import org.pf4j.ExtensionPoint;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.RelationalModifyDelegate;
+import org.polypheny.db.adapter.jdbc.JdbcImplementor;
 import org.polypheny.db.adapter.jdbc.JdbcSchema;
 import org.polypheny.db.adapter.jdbc.JdbcTable;
 import org.polypheny.db.adapter.jdbc.JdbcUtils;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
+import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
+import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
+import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
@@ -50,13 +57,16 @@ import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.sql.language.SqlDbFeature;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlLiteral;
 import org.polypheny.db.transaction.PolyXid;
+import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.VectorType;
 
@@ -423,6 +433,49 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
             context.getStatement().getTransaction().registerInvolvedAdapter( this );
             connectionFactory.getOrCreateConnectionHandler( context.getStatement().getTransaction().getXid() ).executeUpdate( builder.toString() );
         } catch ( Exception e ) {
+            throw new GenericRuntimeException( e );
+        }
+    }
+
+
+    @Override
+    public List<Long> castBigintAssignments( Transaction transaction, AlgCluster cluster, List<BigDecimal> values ) {
+        transaction.registerInvolvedAdapter( this );
+        AlgDataType bigint = cluster.getTypeFactory().createPolyType( PolyType.BIGINT );
+        List<Long> converted = new ArrayList<>( values.size() );
+        final int batchSize = 128;
+        try {
+            ConnectionHandler handler = connectionFactory.getOrCreateConnectionHandler( transaction.getXid() );
+            for ( int offset = 0; offset < values.size(); offset += batchSize ) {
+                int count = Math.min( batchSize, values.size() - offset );
+                List<RexDynamicParam> parameters = new ArrayList<>( count );
+                List<String> names = new ArrayList<>( count );
+                for ( int i = 0; i < count; i++ ) {
+                    parameters.add( new RexDynamicParam( bigint, i ) );
+                    names.add( "bound_value_" + i );
+                }
+                // The ordinary INSERT uses this same dialect parameter CAST and setBigDecimal binding.
+                LogicalRelProject casts = LogicalRelProject.create( LogicalRelValues.createOneRow( cluster ), parameters, names );
+                JdbcImplementor implementor = new JdbcImplementor( dialect, transaction.getTypeFactory(), currentJdbcSchema );
+                String sql = implementor.visitChild( 0, casts ).asStatement().toSqlString( dialect ).getSql();
+                try ( PreparedStatement select = handler.prepareStatement( sql ) ) {
+                    for ( int i = 0; i < count; i++ ) {
+                        select.setBigDecimal( i + 1, values.get( offset + i ) );
+                    }
+                    try ( ResultSet row = select.executeQuery() ) {
+                        if ( !row.next() ) {
+                            throw new GenericRuntimeException( "The BIGINT assignment cast returned no row." );
+                        }
+                        for ( int i = 1; i <= count; i++ ) {
+                            converted.add( row.getLong( i ) );
+                        }
+                    }
+                }
+            }
+            return converted;
+        } catch ( SQLException e ) {
+            throw new PolyphenyDbException( "BIGINT assignment failed: " + e.getMessage(), e, e.getSQLState() );
+        } catch ( ConnectionHandlerException e ) {
             throw new GenericRuntimeException( e );
         }
     }

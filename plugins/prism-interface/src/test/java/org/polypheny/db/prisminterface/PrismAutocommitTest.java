@@ -36,6 +36,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.prisminterface.CypherTest.PrismConnection;
 import org.polypheny.prism.ClientInfoProperties;
+import org.polypheny.prism.ClientInfoPropertiesRequest;
 import org.polypheny.prism.CloseResultRequest;
 import org.polypheny.prism.CloseStatementRequest;
 import org.polypheny.prism.CommitRequest;
@@ -244,6 +245,31 @@ class PrismAutocommitTest {
         expect( connection.send( Request.newBuilder().setSetClientInfoPropertiesRequest( ClientInfoProperties.newBuilder()
                         .putProperties( PIClientInfoProperties.TRANSACTION_BOUNDARY_EVENTS, "true" ) ) ),
                 Response.TypeCase.SET_CLIENT_INFO_PROPERTIES_RESPONSE );
+    }
+
+
+    @Test
+    void optedInClientCanRemoveOneClientInfoProperty() throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, 5 ) ) {
+            Request.Builder read = Request.newBuilder().setClientInfoPropertiesRequest( ClientInfoPropertiesRequest.getDefaultInstance() );
+            String removal = PIClientInfoProperties.REMOVE_CLIENT_INFO_PROPERTY;
+            assertFalse( expect( connection.send( read ), Response.TypeCase.CLIENT_INFO_PROPERTIES_RESPONSE )
+                    .getClientInfoPropertiesResponse().containsProperties( removal ) );
+            enableTransactionBoundaryEvents( connection );
+            assertTrue( expect( connection.send( read ), Response.TypeCase.CLIENT_INFO_PROPERTIES_RESPONSE )
+                    .getClientInfoPropertiesResponse().containsProperties( removal ) );
+
+            expect( connection.send( Request.newBuilder().setSetClientInfoPropertiesRequest( ClientInfoProperties.newBuilder()
+                            .putProperties( "ApplicationName", "importer" ).putProperties( "ClientUser", "operator" ) ) ),
+                    Response.TypeCase.SET_CLIENT_INFO_PROPERTIES_RESPONSE );
+            expect( connection.send( Request.newBuilder().setSetClientInfoPropertiesRequest( ClientInfoProperties.newBuilder()
+                            .putProperties( removal, "ApplicationName" ) ) ),
+                    Response.TypeCase.SET_CLIENT_INFO_PROPERTIES_RESPONSE );
+            ClientInfoProperties result = expect( connection.send( read ), Response.TypeCase.CLIENT_INFO_PROPERTIES_RESPONSE )
+                    .getClientInfoPropertiesResponse();
+            assertFalse( result.containsProperties( "ApplicationName" ) );
+            assertEquals( "operator", result.getPropertiesOrThrow( "ClientUser" ) );
+        }
     }
 
 

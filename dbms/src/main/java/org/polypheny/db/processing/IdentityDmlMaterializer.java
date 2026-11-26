@@ -22,11 +22,13 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.polypheny.db.PolyImplementation;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.index.Index;
 import org.polypheny.db.adapter.index.IndexManager;
@@ -49,6 +51,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalDefaultValue;
+import org.polypheny.db.catalog.entity.allocation.AllocationPlacement;
 import org.polypheny.db.catalog.entity.logical.IdentityColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
@@ -56,6 +59,8 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.languages.OperatorRegistry;
+import org.polypheny.db.partition.PartitionManager;
+import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.PartitionProperty;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
@@ -71,6 +76,7 @@ import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.Pair;
 
 
@@ -177,6 +183,7 @@ final class IdentityDmlMaterializer {
             }
         }
 
+        convertBigintAssignments( modify, table, statement, targetFields, sourceRows );
         ImmutableList.Builder<ImmutableList<RexLiteral>> tuples = ImmutableList.builder();
         List<List<PolyValue>> capturedRows = new ArrayList<>();
         GeneratedKeySelection keySelection = statement.getGeneratedKeySelection();
@@ -194,11 +201,7 @@ final class IdentityDmlMaterializer {
                 for ( AlgDataTypeField field : targetFields ) {
                     int index = field.getIndex();
                     PolyType type = field.getType().getPolyType();
-                    PolyValue input = row.get( index );
-                    // Integer-width conversion is exact here. Fractional inputs still need to be
-                    // identified by their original type so the projection can read the stored value.
-                    if ( type == PolyType.DECIMAL || ((type == PolyType.INTEGER || type == PolyType.BIGINT)
-                            && input != null && (input.isInteger() || input.isLong())) ) {
+                    if ( type == PolyType.DECIMAL || PolyType.INT_TYPES.contains( type ) ) {
                         captured.set( index, inserted.get( index ).getValue() );
                     }
                 }
@@ -214,6 +217,137 @@ final class IdentityDmlMaterializer {
         statement.setMaterializedDmlRowCount( sourceRows.size() );
         AlgNode values = LogicalRelValues.create( modify.getCluster(), rowType, tuples.build() );
         return root.withAlg( modify.copy( modify.getTraitSet(), List.of( values ) ) );
+    }
+
+
+    private static void convertBigintAssignments( LogicalRelModify modify, LogicalTable table, Statement statement,
+            List<AlgDataTypeField> fields, List<List<PolyValue>> rows ) {
+        Map<AlgDataTypeField, Map<Integer, BigDecimal>> fractionalFields = new LinkedHashMap<>();
+        for ( AlgDataTypeField field : fields ) {
+            if ( field.getType().getPolyType() != PolyType.BIGINT ) {
+                continue;
+            }
+            Map<Integer, BigDecimal> fractional = new LinkedHashMap<>();
+            int index = field.getIndex();
+            for ( int i = 0; i < rows.size(); i++ ) {
+                List<PolyValue> row = rows.get( i );
+                PolyValue value = row.get( index );
+                if ( value == null || value.isNull() || !value.isNumber() || value.isInteger() || value.isLong() ) {
+                    continue;
+                }
+                try {
+                    BigDecimal number = value.asNumber().bigDecimalValue();
+                    if ( number.stripTrailingZeros().scale() <= 0 ) {
+                        row.set( index, PolyLong.of( number.longValueExact() ) );
+                    } else {
+                        fractional.put( i, number );
+                    }
+                } catch ( ArithmeticException | NumberFormatException e ) {
+                    throw numericAssignmentOutOfRange( field, value, e );
+                }
+            }
+            if ( !fractional.isEmpty() ) {
+                fractionalFields.put( field, fractional );
+            }
+        }
+        if ( fractionalFields.isEmpty() ) {
+            return;
+        }
+        PartitionProperty partitions = statement.getTransaction().getSnapshot().alloc().getPartitionProperty( table.id ).orElseThrow();
+        AlgDataTypeField partitionField = partitions.isPartitioned
+                ? fields.stream().filter( field -> field.getId() == partitions.partitionColumnId ).findFirst().orElseThrow() : null;
+        List<AlgDataTypeField> conversionOrder = fractionalFields.keySet().stream()
+                .sorted( Comparator.comparing( field -> field != partitionField ) ).toList();
+        for ( AlgDataTypeField field : conversionOrder ) {
+            convertFractionalBigints( modify, table, statement, field, partitionField, partitions, rows, fractionalFields.get( field ) );
+        }
+    }
+
+
+    private static void convertFractionalBigints( LogicalRelModify modify, LogicalTable table, Statement statement,
+            AlgDataTypeField field, AlgDataTypeField partitionField, PartitionProperty partitions,
+            List<List<PolyValue>> rows, Map<Integer, BigDecimal> fractional ) {
+        Snapshot snapshot = statement.getTransaction().getSnapshot();
+        PartitionManager partitionManager = partitions.isPartitioned
+                ? PartitionManagerFactory.getInstance().getPartitionManager( partitions.partitionType ) : null;
+        boolean boundPartitionKey = partitionField == field && modify.getInput() instanceof LogicalRelProject project
+                && project.getProjects().get( field.getIndex() ) instanceof RexDynamicParam;
+        List<AllocationPlacement> tablePlacements = snapshot.alloc().getPlacementsFromLogical( table.id );
+        Map<Long, List<AllocationPlacement>> placements = new LinkedHashMap<>();
+        for ( AllocationPlacement placement : tablePlacements ) {
+            if ( snapshot.alloc().getColumn( placement.id, field.getId() ).isPresent() ) {
+                placements.computeIfAbsent( placement.adapterId, id -> new ArrayList<>() ).add( placement );
+            }
+        }
+        Map<Integer, Long> converted = new HashMap<>();
+        for ( Map.Entry<Long, List<AllocationPlacement>> store : placements.entrySet() ) {
+            List<Integer> candidates = fractional.keySet().stream().filter( row -> {
+                if ( partitionField == null ) {
+                    return true;
+                }
+                PolyValue input = rows.get( row ).get( partitionField.getIndex() );
+                // A fractional partition key is cast by the placement selected for the original
+                // assignment. The materialized row is then routed on the resulting integer key.
+                PolyValue key = partitionField == field ? input : toLiteral( input, partitionField ).getValue();
+                long partition = targetPartition( table, partitions, partitionManager, key, boundPartitionKey );
+                return hasPartition( snapshot, store.getValue(), partition );
+            } ).toList();
+            if ( candidates.isEmpty() ) {
+                continue;
+            }
+            List<Long> assigned;
+            try {
+                assigned = AdapterManager.getInstance().getStore( store.getKey() ).orElseThrow()
+                        .castBigintAssignments( statement.getTransaction(), modify.getCluster(), candidates.stream().map( fractional::get ).toList() );
+            } catch ( ArithmeticException e ) {
+                throw new PolyphenyDbException( "A BIGINT assignment is out of range for column '" + field.getName() + "'.", e, "22003" );
+            }
+            for ( int i = 0; i < candidates.size(); i++ ) {
+                Long value = assigned.get( i );
+                Long previous = converted.putIfAbsent( candidates.get( i ), value );
+                if ( previous != null && !previous.equals( value ) ) {
+                    throw new PolyphenyDbException( "Store placements disagree on the BIGINT assignment to column '" + field.getName() + "'.", null, "22000" );
+                }
+            }
+        }
+        if ( converted.size() != fractional.size() ) {
+            throw new PolyphenyDbException( "Could not identify a store for the BIGINT assignment to column '" + field.getName() + "'.", null, "22000" );
+        }
+        if ( partitionField == field ) {
+            for ( Map.Entry<Integer, Long> assignment : converted.entrySet() ) {
+                PolyValue input = rows.get( assignment.getKey() ).get( field.getIndex() );
+                long original = targetPartition( table, partitions, partitionManager, input, boundPartitionKey );
+                long canonical = targetPartition( table, partitions, partitionManager, PolyLong.of( assignment.getValue() ), false );
+                if ( original != canonical && !partitionAdapters( snapshot, tablePlacements, original )
+                        .equals( partitionAdapters( snapshot, tablePlacements, canonical ) ) ) {
+                    throw new PolyphenyDbException( "The BIGINT assignment to partition column '" + field.getName()
+                            + "' would move the row to a different set of stores.", null, "22000" );
+                }
+            }
+        }
+        converted.forEach( ( row, value ) -> rows.get( row ).set( field.getIndex(), PolyLong.of( value ) ) );
+    }
+
+
+    private static long targetPartition( LogicalTable table, PartitionProperty partitions, PartitionManager manager, PolyValue key, boolean isBinding ) {
+        String value = key == null ? PartitionManager.NULL_STRING : isBinding ? key.toString() : key.toJson().replace( "'", "" );
+        return manager.getTargetPartitionId( table, partitions, value );
+    }
+
+
+    private static Set<Long> partitionAdapters( Snapshot snapshot, List<AllocationPlacement> placements, long partition ) {
+        Set<Long> adapters = new HashSet<>();
+        for ( AllocationPlacement placement : placements ) {
+            if ( snapshot.alloc().getAlloc( placement.id, partition ).isPresent() ) {
+                adapters.add( placement.adapterId );
+            }
+        }
+        return adapters;
+    }
+
+
+    private static boolean hasPartition( Snapshot snapshot, List<AllocationPlacement> placements, long partition ) {
+        return placements.stream().anyMatch( placement -> snapshot.alloc().getAlloc( placement.id, partition ).isPresent() );
     }
 
 
@@ -239,16 +373,7 @@ final class IdentityDmlMaterializer {
             return false;
         }
         AlgDataType type = field.getType();
-        return switch ( type.getPolyType() ) {
-            case DECIMAL -> PolyTypeUtil.hasScale( type ) && value.asNumber().bigDecimalValue().scale() != type.getScale();
-            case TINYINT, SMALLINT, INTEGER, BIGINT -> switch ( value.getType() ) {
-                case DECIMAL -> true;
-                case BIGINT -> type.getPolyType() == PolyType.TINYINT || type.getPolyType() == PolyType.SMALLINT;
-                case REAL, FLOAT, DOUBLE -> Double.isFinite( value.asNumber().doubleValue() );
-                default -> false;
-            };
-            default -> false;
-        };
+        return type.getPolyType() == PolyType.DECIMAL && PolyTypeUtil.hasScale( type ) && value.asNumber().bigDecimalValue().scale() != type.getScale();
     }
 
 
@@ -597,15 +722,20 @@ final class IdentityDmlMaterializer {
         if ( type.getPolyType() == PolyType.DECIMAL ) {
             return new RexLiteral( PolyBigDecimal.convert( value ), type, PolyType.DECIMAL, true );
         }
-        if ( type.getPolyType() == PolyType.INTEGER && value.isLong() ) {
+        if ( value.isNumber() && (type.getPolyType() == PolyType.TINYINT || type.getPolyType() == PolyType.SMALLINT || type.getPolyType() == PolyType.INTEGER) ) {
             try {
-                return new RexLiteral( PolyInteger.of( value.asLong().intValue() ), type, PolyType.INTEGER, true );
+                return new RexLiteral( PolyInteger.of( value.asNumber().intValue() ), type, type.getPolyType(), true );
             } catch ( ArithmeticException overflow ) {
-                throw new PolyphenyDbException( "Value " + value + " is out of range for INTEGER column '" + field.getName() + "'.", overflow, "22003" );
+                throw numericAssignmentOutOfRange( field, value, overflow );
             }
         }
         Pair<PolyValue, PolyType> converted = RexLiteral.convertType( value, type );
         return new RexLiteral( converted.left, type, converted.right, true );
+    }
+
+
+    private static PolyphenyDbException numericAssignmentOutOfRange( AlgDataTypeField field, PolyValue value, RuntimeException cause ) {
+        return new PolyphenyDbException( "Value " + value + " is out of range for " + field.getType().getPolyType() + " column '" + field.getName() + "'.", cause, "22003" );
     }
 
 

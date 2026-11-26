@@ -25,6 +25,7 @@ class PIClientInfoProperties extends Properties {
     static final String CYPHER_RESULT_FORMAT = "CypherResultFormat";
     static final String PARTIAL_BATCH_RESULTS = "PolyphenyPartialBatchResults";
     static final String TRANSACTION_BOUNDARY_EVENTS = "transactionBoundaryEvents";
+    static final String REMOVE_CLIENT_INFO_PROPERTY = "PolyphenyRemoveClientInfoProperty";
     static final String AUTO_FORMAT = "auto";
     static final String RELATIONAL_FORMAT = "relational";
     private static final int MAX_STRING_LENGTH = 2147483647;
