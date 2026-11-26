@@ -31,6 +31,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -1097,6 +1098,106 @@ class IdentityJdbcKeysTest {
         assertEquals( Long.toString( wide ), rows.getString( 3 ) );
         assertFalse( rows.next() );
         return List.of( small, ordinary, wide );
+    }
+
+
+    @Test
+    void timestampProjectionsUseStoredPrecision() throws SQLException {
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
+            sql.executeUpdate( "CREATE TABLE projected_timestamps (id BIGSERIAL PRIMARY KEY, whole_second TIMESTAMP(0), hundredths TIMESTAMP(2))" );
+            try {
+                String insert = "INSERT INTO projected_timestamps (whole_second, hundredths) "
+                        + "VALUES (TIMESTAMP '2024-12-31 23:59:59.995', TIMESTAMP '2024-12-31 23:59:59.995')";
+                String select = "SELECT whole_second, hundredths FROM projected_timestamps";
+                for ( boolean parameterize : new boolean[]{ false, true } ) {
+                    sql.executeUpdate( "ALTER CONFIG 'runtime/parameterizeDML' SET " + parameterize );
+                    sql.executeUpdate( insert );
+                    List<Timestamp> ordinary = readTimestamps( sql.executeQuery( select ) );
+                    sql.executeUpdate( "DELETE FROM projected_timestamps" );
+
+                    assertEquals( 1, sql.executeUpdate( insert, new String[]{ "whole_second", "hundredths" } ) );
+                    assertEquals( ordinary, readTimestamps( sql.getGeneratedKeys() ) );
+                    assertEquals( ordinary, readTimestamps( sql.executeQuery( select ) ) );
+                    sql.executeUpdate( "DELETE FROM projected_timestamps" );
+
+                    assertEquals( ordinary, readTimestamps( sql.executeQuery( insert + " RETURNING whole_second, hundredths" ) ) );
+                    assertEquals( ordinary, readTimestamps( sql.executeQuery( select ) ) );
+                    sql.executeUpdate( "DELETE FROM projected_timestamps" );
+                }
+            } finally {
+                sql.executeUpdate( "ALTER CONFIG 'runtime/parameterizeDML' SET true" );
+                sql.executeUpdate( "DROP TABLE projected_timestamps" );
+            }
+        }
+    }
+
+
+    private static List<Timestamp> readTimestamps( ResultSet result ) throws SQLException {
+        try ( result ) {
+            assertTrue( result.next() );
+            List<Timestamp> values = List.of( result.getTimestamp( 1 ), result.getTimestamp( 2 ) );
+            assertFalse( result.next() );
+            return values;
+        }
+    }
+
+
+    @Test
+    void timestampReadbackMatchesTheInsertedPrimaryKey() throws SQLException {
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
+            sql.executeUpdate( "CREATE TABLE projected_timestamp_key (bucket INTEGER NOT NULL, stamp TIMESTAMP(2) NOT NULL, "
+                    + "amount DECIMAL(12,4), PRIMARY KEY(bucket, stamp))" );
+            try {
+                String input = "TIMESTAMP '2024-12-31 23:59:59.995'";
+                String insert = "INSERT INTO projected_timestamp_key VALUES ";
+                for ( boolean parameterize : new boolean[]{ false, true } ) {
+                    sql.executeUpdate( "ALTER CONFIG 'runtime/parameterizeDML' SET " + parameterize );
+                    sql.executeUpdate( insert + "(0, " + input + ", 1.234567)" );
+                    Timestamp expected;
+                    BigDecimal amount;
+                    try ( ResultSet stored = sql.executeQuery( "SELECT stamp, amount FROM projected_timestamp_key WHERE bucket = 0" ) ) {
+                        assertTrue( stored.next() );
+                        expected = stored.getTimestamp( 1 );
+                        amount = stored.getBigDecimal( 2 );
+                    }
+                    String lower = "2024-12-31 23:59:59.99";
+                    String upper = "2025-01-01 00:00:00";
+                    String adjacent = expected.equals( Timestamp.valueOf( lower ) ) ? upper : lower;
+                    sql.executeUpdate( insert + "(1, TIMESTAMP '" + adjacent + "', 99)" );
+                    sql.executeUpdate( insert + "(2, TIMESTAMP '" + adjacent + "', 99)" );
+                    assertEquals( 1, sql.executeUpdate( insert + "(1, " + input + ", 1.234567)", new String[]{ "stamp", "amount" } ) );
+                    try ( ResultSet projected = sql.getGeneratedKeys() ) {
+                        assertTrue( projected.next() );
+                        assertEquals( expected, projected.getTimestamp( 1 ) );
+                        assertEquals( amount, projected.getBigDecimal( 2 ) );
+                        assertFalse( projected.next() );
+                    }
+                    try ( ResultSet projected = sql.executeQuery( insert + "(2, " + input + ", 1.234567) RETURNING amount" ) ) {
+                        assertTrue( projected.next() );
+                        assertEquals( amount, projected.getBigDecimal( 1 ) );
+                        assertFalse( projected.next() );
+                    }
+                    Connection connection = jdbc.getConnection();
+                    connection.setAutoCommit( false );
+                    try {
+                        SQLException duplicate = assertThrows( SQLException.class, () ->
+                                sql.executeUpdate( insert + "(1, " + input + ", 9)", new String[]{ "stamp" } ) );
+                        assertEquals( "23505", duplicate.getSQLState() );
+                        connection.commit();
+                    } finally {
+                        connection.setAutoCommit( true );
+                    }
+                    try ( ResultSet count = sql.executeQuery( "SELECT COUNT(*) FROM projected_timestamp_key WHERE bucket = 1" ) ) {
+                        assertTrue( count.next() );
+                        assertEquals( 2, count.getInt( 1 ) );
+                    }
+                    sql.executeUpdate( "DELETE FROM projected_timestamp_key" );
+                }
+            } finally {
+                sql.executeUpdate( "ALTER CONFIG 'runtime/parameterizeDML' SET true" );
+                sql.executeUpdate( "DROP TABLE projected_timestamp_key" );
+            }
+        }
     }
 
 

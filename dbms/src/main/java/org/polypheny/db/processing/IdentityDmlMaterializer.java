@@ -203,10 +203,24 @@ final class IdentityDmlMaterializer {
         List<List<PolyValue>> capturedRows = new ArrayList<>();
         GeneratedKeySelection keySelection = statement.getGeneratedKeySelection();
         boolean generatedOnly = keySelection != null && keySelection.names().isEmpty() && keySelection.indexes().isEmpty();
+        Set<Long> explicitTimestampFields = new HashSet<>();
+        for ( LogicalColumn column : statement.getTransaction().getSnapshot().rel().getColumns( table.id ) ) {
+            if ( column.type == PolyType.TIMESTAMP && column.length != null ) {
+                explicitTimestampFields.add( column.id );
+            }
+        }
+        RexBuilder rex = modify.getCluster().getRexBuilder();
         for ( List<PolyValue> row : sourceRows ) {
             ImmutableList.Builder<RexLiteral> tuple = ImmutableList.builder();
             for ( AlgDataTypeField field : targetFields ) {
-                tuple.add( toLiteral( row.get( field.getIndex() ), field ) );
+                RexLiteral literal = toLiteral( row.get( field.getIndex() ), field );
+                PolyValue value = literal.getValue();
+                if ( needsTimestampPrecisionReadback( field, value, explicitTimestampFields ) ) {
+                    // Keep the input precision until the adapter assigns to the destination column.
+                    tuple.add( rex.makeTimestampLiteral( value.asTimestamp(), PolyType.MAX_DATETIME_PRECISION ) );
+                } else {
+                    tuple.add( literal );
+                }
             }
             ImmutableList<RexLiteral> inserted = tuple.build();
             tuples.add( inserted );
@@ -216,7 +230,7 @@ final class IdentityDmlMaterializer {
                 for ( AlgDataTypeField field : targetFields ) {
                     int index = field.getIndex();
                     PolyType type = field.getType().getPolyType();
-                    if ( PolyType.NUMERIC_TYPES.contains( type ) ) {
+                    if ( PolyType.NUMERIC_TYPES.contains( type ) || type == PolyType.TIMESTAMP ) {
                         captured.set( index, inserted.get( index ).getValue() );
                     }
                 }
@@ -224,7 +238,7 @@ final class IdentityDmlMaterializer {
             }
         }
         if ( statement.isInsertRowCaptureRequested() ) {
-            captureStoredRows( modify, table, statement, parameterRowType, targetFields, capturedRows );
+            captureStoredRows( modify, table, statement, parameterRowType, targetFields, capturedRows, explicitTimestampFields );
         }
 
         // Parameter sets have already been expanded into concrete rows, once each.
@@ -399,23 +413,29 @@ final class IdentityDmlMaterializer {
 
 
     private static void captureStoredRows( LogicalRelModify modify, LogicalTable table, Statement statement,
-            AlgDataType parameterRowType, List<AlgDataTypeField> fields, List<List<PolyValue>> rows ) {
+            AlgDataType parameterRowType, List<AlgDataTypeField> fields, List<List<PolyValue>> rows, Set<Long> explicitTimestampFields ) {
         InsertReturning projection = statement.getInsertReturning() != null ? statement.getInsertReturning() : statement.getGeneratedKeysProjection();
         List<AlgDataTypeField> projectedFields = projection.ordinals().stream().distinct().map( fields::get )
-                .filter( field -> rows.stream().anyMatch( row -> needsStoredValueReadback( field, row.get( field.getIndex() ) ) ) )
+                .filter( field -> rows.stream().anyMatch( row -> needsStoredValueReadback( field, row.get( field.getIndex() ), explicitTimestampFields ) ) )
                 .toList();
         if ( projectedFields.isEmpty() ) {
             statement.setInsertedRows( rows );
             return;
         }
         List<List<PolyValue>> affectedRows = rows.stream().filter( row -> projectedFields.stream()
-                .anyMatch( field -> needsStoredValueReadback( field, row.get( field.getIndex() ) ) ) ).toList();
-        List<StoredValueBatch> batches = prepareStoredValueReadback( modify, table, statement, parameterRowType, fields, projectedFields, affectedRows );
-        statement.setInsertedRowsReader( () -> readStoredValues( table, statement, parameterRowType, projectedFields, rows, batches ) );
+                .anyMatch( field -> needsStoredValueReadback( field, row.get( field.getIndex() ), explicitTimestampFields ) ) ).toList();
+        List<StoredValueBatch> batches = prepareStoredValueReadback( modify, table, statement, parameterRowType, fields, projectedFields, affectedRows,
+                explicitTimestampFields );
+        statement.setInsertedRowsReader( () -> readStoredValues( table, statement, parameterRowType, projectedFields, rows, batches, explicitTimestampFields ) );
     }
 
 
-    private static boolean needsStoredValueReadback( AlgDataTypeField field, PolyValue value ) {
+    private static boolean needsStoredValueReadback( AlgDataTypeField field, PolyValue value, Set<Long> explicitTimestampFields ) {
+        return needsDecimalReadback( field, value ) || needsTimestampPrecisionReadback( field, value, explicitTimestampFields );
+    }
+
+
+    private static boolean needsDecimalReadback( AlgDataTypeField field, PolyValue value ) {
         if ( value == null || value.isNull() ) {
             return false;
         }
@@ -424,10 +444,25 @@ final class IdentityDmlMaterializer {
     }
 
 
+    private static boolean needsTimestampPrecisionReadback( AlgDataTypeField field, PolyValue value, Set<Long> explicitTimestampFields ) {
+        if ( value == null || value.isNull() || !explicitTimestampFields.contains( field.getId() ) ) {
+            return false;
+        }
+        int millisPerUnit = switch ( field.getType().getPrecision() ) {
+            case 0 -> 1000;
+            case 1 -> 100;
+            case 2 -> 10;
+            default -> 1;
+        };
+        return value.asTimestamp().getMillisSinceEpoch() % millisPerUnit != 0;
+    }
+
+
     // Read coerced values in the same transaction after INSERT, projecting the input ordinal
     // so the output follows the original statement's row order.
     private static List<StoredValueBatch> prepareStoredValueReadback( LogicalRelModify modify, LogicalTable table, Statement statement,
-            AlgDataType parameterRowType, List<AlgDataTypeField> fields, List<AlgDataTypeField> projectedFields, List<List<PolyValue>> rows ) {
+            AlgDataType parameterRowType, List<AlgDataTypeField> fields, List<AlgDataTypeField> projectedFields, List<List<PolyValue>> rows,
+            Set<Long> explicitTimestampFields ) {
         List<Long> primaryKey = statement.getTransaction().getSnapshot().rel().getPrimaryKey( table.primaryKey ).orElseThrow().fieldIds;
         List<AlgDataTypeField> keyFields = fields.stream().filter( field -> primaryKey.contains( field.getId() ) ).toList();
         RexBuilder rex = modify.getCluster().getRexBuilder();
@@ -456,14 +491,21 @@ final class IdentityDmlMaterializer {
             projectedFields.forEach( field -> aliases.add( field.getName() ) );
             AlgNode filtered = LogicalRelFilter.create( scan, RexUtil.composeDisjunction( rex, predicates, false ) );
             AlgNode projected = LogicalRelProject.create( filtered, expressions, aliases );
-            boolean castsKey = batch.stream().anyMatch( row -> keyFields.stream()
+            boolean temporalReadback = projectedFields.stream().anyMatch( field -> explicitTimestampFields.contains( field.getId() ) )
+                    || batch.stream().anyMatch( row -> keyFields.stream()
+                    .anyMatch( field -> needsTimestampPrecisionReadback( field, row.get( field.getIndex() ), explicitTimestampFields ) ) );
+            boolean castsDecimalKey = batch.stream().anyMatch( row -> keyFields.stream()
                     .anyMatch( field -> needsDecimalKeyCoercion( field, row.get( field.getIndex() ) ) ) );
             // A dialect or optimizer must not turn a lookup cast into a different, already-existing key.
             // Detect preexisting matches and refuse to expose them as rows written by this INSERT.
             Set<Integer> existing = new HashSet<>();
-            if ( castsKey ) {
+            if ( temporalReadback || castsDecimalKey ) {
                 readStoredValueBatch( projected, statement, parameterRowType )
                         .forEach( stored -> existing.add( stored.get( 0 ).asNumber().intValue() ) );
+            }
+            if ( temporalReadback && !existing.isEmpty() ) {
+                throw new PolyphenyDbException( "Cannot project stored values for an INSERT whose primary key already exists in '%s'."
+                        .formatted( table.name ), null, "23505" );
             }
             batches.add( new StoredValueBatch( batch, projected, existing ) );
         }
@@ -472,7 +514,7 @@ final class IdentityDmlMaterializer {
 
 
     private static List<List<PolyValue>> readStoredValues( LogicalTable table, Statement statement, AlgDataType parameterRowType,
-            List<AlgDataTypeField> projectedFields, List<List<PolyValue>> rows, List<StoredValueBatch> batches ) {
+            List<AlgDataTypeField> projectedFields, List<List<PolyValue>> rows, List<StoredValueBatch> batches, Set<Long> explicitTimestampFields ) {
         for ( StoredValueBatch batch : batches ) {
             Set<Integer> matched = new HashSet<>();
             for ( List<PolyValue> stored : readStoredValueBatch( batch.query(), statement, parameterRowType ) ) {
@@ -484,7 +526,7 @@ final class IdentityDmlMaterializer {
                 for ( int column = 0; column < projectedFields.size(); column++ ) {
                     AlgDataTypeField field = projectedFields.get( column );
                     int fieldIndex = field.getIndex();
-                    if ( needsStoredValueReadback( field, row.get( fieldIndex ) ) ) {
+                    if ( needsStoredValueReadback( field, row.get( fieldIndex ), explicitTimestampFields ) ) {
                         row.set( fieldIndex, stored.get( column + 1 ) );
                     }
                 }
@@ -514,7 +556,7 @@ final class IdentityDmlMaterializer {
 
 
     private static boolean needsDecimalKeyCoercion( AlgDataTypeField field, PolyValue value ) {
-        return field.getType().getPolyType() == PolyType.DECIMAL && needsStoredValueReadback( field, value )
+        return needsDecimalReadback( field, value )
                 && value.asNumber().bigDecimalValue().stripTrailingZeros().scale() > field.getType().getScale();
     }
 

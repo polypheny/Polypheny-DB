@@ -59,10 +59,12 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.jdbc.JdbcRules.JdbcProject;
 import org.polypheny.db.adapter.jdbc.JdbcRules.JdbcTableModify;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.InsertSourceOrdinals;
 import org.polypheny.db.algebra.convert.ConverterImpl;
 import org.polypheny.db.algebra.enumerable.EnumerableAlg;
 import org.polypheny.db.algebra.enumerable.EnumerableAlgImplementor;
@@ -181,6 +183,18 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
     }
 
 
+    public static Optional<InsertSourceOrdinals> markInsertSource( AlgNode source, int firstOrdinal ) {
+        if ( !(source instanceof JdbcToEnumerableConverter converter) ) {
+            return Optional.empty();
+        }
+        InsertSourceOrdinals nativeSource = InsertSourceOrdinals.add(
+                converter.getInput(), firstOrdinal, JdbcProject::create, (input, ordinal) -> Optional.empty() );
+        return Optional.of( new InsertSourceOrdinals(
+                new JdbcToEnumerableConverter( converter.getCluster(), converter.getTraitSet(), nativeSource.plan(), converter.insertTargetFields ),
+                nativeSource.branchCount() ) );
+    }
+
+
     @Override
     protected AlgDataType deriveRowType() {
         if ( insertTargetFields.isEmpty() ) {
@@ -191,8 +205,8 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
         List<AlgDataTypeField> source = getInput().getTupleType().getFields();
         for ( int i = 0; i < source.size(); i++ ) {
             AlgDataTypeField field = source.get( i );
-            AlgDataType target = insertTargetFields.get( i ).getType();
-            AlgDataType type = PolyType.NUMERIC_TYPES.contains( target.getPolyType() )
+            AlgDataType target = i < insertTargetFields.size() ? insertTargetFields.get( i ).getType() : field.getType();
+            AlgDataType type = i < insertTargetFields.size() && PolyType.NUMERIC_TYPES.contains( target.getPolyType() )
                     ? factory.createTypeWithNullability( target, true ) : field.getType();
             output.add( field.getId(), field.getName(), field.getPhysicalName(), type );
         }
@@ -528,13 +542,17 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
         aliasOperands.add( result.asQueryOrValues() );
         aliasOperands.add( new SqlIdentifier( "insert_source", pos ) );
         List<SqlNode> columns = new ArrayList<>();
-        for ( int i = 0; i < insertTargetFields.size(); i++ ) {
+        for ( int i = 0; i < getInput().getTupleType().getFieldCount(); i++ ) {
             SqlIdentifier column = new SqlIdentifier( "insert_value_" + i, pos );
             aliasOperands.add( column );
-            AlgDataType target = insertTargetFields.get( i ).getType();
-            columns.add( PolyType.NUMERIC_TYPES.contains( target.getPolyType() )
-                    ? (SqlNode) OperatorRegistry.get( OperatorName.CAST ).createCall( pos, column, dialect.getCastSpec( target ) )
-                    : column );
+            if ( i < insertTargetFields.size() ) {
+                AlgDataType target = insertTargetFields.get( i ).getType();
+                if ( PolyType.NUMERIC_TYPES.contains( target.getPolyType() ) ) {
+                    columns.add( (SqlNode) OperatorRegistry.get( OperatorName.CAST ).createCall( pos, column, dialect.getCastSpec( target ) ) );
+                    continue;
+                }
+            }
+            columns.add( column );
         }
         SqlNode aliased = (SqlNode) OperatorRegistry.get( OperatorName.AS ).createCall( new SqlNodeList( aliasOperands, pos ) );
         SqlSelect select = new SqlSelect( pos, SqlNodeList.EMPTY, new SqlNodeList( columns, pos ), aliased, null, null, null, null, null, null, null );

@@ -27,6 +27,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.ExtensionPoint;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.InsertSourceOrdinals;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.Catalog;
@@ -75,6 +76,12 @@ public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> imp
      * assignments applied by the store before the coordinator materializes the rows.
      */
     public Optional<AlgNode> readInsertSource( AlgNode physicalInsert, List<AlgDataTypeField> targetFields ) {
+        return Optional.empty();
+    }
+
+
+    /** Adds provenance to a native INSERT preview or a source read by its streamer. */
+    public Optional<InsertSourceOrdinals> markInsertSource( AlgNode source, int firstOrdinal ) {
         return Optional.empty();
     }
 

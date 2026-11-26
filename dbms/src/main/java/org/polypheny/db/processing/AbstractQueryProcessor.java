@@ -25,6 +25,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -56,6 +57,7 @@ import org.polypheny.db.algebra.PlanKeys;
 import org.polypheny.db.algebra.AlgShuttle;
 import org.polypheny.db.algebra.AlgShuttleImpl;
 import org.polypheny.db.algebra.AlgStructuredTypeFlattener;
+import org.polypheny.db.algebra.InsertSourceOrdinals;
 import org.polypheny.db.algebra.constant.ConformanceEnum;
 import org.polypheny.db.algebra.constant.ExplainFormat;
 import org.polypheny.db.algebra.constant.ExplainLevel;
@@ -632,16 +634,21 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             return Optional.empty();
         }
         List<Long> keyIds = snapshot.rel().getPrimaryKey( table.primaryKey ).orElseThrow().fieldIds;
-        Optional<Set<Integer>> volatileColumns = placements.size() > 1
-                ? volatileInsertColumns( insert.getInput() ) : Optional.of( Set.of() );
-        if ( volatileColumns.isEmpty() || targetFields.stream().anyMatch(
-                field -> keyIds.contains( field.getId() ) && volatileColumns.get().contains( field.getIndex() ) ) ) {
+        Optional<List<Set<Integer>>> volatileBranches = placements.size() > 1
+                ? volatileInsertColumns( insert.getInput() ) : Optional.of( List.of( Set.of() ) );
+        if ( volatileBranches.isEmpty() ) {
             return Optional.empty();
         }
-        List<Integer> comparedFields = targetFields.stream()
-                .filter( field -> !volatileColumns.get().contains( field.getIndex() ) )
-                .filter( field -> keyIds.contains( field.getId() ) || PolyType.NUMERIC_TYPES.contains( field.getType().getPolyType() ) )
-                .map( AlgDataTypeField::getIndex )
+        List<Set<Integer>> branches = volatileBranches.get();
+        // Keep the original UNION's common typing. A trailing ordinal identifies each
+        // branch's comparison mask without evaluating its expressions separately.
+        boolean marked = branches.size() > 1 && branches.stream().anyMatch( columns -> !columns.isEmpty() );
+        List<List<Integer>> comparedFields = (marked ? branches : List.of( branches.get( 0 ) )).stream()
+                .map( volatileColumns -> targetFields.stream()
+                        .filter( field -> !volatileColumns.contains( field.getIndex() ) )
+                        .filter( field -> keyIds.contains( field.getId() ) || PolyType.NUMERIC_TYPES.contains( field.getType().getPolyType() ) )
+                        .map( AlgDataTypeField::getIndex )
+                        .toList() )
                 .toList();
 
         // Plan the ordinary DML without preparing or running its write, index or constraint actions.
@@ -677,9 +684,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 for ( DataStore<?> store : stores ) {
                     Optional<AlgNode> source = store.readInsertSource( collector, targetFields );
                     if ( source.isPresent() ) {
-                        Bindable<PolyValue[]> read = implement( AlgRoot.of( source.get(), Kind.SELECT ), parameterRowType ).getBindable();
-                        reads.add( streamer == null ? new InsertSourceRead( read, null, List.of() )
-                                : streamedInsertSource( read, streamer.getProvider(), parameterRowType ) );
+                        AlgNode preview = source.get();
+                        if ( marked && streamer == null ) {
+                            preview = requireInsertSourceOrdinals( store.markInsertSource( preview, 0 ), branches.size() );
+                        }
+                        Bindable<PolyValue[]> read = implement( AlgRoot.of( preview, Kind.SELECT ), parameterRowType ).getBindable();
+                        reads.add( streamer == null ? new InsertSourceRead( read, null, List.of(), false )
+                                : streamedInsertSource( read, streamer.getProvider(), parameterRowType, stores, marked ? branches.size() : 0 ) );
                         break;
                     }
                 }
@@ -694,13 +705,18 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
             for ( Map<Long, PolyValue> binding : bindings.isEmpty() ? List.<Map<Long, PolyValue>>of( Map.of() ) : bindings ) {
                 context.setParameterValues( List.of( binding ) );
                 List<List<PolyValue>> first = reads.get( 0 ).read( context );
-                rows.addAll( first );
                 if ( reads.size() > 1 ) {
-                    Map<List<PolyValue>, Long> expected = nativeInsertRowCounts( first, comparedFields );
+                    Map<List<PolyValue>, Long> expected = nativeInsertRowCounts( first, comparedFields, marked );
                     for ( InsertSourceRead read : reads.subList( 1, reads.size() ) ) {
-                        consistent &= expected.equals( nativeInsertRowCounts( read.read( context ), comparedFields ) );
+                        consistent &= expected.equals( nativeInsertRowCounts( read.read( context ), comparedFields, marked ) );
                     }
                 }
+                if ( marked ) {
+                    // The adapter need not return UNION ALL branches in source order.
+                    first.sort( Comparator.comparingInt( AbstractQueryProcessor::insertSourceOrdinal ) );
+                    first.forEach( row -> row.remove( row.size() - 1 ) );
+                }
+                rows.addAll( first );
             }
             if ( !consistent ) {
                 throw new PolyphenyDbException( "Store placements disagree on the native INSERT source values.", null, "22000" );
@@ -715,37 +731,47 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private static Optional<Set<Integer>> volatileInsertColumns( AlgNode source ) {
+    private static Optional<List<Set<Integer>>> volatileInsertColumns( AlgNode source ) {
         if ( source instanceof LogicalRelProject project ) {
-            Optional<Set<Integer>> input = volatileInsertColumns( project.getInput() );
-            if ( input.isEmpty() ) {
-                return Optional.empty();
-            }
-            Set<Integer> columns = new HashSet<>();
-            for ( int i = 0; i < project.getProjects().size(); i++ ) {
-                RexNode expression = project.getProjects().get( i );
-                if ( isVolatileInsertExpression( expression ) || (!input.get().isEmpty()
-                        && AlgOptUtil.InputFinder.bits( expression ).asList().stream().anyMatch( input.get()::contains )) ) {
-                    columns.add( i );
-                }
-            }
-            return Optional.of( columns );
+            return volatileInsertColumns( project.getInput() ).map( branches -> branches.stream()
+                    .map( branch -> volatileProjectColumns( project, branch ) )
+                    .toList() );
         }
         if ( source instanceof LogicalRelUnion union && union.all ) {
-            Set<Integer> columns = new HashSet<>();
+            List<Set<Integer>> branches = new ArrayList<>();
             for ( AlgNode input : union.getInputs() ) {
-                Optional<Set<Integer>> branch = volatileInsertColumns( input );
-                if ( branch.isEmpty() ) {
+                Optional<List<Set<Integer>>> inputBranches = volatileInsertColumns( input );
+                if ( inputBranches.isEmpty() ) {
                     return Optional.empty();
                 }
-                columns.addAll( branch.get() );
+                branches.addAll( inputBranches.get() );
             }
-            return Optional.of( columns );
+            return Optional.of( branches );
         }
 
-        // Preserve the existing single evaluation when volatility is outside a
-        // projection or UNION ALL and may influence which rows the source returns.
-        return hasVolatileInsertExpression( source ) ? Optional.empty() : Optional.of( Set.of() );
+        // Evaluate volatile row selection once. Projection-only volatility can be
+        // compared independently for each source branch without comparing its values.
+        return hasVolatileInsertExpression( source ) ? Optional.empty() : Optional.of( List.of( Set.of() ) );
+    }
+
+
+    private static Set<Integer> volatileProjectColumns( LogicalRelProject project, Set<Integer> input ) {
+        Set<Integer> columns = new HashSet<>();
+        for ( int i = 0; i < project.getProjects().size(); i++ ) {
+            RexNode expression = project.getProjects().get( i );
+            if ( isVolatileInsertExpression( expression ) || (!input.isEmpty()
+                    && AlgOptUtil.InputFinder.bits( expression ).asList().stream().anyMatch( input::contains )) ) {
+                columns.add( i );
+            }
+        }
+        return columns;
+    }
+
+
+    private static AlgNode requireInsertSourceOrdinals( Optional<InsertSourceOrdinals> source, int branches ) {
+        return source.filter( marked -> marked.branchCount() == branches )
+                .map( InsertSourceOrdinals::plan )
+                .orElseThrow( () -> new PolyphenyDbException( "Cannot identify the volatile INSERT source branches of a store placement.", null, "22000" ) );
     }
 
 
@@ -764,15 +790,25 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private InsertSourceRead streamedInsertSource( Bindable<PolyValue[]> collector, AlgNode provider, AlgDataType parameterRowType ) {
-        Bindable<PolyValue[]> read = implement( AlgRoot.of( provider, Kind.SELECT ), parameterRowType ).getBindable();
+    private InsertSourceRead streamedInsertSource( Bindable<PolyValue[]> collector, AlgNode provider, AlgDataType parameterRowType,
+            List<DataStore<?>> stores, int branches ) {
         List<AlgDataType> types = Functions.streamerParameterTypes(
                 provider.getTupleType().getFields().stream().map( field -> field.getType().getPolyType() ).toList() );
-        return new InsertSourceRead( collector, read, types );
+        boolean marked = branches > 0;
+        if ( marked ) {
+            InsertSourceOrdinals annotated = InsertSourceOrdinals.add( provider, 0,
+                    (input, expressions, rowType) -> EnumerableCalc.create( input,
+                            RexProgram.create( input.getTupleType(), expressions, null, rowType, input.getCluster().getRexBuilder() ) ),
+                    (input, firstOrdinal) -> stores.stream().map( store -> store.markInsertSource( input, firstOrdinal ) )
+                            .flatMap( Optional::stream ).findFirst() );
+            provider = requireInsertSourceOrdinals( Optional.of( annotated ), branches );
+        }
+        Bindable<PolyValue[]> read = implement( AlgRoot.of( provider, Kind.SELECT ), parameterRowType ).getBindable();
+        return new InsertSourceRead( collector, read, types, marked );
     }
 
 
-    private record InsertSourceRead( Bindable<PolyValue[]> collector, Bindable<PolyValue[]> provider, List<AlgDataType> streamedTypes ) {
+    private record InsertSourceRead( Bindable<PolyValue[]> collector, Bindable<PolyValue[]> provider, List<AlgDataType> streamedTypes, boolean marked ) {
 
         private List<List<PolyValue>> read( DataContext context ) {
             if ( provider == null ) {
@@ -789,10 +825,14 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 for ( List<PolyValue> row : providedRows ) {
                     QueryExecutionScope.remainingTimeoutMillis();
                     context.resetParameterValues();
-                    for ( int i = 0; i < row.size(); i++ ) {
+                    for ( int i = 0; i < streamedTypes.size(); i++ ) {
                         context.addParameterValues( i, streamedTypes.get( i ), Collections.singletonList( row.get( i ) ) );
                     }
-                    rows.addAll( readNativeInsertBinding( collector, context ) );
+                    List<List<PolyValue>> castRows = readNativeInsertBinding( collector, context );
+                    if ( marked ) {
+                        castRows.forEach( cast -> cast.add( row.get( row.size() - 1 ) ) );
+                    }
+                    rows.addAll( castRows );
                 }
                 return rows;
             } finally {
@@ -825,8 +865,21 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private static Map<List<PolyValue>, Long> nativeInsertRowCounts( List<List<PolyValue>> rows, List<Integer> fields ) {
-        return rows.stream().collect( Collectors.groupingBy( row -> fields.stream().map( row::get ).toList(), Collectors.counting() ) );
+    private static int insertSourceOrdinal( List<PolyValue> row ) {
+        return row.get( row.size() - 1 ).asNumber().intValue();
+    }
+
+
+    private static Map<List<PolyValue>, Long> nativeInsertRowCounts( List<List<PolyValue>> rows, List<List<Integer>> fields, boolean marked ) {
+        return rows.stream().collect( Collectors.groupingBy( row -> {
+            if ( !marked ) {
+                return fields.get( 0 ).stream().map( row::get ).toList();
+            }
+            List<PolyValue> stable = new ArrayList<>();
+            stable.add( row.get( row.size() - 1 ) );
+            fields.get( insertSourceOrdinal( row ) ).forEach( field -> stable.add( row.get( field ) ) );
+            return stable;
+        }, Collectors.counting() ) );
     }
 
 

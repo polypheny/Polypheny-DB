@@ -46,6 +46,7 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionFactory;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.InsertSourceOrdinals;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.operators.OperatorName;
@@ -472,6 +473,12 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
     @Override
     public Optional<AlgNode> readInsertSource( AlgNode physicalInsert, List<AlgDataTypeField> targetFields ) {
         return JdbcToEnumerableConverter.readInsertSource( adapterId, physicalInsert, targetFields );
+    }
+
+
+    @Override
+    public Optional<InsertSourceOrdinals> markInsertSource( AlgNode source, int firstOrdinal ) {
+        return JdbcToEnumerableConverter.markInsertSource( source, firstOrdinal );
     }
 
 
