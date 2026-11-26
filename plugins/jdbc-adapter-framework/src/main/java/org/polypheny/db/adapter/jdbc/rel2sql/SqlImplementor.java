@@ -1182,7 +1182,7 @@ public abstract class SqlImplementor {
 
 
         /**
-         * Converts a non-query node into a SELECT node. Set operators (UNION, INTERSECT, EXCEPT) remain as is.
+         * Wraps a node in a SELECT when it is not already a SELECT node.
          */
         public SqlSelect asSelect() {
             return asSelect( null );
@@ -1193,7 +1193,8 @@ public abstract class SqlImplementor {
             if ( node instanceof SqlSelect ) {
                 return (SqlSelect) node;
             }
-            if ( !dialect.hasImplicitTableAlias() ) {
+            // A derived set query has no implicit table name.
+            if ( !dialect.hasImplicitTableAlias() || node.isA( Kind.SET_QUERY ) ) {
                 return wrapSelect( asFrom(), sqlNodes );
             }
             return wrapSelect( node, sqlNodes );
