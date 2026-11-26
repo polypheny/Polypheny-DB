@@ -1715,6 +1715,7 @@ public enum OperatorName {
 
     CYPHER_PATH_MATCH( LangFunctionOperator.class ),
     CYPHER_SHORTEST_PATH_MATCH( LangFunctionOperator.class ),
+    CYPHER_ALL_SHORTEST_PATHS_MATCH( LangFunctionOperator.class ),
 
     CYPHER_ALL_MATCH( LangFunctionOperator.class ),
 
@@ -1781,6 +1782,7 @@ public enum OperatorName {
     CYPHER_NODES( LangFunctionOperator.class ),
     CYPHER_RELATIONSHIPS( LangFunctionOperator.class ),
     CYPHER_SHORTEST_PATH_VALUE( LangFunctionOperator.class ),
+    CYPHER_ALL_SHORTEST_PATHS_VALUE( LangFunctionOperator.class ),
     CYPHER_LENGTH( LangFunctionOperator.class ),
     CYPHER_SIZE( LangFunctionOperator.class ),
     CYPHER_SCALAR_FUNCTION( LangFunctionOperator.class ),

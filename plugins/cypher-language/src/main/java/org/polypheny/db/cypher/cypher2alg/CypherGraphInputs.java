@@ -159,7 +159,7 @@ final class CypherGraphInputs extends AlgShuttleImpl {
         RexNode condition = join.getCondition().accept( ref );
         if ( ref.used ) {
             return removeGraph( new LogicalLpgShortestPathJoin( left, withGraph( right ), condition, join.isOptional(),
-                    join.getPathColumns(), join.getGroupColumns() ), join );
+                    join.getPathColumns(), join.getGroupColumns(), join.getAllTies() ), join );
         }
         return left == join.getLeft() && right == join.getRight() ? join
                 : join.copy( join.getTraitSet(), List.of( left, right ) );

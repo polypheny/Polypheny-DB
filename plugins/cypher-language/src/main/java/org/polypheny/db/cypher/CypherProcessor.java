@@ -118,7 +118,7 @@ public class CypherProcessor extends Processor {
         }
         List<CypherParameter> parameters = parser.getParameters();
         for ( CypherParameter parameter : parameters ) {
-            if ( parameter.getParameterType() != ParameterType.ANY ) {
+            if ( parameter.getParameterType() != ParameterType.ANY && parameter.getParameterType() != ParameterType.MAP ) {
                 throw new GenericRuntimeException( "Cypher parameter $" + parameter.getName() + " must be used as a value expression" );
             }
         }

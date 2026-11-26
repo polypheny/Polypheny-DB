@@ -16,9 +16,8 @@
 
 package org.polypheny.db.cypher.expression;
 
-import java.util.List;
 import lombok.Getter;
-import org.polypheny.db.cypher.clause.CypherClause;
+import org.polypheny.db.cypher.clause.CypherQuery;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.languages.ParserPos;
@@ -29,12 +28,12 @@ import org.polypheny.db.util.Pair;
 @Getter
 public class CypherExistSubQuery extends CypherExpression {
 
-    private final List<CypherClause> clauses;
+    private final CypherQuery query;
 
 
-    public CypherExistSubQuery( ParserPos pos, List<CypherClause> clauses ) {
+    public CypherExistSubQuery( ParserPos pos, CypherQuery query ) {
         super( pos );
-        this.clauses = List.copyOf( clauses );
+        this.query = query;
     }
 
 

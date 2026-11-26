@@ -293,26 +293,26 @@ public class CypherReturnClause extends CypherClause {
     }
 
 
-    public AlgNode getGraphSort( AlgNode node, List<Integer> sortFields ) {
+    public AlgNode getGraphSort( AlgNode node, List<Integer> sortFields, CypherContext context ) {
         List<AlgFieldCollation> collations = new ArrayList<>();
         for ( int i = 0; i < sortFields.size(); i++ ) {
             Direction direction = order.get( i ).isAsc() ? Direction.ASCENDING : Direction.DESCENDING;
             collations.add( new AlgFieldCollation( sortFields.get( i ), direction ) );
         }
         AlgCollation collation = AlgCollations.of( collations );
-        Long skip = this.skip == null ? null : getRowBound( this.skip, "SKIP" );
-        Long limit = this.limit == null ? null : getRowBound( this.limit, "LIMIT" );
+        Long skip = this.skip == null ? null : getRowBound( this.skip, "SKIP", context );
+        Long limit = this.limit == null ? null : getRowBound( this.limit, "LIMIT", context );
         AlgTraitSet traitSet = node.getTraitSet().replace( collation );
         return new LogicalLpgSort( node.getCluster(), traitSet, collation, node, skip, limit );
     }
 
 
-    private static long getRowBound( CypherExpression expression, String clause ) {
+    private static long getRowBound( CypherExpression expression, String clause, CypherContext context ) {
         PolyValue value;
         try {
             value = expression.getComparable();
         } catch ( UnsupportedOperationException e ) {
-            throw new CypherSyntaxException( "NonConstantExpression: " + clause + " requires a row-independent expression." );
+            value = context.evaluateRowBoundExpression( expression, clause );
         }
         if ( value == null || value.isNull() || !PolyType.INT_TYPES.contains( value.getType() ) ) {
             throw invalidRowBound( expression, "InvalidArgumentType: " + clause + " requires a non-negative integer." );

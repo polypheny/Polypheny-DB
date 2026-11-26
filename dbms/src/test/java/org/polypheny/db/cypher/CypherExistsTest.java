@@ -176,6 +176,30 @@ class CypherExistsTest extends CypherTestTemplate {
 
 
     @Test
+    void acceptsReadOnlyUnionBranchesAndTestsTheirCombinedRows() {
+        GraphResult result = execute( """
+                RETURN EXISTS { UNWIND [] AS x RETURN x UNION RETURN 2 AS x } AS present,
+                       EXISTS { UNWIND [] AS x RETURN x UNION ALL UNWIND [] AS x RETURN x } AS absent
+                """ );
+        assertEquals( List.of( true, false ), flags( result ) );
+        assertError( "RETURN EXISTS { CREATE () RETURN 1 AS x UNION RETURN 2 AS x }", "read-only" );
+    }
+
+
+    @Test
+    void capturesWithAliasesFromFilterScope() {
+        GraphResult result = execute( """
+                UNWIND [1, 2] AS i
+                WITH i + 1 AS x
+                WHERE EXISTS { WITH x WHERE x = 3 RETURN x }
+                RETURN x
+                """ );
+        assertEquals( 1, result.getData().length );
+        assertEquals( 3, cell( result, 0, 0 ).asNumber().intValue() );
+    }
+
+
+    @Test
     void preservesBothScopesAndOptionalRows() {
         GraphResult result = execute( """
                 MATCH (a:Person {name:'Ada'})

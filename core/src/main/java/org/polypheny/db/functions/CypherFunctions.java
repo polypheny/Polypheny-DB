@@ -162,6 +162,11 @@ public class CypherFunctions {
     }
 
 
+    public static Enumerable<PolyPath> allShortestPathsMatch( PolyGraph graph, PolyPath pattern ) {
+        return Linq4j.asEnumerable( graph.matchAllShortestPaths( pattern ) );
+    }
+
+
     /**
      * Matches all suitable nodes for the given graph.
      *
@@ -1135,11 +1140,24 @@ public class CypherFunctions {
 
     public static PolyPath shortestPathValue( PolyGraph graph, PolyPath template, PolyValue start, PolyValue end, PolyValue relationship,
             Function0<PolyValue> startProperties, Function0<PolyValue> relationshipProperties, Function0<PolyValue> endProperties ) {
+        return (PolyPath) shortestPathValue( graph, template, start, end, relationship, startProperties, relationshipProperties, endProperties, false );
+    }
+
+
+    public static PolyList<?> allShortestPathsValue( PolyGraph graph, PolyPath template, PolyValue start, PolyValue end, PolyValue relationship,
+            Function0<PolyValue> startProperties, Function0<PolyValue> relationshipProperties, Function0<PolyValue> endProperties ) {
+        return (PolyList<?>) shortestPathValue( graph, template, start, end, relationship, startProperties, relationshipProperties, endProperties, true );
+    }
+
+
+    private static PolyValue shortestPathValue( PolyGraph graph, PolyPath template, PolyValue start, PolyValue end, PolyValue relationship,
+            Function0<PolyValue> startProperties, Function0<PolyValue> relationshipProperties, Function0<PolyValue> endProperties, boolean all ) {
+        String function = all ? "allShortestPaths()" : "shortestPath()";
         if ( isNull( start ) || isNull( end ) ) {
             return null;
         }
         if ( !(start instanceof PolyNode source) || !(end instanceof PolyNode target) ) {
-            throw new GenericRuntimeException( "shortestPath() requires node values for both endpoints." );
+            throw new GenericRuntimeException( function + " requires node values for both endpoints." );
         }
         PolyNode left = template.getNodes().get( 0 );
         PolyNode right = template.getNodes().get( 1 );
@@ -1153,14 +1171,14 @@ public class CypherFunctions {
             boolean compatible = edge.fromTo() == null ? relationship instanceof PolyEdge
                     : relationship instanceof PolyList<?> edges && edges.stream().allMatch( PolyEdge.class::isInstance );
             if ( !compatible ) {
-                throw new GenericRuntimeException( "shortestPath() requires a relationship or relationship-list binding matching the pattern." );
+                throw new GenericRuntimeException( function + " requires a relationship or relationship-list binding matching the pattern." );
             }
         }
         Predicate<PolyPath> boundPath = boundRelationship
                 ? path -> PolyBoolean.TRUE.equals( equal( path.getBinding( name ), relationship ) )
                 : null;
         if ( startProperties == null && relationshipProperties == null && endProperties == null ) {
-            return graph.shortestPath( template, source, target, boundPath );
+            return shortestValue( graph, template, graph.shortestPath( template, source, target, boundPath ), boundPath, all );
         }
         // A path predicate or a larger minimum can require enumerating trails. Stop at the first
         // admissible trail in these cases and find the shortest path only after applying the maps.
@@ -1169,27 +1187,29 @@ public class CypherFunctions {
                 ? graph.shortestPath( template, source, target )
                 : graph.firstPath( template, source, target, boundPath );
         if ( candidate == null ) {
-            return null;
+            return shortestValue( graph, template, null, boundPath, all );
         }
 
         // Every candidate shares these endpoints. Match against the nodes from the current graph.
         List<PolyNode> nodes = candidate.getNodes();
         if ( (startProperties != null && !nodes.get( 0 ).matchesProperties( shortestProperties( startProperties.apply() ) ))
                 || (endProperties != null && !nodes.get( nodes.size() - 1 ).matchesProperties( shortestProperties( endProperties.apply() ) )) ) {
-            return null;
+            return shortestValue( graph, template, null, boundPath, all );
         }
         // A bound relationship or list fixes the edges and length of any admissible path.
         boolean shortest = breadthFirst || boundPath != null || candidate.getEdges().size() == edge.getMinLength();
         if ( relationshipProperties == null || candidate.getEdges().isEmpty() ) {
-            return shortest ? candidate : graph.shortestPath( template, source, target );
+            return shortestValue( graph, template, shortest ? candidate : graph.shortestPath( template, source, target ), boundPath, all );
         }
         PolyDictionary properties = shortestProperties( relationshipProperties.apply() );
         if ( shortest ) {
-            if ( candidate.getEdges().stream().allMatch( actual -> actual.matchesProperties( properties ) ) ) {
-                return candidate;
+            Predicate<PolyPath> propertiesMatch = path -> path.getEdges().stream().allMatch( actual -> actual.matchesProperties( properties ) );
+            if ( propertiesMatch.test( candidate ) ) {
+                Predicate<PolyPath> ties = boundPath == null ? propertiesMatch : boundPath.and( propertiesMatch );
+                return shortestValue( graph, template, candidate, ties, all );
             }
             if ( boundPath != null ) {
-                return null;
+                return shortestValue( graph, template, null, boundPath, all );
             }
         }
 
@@ -1200,7 +1220,12 @@ public class CypherFunctions {
         edgePattern.fromTo( edge.fromTo() );
         PolyPath pattern = PolyPath.create( List.of( Pair.of( left.getVariableName(), left ), Pair.of( right.getVariableName(), right ) ),
                 List.of( Pair.of( name, edgePattern ) ) );
-        return graph.shortestPath( pattern, source, target );
+        return shortestValue( graph, pattern, graph.shortestPath( pattern, source, target ), null, all );
+    }
+
+
+    private static PolyValue shortestValue( PolyGraph graph, PolyPath pattern, PolyPath selected, Predicate<PolyPath> condition, boolean all ) {
+        return all ? PolyList.copyOf( selected == null ? List.of() : graph.pathsTiedWith( pattern, selected, condition ) ) : selected;
     }
 
 
@@ -1564,7 +1589,7 @@ public class CypherFunctions {
         if ( left.isMap() && right.isMap() ) {
             return compareMaps( left.asMap(), right.asMap(), false );
         }
-        return left.compareTo( right );
+        return compareWithinType( left, right );
     }
 
 
@@ -1753,6 +1778,24 @@ public class CypherFunctions {
         if ( left.isMap() && right.isMap() ) {
             return compareMaps( left.asMap(), right.asMap(), true );
         }
+        return compareWithinType( left, right );
+    }
+
+
+    private static int compareWithinType( PolyValue left, PolyValue right ) {
+        if ( left instanceof PolyString a && right instanceof PolyString b && a.value != null && b.value != null ) {
+            // The equal prefix has the same UTF-16 length in both strings.
+            int limit = Math.min( a.value.length(), b.value.length() );
+            for ( int i = 0; i < limit; ) {
+                int leftPoint = a.value.codePointAt( i );
+                int rightPoint = b.value.codePointAt( i );
+                if ( leftPoint != rightPoint ) {
+                    return Integer.compare( leftPoint, rightPoint );
+                }
+                i += Character.charCount( leftPoint );
+            }
+            return Integer.compare( a.value.length(), b.value.length() );
+        }
         return left.compareTo( right );
     }
 
@@ -1766,10 +1809,10 @@ public class CypherFunctions {
         if ( sizeOrder != 0 ) {
             return sizeOrder;
         }
-        List<PolyValue> leftKeys = left.keySet().stream().sorted().toList();
-        List<PolyValue> rightKeys = right.keySet().stream().sorted().toList();
+        List<PolyValue> leftKeys = left.keySet().stream().sorted( CypherFunctions::compareWithinType ).toList();
+        List<PolyValue> rightKeys = right.keySet().stream().sorted( CypherFunctions::compareWithinType ).toList();
         for ( int i = 0; i < leftKeys.size(); i++ ) {
-            int keyOrder = leftKeys.get( i ).compareTo( rightKeys.get( i ) );
+            int keyOrder = compareWithinType( leftKeys.get( i ), rightKeys.get( i ) );
             if ( keyOrder != 0 ) {
                 return keyOrder;
             }

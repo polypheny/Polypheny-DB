@@ -244,6 +244,16 @@ class CypherValueAccessTest extends CypherTestTemplate {
 
 
     @Test
+    void evaluatesRowIndependentExpressionsInSkipAndLimit() {
+        GraphResult result = execute( "UNWIND [1,2,3,4] AS x RETURN x ORDER BY x SKIP size('a') LIMIT size([0,0])" );
+        assertEquals( 2, result.getData().length );
+        assertEquals( 2, cell( result, 0, 0 ).asNumber().intValue() );
+        assertEquals( 3, cell( result, 1, 0 ).asNumber().intValue() );
+        assertError( "WITH [1] AS xs RETURN xs LIMIT size(xs)", "NonConstantExpression" );
+    }
+
+
+    @Test
     void retainsIndividualElementTypesWhenConcatenatingHeterogeneousLists() {
         GraphResult result = execute( "RETURN ([1]+2.0)[0] AS i, ([1]+[2.0])[1] AS f, ([] + [1])[0] AS e" );
         assertEquals( "ANY", result.getHeader()[0].dataType );

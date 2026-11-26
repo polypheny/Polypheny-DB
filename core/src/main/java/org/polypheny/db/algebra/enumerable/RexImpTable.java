@@ -856,6 +856,7 @@ public class RexImpTable {
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_NODES ), BuiltInMethod.CYPHER_NODES.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_RELATIONSHIPS ), BuiltInMethod.CYPHER_RELATIONSHIPS.method, NullPolicy.NONE );
         map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_SHORTEST_PATH_VALUE ), RexImpTable::implementCypherShortestPathValue );
+        map.put( OperatorRegistry.get( cypher, OperatorName.CYPHER_ALL_SHORTEST_PATHS_VALUE ), RexImpTable::implementCypherShortestPathValue );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_LENGTH ), BuiltInMethod.CYPHER_LENGTH.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_SIZE ), BuiltInMethod.CYPHER_SIZE.method, NullPolicy.NONE );
         defineImplementor( OperatorRegistry.get( cypher, OperatorName.CYPHER_SCALAR_FUNCTION ), NullPolicy.NONE,
@@ -1040,7 +1041,9 @@ public class RexImpTable {
                     ? Expressions.constant( null, Function0.class )
                     : deferredCypherValue( translator, properties ) );
         }
-        return nullAs.handle( Expressions.call( BuiltInMethod.CYPHER_SHORTEST_PATH_VALUE.method, arguments ) );
+        BuiltInMethod method = call.getOperator().getOperatorName() == OperatorName.CYPHER_ALL_SHORTEST_PATHS_VALUE
+                ? BuiltInMethod.CYPHER_ALL_SHORTEST_PATHS_VALUE : BuiltInMethod.CYPHER_SHORTEST_PATH_VALUE;
+        return nullAs.handle( Expressions.call( method.method, arguments ) );
     }
 
 

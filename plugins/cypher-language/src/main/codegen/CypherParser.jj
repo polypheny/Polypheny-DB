@@ -196,6 +196,25 @@ PARSER_END(CypherParserImpl)
     }
 }*/
 
+TOKEN_MGR_DECLS :
+{
+    private void appendUtf32Escape() {
+        int start = image.length() - 10;
+        long codePoint = Long.parseLong( image.substring( start + 2 ), 16 );
+        if ( codePoint > Character.MAX_CODE_POINT
+                || (codePoint >= Character.MIN_SURROGATE && codePoint <= Character.MAX_SURROGATE) ) {
+            rejectUtf32Escape();
+        }
+        image.setLength( start );
+        image.appendCodePoint( (int) codePoint );
+    }
+
+    private static void rejectUtf32Escape() {
+        throw new org.polypheny.db.cypher.cypher2alg.CypherSyntaxException(
+                "InvalidUnicodeLiteral: A UTF-32 escape must contain eight hex digits for a Unicode scalar value." );
+    }
+}
+
 SKIP :
 {
     " "
@@ -247,6 +266,14 @@ TOKEN :
     | < #INTEGER_PART: ( ("_")? ["0"-"9"] ) >
     | < UNSIGNED_HEX_INTEGER: "0" ["x","X"] ( <PART_LETTER> )* >
     | < UNSIGNED_OCTAL_INTEGER: "0" ( "o" )? ( <PART_LETTER> )* >
+    | < #HEX_DIGIT: ["0"-"9","a"-"f","A"-"F"] >
+}
+
+<STRING1,STRING2> MORE :
+{
+    < "\\U" <HEX_DIGIT> <HEX_DIGIT> <HEX_DIGIT> <HEX_DIGIT> <HEX_DIGIT> <HEX_DIGIT> <HEX_DIGIT> <HEX_DIGIT> >
+        { appendUtf32Escape(); }
+    | "\\U" { rejectUtf32Escape(); }
 }
 
 MORE : { < STRING1_OPEN: "'" > : STRING1 }
@@ -2808,20 +2835,19 @@ CypherExpression ExistsSubQuery() :
     Token t;
     List<CypherPattern> patterns;
     CypherWhere where = null;
-    CypherClause clause;
-    List<CypherClause> clauses = new ArrayList<>();
+    CypherQuery query;
 }
 {
     t=<EXISTS> <LCURLY>
     (
         LOOKAHEAD( <LPAREN> | Variable() <EQ> ) patterns=PatternList() ( where=WhereClause() )?
-        { clauses.add( CypherFactory.createMatch( pos( t ), false, patterns, pos( t ), List.of(), where, false ) ); }
+        { query = CypherFactory.createSingleQuery( List.of( CypherFactory.createMatch( pos( t ), false, patterns, pos( t ), List.of(), where, false ) ) ); }
         |
-        ( clause=Clause() { clauses.add( clause ); } )+
+        query=RegularQuery()
     )
     <RCURLY>
     {
-        return CypherFactory.existsSubQuery( pos( t ), clauses );
+        return CypherFactory.existsSubQuery( pos( t ), query );
     }
 }
 

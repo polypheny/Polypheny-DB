@@ -84,6 +84,8 @@ public class CypherFunctionInvocation extends CypherExpression {
                 throw new CypherSyntaxException( arityError );
             }
             this.op = scalarFunction == CypherScalarFunction.RAND ? OperatorName.CYPHER_RAND : OperatorName.CYPHER_SCALAR_FUNCTION;
+        } else if ( namespace.isEmpty() && image.equalsIgnoreCase( "rels" ) ) {
+            this.op = OperatorName.CYPHER_RELATIONSHIPS;
         } else if ( operatorNames.contains( image.toUpperCase( Locale.ROOT ) ) ) {
             this.op = OperatorName.valueOf( image.toUpperCase( Locale.ROOT ) );
         } else if ( operatorNames.contains( "CYPHER_" + image.toUpperCase( Locale.ROOT ) ) ) {

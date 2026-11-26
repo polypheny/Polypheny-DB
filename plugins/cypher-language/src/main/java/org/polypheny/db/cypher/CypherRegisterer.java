@@ -51,6 +51,7 @@ public class CypherRegisterer {
         register( OperatorName.CYPHER_NODES, new LangFunctionOperator( OperatorName.CYPHER_NODES.name(), Kind.CYPHER_FUNCTION, PolyType.ARRAY ) );
         register( OperatorName.CYPHER_RELATIONSHIPS, new LangFunctionOperator( OperatorName.CYPHER_RELATIONSHIPS.name(), Kind.CYPHER_FUNCTION, PolyType.ARRAY ) );
         register( OperatorName.CYPHER_SHORTEST_PATH_VALUE, new LangFunctionOperator( OperatorName.CYPHER_SHORTEST_PATH_VALUE.name(), Kind.CYPHER_FUNCTION, PolyType.PATH ) );
+        register( OperatorName.CYPHER_ALL_SHORTEST_PATHS_VALUE, new LangFunctionOperator( OperatorName.CYPHER_ALL_SHORTEST_PATHS_VALUE.name(), Kind.CYPHER_FUNCTION, PolyType.ARRAY ) );
         register( OperatorName.CYPHER_LENGTH, new LangFunctionOperator( OperatorName.CYPHER_LENGTH.name(), Kind.CYPHER_FUNCTION, PolyType.BIGINT ) );
         register( OperatorName.CYPHER_SIZE, new LangFunctionOperator( OperatorName.CYPHER_SIZE.name(), Kind.CYPHER_FUNCTION, PolyType.BIGINT ) );
         register( OperatorName.CYPHER_SCALAR_FUNCTION, new LangFunctionOperator( OperatorName.CYPHER_SCALAR_FUNCTION.name(), Kind.CYPHER_FUNCTION, PolyType.ANY ) );
@@ -121,6 +122,7 @@ public class CypherRegisterer {
 
         register( OperatorName.CYPHER_PATH_MATCH, new LangFunctionOperator( OperatorName.CYPHER_PATH_MATCH.name(), Kind.CYPHER_FUNCTION, CypherPathMatchUtil::inferReturnType, CypherPathMatchUtil::inferReturnType ) );
         register( OperatorName.CYPHER_SHORTEST_PATH_MATCH, new LangFunctionOperator( OperatorName.CYPHER_SHORTEST_PATH_MATCH.name(), Kind.CYPHER_FUNCTION, CypherPathMatchUtil::inferReturnType, CypherPathMatchUtil::inferReturnType ) );
+        register( OperatorName.CYPHER_ALL_SHORTEST_PATHS_MATCH, new LangFunctionOperator( OperatorName.CYPHER_ALL_SHORTEST_PATHS_MATCH.name(), Kind.CYPHER_FUNCTION, CypherPathMatchUtil::inferReturnType, CypherPathMatchUtil::inferReturnType ) );
 
         register( OperatorName.CYPHER_NODE_EXTRACT, new LangFunctionOperator( OperatorName.CYPHER_NODE_EXTRACT.name(), Kind.CYPHER_FUNCTION, PolyType.NODE ) );
 

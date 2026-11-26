@@ -449,8 +449,8 @@ public interface CypherFactory {
         return new CypherMPAll( pos );
     }
 
-    static CypherExpression existsSubQuery( ParserPos pos, List<CypherClause> clauses ) {
-        return new CypherExistSubQuery( pos, clauses );
+    static CypherExpression existsSubQuery( ParserPos pos, CypherQuery query ) {
+        return new CypherExistSubQuery( pos, query );
     }
 
     static CypherExpression listLiteral( ParserPos pos, List<CypherExpression> list ) {
