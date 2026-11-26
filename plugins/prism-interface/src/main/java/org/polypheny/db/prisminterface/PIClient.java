@@ -107,9 +107,16 @@ public class PIClient {
     }
 
 
-    @Nullable Transaction observedManualTransaction() {
-        return prismMinorVersion >= 5 && transactionBoundaryEvents && !isAutoCommit && !hasNoTransaction()
-                ? currentTransaction : null;
+    List<Transaction> observeTransactionBoundaries( boolean explicitCommit ) {
+        if ( prismMinorVersion < 5 || !transactionBoundaryEvents ) {
+            return List.of();
+        }
+        if ( !isAutoCommit ) {
+            return hasNoTransaction() ? List.of() : List.of( currentTransaction );
+        }
+        // Individual auto-commit requests can finish without affecting other open results.
+        // An explicit COMMIT finishes every transaction owned by this connection.
+        return explicitCommit ? connectionTransactions().stream().filter( Transaction::isActive ).toList() : List.of();
     }
 
 
@@ -200,14 +207,18 @@ public class PIClient {
     }
 
 
-    private void finishAllTransactions( Consumer<Transaction> finish ) {
+    private List<Transaction> connectionTransactions() {
         List<Transaction> transactions = new ArrayList<>( isolatedReadTransactions );
         if ( currentTransaction != null ) {
             transactions.add( 0, currentTransaction );
         }
+        return transactions;
+    }
 
+
+    private void finishAllTransactions( Consumer<Transaction> finish ) {
         RuntimeException failure = null;
-        for ( Transaction transaction : transactions ) {
+        for ( Transaction transaction : connectionTransactions() ) {
             try {
                 finishTransaction( transaction, finish );
             } catch ( RuntimeException e ) {

@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Timeout;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.prisminterface.CypherTest.PrismConnection;
 import org.polypheny.prism.ClientInfoProperties;
 import org.polypheny.prism.CloseResultRequest;
@@ -148,9 +149,7 @@ class PrismAutocommitTest {
             expect( withoutOptIn, Response.TypeCase.STATEMENT_RESPONSE );
             assertEquals( List.of( Response.TypeCase.STATEMENT_RESPONSE ), intermediateTypes );
 
-            expect( connection.send( Request.newBuilder().setSetClientInfoPropertiesRequest( ClientInfoProperties.newBuilder()
-                            .putProperties( PIClientInfoProperties.TRANSACTION_BOUNDARY_EVENTS, "true" ) ) ),
-                    Response.TypeCase.SET_CLIENT_INFO_PROPERTIES_RESPONSE );
+            enableTransactionBoundaryEvents( connection );
             int cursor = openCursor( connection, SQL_NAMESPACE, "sql", SQL_PAGE_QUERY );
             intermediateTypes.clear();
             Response committed = connection.send( statementRequest( SQL_NAMESPACE, "sql", "DROP TABLE IF EXISTS " + table ),
@@ -174,16 +173,77 @@ class PrismAutocommitTest {
     @Test
     void explicitCommitInAutocommitClosesPagedResultsBeforeChangingMode() throws IOException {
         try ( PrismConnection connection = new PrismConnection( true, 5 ) ) {
+            enableTransactionBoundaryEvents( connection );
             int first = openCursor( connection, SQL_NAMESPACE, "sql", SQL_PAGE_QUERY );
             int second = openCursor( connection, SQL_NAMESPACE, "sql", SQL_PAGE_QUERY );
-            expect( connection.send( Request.newBuilder().setCommitRequest( CommitRequest.getDefaultInstance() ) ),
+            List<Response.TypeCase> intermediateTypes = new ArrayList<>();
+            expect( connection.send( statementRequest( SQL_NAMESPACE, "sql", SQL_PAGE_QUERY ),
+                            response -> intermediateTypes.add( response.getTypeCase() ) ), Response.TypeCase.STATEMENT_RESPONSE );
+            assertEquals( List.of( Response.TypeCase.STATEMENT_RESPONSE ), intermediateTypes );
+            assertLastSqlPage( connection, first );
+            int third = openCursor( connection, SQL_NAMESPACE, "sql", SQL_PAGE_QUERY );
+
+            intermediateTypes.clear();
+            expect( connection.send( Request.newBuilder().setCommitRequest( CommitRequest.getDefaultInstance() ),
+                            response -> intermediateTypes.add( response.getTypeCase() ) ),
                     Response.TypeCase.COMMIT_RESPONSE );
+            assertTrue( intermediateTypes.isEmpty() );
             expect( connection.send( Request.newBuilder().setConnectionPropertiesUpdateRequest( ConnectionPropertiesUpdateRequest.newBuilder()
                             .setConnectionProperties( ConnectionProperties.newBuilder().setIsAutoCommit( false ) ) ) ),
                     Response.TypeCase.CONNECTION_PROPERTIES_UPDATE_RESPONSE );
-            expect( connection.fetchResponse( first, 1 ), Response.TypeCase.ERROR_RESPONSE );
             expect( connection.fetchResponse( second, 1 ), Response.TypeCase.ERROR_RESPONSE );
+            expect( connection.fetchResponse( third, 1 ), Response.TypeCase.ERROR_RESPONSE );
         }
+    }
+
+
+    @Test
+    void failedExplicitCommitInAutocommitReportsRollbackToOptedInClients() throws IOException {
+        String parent = "prismautocommitparent";
+        String child = "prismautocommitchild";
+        boolean enforced = RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.getBoolean();
+        RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.setBoolean( true );
+        try ( PrismConnection connection = new PrismConnection( true, 5 ) ) {
+            createSqlFixture( connection, parent );
+            connection.execute( SQL_NAMESPACE, "sql", "CREATE TABLE " + child + " (id INTEGER PRIMARY KEY, parent_id INTEGER NOT NULL)", -1 );
+            connection.execute( SQL_NAMESPACE, "sql", "ALTER TABLE " + child + " ADD CONSTRAINT fk_autocommit_parent FOREIGN KEY (parent_id) REFERENCES "
+                    + parent + " (id) ON UPDATE RESTRICT ON DELETE RESTRICT", -1 );
+
+            assertFailedExplicitCommit( child, 5, true, List.of( Response.TypeCase.ROLLBACK_RESPONSE ) );
+            assertFailedExplicitCommit( child, 5, false, List.of() );
+            assertFailedExplicitCommit( child, 4, true, List.of() );
+            assertPersistedSqlRows( child, 0 );
+        } finally {
+            try {
+                dropSqlFixtures( child, parent );
+            } finally {
+                RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.setBoolean( enforced );
+            }
+        }
+    }
+
+
+    private static void assertFailedExplicitCommit( String table, int clientMinor, boolean optedIn, List<Response.TypeCase> expectedEvents ) throws IOException {
+        try ( PrismConnection connection = new PrismConnection( true, clientMinor ) ) {
+            if ( optedIn ) {
+                enableTransactionBoundaryEvents( connection );
+            }
+            int cursor = openCursor( connection, SQL_NAMESPACE, "sql", "INSERT INTO " + table + " VALUES (8, 999), (9, 999) RETURNING id" );
+            List<Response.TypeCase> intermediateTypes = new ArrayList<>();
+            Response failure = connection.send( Request.newBuilder().setCommitRequest( CommitRequest.getDefaultInstance() ),
+                    response -> intermediateTypes.add( response.getTypeCase() ) );
+            expect( failure, Response.TypeCase.ERROR_RESPONSE );
+            assertEquals( "23503", failure.getErrorResponse().getDetails().getState() );
+            assertEquals( expectedEvents, intermediateTypes );
+            expect( connection.fetchResponse( cursor, 1 ), Response.TypeCase.ERROR_RESPONSE );
+        }
+    }
+
+
+    private static void enableTransactionBoundaryEvents( PrismConnection connection ) throws IOException {
+        expect( connection.send( Request.newBuilder().setSetClientInfoPropertiesRequest( ClientInfoProperties.newBuilder()
+                        .putProperties( PIClientInfoProperties.TRANSACTION_BOUNDARY_EVENTS, "true" ) ) ),
+                Response.TypeCase.SET_CLIENT_INFO_PROPERTIES_RESPONSE );
     }
 
 

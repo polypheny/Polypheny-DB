@@ -62,12 +62,15 @@ import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexUtil;
+import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Statement.GeneratedKeySelection;
 import org.polypheny.db.transaction.Statement.InsertReturning;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
+import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.util.Pair;
 
 
@@ -189,8 +192,13 @@ final class IdentityDmlMaterializer {
                     || identities.stream().anyMatch( identity -> row.get( identity.flagIndex() ).asBoolean().value )) ) {
                 List<PolyValue> captured = new ArrayList<>( row.subList( 0, targetFields.size() ) );
                 for ( AlgDataTypeField field : targetFields ) {
-                    if ( field.getType().getPolyType() == PolyType.DECIMAL ) {
-                        int index = field.getIndex();
+                    int index = field.getIndex();
+                    PolyType type = field.getType().getPolyType();
+                    PolyValue input = row.get( index );
+                    // Integer-width conversion is exact here. Fractional inputs still need to be
+                    // identified by their original type so the projection can read the stored value.
+                    if ( type == PolyType.DECIMAL || ((type == PolyType.INTEGER || type == PolyType.BIGINT)
+                            && input != null && (input.isInteger() || input.isLong())) ) {
                         captured.set( index, inserted.get( index ).getValue() );
                     }
                 }
@@ -235,6 +243,7 @@ final class IdentityDmlMaterializer {
             case DECIMAL -> PolyTypeUtil.hasScale( type ) && value.asNumber().bigDecimalValue().scale() != type.getScale();
             case TINYINT, SMALLINT, INTEGER, BIGINT -> switch ( value.getType() ) {
                 case DECIMAL -> true;
+                case BIGINT -> type.getPolyType() == PolyType.TINYINT || type.getPolyType() == PolyType.SMALLINT;
                 case REAL, FLOAT, DOUBLE -> Double.isFinite( value.asNumber().doubleValue() );
                 default -> false;
             };
@@ -584,6 +593,16 @@ final class IdentityDmlMaterializer {
                 throw new GenericRuntimeException( "Column '%s' does not allow NULL.", field.getName() );
             }
             return new RexLiteral( null, type, type.getPolyType(), true );
+        }
+        if ( type.getPolyType() == PolyType.DECIMAL ) {
+            return new RexLiteral( PolyBigDecimal.convert( value ), type, PolyType.DECIMAL, true );
+        }
+        if ( type.getPolyType() == PolyType.INTEGER && value.isLong() ) {
+            try {
+                return new RexLiteral( PolyInteger.of( value.asLong().intValue() ), type, PolyType.INTEGER, true );
+            } catch ( ArithmeticException overflow ) {
+                throw new PolyphenyDbException( "Value " + value + " is out of range for INTEGER column '" + field.getName() + "'.", overflow, "22003" );
+            }
         }
         Pair<PolyValue, PolyType> converted = RexLiteral.convertType( value, type );
         return new RexLiteral( converted.left, type, converted.right, true );

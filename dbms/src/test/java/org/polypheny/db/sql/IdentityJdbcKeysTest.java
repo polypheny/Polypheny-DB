@@ -329,6 +329,90 @@ class IdentityJdbcKeysTest {
     }
 
 
+    @ParameterizedTest
+    @ValueSource(longs = { 2147483648L, -2147483649L })
+    void rejectsAProjectedInsertWithAnOutOfRangeLongAssignment( long overflow ) throws SQLException {
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
+            sql.executeUpdate( "CREATE TABLE projected_overflow (id INTEGER PRIMARY KEY, qty INTEGER)" );
+            try {
+                String insert = "INSERT INTO projected_overflow VALUES (1, 42), (2, ?)";
+                try ( PreparedStatement plain = jdbc.getConnection().prepareStatement( insert );
+                        PreparedStatement keys = jdbc.getConnection().prepareStatement( insert, new String[]{ "id" } );
+                        PreparedStatement returning = jdbc.getConnection().prepareStatement( insert + " RETURNING qty" ) ) {
+                    plain.setLong( 1, overflow );
+                    assertThrows( SQLException.class, plain::executeUpdate );
+                    keys.setLong( 1, overflow );
+                    assertEquals( "22003", assertThrows( SQLException.class, keys::executeUpdate ).getSQLState() );
+                    returning.setLong( 1, overflow );
+                    assertEquals( "22003", assertThrows( SQLException.class, returning::executeQuery ).getSQLState() );
+                }
+                try ( ResultSet stored = sql.executeQuery( "SELECT id FROM projected_overflow" ) ) {
+                    assertFalse( stored.next() );
+                }
+            } finally {
+                sql.executeUpdate( "DROP TABLE projected_overflow" );
+            }
+        }
+    }
+
+
+    @Test
+    void preparedProjectionsRespectDeclaredIntegerWidthsAndExactDecimalValues() throws SQLException {
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
+            sql.executeUpdate( "CREATE TABLE projected_numeric_types (id INTEGER PRIMARY KEY, narrow_num INTEGER, small_num SMALLINT, "
+                    + "wide_num BIGINT, scaled_num DECIMAL(12,4), exact_num DECIMAL(20,0))" );
+            try {
+                String insert = "INSERT INTO projected_numeric_types VALUES (?, ?, ?, ?, ?, ?)";
+                String fields = "narrow_num, small_num, wide_num, scaled_num, exact_num";
+                List<Object> expected = List.of( Integer.MIN_VALUE, 42, 42L, new BigDecimal( "42.0000" ), new BigDecimal( "9007199254740993" ) );
+                try ( PreparedStatement plain = jdbc.getConnection().prepareStatement( insert );
+                        PreparedStatement keys = jdbc.getConnection().prepareStatement( insert, fields.split( ", " ) );
+                        PreparedStatement returning = jdbc.getConnection().prepareStatement( insert + " RETURNING " + fields ) ) {
+                    bindNumericWidths( plain, 1 );
+                    assertEquals( 1, plain.executeUpdate() );
+                    bindNumericWidths( keys, 2 );
+                    assertEquals( 1, keys.executeUpdate() );
+                    try ( ResultSet rows = keys.getGeneratedKeys() ) {
+                        assertNumericWidths( rows, expected );
+                    }
+                    bindNumericWidths( returning, 3 );
+                    try ( ResultSet rows = returning.executeQuery() ) {
+                        assertNumericWidths( rows, expected );
+                    }
+                }
+                for ( int id = 1; id <= 3; id++ ) {
+                    try ( ResultSet stored = sql.executeQuery( "SELECT " + fields + " FROM projected_numeric_types WHERE id = " + id ) ) {
+                        assertNumericWidths( stored, expected );
+                    }
+                }
+            } finally {
+                sql.executeUpdate( "DROP TABLE projected_numeric_types" );
+            }
+        }
+    }
+
+
+    private static void bindNumericWidths( PreparedStatement insert, int id ) throws SQLException {
+        insert.setInt( 1, id );
+        insert.setLong( 2, Integer.MIN_VALUE );
+        insert.setLong( 3, 42L );
+        insert.setInt( 4, 42 );
+        insert.setInt( 5, 42 );
+        insert.setLong( 6, 9_007_199_254_740_993L );
+    }
+
+
+    private static void assertNumericWidths( ResultSet rows, List<Object> expected ) throws SQLException {
+        assertTrue( rows.next() );
+        for ( int i = 0; i < expected.size(); i++ ) {
+            Object value = expected.get( i );
+            assertEquals( value, rows.getObject( i + 1 ) );
+            assertEquals( value, rows.getObject( i + 1, value.getClass() ) );
+        }
+        assertFalse( rows.next() );
+    }
+
+
     @Test
     void readsBackIntegralProjectionsWithAFractionalPrimaryKey() throws SQLException {
         try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {

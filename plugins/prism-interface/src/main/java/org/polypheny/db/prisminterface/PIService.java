@@ -175,7 +175,7 @@ class PIService {
 
     private Response handleRequest( Request req ) throws IOException {
         PIClient client = uuid == null ? null : clientManager.getClient( uuid );
-        Transaction observed = client == null ? null : client.observedManualTransaction();
+        List<Transaction> observed = client == null ? List.of() : client.observeTransactionBoundaries( req.getTypeCase() == TypeCase.COMMIT_REQUEST );
         Response r;
         try {
             r = handleMessage( req, client );
@@ -185,12 +185,12 @@ class PIService {
             }
             r = createErrorResponse( req.getId(), t );
         }
-        if ( observed != null && !observed.isActive() && !r.hasCommitResponse() && !r.hasRollbackResponse()
+        if ( observed.stream().anyMatch( transaction -> !transaction.isActive() ) && !r.hasCommitResponse() && !r.hasRollbackResponse()
                 && req.getTypeCase() != TypeCase.DISCONNECT_REQUEST ) {
             // An explicit success acknowledges the boundary itself. For every other terminal reply,
             // report the ended transaction first so the client can invalidate local cursors.
             Response.Builder boundary = Response.newBuilder().setId( req.getId() );
-            if ( observed.isRolledBack() ) {
+            if ( observed.stream().anyMatch( Transaction::isRolledBack ) ) {
                 boundary.setRollbackResponse( RollbackResponse.getDefaultInstance() );
             } else {
                 boundary.setCommitResponse( CommitResponse.getDefaultInstance() );
