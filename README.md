@@ -29,7 +29,7 @@ The restart sets the next generated value. Entity Settings shows and changes the
 
 ### Build and verify changes across repositories
 
-The default build uses Prism API 2.5 and JDBC Driver 3.3 from Maven Central. JDBC Driver 3.3 must be available on Maven Central for the standard DB build. Publish the matching UI bundle before releasing the DB.
+The default build uses Prism API 2.5 and JDBC Driver 3.3 from Maven Central. GitHub Actions builds the pinned JDBC driver into an isolated local Maven repository for each test job. Publish the matching UI bundle before releasing the DB.
 
 Before those releases, use an empty Maven directory and build the artifacts from the corresponding source checkouts. Run each command from the named checkout with the same absolute Maven directory.
 

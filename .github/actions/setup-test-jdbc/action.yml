@@ -1,0 +1,56 @@
+name: Set up JDBC test dependency
+description: Publish the matching JDBC driver to an isolated local Maven repository
+
+inputs:
+  jdbc-ref:
+    description: JDBC source ref to build
+    default: ''
+  run-tests:
+    description: Run the JDBC tests used by Identity integration before publishing
+    default: 'false'
+outputs:
+  maven-dir:
+    description: Path to the local Maven repository containing the JDBC driver
+    value: ${{ steps.publish.outputs.maven-dir }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v5
+      env:
+        # Keep the extensionless POSIX wrapper executable in Git Bash on Windows.
+        GIT_CONFIG_COUNT: '1'
+        GIT_CONFIG_KEY_0: core.autocrlf
+        GIT_CONFIG_VALUE_0: 'false'
+      with:
+        repository: polypheny/Polypheny-JDBC-Driver
+        ref: ${{ inputs.jdbc-ref || 'beaecdcb59393871e3b2d5eca4ddd01734324715' }}
+        path: jdbc-ci
+        persist-credentials: false
+
+    - id: publish
+      shell: bash
+      working-directory: jdbc-ci
+      env:
+        RUN_JDBC_TESTS: ${{ inputs.run-tests }}
+      run: |
+        maven_root="$RUNNER_TEMP"
+        if [[ "$RUNNER_OS" == Windows ]]; then
+          maven_root="$(cygpath -u "$maven_root")"
+          export JAVA_HOME="$(cygpath -u "$JAVA_HOME")"
+        fi
+        maven_dir="$(mktemp -d "$maven_root/polypheny-jdbc-maven.XXXXXX")"
+        if [[ "$RUNNER_OS" == Windows ]]; then
+          maven_dir="$(cygpath -m "$maven_dir")"
+        fi
+
+        gradle_tasks=(publishToMavenLocal)
+        if [[ "$RUN_JDBC_TESTS" == true ]]; then
+          gradle_tasks=(
+            -PskipGraphIntegration test --tests '*GeneratedKeys*' --tests '*DocumentMetadataTest' --tests '*MetaScrollerTest'
+            --tests '*RpcServiceErrorTest' --tests '*Batch*Test' --tests '*StatementDeadlineTest'
+            --tests '*CallbackQueueTest' --tests '*PolyConnectionTest' publishToMavenLocal
+          )
+        fi
+        ./gradlew "-Dmaven.repo.local=$maven_dir" -PdisableToolchain "${gradle_tasks[@]}"
+        echo "maven-dir=$maven_dir" >> "$GITHUB_OUTPUT"

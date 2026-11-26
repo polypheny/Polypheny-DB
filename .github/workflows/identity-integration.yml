@@ -33,12 +33,6 @@ jobs:
           path: prism
       - uses: actions/checkout@v4
         with:
-          repository: polypheny/Polypheny-JDBC-Driver
-          # Polypheny-JDBC-Driver #24, including the generated-key client.
-          ref: ${{ inputs.jdbc_ref || vars.IDENTITY_JDBC_REF || 'beaecdcb59393871e3b2d5eca4ddd01734324715' }}
-          path: jdbc
-      - uses: actions/checkout@v4
-        with:
           repository: polypheny/Polypheny-UI
           # Polypheny-UI #114, including the Entity Settings controls and tests.
           ref: ${{ inputs.ui_ref || vars.IDENTITY_UI_REF || '45b6385da2b40eeb64d865e3eacd89920a157545' }}
@@ -57,9 +51,7 @@ jobs:
 
       - name: Prepare isolated repositories
         run: |
-          maven_dir="$(mktemp -d "$RUNNER_TEMP/identity-maven.XXXXXX")"
           mkdir -p "$RUNNER_TEMP/identity-db-home" "$RUNNER_TEMP/identity-prism-home" "$RUNNER_TEMP/identity-sql-home" "$RUNNER_TEMP/identity-workflow-home"
-          echo "MAVEN_DIR=$maven_dir" >> "$GITHUB_ENV"
           echo "UI_ARCHIVE=$RUNNER_TEMP/polypheny-ui.zip" >> "$GITHUB_ENV"
 
       - name: Test the released Prism protocol
@@ -69,12 +61,11 @@ jobs:
           python -m unittest discover -s tests -v
 
       - name: Test and package JDBC from source
-        working-directory: jdbc
-        run: |
-          ./gradlew "-Dmaven.repo.local=$MAVEN_DIR" -PdisableToolchain -PskipGraphIntegration \
-            test --tests '*GeneratedKeys*' --tests '*DocumentMetadataTest' --tests '*MetaScrollerTest' \
-            --tests '*RpcServiceErrorTest' --tests '*Batch*Test' --tests '*StatementDeadlineTest' \
-            --tests '*CallbackQueueTest' --tests '*PolyConnectionTest' publishToMavenLocal
+        id: jdbc
+        uses: ./db/.github/actions/setup-test-jdbc
+        with:
+          jdbc-ref: ${{ inputs.jdbc_ref || vars.IDENTITY_JDBC_REF }}
+          run-tests: 'true'
 
       - name: Build and test the UI
         working-directory: ui
@@ -87,6 +78,8 @@ jobs:
 
       - name: Build DB and run identity integration tests
         working-directory: db
+        env:
+          MAVEN_DIR: ${{ steps.jdbc.outputs.maven-dir }}
         run: |
           POLYPHENY_HOME="$RUNNER_TEMP/identity-db-home" \
             ./gradlew "-Dmaven.repo.local=$MAVEN_DIR" "-PpolyphenyUiZip=$UI_ARCHIVE" \
