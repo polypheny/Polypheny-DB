@@ -223,7 +223,9 @@ public class Neo4jPlugin extends PolyPlugin {
 
             this.user = "neo4j";
             if ( !settings.containsKey( "password" ) ) {
-                this.pass = PasswordGenerator.generatePassword();
+                String generatedPassword = PasswordGenerator.generatePassword();
+                // The Docker entrypoint passes the password as a CLI argument, which cannot start with '-'.
+                this.pass = deployMode == DeployMode.DOCKER ? "n" + generatedPassword : generatedPassword;
                 settings.put( "password", this.pass );
                 updateSettings( settings );
             } else {
