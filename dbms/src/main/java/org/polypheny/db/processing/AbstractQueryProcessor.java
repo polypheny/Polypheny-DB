@@ -70,6 +70,8 @@ import org.polypheny.db.algebra.enumerable.EnumerableAlg.Prefer;
 import org.polypheny.db.algebra.enumerable.EnumerableCalc;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.enumerable.EnumerableInterpretable;
+import org.polypheny.db.algebra.enumerable.EnumerableStreamer;
+import org.polypheny.db.algebra.enumerable.common.EnumerableModifyCollect;
 import org.polypheny.db.algebra.logical.common.LogicalBatchIterator;
 import org.polypheny.db.algebra.logical.common.LogicalConditionalExecute;
 import org.polypheny.db.algebra.logical.common.LogicalConstraintEnforcer;
@@ -79,6 +81,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalModifyCollect;
 import org.polypheny.db.algebra.logical.relational.LogicalRelModify;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelScan;
+import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.algebra.metadata.AlgColumnOrigin;
 import org.polypheny.db.algebra.polyalg.PolyAlgMetadata.GlobalStats;
@@ -96,6 +99,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.functions.Functions;
 import org.polypheny.db.information.InformationPolyAlg.PlanType;
 import org.polypheny.db.interpreter.BindableConvention;
 import org.polypheny.db.interpreter.Interpreters;
@@ -125,7 +129,9 @@ import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexSubQuery;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.routing.DmlRouter;
 import org.polypheny.db.routing.ExecutionTimeMonitor;
@@ -613,15 +619,30 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
         Snapshot snapshot = statement.getTransaction().getSnapshot();
         List<AllocationPlacement> placements = snapshot.alloc().getPlacementsFromLogical( table.id );
-        if ( placements.size() != 1 || snapshot.alloc().getPartitionProperty( table.id ).orElseThrow().isPartitioned ) {
+        if ( snapshot.alloc().getPartitionProperty( table.id ).orElseThrow().isPartitioned
+                || placements.stream().anyMatch( placement -> snapshot.alloc().getColumns( placement.id ).size() != targetFields.size() ) ) {
             return Optional.empty();
         }
-        AllocationPlacement placement = placements.get( 0 );
-        Optional<DataStore<?>> store = AdapterManager.getInstance().getStore( placement.adapterId );
-        if ( store.isEmpty() || !store.get().supportsReadInsertSource()
-                || snapshot.alloc().getColumns( placement.id ).size() != targetFields.size() ) {
+        List<DataStore<?>> stores = placements.stream()
+                .map( placement -> AdapterManager.getInstance().getStore( placement.adapterId ) )
+                .flatMap( Optional::stream )
+                .filter( DataStore::supportsReadInsertSource )
+                .toList();
+        if ( stores.isEmpty() ) {
             return Optional.empty();
         }
+        List<Long> keyIds = snapshot.rel().getPrimaryKey( table.primaryKey ).orElseThrow().fieldIds;
+        Optional<Set<Integer>> volatileColumns = placements.size() > 1
+                ? volatileInsertColumns( insert.getInput() ) : Optional.of( Set.of() );
+        if ( volatileColumns.isEmpty() || targetFields.stream().anyMatch(
+                field -> keyIds.contains( field.getId() ) && volatileColumns.get().contains( field.getIndex() ) ) ) {
+            return Optional.empty();
+        }
+        List<Integer> comparedFields = targetFields.stream()
+                .filter( field -> !volatileColumns.get().contains( field.getIndex() ) )
+                .filter( field -> keyIds.contains( field.getId() ) || PolyType.NUMERIC_TYPES.contains( field.getType().getPolyType() ) )
+                .map( AlgDataTypeField::getIndex )
+                .toList();
 
         // Plan the ordinary DML without preparing or running its write, index or constraint actions.
         // The enclosing INSERT already holds the necessary locks on both source and destination.
@@ -648,36 +669,164 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 planner.clearMemo();
                 insert.getCluster().invalidateMetadataQuery();
             }
-            Optional<AlgNode> source = store.get().readInsertSource( physicalInsert, targetFields );
-            if ( source.isEmpty() ) {
-                return Optional.empty();
-            }
-            Bindable<PolyValue[]> read = implement( AlgRoot.of( source.get(), Kind.SELECT ), parameterRowType ).getBindable();
-            List<Map<Long, PolyValue>> bindings = context.getParameterValues();
-            List<List<PolyValue>> rows = new ArrayList<>();
-            for ( Map<Long, PolyValue> binding : bindings.isEmpty() ? List.<Map<Long, PolyValue>>of( Map.of() ) : bindings ) {
-                QueryExecutionScope.remainingTimeoutMillis();
-                context.setParameterValues( List.of( binding ) );
-                try ( Enumerator<PolyValue[]> result = read.bind( context ).enumerator() ) {
-                    while ( result.moveNext() ) {
-                        QueryExecutionScope.remainingTimeoutMillis();
-                        rows.add( new ArrayList<>( Arrays.asList( result.current() ) ) );
+            List<AlgNode> writes = physicalInsert instanceof EnumerableModifyCollect ? physicalInsert.getInputs() : List.of( physicalInsert );
+            List<InsertSourceRead> reads = new ArrayList<>();
+            for ( AlgNode write : writes ) {
+                EnumerableStreamer streamer = write instanceof EnumerableStreamer streamingWrite ? streamingWrite : null;
+                AlgNode collector = streamer == null ? write : streamer.getCollector();
+                for ( DataStore<?> store : stores ) {
+                    Optional<AlgNode> source = store.readInsertSource( collector, targetFields );
+                    if ( source.isPresent() ) {
+                        Bindable<PolyValue[]> read = implement( AlgRoot.of( source.get(), Kind.SELECT ), parameterRowType ).getBindable();
+                        reads.add( streamer == null ? new InsertSourceRead( read, null, List.of() )
+                                : streamedInsertSource( read, streamer.getProvider(), parameterRowType ) );
+                        break;
                     }
-                } catch ( RuntimeException e ) {
-                    // The JDBC read wraps binding failures. Preserve the materialized
-                    // INSERT's numeric range error without changing ordinary JDBC binds.
-                    if ( ExceptionUtils.indexOfType( e, ArithmeticException.class ) >= 0
-                            || ExceptionUtils.indexOfType( e, NumberFormatException.class ) >= 0 ) {
-                        throw new PolyphenyDbException( "Numeric assignment is out of range.", e, "22003" );
-                    }
-                    throw e;
                 }
             }
+            if ( reads.isEmpty() ) {
+                return Optional.empty();
+            }
+
+            List<Map<Long, PolyValue>> bindings = context.getParameterValues();
+            List<List<PolyValue>> rows = new ArrayList<>();
+            boolean consistent = true;
+            for ( Map<Long, PolyValue> binding : bindings.isEmpty() ? List.<Map<Long, PolyValue>>of( Map.of() ) : bindings ) {
+                context.setParameterValues( List.of( binding ) );
+                List<List<PolyValue>> first = reads.get( 0 ).read( context );
+                rows.addAll( first );
+                if ( reads.size() > 1 ) {
+                    Map<List<PolyValue>, Long> expected = nativeInsertRowCounts( first, comparedFields );
+                    for ( InsertSourceRead read : reads.subList( 1, reads.size() ) ) {
+                        consistent &= expected.equals( nativeInsertRowCounts( read.read( context ), comparedFields ) );
+                    }
+                }
+            }
+            if ( !consistent ) {
+                throw new PolyphenyDbException( "Store placements disagree on the native INSERT source values.", null, "22000" );
+            }
+            // Remaining coordinator-driven writes receive the same complete, validated rows
+            // through the normal materialized INSERT, including index and constraint checks.
             return Optional.of( rows );
         } finally {
             context.setParameterTypes( originalTypes );
             context.setParameterValues( originalValues );
         }
+    }
+
+
+    private static Optional<Set<Integer>> volatileInsertColumns( AlgNode source ) {
+        if ( source instanceof LogicalRelProject project ) {
+            Optional<Set<Integer>> input = volatileInsertColumns( project.getInput() );
+            if ( input.isEmpty() ) {
+                return Optional.empty();
+            }
+            Set<Integer> columns = new HashSet<>();
+            for ( int i = 0; i < project.getProjects().size(); i++ ) {
+                RexNode expression = project.getProjects().get( i );
+                if ( isVolatileInsertExpression( expression ) || (!input.get().isEmpty()
+                        && AlgOptUtil.InputFinder.bits( expression ).asList().stream().anyMatch( input.get()::contains )) ) {
+                    columns.add( i );
+                }
+            }
+            return Optional.of( columns );
+        }
+        if ( source instanceof LogicalRelUnion union && union.all ) {
+            Set<Integer> columns = new HashSet<>();
+            for ( AlgNode input : union.getInputs() ) {
+                Optional<Set<Integer>> branch = volatileInsertColumns( input );
+                if ( branch.isEmpty() ) {
+                    return Optional.empty();
+                }
+                columns.addAll( branch.get() );
+            }
+            return Optional.of( columns );
+        }
+
+        // Preserve the existing single evaluation when volatility is outside a
+        // projection or UNION ALL and may influence which rows the source returns.
+        return hasVolatileInsertExpression( source ) ? Optional.empty() : Optional.of( Set.of() );
+    }
+
+
+    private static boolean hasVolatileInsertExpression( AlgNode source ) {
+        return source.getChildExps().stream().anyMatch( AbstractQueryProcessor::isVolatileInsertExpression )
+                || source.getInputs().stream().anyMatch( AbstractQueryProcessor::hasVolatileInsertExpression );
+    }
+
+
+    private static boolean isVolatileInsertExpression( RexNode expression ) {
+        if ( expression instanceof RexSubQuery subQuery && hasVolatileInsertExpression( subQuery.alg ) ) {
+            return true;
+        }
+        return expression instanceof RexCall call && (call.getOperator().isDynamicFunction() || !call.getOperator().isDeterministic()
+                || call.getOperands().stream().anyMatch( AbstractQueryProcessor::isVolatileInsertExpression ));
+    }
+
+
+    private InsertSourceRead streamedInsertSource( Bindable<PolyValue[]> collector, AlgNode provider, AlgDataType parameterRowType ) {
+        Bindable<PolyValue[]> read = implement( AlgRoot.of( provider, Kind.SELECT ), parameterRowType ).getBindable();
+        List<AlgDataType> types = Functions.streamerParameterTypes(
+                provider.getTupleType().getFields().stream().map( field -> field.getType().getPolyType() ).toList() );
+        return new InsertSourceRead( collector, read, types );
+    }
+
+
+    private record InsertSourceRead( Bindable<PolyValue[]> collector, Bindable<PolyValue[]> provider, List<AlgDataType> streamedTypes ) {
+
+        private List<List<PolyValue>> read( DataContext context ) {
+            if ( provider == null ) {
+                return readNativeInsertBinding( collector, context );
+            }
+
+            // The ordinary streamer first evaluates the complete provider, then binds
+            // its output to the collector. Here the collector is a read-only projection.
+            List<List<PolyValue>> providedRows = readNativeInsertBinding( provider, context );
+            Map<Long, AlgDataType> types = context.getParameterTypes();
+            List<Map<Long, PolyValue>> values = context.getParameterValues();
+            try {
+                List<List<PolyValue>> rows = new ArrayList<>();
+                for ( List<PolyValue> row : providedRows ) {
+                    QueryExecutionScope.remainingTimeoutMillis();
+                    context.resetParameterValues();
+                    for ( int i = 0; i < row.size(); i++ ) {
+                        context.addParameterValues( i, streamedTypes.get( i ), Collections.singletonList( row.get( i ) ) );
+                    }
+                    rows.addAll( readNativeInsertBinding( collector, context ) );
+                }
+                return rows;
+            } finally {
+                context.setParameterTypes( types );
+                context.setParameterValues( values );
+            }
+        }
+
+    }
+
+
+    private static List<List<PolyValue>> readNativeInsertBinding( Bindable<PolyValue[]> read, DataContext context ) {
+        QueryExecutionScope.remainingTimeoutMillis();
+        List<List<PolyValue>> rows = new ArrayList<>();
+        try ( Enumerator<PolyValue[]> result = read.bind( context ).enumerator() ) {
+            while ( result.moveNext() ) {
+                QueryExecutionScope.remainingTimeoutMillis();
+                rows.add( new ArrayList<>( Arrays.asList( result.current() ) ) );
+            }
+            return rows;
+        } catch ( RuntimeException e ) {
+            // The JDBC read wraps binding failures. Preserve the materialized
+            // INSERT's numeric range error without changing ordinary JDBC binds.
+            if ( ExceptionUtils.indexOfType( e, ArithmeticException.class ) >= 0
+                    || ExceptionUtils.indexOfType( e, NumberFormatException.class ) >= 0 ) {
+                throw new PolyphenyDbException( "Numeric assignment is out of range.", e, "22003" );
+            }
+            throw e;
+        }
+    }
+
+
+    private static Map<List<PolyValue>, Long> nativeInsertRowCounts( List<List<PolyValue>> rows, List<Integer> fields ) {
+        return rows.stream().collect( Collectors.groupingBy( row -> fields.stream().map( row::get ).toList(), Collectors.counting() ) );
     }
 
 

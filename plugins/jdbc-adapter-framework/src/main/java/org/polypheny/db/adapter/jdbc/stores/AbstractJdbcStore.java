@@ -471,7 +471,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
     @Override
     public Optional<AlgNode> readInsertSource( AlgNode physicalInsert, List<AlgDataTypeField> targetFields ) {
-        return JdbcToEnumerableConverter.readInsertSource( physicalInsert, targetFields );
+        return JdbcToEnumerableConverter.readInsertSource( adapterId, physicalInsert, targetFields );
     }
 
 

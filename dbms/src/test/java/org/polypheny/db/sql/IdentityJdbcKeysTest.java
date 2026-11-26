@@ -766,41 +766,128 @@ class IdentityJdbcKeysTest {
     }
 
 
-    @Test
-    void unionCoercionPrecedesNumericAssignmentForBothProjections() throws SQLException {
+    @ParameterizedTest
+    @ValueSource(strings = { "single", "replicated", "streamed" })
+    void unionCoercionPrecedesNumericAssignmentForBothProjections( String topology ) throws SQLException {
+        boolean replicated = !topology.equals( "single" );
+        boolean streamed = topology.equals( "streamed" );
         try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
-            sql.executeUpdate( "CREATE TABLE projected_union_numeric (id INTEGER PRIMARY KEY, qty BIGINT)" );
-            String insert = "INSERT INTO projected_union_numeric VALUES "
-                    + "(? + 1, CAST(? AS DOUBLE)), (? + 2, CAST(? AS DECIMAL(19,0)))";
-            try ( PreparedStatement plain = jdbc.getConnection().prepareStatement( insert );
-                    PreparedStatement keys = jdbc.getConnection().prepareStatement( insert, new String[]{ "qty" } );
-                    PreparedStatement returning = jdbc.getConnection().prepareStatement( insert + " RETURNING qty" ) ) {
-                BigDecimal max = BigDecimal.valueOf( Long.MAX_VALUE );
-                rejectUnionOverflow( plain, keys, returning, max );
-                try ( ResultSet stored = sql.executeQuery( "SELECT id FROM projected_union_numeric" ) ) {
-                    assertFalse( stored.next() );
+            String replica = "projected_union_replica";
+            if ( replicated ) {
+                TestHelper.addHsqldb( replica, sql );
+            }
+            try {
+                sql.executeUpdate( "CREATE TABLE projected_union_numeric (id INTEGER PRIMARY KEY, qty BIGINT) ON STORE hsqldb" );
+                try {
+                    if ( replicated ) {
+                        sql.executeUpdate( "ALTER TABLE projected_union_numeric ADD PLACEMENT ON STORE " + replica );
+                    }
+                    String insert = "INSERT INTO projected_union_numeric VALUES "
+                            + "(? + 1, CAST(? AS DOUBLE)), (? + 2, CAST(? AS DECIMAL(19,0)))";
+                    if ( streamed ) {
+                        sql.executeUpdate( "CREATE TABLE projected_union_source (id INTEGER PRIMARY KEY) ON STORE hsqldb" );
+                        try {
+                            sql.executeUpdate( "INSERT INTO projected_union_source VALUES (1), (2)" );
+                            String streamedInsert = "INSERT INTO projected_union_numeric SELECT id + ?, CAST(? AS DOUBLE) "
+                                    + "FROM projected_union_source WHERE id = 1 UNION ALL SELECT id + ?, CAST(? AS DECIMAL(19,0)) "
+                                    + "FROM projected_union_source WHERE id = 2";
+                            assertUnionNumericAssignments( jdbc.getConnection(), sql, streamedInsert, 4 );
+                        } finally {
+                            sql.executeUpdate( "DROP TABLE projected_union_source" );
+                        }
+                    } else {
+                        assertUnionNumericAssignments( jdbc.getConnection(), sql, insert, replicated ? 4 : 2 );
+                    }
+                } finally {
+                    sql.executeUpdate( "DROP TABLE projected_union_numeric" );
                 }
-
-                BigDecimal aboveDoublePrecision = new BigDecimal( "9007199254740993" );
-                bindMixedNumericRows( plain, 0, aboveDoublePrecision );
-                assertEquals( 2, plain.executeUpdate() );
-                List<Long> expected = readWideValues( sql, "SELECT qty FROM projected_union_numeric ORDER BY id" );
-                assertEquals( List.of( 1L, 9007199254740992L ), expected );
-                bindMixedNumericRows( keys, 10, aboveDoublePrecision );
-                assertEquals( 2, keys.executeUpdate() );
-                try ( ResultSet projected = keys.getGeneratedKeys() ) {
-                    assertEquals( expected, readWideValues( projected ) );
-                }
-                bindMixedNumericRows( returning, 20, aboveDoublePrecision );
-                try ( ResultSet projected = returning.executeQuery() ) {
-                    assertEquals( expected, readWideValues( projected ) );
-                }
-                assertEquals( expected, readWideValues( sql, "SELECT qty FROM projected_union_numeric WHERE id > 10 AND id < 20 ORDER BY id" ) );
-                assertEquals( expected, readWideValues( sql, "SELECT qty FROM projected_union_numeric WHERE id > 20 ORDER BY id" ) );
             } finally {
-                sql.executeUpdate( "DROP TABLE projected_union_numeric" );
+                if ( replicated ) {
+                    TestHelper.dropAdapter( replica, sql );
+                }
             }
         }
+    }
+
+
+    private static void assertUnionNumericAssignments( Connection connection, Statement sql, String insert, int ordinaryUpdateCount ) throws SQLException {
+        try ( PreparedStatement plain = connection.prepareStatement( insert );
+                PreparedStatement keys = connection.prepareStatement( insert, new String[]{ "qty" } );
+                PreparedStatement returning = connection.prepareStatement( insert + " RETURNING qty" ) ) {
+            BigDecimal max = BigDecimal.valueOf( Long.MAX_VALUE );
+            rejectUnionOverflow( plain, keys, returning, max );
+            try ( ResultSet stored = sql.executeQuery( "SELECT id FROM projected_union_numeric" ) ) {
+                assertFalse( stored.next() );
+            }
+
+            BigDecimal aboveDoublePrecision = new BigDecimal( "9007199254740993" );
+            bindMixedNumericRows( plain, 0, aboveDoublePrecision );
+            assertEquals( ordinaryUpdateCount, plain.executeUpdate() );
+            List<Long> expected = readWideValues( sql, "SELECT qty FROM projected_union_numeric ORDER BY id" );
+            assertEquals( List.of( 1L, 9007199254740992L ), expected );
+            bindMixedNumericRows( keys, 10, aboveDoublePrecision );
+            assertEquals( 2, keys.executeUpdate() );
+            try ( ResultSet projected = keys.getGeneratedKeys() ) {
+                assertEquals( expected, readWideValues( projected ) );
+            }
+            bindMixedNumericRows( returning, 20, aboveDoublePrecision );
+            try ( ResultSet projected = returning.executeQuery() ) {
+                assertEquals( expected, readWideValues( projected ) );
+            }
+            assertEquals( expected, readWideValues( sql, "SELECT qty FROM projected_union_numeric WHERE id > 10 AND id < 20 ORDER BY id" ) );
+            assertEquals( expected, readWideValues( sql, "SELECT qty FROM projected_union_numeric WHERE id > 20 ORDER BY id" ) );
+        }
+    }
+
+
+    @Test
+    void projectedReplicaInsertsPreserveVolatileValues() throws SQLException {
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
+            String replica = "projected_volatile_replica";
+            TestHelper.addHsqldb( replica, sql );
+            try {
+                sql.executeUpdate( "CREATE TABLE projected_volatile (id INTEGER PRIMARY KEY, qty BIGINT, sample DOUBLE) ON STORE hsqldb" );
+                try {
+                    sql.executeUpdate( "ALTER TABLE projected_volatile ADD PLACEMENT ON STORE " + replica );
+                    String insert = "INSERT INTO projected_volatile VALUES (? + 1, CAST(? AS DOUBLE), RAND()), "
+                            + "(? + 2, CAST(? AS DECIMAL(19,0)), RAND())";
+                    try ( PreparedStatement keys = jdbc.getConnection().prepareStatement( insert, new String[]{ "qty", "sample" } );
+                            PreparedStatement returning = jdbc.getConnection().prepareStatement( insert + " RETURNING qty, sample" ) ) {
+                        bindMixedNumericRows( keys, 1, BigDecimal.valueOf( Long.MAX_VALUE ) );
+                        assertEquals( "22003", assertThrows( SQLException.class, keys::executeUpdate ).getSQLState() );
+                        bindMixedNumericRows( keys, 1, BigDecimal.valueOf( 42 ) );
+                        assertEquals( 2, keys.executeUpdate() );
+                        try ( ResultSet projected = keys.getGeneratedKeys() ) {
+                            assertVolatileProjection( projected );
+                        }
+                        bindMixedNumericRows( returning, 11, BigDecimal.valueOf( 42 ) );
+                        try ( ResultSet projected = returning.executeQuery() ) {
+                            assertVolatileProjection( projected );
+                        }
+                        try ( ResultSet stored = sql.executeQuery( "SELECT COUNT(*) FROM projected_volatile" ) ) {
+                            assertTrue( stored.next() );
+                            assertEquals( 4, stored.getInt( 1 ) );
+                        }
+                    }
+                } finally {
+                    sql.executeUpdate( "DROP TABLE projected_volatile" );
+                }
+            } finally {
+                TestHelper.dropAdapter( replica, sql );
+            }
+        }
+    }
+
+
+    private static void assertVolatileProjection( ResultSet projected ) throws SQLException {
+        for ( long expected : new long[]{ 1, 42 } ) {
+            assertTrue( projected.next() );
+            assertEquals( expected, projected.getLong( 1 ) );
+            double sample = projected.getDouble( 2 );
+            assertFalse( projected.wasNull() );
+            assertTrue( sample >= 0 && sample < 1 );
+        }
+        assertFalse( projected.next() );
     }
 
 

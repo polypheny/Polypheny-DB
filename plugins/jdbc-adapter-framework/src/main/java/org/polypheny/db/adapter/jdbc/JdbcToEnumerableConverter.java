@@ -171,9 +171,10 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
     }
 
 
-    public static Optional<AlgNode> readInsertSource( AlgNode physicalInsert, List<AlgDataTypeField> targetFields ) {
+    public static Optional<AlgNode> readInsertSource( long adapterId, AlgNode physicalInsert, List<AlgDataTypeField> targetFields ) {
         if ( physicalInsert instanceof JdbcToEnumerableConverter converter && converter.getInput() instanceof JdbcTableModify insert
-                && insert.isInsert() && insert.getInput().getTupleType().getFieldCount() == targetFields.size() ) {
+                && insert.isInsert() && insert.getEntity().adapterId == adapterId
+                && insert.getInput().getTupleType().getFieldCount() == targetFields.size() ) {
             return Optional.of( new JdbcToEnumerableConverter( converter.getCluster(), converter.getTraitSet(), insert.getInput(), targetFields ) );
         }
         return Optional.empty();
