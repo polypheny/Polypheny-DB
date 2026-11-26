@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,7 @@ public class SqlAlterMaterializedViewAddIndex extends SqlAlterMaterializedView {
     SqlNodeList columnList;
     boolean unique;
     SqlIdentifier storeName;
+    Map<String, String> options;
 
 
     public SqlAlterMaterializedViewAddIndex(
@@ -62,7 +63,8 @@ public class SqlAlterMaterializedViewAddIndex extends SqlAlterMaterializedView {
             boolean unique,
             SqlIdentifier indexMethod,
             SqlIdentifier indexName,
-            SqlIdentifier storeName ) {
+            SqlIdentifier storeName,
+            Map<String, String> options ) {
         super( pos );
         this.table = Objects.requireNonNull( table );
         this.columnList = Objects.requireNonNull( columnList );
@@ -70,6 +72,7 @@ public class SqlAlterMaterializedViewAddIndex extends SqlAlterMaterializedView {
         this.indexName = indexName;
         this.indexMethod = indexMethod;
         this.storeName = storeName;
+        this.options = options;
     }
 
 
@@ -107,6 +110,22 @@ public class SqlAlterMaterializedViewAddIndex extends SqlAlterMaterializedView {
             writer.keyword( "STORE" );
             storeName.unparse( writer, leftPrec, rightPrec );
         }
+        if ( options != null && !options.isEmpty() ) {
+            writer.keyword( "WITH" );
+            writer.print( "(" );
+            boolean first = true;
+            for ( Map.Entry<String, String> e : options.entrySet() ) {
+                if ( !first ) {
+                    writer.print( "," );
+                }
+                writer.identifier( e.getKey() );
+                writer.print( "=" );
+                writer.literal( e.getValue() );
+                first = false;
+            }
+            writer.print( ")" );
+        }
+
     }
 
 
@@ -140,7 +159,8 @@ public class SqlAlterMaterializedViewAddIndex extends SqlAlterMaterializedView {
                     indexName.getSimple(),
                     unique,
                     storeInstance,
-                    statement );
+                    statement,
+                    options );
         }
 
     }

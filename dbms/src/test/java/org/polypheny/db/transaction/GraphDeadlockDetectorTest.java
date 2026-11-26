@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.polypheny.db.transaction.deadlocks.GraphDeadlockDetector;
 import org.polypheny.db.transaction.locking.Lockable;

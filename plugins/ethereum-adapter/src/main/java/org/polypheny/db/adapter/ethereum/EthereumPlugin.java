@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,6 +81,18 @@ public class EthereumPlugin extends PolyPlugin {
     @Override
     public void stop() {
         AdapterManager.removeAdapterTemplate( id );
+    }
+
+
+    @SuppressWarnings("unused")
+    private interface Excludes {
+
+        void renameLogicalColumn( long id, String newColumnName );
+
+        void refreshTable( long allocId );
+
+        void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
+
     }
 
 
@@ -187,6 +199,7 @@ public class EthereumPlugin extends PolyPlugin {
                         dimension,
                         cardinality,
                         false,
+                        true,
                         "public",
                         "block",
                         blockCol,
@@ -208,6 +221,7 @@ public class EthereumPlugin extends PolyPlugin {
                         dimension,
                         cardinality,
                         false,
+                        true,
                         "public",
                         "transaction",
                         transactCol,
@@ -299,18 +313,6 @@ public class EthereumPlugin extends PolyPlugin {
         public RelationalDataSource asRelationalDataSource() {
             return this;
         }
-
-    }
-
-
-    @SuppressWarnings("unused")
-    private interface Excludes {
-
-        void renameLogicalColumn( long id, String newColumnName );
-
-        void refreshTable( long allocId );
-
-        void createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation );
 
     }
 

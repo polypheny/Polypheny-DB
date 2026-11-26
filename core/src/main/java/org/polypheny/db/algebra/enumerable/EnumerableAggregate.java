@@ -38,6 +38,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import org.apache.calcite.linq4j.Ord;
@@ -53,6 +54,7 @@ import org.polypheny.db.adapter.java.JavaTypeFactory;
 import org.polypheny.db.algebra.AlgCollations;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.InvalidAlgException;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.Aggregate;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.enumerable.impl.AggAddContextImpl;
@@ -62,11 +64,17 @@ import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.functions.CypherFunctions;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl.SyntheticRecordType;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.schema.trait.ModelTrait;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.category.PolyNumber;
+import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.BuiltInMethod;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
@@ -86,14 +94,238 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
         assert getConvention() instanceof EnumerableConvention;
 
         for ( AggregateCall aggCall : aggCalls ) {
-            if ( aggCall.isDistinct() ) {
+            if ( aggCall.isDistinct() && !supportsGraphDistinctAggregation( aggCall ) ) {
                 throw new InvalidAlgException( "distinct aggregation not supported" );
             }
-            AggImplementor implementor2 = RexImpTable.INSTANCE.get( aggCall.getAggregation(), false );
-            if ( implementor2 == null ) {
+            if ( !supportsGraphNumericAggregation( aggCall ) && !supportsGraphStandardDeviation( aggCall )
+                    && RexImpTable.INSTANCE.get( aggCall.getAggregation(), false ) == null ) {
                 throw new InvalidAlgException( "aggregation " + aggCall.getAggregation() + " not supported" );
             }
         }
+    }
+
+
+    /**
+     * Keeps graph-valued distinct arguments in the enumerable graph plan. The relational
+     * distinct rewrite introduces relational projections that cannot consume graph rows.
+     */
+    private static class GraphDistinctCountImplementor extends StrictAggImplementor {
+
+        @Override
+        public List<Type> getNotNullState( AggContext info ) {
+            return List.of( HashSet.class );
+        }
+
+
+        @Override
+        protected void implementNotNullReset( AggContext info, AggResetContext reset ) {
+            reset.currentBlock().add( Expressions.statement( Expressions.assign( reset.accumulator().get( 0 ), Expressions.new_( HashSet.class ) ) ) );
+        }
+
+
+        @Override
+        protected void implementNotNullAdd( AggContext info, AggAddContext add ) {
+            Expression key = Expressions.call( CypherFunctions.class, "aggregationKey", add.arguments().get( 0 ) );
+            add.currentBlock().add( Expressions.statement( Expressions.call( add.accumulator().get( 0 ), BuiltInMethod.COLLECTION_ADD.method, key ) ) );
+        }
+
+
+        @Override
+        protected Expression implementNotNullResult( AggContext info, AggResultContext result ) {
+            Expression size = Expressions.call( result.accumulator().get( 0 ), BuiltInMethod.COLLECTION_SIZE.method );
+            Expression count = Expressions.call( PolyLong.class, "of", Expressions.convert_( size, long.class ) );
+            return Expressions.convert_( count, info.returnType() );
+        }
+
+    }
+
+
+    private static class GraphCollectImplementor extends StrictAggImplementor {
+
+        private final boolean distinct;
+
+
+        GraphCollectImplementor( boolean distinct ) {
+            this.distinct = distinct;
+        }
+
+
+        @Override
+        public List<Type> getNotNullState( AggContext info ) {
+            return distinct ? List.of( PolyList.class, HashSet.class ) : List.of( PolyList.class );
+        }
+
+
+        @Override
+        protected boolean nonDefaultOnEmptySet( AggContext info ) {
+            return false;
+        }
+
+
+        @Override
+        protected void implementNotNullReset( AggContext info, AggResetContext reset ) {
+            Expression empty = Expressions.new_( PolyList.class, Expressions.new_( ArrayList.class ) );
+            reset.currentBlock().add( Expressions.statement( Expressions.assign( reset.accumulator().get( 0 ), empty ) ) );
+            if ( distinct ) {
+                reset.currentBlock().add( Expressions.statement( Expressions.assign( reset.accumulator().get( 1 ), Expressions.new_( HashSet.class ) ) ) );
+            }
+        }
+
+
+        @Override
+        protected void implementNotNullAdd( AggContext info, AggAddContext add ) {
+            Expression value = add.rowTranslator().translate( add.rexArguments().get( 0 ), PolyValue.class );
+            Expression values = add.accumulator().get( 0 );
+            Expression collect = distinct
+                    ? Expressions.call( CypherFunctions.class, "addDistinctCollectedValue", values, add.accumulator().get( 1 ), value )
+                    : Expressions.call( CypherFunctions.class, "addCollectedValue", values, value );
+            add.currentBlock().add( Expressions.statement( collect ) );
+        }
+
+    }
+
+
+    private static class GraphMinMaxImplementor extends StrictAggImplementor {
+
+        @Override
+        protected boolean nonDefaultOnEmptySet( AggContext info ) {
+            // The value accumulator itself is null until the first non-null input.
+            return false;
+        }
+
+
+        @Override
+        public List<Type> getNotNullState( AggContext info ) {
+            return List.of( PolyValue.class );
+        }
+
+
+        @Override
+        protected void implementNotNullReset( AggContext info, AggResetContext reset ) {
+            Expression acc = reset.accumulator().get( 0 );
+            reset.currentBlock().add( Expressions.statement( Expressions.assign( acc, Expressions.constant( null, PolyValue.class ) ) ) );
+        }
+
+
+        @Override
+        protected void implementNotNullAdd( AggContext info, AggAddContext add ) {
+            Expression acc = add.accumulator().get( 0 );
+            Expression arg = add.rowTranslator().translate( add.rexArguments().get( 0 ), PolyValue.class );
+            Expression minimum = Expressions.constant( info.aggregation().getKind() == Kind.MIN );
+            accAdvance( add, acc, Expressions.call( CypherFunctions.class, "aggregateExtremum", acc, arg, minimum ) );
+        }
+
+
+        @Override
+        protected Expression implementNotNullResult( AggContext info, AggResultContext result ) {
+            return Types.castIfNecessary( info.returnType(), result.accumulator().get( 0 ) );
+        }
+
+    }
+
+
+    private boolean supportsGraphDistinctAggregation( AggregateCall call ) {
+        Kind kind = call.getAggregation().getKind();
+        return traitSet.contains( ModelTrait.GRAPH ) && call.getArgList().size() == 1
+                && (kind == Kind.COUNT || kind == Kind.COLLECT || supportsGraphStandardDeviation( call ));
+    }
+
+
+    private boolean supportsGraphNumericAggregation( AggregateCall call ) {
+        Kind kind = call.getAggregation().getKind();
+        return traitSet.contains( ModelTrait.GRAPH ) && (kind == Kind.SUM || kind == Kind.AVG);
+    }
+
+
+    private boolean supportsGraphStandardDeviation( AggregateCall call ) {
+        Kind kind = call.getAggregation().getKind();
+        return traitSet.contains( ModelTrait.GRAPH ) && (kind == Kind.STDDEV_SAMP || kind == Kind.STDDEV_POP);
+    }
+
+
+    private static class GraphStandardDeviationImplementor extends StrictAggImplementor {
+
+        private final boolean distinct;
+
+
+        private GraphStandardDeviationImplementor( boolean distinct ) {
+            this.distinct = distinct;
+        }
+
+
+        @Override
+        protected boolean nonDefaultOnEmptySet( AggContext info ) {
+            return false;
+        }
+
+
+        @Override
+        public List<Type> getNotNullState( AggContext info ) {
+            return List.of( CypherFunctions.StandardDeviation.class );
+        }
+
+
+        @Override
+        protected void implementNotNullReset( AggContext info, AggResetContext reset ) {
+            Expression state = Expressions.new_( CypherFunctions.StandardDeviation.class, Expressions.constant( distinct ) );
+            reset.currentBlock().add( Expressions.statement( Expressions.assign( reset.accumulator().get( 0 ), state ) ) );
+        }
+
+
+        @Override
+        protected void implementNotNullAdd( AggContext info, AggAddContext add ) {
+            Expression argument = add.rowTranslator().translate( add.rexArguments().get( 0 ), PolyValue.class );
+            add.currentBlock().add( Expressions.statement( Expressions.call( add.accumulator().get( 0 ), "add", argument ) ) );
+        }
+
+
+        @Override
+        protected Expression implementNotNullResult( AggContext info, AggResultContext result ) {
+            Expression sample = Expressions.constant( info.aggregation().getKind() == Kind.STDDEV_SAMP );
+            Expression value = Expressions.call( result.accumulator().get( 0 ), "deviation", sample );
+            return Expressions.convert_( value, info.returnType() );
+        }
+
+    }
+
+
+    private static class GraphNumericImplementor extends StrictAggImplementor {
+
+        @Override
+        protected boolean nonDefaultOnEmptySet( AggContext info ) {
+            return false;
+        }
+
+
+        @Override
+        public List<Type> getNotNullState( AggContext info ) {
+            return List.of( CypherFunctions.NumericAggregate.class );
+        }
+
+
+        @Override
+        protected void implementNotNullReset( AggContext info, AggResetContext reset ) {
+            reset.currentBlock().add( Expressions.statement( Expressions.assign( reset.accumulator().get( 0 ), Expressions.new_( CypherFunctions.NumericAggregate.class ) ) ) );
+        }
+
+
+        @Override
+        protected void implementNotNullAdd( AggContext info, AggAddContext add ) {
+            Expression argument = add.rowTranslator().translate( add.rexArguments().get( 0 ), PolyValue.class );
+            add.currentBlock().add( Expressions.statement( Expressions.call( add.accumulator().get( 0 ), "add", argument ) ) );
+        }
+
+
+        @Override
+        protected Expression implementNotNullResult( AggContext info, AggResultContext result ) {
+            Expression state = result.accumulator().get( 0 );
+            Expression value = info.aggregation().getKind() == Kind.AVG
+                    ? Expressions.call( state, "average" )
+                    : Expressions.call( state, "sum", Expressions.constant( info.returnAlgType().getPolyType() ) );
+            // Keep the actual numeric subtype through StrictAggImplementor's result conversion.
+            return Expressions.convert_( value, info.returnType() );
+        }
+
     }
 
 
@@ -193,10 +425,24 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
 
         final PhysType keyPhysType = inputPhysType.project( groupSet.asList(), getGroupType() != Group.SIMPLE, JavaTupleFormat.LIST );
         final int groupCount = getGroupCount();
+        final boolean graphKeys = traitSet.contains( ModelTrait.GRAPH );
 
         final List<AggImpState> aggs = new ArrayList<>( aggCalls.size() );
         for ( Ord<AggregateCall> call : Ord.zip( aggCalls ) ) {
-            aggs.add( new AggImpState( call.i, call.e, false ) );
+            Kind kind = call.e.getAggregation().getKind();
+            if ( graphKeys && kind == Kind.COLLECT ) {
+                aggs.add( new AggImpState( call.i, call.e, new GraphCollectImplementor( call.e.isDistinct() ) ) );
+            } else if ( supportsGraphStandardDeviation( call.e ) ) {
+                aggs.add( new AggImpState( call.i, call.e, new GraphStandardDeviationImplementor( call.e.isDistinct() ) ) );
+            } else if ( call.e.isDistinct() ) {
+                aggs.add( new AggImpState( call.i, call.e, new GraphDistinctCountImplementor() ) );
+            } else if ( supportsGraphNumericAggregation( call.e ) ) {
+                aggs.add( new AggImpState( call.i, call.e, new GraphNumericImplementor() ) );
+            } else if ( graphKeys && (kind == Kind.MIN || kind == Kind.MAX) ) {
+                aggs.add( new AggImpState( call.i, call.e, new GraphMinMaxImplementor() ) );
+            } else {
+                aggs.add( new AggImpState( call.i, call.e, false ) );
+            }
         }
 
         // Function0<Object[]> accumulatorInitializer =
@@ -319,7 +565,9 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
             final Type keyType = keyPhysType.getJavaTupleType();
             key_ = Expressions.parameter( keyType, "key" );
             for ( int j = 0; j < groupCount; j++ ) {
-                final Expression ref = keyPhysType.fieldReference( key_, j );
+                final Expression ref = graphKeys && getGroupType() == Group.SIMPLE
+                        ? graphKeyField( keyPhysType, key_, j )
+                        : keyPhysType.fieldReference( key_, j );
                 if ( getGroupType() == Group.SIMPLE ) {
                     results.add( ref );
                 } else {
@@ -362,7 +610,7 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
                                             Expressions.call( Expressions.call( lambdaFactory, BuiltInMethod.AGG_LAMBDA_FACTORY_ACC_INITIALIZER.method ), BuiltInMethod.FUNCTION0_APPLY.method ),
                                             Expressions.call( lambdaFactory, BuiltInMethod.AGG_LAMBDA_FACTORY_ACC_ADDER.method ),
                                             Expressions.call( lambdaFactory, BuiltInMethod.AGG_LAMBDA_FACTORY_ACC_SINGLE_GROUP_RESULT_SELECTOR.method, resultSelector ) ) ) ) );
-        } else if ( aggCalls.isEmpty() && groupSet.equals( ImmutableBitSet.range( child.getTupleType().getFieldCount() ) ) ) {
+        } else if ( !graphKeys && aggCalls.isEmpty() && groupSet.equals( ImmutableBitSet.range( child.getTupleType().getFieldCount() ) ) ) {
             builder.add(
                     Expressions.return_(
                             null,
@@ -371,21 +619,44 @@ public class EnumerableAggregate extends Aggregate implements EnumerableAlg {
                                     BuiltInMethod.DISTINCT.method,
                                     Expressions.<Expression>list().appendIfNotNull( physType.comparer() ) ) ) );
         } else {
-            final Expression keySelector_ = builder.append( "keySelector", inputPhysType.generateSelector( parameter, groupSet.asList(), keyPhysType.getFormat() ) );
+            Expression selector = graphKeys
+                    ? generateGraphKeySelector( inputPhysType, keyPhysType, parameter )
+                    : inputPhysType.generateSelector( parameter, groupSet.asList(), keyPhysType.getFormat() );
+            final Expression keySelector_ = builder.append( "keySelector", selector );
             final Expression resultSelector_ = builder.append( "resultSelector", Expressions.lambda( Function2.class, resultBlock.toBlock(), key_, acc_ ) );
+            Expression comparer = graphKeys
+                    ? Expressions.call( CypherFunctions.class, "groupingComparer", Expressions.constant( groupCount > 1 ) )
+                    : keyPhysType.comparer();
+            BuiltInMethod groupBy = comparer == null ? BuiltInMethod.GROUP_BY2 : BuiltInMethod.GROUP_BY_WITH_COMPARER;
             builder.add(
                     Expressions.return_(
                             null,
                             Expressions.call(
                                     childExp,
-                                    BuiltInMethod.GROUP_BY2.method,
+                                    groupBy.method,
                                     Expressions.list(
                                             keySelector_,
                                             Expressions.call( lambdaFactory, BuiltInMethod.AGG_LAMBDA_FACTORY_ACC_INITIALIZER.method ),
                                             Expressions.call( lambdaFactory, BuiltInMethod.AGG_LAMBDA_FACTORY_ACC_ADDER.method ),
-                                            Expressions.call( lambdaFactory, BuiltInMethod.AGG_LAMBDA_FACTORY_ACC_RESULT_SELECTOR.method, resultSelector_ ) ).appendIfNotNull( keyPhysType.comparer() ) ) ) );
+                                            Expressions.call( lambdaFactory, BuiltInMethod.AGG_LAMBDA_FACTORY_ACC_RESULT_SELECTOR.method, resultSelector_ ) ).appendIfNotNull( comparer ) ) ) );
         }
         return implementor.result( physType, builder.toBlock() );
+    }
+
+
+    private Expression generateGraphKeySelector( PhysType input, PhysType key, ParameterExpression row ) {
+        List<Expression> fields = groupSet.asList().stream().map( index -> graphKeyField( input, row, index ) ).toList();
+        Expression groupingKey = fields.size() == 1 ? fields.get( 0 ) : key.record( fields );
+        return Expressions.lambda( Function1.class, groupingKey, row );
+    }
+
+
+    private static Expression graphKeyField( PhysType type, Expression row, int index ) {
+        if ( type.fieldClass( index ) == PolyNumber.class ) {
+            // Read through PolyValue to preserve the numeric subtype when selecting and returning group keys.
+            return Types.castIfNecessary( PolyNumber.class, type.fieldReference( row, index, PolyValue.class ) );
+        }
+        return type.fieldReference( row, index );
     }
 
 

@@ -18,9 +18,9 @@ package org.polypheny.db.algebra.rules;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.enumerable.EnumerableConvention;
 import org.polypheny.db.algebra.enumerable.EnumerableFilter;
@@ -34,7 +34,6 @@ import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
 import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
-import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
@@ -43,9 +42,11 @@ import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexIndexRef;
 import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.tools.AlgBuilder;
 import org.polypheny.db.util.ImmutableBitSet;
+import org.polypheny.db.util.ValidatorUtil;
 
 public class LpgToEnumerableRule extends AlgOptRule {
 
@@ -113,22 +114,20 @@ public class LpgToEnumerableRule extends AlgOptRule {
         List<RexNode> nodes = new ArrayList<>();
         List<String> names = new ArrayList<>();
 
-        List<Integer> groupIndexes = new ArrayList<>();
         for ( RexNameRef group : alg.groups ) {
             if ( group.getIndex().isEmpty() ) {
                 throw new UnsupportedOperationException();
             }
-            groupIndexes.add( group.getIndex().get() );
             RexNode node = new RexIndexRef( group.getIndex().get(), group.type );
             nodes.add( node );
             names.add( group.name );
         }
-        ImmutableBitSet groupSet = ImmutableBitSet.of( groupIndexes );
+        ImmutableBitSet groupSet = ImmutableBitSet.range( alg.groups.size() );
 
+        List<AggregateCall> calls = new ArrayList<>();
         for ( LaxAggregateCall agg : alg.aggCalls ) {
             if ( agg.getInput().isEmpty() ) {
-                nodes.add( new RexIndexRef( 0, child.getTupleType().getFields().get( 0 ).getType() ) );
-                names.add( agg.name );
+                calls.add( agg.toAggCall( List.of(), alg.getCluster() ) );
                 continue;
             }
 
@@ -138,18 +137,18 @@ public class LpgToEnumerableRule extends AlgOptRule {
                 node = builder.getRexBuilder().makeAbstractCast( agg.requiresCast( alg.getCluster() ).get(), node );
             }
 
+            calls.add( agg.toAggCall( List.of( nodes.size() ), alg.getCluster() ) );
             nodes.add( node );
             names.add( agg.name );
         }
 
-        LogicalRelProject project = (LogicalRelProject) LogicalRelProject.create( child, nodes, names ).copy( alg.getInput().getTraitSet().replace( ModelTrait.GRAPH ), alg.getInputs() );
-
-        EnumerableProject enumerableProject = new EnumerableProject( project.getCluster(), alg.getInput().getTraitSet().replace( ModelTrait.GRAPH ).replace( EnumerableConvention.INSTANCE ), convert( project.getInput(), EnumerableConvention.INSTANCE ), project.getProjects(), project.getTupleType() );
+        EnumerableProject enumerableProject = new EnumerableProject(
+                alg.getCluster(), child.getTraitSet().replace( ModelTrait.GRAPH ).replace( EnumerableConvention.INSTANCE ),
+                child, nodes, RexUtil.createStructType( alg.getCluster().getTypeFactory(), nodes, names, ValidatorUtil.EXPR_SUGGESTER ) );
 
         builder.push( enumerableProject );
-        builder.push( LogicalRelAggregate.create( builder.build(), groupSet, null, alg.aggCalls.stream().map( a -> a.toAggCall( alg.getTupleType(), alg.getCluster() ) ).collect( Collectors.toList() ) ) );
-
-        builder.rename( names );
+        builder.push( LogicalRelAggregate.create( builder.build(), groupSet, null, calls ) );
+        builder.rename( alg.getTupleType().getFieldNames() );
 
         return builder.build();
     }

@@ -19,6 +19,8 @@ package org.polypheny.db.cypher;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.operators.OperatorName;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.cypher.cypher2alg.CypherSyntaxException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.expression.CypherExpression;
@@ -27,7 +29,9 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.util.Pair;
 
 @Getter
@@ -45,21 +49,28 @@ public class CypherHasLabelOrTypes extends CypherExpression {
 
 
     @Override
-    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
+    protected Pair<PolyString, RexNode> toRex( CypherContext context, RexType type ) {
 
-        Pair<PolyString, RexNode> namedSubject = subject.getRex( context, type );
-
-        RexNode hasLabels;
-        if ( labels.size() == 1 ) {
-            hasLabels = context.rexBuilder.makeCall(
-                    context.booleanType,
-                    OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_HAS_LABEL ),
-                    List.of( namedSubject.right, context.rexBuilder.makeLiteral( labels.get( 0 ).getImage() ) ) );
-        } else {
-            throw new UnsupportedOperationException();
+        RexNode value = subject.getRex( context, type ).right;
+        AlgDataType valueType = value.getType();
+        PolyType polyType = valueType.getPolyType();
+        if ( polyType != PolyType.NODE && polyType != PolyType.ANY && polyType != PolyType.NULL ) {
+            throw new CypherSyntaxException( "Cypher label predicates require a NODE, got " + polyType + "." );
         }
 
-        return Pair.of( null, hasLabels );
+        RexNode labelsOperand;
+        if ( labels.size() == 1 ) {
+            labelsOperand = context.rexBuilder.makeLiteral( labels.get( 0 ).getImage() );
+        } else {
+            AlgDataType stringType = context.typeFactory.createPolyType( PolyType.VARCHAR );
+            labelsOperand = context.rexBuilder.makeArray( context.typeFactory.createArrayType( stringType, -1 ),
+                    labels.stream().<PolyValue>map( label -> PolyString.of( label.getImage() ) ).toList() );
+        }
+        boolean nullable = valueType.isNullable() || polyType == PolyType.ANY || polyType == PolyType.NULL;
+        return Pair.of( null, context.rexBuilder.makeCall(
+                context.typeFactory.createTypeWithNullability( context.booleanType, nullable ),
+                OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_HAS_LABEL ),
+                List.of( value, labelsOperand ) ) );
     }
 
 }

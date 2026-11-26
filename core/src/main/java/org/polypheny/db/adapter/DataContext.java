@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Modifier;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
@@ -129,6 +130,9 @@ public interface DataContext {
      */
     enum Variable {
         UTC_TIMESTAMP( "utcTimestamp", Long.class ),
+
+        CYPHER_STATEMENT_INSTANT( "cypherStatementInstant", Instant.class ),
+        CYPHER_TRANSACTION_INSTANT( "cypherTransactionInstant", Instant.class ),
 
         /**
          * The time at which the current statement started executing. In milliseconds after 1970-01-01 00:00:00, UTC. Required.

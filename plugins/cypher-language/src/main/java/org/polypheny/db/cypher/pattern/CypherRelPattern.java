@@ -20,6 +20,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import org.polypheny.db.cypher.CypherPathLength;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherLiteral;
 import org.polypheny.db.cypher.expression.CypherLiteral.Literal;
@@ -72,7 +73,18 @@ public class CypherRelPattern extends CypherPattern {
 
 
     public Pair<PolyString, PolyEdge> getPolyEdge( PolyString leftId, PolyString rightId ) {
-        PolyDictionary properties = this.properties != null ? (PolyDictionary) this.properties.getComparable() : new PolyDictionary();
+        return getPolyEdge( leftId, rightId, null );
+    }
+
+
+    public CypherRelPattern withMatchProperties( CypherVariable binding, CypherExpression properties ) {
+        return new CypherRelPattern( pos, left, right, binding, relTypes, pathLength, properties, predicate, legacyTypeSeparator );
+    }
+
+
+    public Pair<PolyString, PolyEdge> getPolyEdge( PolyString leftId, PolyString rightId, @Nullable CypherContext context ) {
+        boolean project = context != null && context.usesCreateExpressions();
+        PolyDictionary properties = this.properties != null && !project ? (PolyDictionary) this.properties.getComparable() : new PolyDictionary();
         EdgeDirection direction = left == right ? EdgeDirection.NONE : right ? EdgeDirection.LEFT_TO_RIGHT : EdgeDirection.RIGHT_TO_LEFT;
         List<PolyString> labels = relTypes.stream().map( StringPos::getImage ).map( PolyString::of ).toList();
 
@@ -83,9 +95,12 @@ public class CypherRelPattern extends CypherPattern {
 
         PolyEdge edge = new PolyEdge( properties, PolyList.copyOf( labels ), leftId, rightId, direction, PolyString.of( name ) );
         if ( pathLength != null ) {
-            edge.fromTo( Pair.of( Integer.parseInt( pathLength.getFrom() ), Integer.parseInt( pathLength.getTo() ) ) );
+            edge.fromTo( pathLength.getLengthRange() );
         }
 
+        if ( project ) {
+            context.addCreateProperties( edge.id, this.properties );
+        }
         return Pair.of( PolyString.of( name ), edge );
     }
 

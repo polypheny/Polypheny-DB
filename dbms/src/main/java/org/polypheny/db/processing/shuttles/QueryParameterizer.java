@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,7 +79,7 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
     @Getter
     private final Map<Integer, Map<Integer, List<ParameterValue>>> docs;
 
-    private final List<OperatorName> excluded = List.of( OperatorName.MQL_REGEX_MATCH, OperatorName.MQL_QUERY_VALUE );
+    private final List<OperatorName> excluded = List.of( OperatorName.MQL_REGEX_MATCH, OperatorName.MQL_QUERY_VALUE, OperatorName.MQL_GEO_WITHIN, OperatorName.MQL_GEO_INTERSECTS, OperatorName.MQL_GEO_DISTANCE, OperatorName.MQL_NEAR, OperatorName.MQL_NEAR_SPHERE, OperatorName.MQL_GEO_NEAR );
 
     @Getter
     private final List<AlgDataType> types;
@@ -184,7 +184,8 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
                 project.getTraitSet(),
                 project.getInput(),
                 Pair.zip( new ArrayList<>( oProject.includes.keySet() ), newProjects ).stream().collect( Collectors.toMap( e -> e.left, e -> e.right ) ),
-                project.excludes
+                project.excludes,
+                project.adds
         );
     }
 
@@ -468,9 +469,11 @@ public class QueryParameterizer extends AlgShuttleImpl implements RexVisitor<Rex
             return new RexDynamicParam( call.type, i );
         } else {
             List<RexNode> newOperands = new ArrayList<>();
-            for ( RexNode operand : call.operands ) {
-                if ( operand instanceof RexLiteral && ((RexLiteral) operand).getPolyType() == PolyType.SYMBOL ) {
-                    // Do not replace with dynamic param
+            for ( int i = 0; i < call.operands.size(); i++ ) {
+                RexNode operand = call.operands.get( i );
+                if ( (i == 0 && call.op.getOperatorName() == OperatorName.MQL_EXPR_DOCUMENT)
+                        || (operand instanceof RexLiteral literal && literal.getPolyType() == PolyType.SYMBOL) ) {
+                    // Keep document field names and symbols as metadata.
                     newOperands.add( operand );
                 } else {
                     newOperands.add( operand.accept( this ) );

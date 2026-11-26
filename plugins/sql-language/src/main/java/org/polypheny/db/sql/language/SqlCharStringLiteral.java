@@ -64,7 +64,7 @@ public class SqlCharStringLiteral extends SqlAbstractStringLiteral {
     @Override
     public void unparse( SqlWriter writer, int leftPrec, int rightPrec ) {
         assert value instanceof PolyString;
-        writer.literal( value.asString().toPrefixedString() );
+        writer.getDialect().unparseCharStringLiteral( writer, value.asString() );
     }
 
 

@@ -31,6 +31,7 @@ import org.polypheny.db.catalog.catalogs.LogicalCatalog;
 import org.polypheny.db.catalog.catalogs.LogicalGraphCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalGraph;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
+import org.polypheny.db.catalog.impl.CatalogRollback;
 import org.polypheny.db.catalog.util.CatalogEvent;
 import org.polypheny.db.type.PolySerializable;
 
@@ -113,6 +114,12 @@ public class GraphCatalog implements PolySerializable, LogicalGraphCatalog {
     public void deleteGraph( long id ) {
         graphs.remove( id );
         change( CatalogEvent.LOGICAL_GRAPH_ENTITY_DROPPED, id, null );
+    }
+
+
+    @Override
+    public void captureRollback( CatalogRollback state ) {
+        state.capture( graphs );
     }
 
 }

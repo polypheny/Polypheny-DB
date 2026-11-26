@@ -144,6 +144,12 @@ public abstract class MockCatalog extends Catalog {
 
 
     @Override
+    public Runnable captureRollback() {
+        throw new NotImplementedException();
+    }
+
+
+    @Override
     public void rollback() {
         throw new NotImplementedException();
     }

@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
@@ -52,10 +53,10 @@ public abstract class LpgProject extends SingleAlg implements LpgAlg {
 
 
     @Override
-    public String algCompareString() {
-        return "$" + getClass().getSimpleName() +
-                "$" + projects.hashCode() +
-                "$" + input.algCompareString();
+    public AlgWriter explainTerms( AlgWriter writer ) {
+        return super.explainTerms( writer )
+                .item( "projects", projects )
+                .item( "names", names );
     }
 
 

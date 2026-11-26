@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,13 +33,6 @@ import org.polypheny.db.config.exception.ConfigRuntimeException;
  */
 public class ConfigList extends Config {
 
-    @SerializedName("values")
-    private List<ConfigScalar> list;
-    private List<ConfigScalar> oldList;
-    private List<ConfigScalar> defaultList;
-
-    private ConfigScalar template;
-
     /**
      * Listener which propagates the changes to underlying configs to listeners of this config.
      */
@@ -55,6 +48,11 @@ public class ConfigList extends Config {
             notifyConfigListeners();
         }
     };
+    @SerializedName("values")
+    private List<ConfigScalar> list;
+    private List<ConfigScalar> oldList;
+    private List<ConfigScalar> defaultList;
+    private ConfigScalar template;
 
 
     // While java does not know if our casts are correct

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import com.github.rvesse.airline.SingleCommand;
 import com.github.rvesse.airline.annotations.Command;
 import com.github.rvesse.airline.annotations.Option;
 import com.github.rvesse.airline.parser.errors.ParseException;
-import java.awt.SystemTray;
+import java.awt.*;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -94,49 +94,34 @@ import org.polypheny.db.webui.UiTestingMonitoringPage;
 @Slf4j
 public class PolyphenyDb {
 
-    private PUID shutdownHookId;
-
-    private final TransactionManager transactionManager = TransactionManagerImpl.getInstance();
-
-    @Inject
-    public HelpOption<?> helpOption;
-
-    @Option(name = { "-resetCatalog" }, description = "Reset the catalog")
-    public boolean resetCatalog = false;
-
-    @Option(name = { "-resetDocker" }, description = "Removes all Docker instances, which are from previous Polypheny runs.")
-    public boolean resetDocker = false;
-
-    @Option(name = { "-resetPlugins" }, description = "Removes all plugins from the plugins/ folder in the Polypheny Home directory.")
-    public boolean resetPlugins = false;
-
     @Option(name = { "-memoryCatalog" }, description = "Store catalog only in-memory")
     public static boolean memoryCatalog = false;
-
     @Option(name = { "-mode" }, description = "Special system configuration for running tests", typeConverterProvider = PolyModesConverter.class)
     public static RunMode mode = RunMode.PRODUCTION;
-
     @Option(name = { "-noAutoDocker" }, description = "Do not perform automatic setup with a local Docker instance")
     public static boolean noAutoDocker = false;
-
-    @Option(name = { "-gui" }, description = "Show splash screen on startup and add taskbar gui")
-    public boolean desktopMode = false;
-
-    @Option(name = { "-daemon" }, description = "Disable splash screen")
-    public boolean daemonMode = false;
-
     @Option(name = { "-defaultStore" }, description = "Type of default storeId")
-    public String defaultStoreName = "hsqldb";
-
+    public static String defaultStoreName = "hsqldb";
     @Option(name = { "-defaultSource" }, description = "Type of default source")
     public static String defaultSourceName = "csv";
-
-    @Option(name = { "-c", "--config" }, description = "Path to the configuration file")
-    protected String applicationConfPath;
-
+    private final TransactionManager transactionManager = TransactionManagerImpl.getInstance();
+    @Inject
+    public HelpOption<?> helpOption;
+    @Option(name = { "-resetCatalog" }, description = "Reset the catalog")
+    public boolean resetCatalog = false;
+    @Option(name = { "-resetDocker" }, description = "Removes all Docker instances, which are from previous Polypheny runs.")
+    public boolean resetDocker = false;
+    @Option(name = { "-resetPlugins" }, description = "Removes all plugins from the plugins/ folder in the Polypheny Home directory.")
+    public boolean resetPlugins = false;
+    @Option(name = { "-gui" }, description = "Show splash screen on startup and add taskbar gui")
+    public boolean desktopMode = false;
+    @Option(name = { "-daemon" }, description = "Disable splash screen")
+    public boolean daemonMode = false;
     @Option(name = { "-v", "--version" }, description = "Current version of Polypheny-DB")
     public boolean versionOptionEnabled = false;
-
+    @Option(name = { "-c", "--config" }, description = "Path to the configuration file")
+    protected String applicationConfPath;
+    private PUID shutdownHookId;
     // required for unit tests to determine when the system is ready to process queries
     @Getter
     private volatile boolean isReady = false;
@@ -180,6 +165,90 @@ public class PolyphenyDb {
     }
 
 
+    private static void initializeStatusNotificationService() {
+        StatusNotificationService.setPort( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
+        RuntimeConfig.WEBUI_SERVER_PORT.addObserver( new ConfigListener() {
+            @Override
+            public void onConfigChange( Config c ) {
+                StatusNotificationService.setPort( c.getInt() );
+            }
+
+
+            @Override
+            public void restart( Config c ) {
+                StatusNotificationService.setPort( c.getInt() );
+            }
+        } );
+    }
+
+
+    private static void restoreHomeFolderIfNecessary( PolyphenyHomeDirManager dirManager ) {
+        if ( dirManager.getHomeFile( "_test_backup" ).isPresent() && dirManager.getHomeFile( "_test_backup" ).get().isDirectory() ) {
+            File backupFolder = dirManager.getHomeFile( "_test_backup" ).get();
+            // Cleanup Polypheny folder
+            for ( File item : dirManager.getHomePath().listFiles() ) {
+                if ( item.getName().equals( "_test_backup" ) ) {
+                    continue;
+                }
+                if ( dirManager.getHomeFile( item.getName() ).orElseThrow().isFile() ) {
+                    dirManager.deleteFile( item.getName() );
+                } else {
+                    dirManager.recursiveDeleteFolder( item.getName() );
+                }
+            }
+            // Restore contents from backup
+            for ( File item : backupFolder.listFiles() ) {
+                if ( dirManager.getHomeFile( "_test_backup/" + item.getName() ).isPresent() ) {
+                    if ( !item.renameTo( new File( dirManager.getHomePath(), item.getName() ) ) ) {
+                        throw new GenericRuntimeException( "Unable to restore the Polypheny folder." );
+                    }
+                }
+            }
+            //noinspection ResultOfMethodCallIgnored
+            backupFolder.delete();
+            log.info( "Restoring the data folder." );
+        }
+    }
+
+
+    private static String generateOrLoadPolyphenyUUID() {
+        Optional<File> uuidFile = PolyphenyHomeDirManager.getInstance().getGlobalFile( "uuid" );
+        if ( uuidFile.isEmpty() ) {
+            UUID id = UUID.randomUUID();
+            File f = PolyphenyHomeDirManager.getInstance().registerNewGlobalFile( "uuid" );
+
+            try ( FileOutputStream out = new FileOutputStream( f ) ) {
+                out.write( id.toString().getBytes( StandardCharsets.UTF_8 ) );
+            } catch ( IOException e ) {
+                throw new GenericRuntimeException( "Failed to store UUID " + e );
+            }
+
+            return id.toString();
+        } else {
+            Path path = uuidFile.get().toPath();
+
+            try ( BufferedReader in = Files.newBufferedReader( path, StandardCharsets.UTF_8 ) ) {
+                return UUID.fromString( in.readLine() ).toString();
+            } catch ( IOException e ) {
+                throw new GenericRuntimeException( "Failed to load UUID " + e );
+            }
+        }
+    }
+
+
+    /**
+     * Restores the default structure, interfaces, adapters.
+     *
+     * @param catalog the current catalog
+     * @param mode the current mode
+     */
+    private static void restoreDefaults( Transaction transaction, Catalog catalog, RunMode mode ) {
+        catalog.updateSnapshot();
+        DefaultInserter.resetData( transaction, DdlManager.getInstance(), mode );
+        DefaultInserter.restoreInterfacesIfNecessary( catalog );
+    }
+
+
     public void runPolyphenyDb() {
         TimeZone.setDefault( TimeZone.getTimeZone( "UTC" ) );
         Locale.setDefault( Locale.US );
@@ -187,6 +256,10 @@ public class PolyphenyDb {
         if ( resetDocker ) {
             log.warn( "[-resetDocker] option is set, this option is only for development." );
         }
+
+        // TODO: Remove after testing
+        String currentPath = System.getProperty( "user.home" );
+        log.info( "user.home: {}", currentPath );
 
         // Configuration shall not be persisted
         ConfigManager.memoryMode = (mode == RunMode.TEST || memoryCatalog);
@@ -355,10 +428,7 @@ public class PolyphenyDb {
 
         restore( authenticator, catalog );
 
-        // Add tracker, which rechecks constraints after enabling
-        ConstraintTracker tracker = new ConstraintTracker( transactionManager );
-        RuntimeConfig.FOREIGN_KEY_ENFORCEMENT.addObserver( tracker );
-        RuntimeConfig.UNIQUE_CONSTRAINT_ENFORCEMENT.addObserver( tracker );
+        new ConstraintTracker( transactionManager ).registerConfigHandlers();
 
         log.info( "****************************************************************************************************" );
         log.info( "                Polypheny-DB successfully started and ready to process your queries!" );
@@ -415,83 +485,12 @@ public class PolyphenyDb {
     }
 
 
-    private static void initializeStatusNotificationService() {
-        StatusNotificationService.setPort( RuntimeConfig.WEBUI_SERVER_PORT.getInteger() );
-        RuntimeConfig.WEBUI_SERVER_PORT.addObserver( new ConfigListener() {
-            @Override
-            public void onConfigChange( Config c ) {
-                StatusNotificationService.setPort( c.getInt() );
-            }
-
-
-            @Override
-            public void restart( Config c ) {
-                StatusNotificationService.setPort( c.getInt() );
-            }
-        } );
-    }
-
-
     private void initializeIndexManager() {
         try {
             IndexManager.getInstance().initialize( transactionManager );
             IndexManager.getInstance().restoreIndexes();
         } catch ( TransactionException e ) {
             throw new GenericRuntimeException( "Something went wrong while initializing index manager.", e );
-        }
-    }
-
-
-    private static void restoreHomeFolderIfNecessary( PolyphenyHomeDirManager dirManager ) {
-        if ( dirManager.getHomeFile( "_test_backup" ).isPresent() && dirManager.getHomeFile( "_test_backup" ).get().isDirectory() ) {
-            File backupFolder = dirManager.getHomeFile( "_test_backup" ).get();
-            // Cleanup Polypheny folder
-            for ( File item : dirManager.getHomePath().listFiles() ) {
-                if ( item.getName().equals( "_test_backup" ) ) {
-                    continue;
-                }
-                if ( dirManager.getHomeFile( item.getName() ).orElseThrow().isFile() ) {
-                    dirManager.deleteFile( item.getName() );
-                } else {
-                    dirManager.recursiveDeleteFolder( item.getName() );
-                }
-            }
-            // Restore contents from backup
-            for ( File item : backupFolder.listFiles() ) {
-                if ( dirManager.getHomeFile( "_test_backup/" + item.getName() ).isPresent() ) {
-                    if ( !item.renameTo( new File( dirManager.getHomePath(), item.getName() ) ) ) {
-                        throw new GenericRuntimeException( "Unable to restore the Polypheny folder." );
-                    }
-                }
-            }
-            //noinspection ResultOfMethodCallIgnored
-            backupFolder.delete();
-            log.info( "Restoring the data folder." );
-        }
-    }
-
-
-    private static String generateOrLoadPolyphenyUUID() {
-        Optional<File> uuidFile = PolyphenyHomeDirManager.getInstance().getGlobalFile( "uuid" );
-        if ( uuidFile.isEmpty() ) {
-            UUID id = UUID.randomUUID();
-            File f = PolyphenyHomeDirManager.getInstance().registerNewGlobalFile( "uuid" );
-
-            try ( FileOutputStream out = new FileOutputStream( f ) ) {
-                out.write( id.toString().getBytes( StandardCharsets.UTF_8 ) );
-            } catch ( IOException e ) {
-                throw new GenericRuntimeException( "Failed to store UUID " + e );
-            }
-
-            return id.toString();
-        } else {
-            Path path = uuidFile.get().toPath();
-
-            try ( BufferedReader in = Files.newBufferedReader( path, StandardCharsets.UTF_8 ) ) {
-                return UUID.fromString( in.readLine() ).toString();
-            } catch ( IOException e ) {
-                throw new GenericRuntimeException( "Failed to load UUID " + e );
-            }
         }
     }
 
@@ -535,48 +534,19 @@ public class PolyphenyDb {
     private void restore( Authenticator authenticator, Catalog catalog ) {
         PolyPluginManager.startUp( transactionManager, authenticator );
 
-        Transaction trx = transactionManager.startTransaction(
-                Catalog.defaultUserId,
-                Catalog.defaultNamespaceId,
-                null,
-                "Catalog Startup" );
-        if ( !resetCatalog && !memoryCatalog && mode != RunMode.TEST ) {
-            Catalog.getInstance().restore( trx );
-        }
-        Catalog.getInstance().updateSnapshot();
+        transactionManager.runCatalogWrite( "Catalog Startup", transaction -> {
+            if ( !resetCatalog && !memoryCatalog && mode != RunMode.TEST ) {
+                catalog.restore( transaction );
+            }
+            catalog.updateSnapshot();
 
-        Catalog.defaultStore = AdapterTemplate.fromString( defaultStoreName, AdapterType.STORE );
-        Catalog.defaultSource = AdapterTemplate.fromString( defaultSourceName, AdapterType.SOURCE );
-        restoreDefaults( trx, catalog, mode );
+            Catalog.defaultStore = AdapterTemplate.fromString( defaultStoreName, AdapterType.STORE );
+            Catalog.defaultSource = AdapterTemplate.fromString( defaultSourceName, AdapterType.SOURCE );
+            restoreDefaults( transaction, catalog, mode );
+            return null;
+        } );
 
         QueryInterfaceManager.getInstance().restoreInterfaces( catalog.getSnapshot() );
-
-        commitRestore( trx );
-    }
-
-
-    /**
-     * Tries to commit the restored catalog.
-     */
-    private void commitRestore( Transaction trx ) {
-        try {
-            trx.commit();
-        } catch ( TransactionException e ) {
-            trx.rollback( "Something went wrong while restoring stores from the catalog. " + e.getMessage() );
-        }
-    }
-
-
-    /**
-     * Restores the default structure, interfaces, adapters.
-     *
-     * @param catalog the current catalog
-     * @param mode the current mode
-     */
-    private static void restoreDefaults( Transaction transaction, Catalog catalog, RunMode mode ) {
-        catalog.updateSnapshot();
-        DefaultInserter.resetData( transaction, DdlManager.getInstance(), mode );
-        DefaultInserter.restoreInterfacesIfNecessary( catalog );
     }
 
 

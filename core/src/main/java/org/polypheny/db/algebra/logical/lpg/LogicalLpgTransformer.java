@@ -39,7 +39,13 @@ public class LogicalLpgTransformer extends LpgTransformer {
      * Subclass of {@link LpgTransformer} not targeted at any particular engine or calling convention.
      */
     public LogicalLpgTransformer( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, AlgDataType rowType, List<PolyType> operationOrder, Operation operation ) {
-        super( cluster, traitSet, inputs, rowType, operationOrder, operation );
+        this( cluster, traitSet, inputs, rowType, operationOrder, operation, false );
+    }
+
+
+    public LogicalLpgTransformer( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, AlgDataType rowType,
+            List<PolyType> operationOrder, Operation operation, boolean detachDelete ) {
+        super( cluster, traitSet, inputs, rowType, operationOrder, operation, detachDelete );
     }
 
 
@@ -59,7 +65,7 @@ public class LogicalLpgTransformer extends LpgTransformer {
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalLpgTransformer( inputs.get( 0 ).getCluster(), traitSet, inputs, rowType, operationOrder, operation );
+        return new LogicalLpgTransformer( inputs.get( 0 ).getCluster(), traitSet, inputs, rowType, operationOrder, operation, detachDelete );
     }
 
 

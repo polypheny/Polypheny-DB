@@ -52,6 +52,9 @@ import org.polypheny.db.algebra.core.Join;
 import org.polypheny.db.algebra.core.Project;
 import org.polypheny.db.algebra.core.Sort;
 import org.polypheny.db.algebra.core.Values;
+import org.polypheny.db.algebra.core.common.Streamer;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgForeach;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgMergeRows;
 import org.polypheny.db.algebra.logical.relational.LogicalRelFilter;
 import org.polypheny.db.algebra.logical.relational.LogicalRelIntersect;
 import org.polypheny.db.algebra.logical.relational.LogicalRelMinus;
@@ -60,6 +63,7 @@ import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
+import org.polypheny.db.plan.volcano.AlgSubset;
 import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
@@ -244,11 +248,23 @@ public abstract class PruneEmptyRules {
                 @Override
                 public void onMatch( AlgOptRuleCall call ) {
                     Sort sort = call.alg( 0 );
-                    if ( sort.fetch != null && !(sort.fetch instanceof RexDynamicParam) && RexLiteral.intValue( sort.fetch ) == 0 ) {
+                    if ( sort.fetch != null && !(sort.fetch instanceof RexDynamicParam) && RexLiteral.intValue( sort.fetch ) == 0
+                            && !containsReturningGraphWrite( sort.getInput() ) ) {
                         call.transformTo( call.builder().push( sort ).empty().build() );
                     }
                 }
             };
+
+    private static boolean containsReturningGraphWrite( AlgNode node ) {
+        if ( node instanceof AlgSubset subset ) {
+            node = subset.getOriginal();
+        }
+        return node instanceof Streamer streamer && streamer.getReturningParameters() > 0
+                || node instanceof LogicalLpgForeach
+                || node instanceof LogicalLpgMergeRows
+                || node.getInputs().stream().anyMatch( PruneEmptyRules::containsReturningGraphWrite );
+    }
+
 
     /**
      * Rule that converts an {@link org.polypheny.db.algebra.core.Aggregate} to empty if its child is empty.

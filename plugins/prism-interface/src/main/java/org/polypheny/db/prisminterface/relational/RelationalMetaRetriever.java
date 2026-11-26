@@ -22,11 +22,8 @@ import java.util.Objects;
 import java.util.Optional;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.PolyImplementation;
-import org.polypheny.db.adapter.java.JavaTypeFactory;
-import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.processing.QueryProcessorHelpers;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.prism.ArrayMeta;
@@ -64,7 +61,11 @@ public class RelationalMetaRetriever {
 
 
     public static List<ColumnMeta> retrieveColumnMetas( PolyImplementation polyImplementation ) {
-        AlgDataType algDataType = retrieveAlgDataType( polyImplementation );
+        AlgDataType algDataType = polyImplementation.getResultRowType();
+        if ( algDataType.getPolyType() == PolyType.GRAPH ) {
+            // GraphType's storage fields describe its ID, but a full scan returns one graph value.
+            return List.of( retrieveColumnMeta( 0, "graph", algDataType, null ) );
+        }
         AlgDataType whatever = QueryProcessorHelpers.makeStruct( polyImplementation.getStatement().getTransaction().getTypeFactory(), algDataType );
         List<List<String>> origins = polyImplementation.getPreparedResult().getFieldOrigins();
         List<ColumnMeta> columns = new ArrayList<>();
@@ -79,6 +80,9 @@ public class RelationalMetaRetriever {
 
 
     private static ProtoPolyType getFromPolyType( PolyType polyType ) {
+        if ( polyType == PolyType.CYPHER_TEMPORAL ) {
+            return ProtoPolyType.VARCHAR;
+        }
         return ProtoPolyType.valueOf( polyType.getName() );
     }
 
@@ -163,17 +167,5 @@ public class RelationalMetaRetriever {
         }
     }
 
-
-    private static AlgDataType retrieveAlgDataType( PolyImplementation polyImplementation ) {
-        return switch ( polyImplementation.getKind() ) {
-            case INSERT, DELETE, UPDATE, EXPLAIN -> {
-                // FIXME: getValidatedNodeType is wrong for DML
-                Kind kind = polyImplementation.getKind();
-                JavaTypeFactory typeFactory = polyImplementation.getStatement().getTransaction().getTypeFactory();
-                yield AlgOptUtil.createDmlRowType( kind, typeFactory );
-            }
-            default -> polyImplementation.tupleType;
-        };
-    }
 
 }

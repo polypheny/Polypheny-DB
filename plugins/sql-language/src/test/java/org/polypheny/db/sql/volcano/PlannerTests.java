@@ -100,12 +100,6 @@ class PlannerTests {
             return super.explainTerms( pw ).item( "label", label );
         }
 
-
-        @Override
-        public String algCompareString() {
-            return this.getClass().getSimpleName() + "$" + label + "&";
-        }
-
     }
 
 
@@ -128,12 +122,6 @@ class PlannerTests {
         @Override
         protected AlgDataType deriveRowType() {
             return getInput().getTupleType();
-        }
-
-
-        @Override
-        public String algCompareString() {
-            return this.getClass().getSimpleName() + "$" + input.algCompareString() + "&";
         }
 
     }

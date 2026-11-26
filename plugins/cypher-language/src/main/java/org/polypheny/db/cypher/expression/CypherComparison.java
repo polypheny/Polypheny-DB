@@ -16,11 +16,14 @@
 
 package org.polypheny.db.cypher.expression;
 
+import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
@@ -42,10 +45,20 @@ public class CypherComparison extends CypherExpression {
 
 
     @Override
-    public Pair<PolyString, RexNode> getRex( CypherContext context, RexType type ) {
+    protected Pair<PolyString, RexNode> toRex( CypherContext context, RexType type ) {
+        if ( right == null ) {
+            RexNode input = left.getRex( context, RexType.PROJECT ).right;
+            return Pair.of( null, context.rexBuilder.makeCall( OperatorRegistry.get( operatorName ), input ) );
+        }
         Pair<PolyString, RexNode> namedLeft = left.getRex( context, type );
         Pair<PolyString, RexNode> namedRight = right.getRex( context, type );
 
+        if ( operatorName == OperatorName.IN ) {
+            requireListOperand( namedRight.right, "IN requires a list on its right side." );
+            return Pair.of( null, context.rexBuilder.makeCall(
+                    context.typeFactory.createTypeWithNullability( context.booleanType, true ),
+                    OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_IN ), List.of( namedLeft.right, namedRight.right ) ) );
+        }
         return Pair.of( null, context.getBinaryOperation( operatorName, namedLeft.right, namedRight.right ) );
     }
 

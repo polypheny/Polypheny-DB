@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
+import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMatch;
 import org.polypheny.db.algebra.polyalg.arguments.ListArg;
@@ -72,11 +73,11 @@ public abstract class LpgMatch extends SingleAlg implements LpgAlg {
 
 
     @Override
-    public String algCompareString() {
-        return getClass().getSimpleName() + "$" +
-                matches.hashCode() + "$" +
-                names.hashCode() + "$" +
-                input.algCompareString() + "&";
+    public AlgWriter explainTerms( AlgWriter writer ) {
+        return super.explainTerms( writer )
+                .item( "matches", matches )
+                .item( "names", names )
+                .item( "type", getTupleType() );
     }
 
 
@@ -93,7 +94,12 @@ public abstract class LpgMatch extends SingleAlg implements LpgAlg {
         if ( exp == exps ) {
             return this;
         }
-        return new LogicalLpgMatch( getCluster(), traitSet, input, exps.stream().map( e -> (RexCall) e ).toList(), names );
+        return copyWithMatches( exps.stream().map( e -> (RexCall) e ).toList() );
+    }
+
+
+    protected LogicalLpgMatch copyWithMatches( List<RexCall> matches ) {
+        return new LogicalLpgMatch( getCluster(), traitSet, input, matches, names );
     }
 
 

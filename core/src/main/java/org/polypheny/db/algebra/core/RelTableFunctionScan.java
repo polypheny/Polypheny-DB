@@ -41,7 +41,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AbstractAlgNode;
 import org.polypheny.db.algebra.AlgNode;
@@ -202,15 +201,6 @@ public abstract class RelTableFunctionScan extends AbstractAlgNode {
      */
     public Type getElementType() {
         return elementType;
-    }
-
-
-    @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                getInputs().stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) ) + "$" +
-                (getCall() != null ? getCall().hashCode() : "") + "$" +
-                rowType.toString() + "&";
     }
 
 

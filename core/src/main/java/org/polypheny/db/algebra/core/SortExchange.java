@@ -35,7 +35,6 @@ package org.polypheny.db.algebra.core;
 
 
 import java.util.Objects;
-import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgCollation;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.AlgDistribution;
@@ -117,15 +116,6 @@ public abstract class SortExchange extends Exchange {
     @Override
     public AlgWriter explainTerms( AlgWriter pw ) {
         return super.explainTerms( pw ).item( "collation", collation );
-    }
-
-
-    @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                input.algCompareString() + "$" +
-                (distribution != null ? distribution.getKeys().stream().map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "$" +
-                (collation != null ? collation.getFieldCollations().stream().map( AlgFieldCollation::getDirection ).map( Objects::toString ).collect( Collectors.joining( "$" ) ) : "") + "&";
     }
 
 }

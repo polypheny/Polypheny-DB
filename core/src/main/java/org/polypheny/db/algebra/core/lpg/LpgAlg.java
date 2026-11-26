@@ -28,6 +28,8 @@ public interface LpgAlg {
 
     enum NodeType {
         MATCH,
+        JOIN,
+        UNION,
         FILTER,
         SCAN,
         UNWIND,
@@ -36,6 +38,7 @@ public interface LpgAlg {
         VALUES,
         AGGREGATE,
         MERGE,
+        FOREACH,
         SORT
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -105,9 +105,12 @@ import org.polypheny.db.algebra.metadata.BuiltInMetadata.TableReferences;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.TupleCount;
 import org.polypheny.db.algebra.metadata.BuiltInMetadata.UniqueKeys;
 import org.polypheny.db.algebra.metadata.Metadata;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.functions.CrossModelFunctions;
 import org.polypheny.db.functions.CypherFunctions;
+import org.polypheny.db.functions.CypherScalarFunction;
+import org.polypheny.db.functions.CypherTemporalFunction;
 import org.polypheny.db.functions.Functions;
 import org.polypheny.db.functions.Functions.FlatProductInputType;
 import org.polypheny.db.functions.GeoFunctions;
@@ -129,6 +132,7 @@ import org.polypheny.db.runtime.Utilities;
 import org.polypheny.db.schema.SchemaPlus;
 import org.polypheny.db.schema.types.QueryableEntity;
 import org.polypheny.db.schema.types.ScannableEntity;
+import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyList;
@@ -155,6 +159,9 @@ public enum BuiltInMethod {
     SWITCH_CONTEXT( DataContext.class, "switchContext" ),
     BATCH( Functions.class, "batch", DataContext.class, Enumerable.class ),
     STREAM_RIGHT( Functions.class, "streamRight", DataContext.class, Enumerable.class, Function0.class, List.class ),
+    STREAM_GRAPH_ROWS( Functions.class, "streamGraphRows", DataContext.class, Enumerable.class, Function0.class, List.class, boolean.class ),
+    APPEND_GRAPH_ROW_ID( Functions.class, "appendGraphRowId", Enumerable.class ),
+    MATERIALIZE_GRAPH_ROWS( Functions.class, "materializeGraphRows", Enumerable.class, boolean.class ),
     ENFORCE_CONSTRAINT( Functions.class, "enforceConstraint", DataContext.class, Function0.class, Function0.class, List.class, List.class ),
     PARSE_ARRAY_FROM_TEXT( Functions.class, "reparse", String.class ),
     QUERYABLE_SELECT( Queryable.class, "select", FunctionExpression.class ),
@@ -190,6 +197,7 @@ public enum BuiltInMethod {
     DISTINCT2( ExtendedEnumerable.class, "distinct", EqualityComparer.class ),
     GROUP_BY( ExtendedEnumerable.class, "groupBy", Function1.class ),
     GROUP_BY2( ExtendedEnumerable.class, "groupBy", Function1.class, Function0.class, Function2.class, Function2.class ),
+    GROUP_BY_WITH_COMPARER( ExtendedEnumerable.class, "groupBy", Function1.class, Function0.class, Function2.class, Function2.class, EqualityComparer.class ),
     GROUP_BY_MULTIPLE( EnumerableDefaults.class, "groupByMultiple", Enumerable.class, List.class, Function0.class, Function2.class, Function2.class ),
     AGGREGATE( ExtendedEnumerable.class, "aggregate", Object.class, Function2.class, Function1.class ),
     ORDER_BY( ExtendedEnumerable.class, "orderBy", Function1.class, Comparator.class ),
@@ -266,6 +274,7 @@ public enum BuiltInMethod {
     JSON_API_COMMON_SYNTAX( Functions.class, "jsonApiCommonSyntax", PolyValue.class, PolyString.class ),
     JSON_EXISTS( Functions.class, "jsonExists", PolyValue.class ),
     JSON_VALUE_ANY( Functions.class, "jsonValueAny", PolyValue.class, JsonValueEmptyOrErrorBehavior.class, PolyValue.class, JsonValueEmptyOrErrorBehavior.class, PolyValue.class ),
+    JSON_VALUE_TYPED( Functions.class, "jsonValueAny", PolyValue.class, JsonValueEmptyOrErrorBehavior.class, PolyValue.class, JsonValueEmptyOrErrorBehavior.class, PolyValue.class, Function1.class ),
     JSON_QUERY( Functions.class, "jsonQuery", PolyValue.class, JsonQueryWrapperBehavior.class, JsonQueryEmptyOrErrorBehavior.class, JsonQueryEmptyOrErrorBehavior.class ),
     JSON_OBJECT( Functions.class, "jsonObject", JsonConstructorNullClause.class ),
     JSON_OBJECTAGG_ADD( Functions.class, "jsonObjectAggAdd", Map.class, String.class, PolyValue.class, JsonConstructorNullClause.class ),
@@ -295,8 +304,10 @@ public enum BuiltInMethod {
     RAND_INTEGER_SEED( RandomFunction.class, "randIntegerSeed", PolyNumber.class, PolyNumber.class ),
     TRUNCATE( Functions.class, "truncate", PolyString.class, int.class ),
     TRUNCATE_OR_PAD( Functions.class, "truncateOrPad", PolyString.class, int.class ),
+    TRUNCATE_BINARY( Functions.class, "truncate", PolyBinary.class, int.class ),
+    TRUNCATE_OR_PAD_BINARY( Functions.class, "truncateOrPad", PolyBinary.class, int.class ),
     TRIM( Functions.class, "trim", boolean.class, boolean.class, String.class, String.class, boolean.class ),
-    REPLACE( Functions.class, "replace", String.class, String.class, String.class ),
+    REPLACE( Functions.class, "replace", PolyString.class, PolyString.class, PolyString.class ),
     TRANSLATE3( Functions.class, "translate3", String.class, String.class, String.class ),
     LTRIM( Functions.class, "ltrim", String.class ),
     RTRIM( Functions.class, "rtrim", String.class ),
@@ -488,6 +499,16 @@ public enum BuiltInMethod {
     ST_GEOMETRYN( GeoFunctions.class, "stGeometryN", PolyGeometry.class, PolyInteger.class ),
     /// MQL BUILT-IN METHODS
     MQL_EQ( MqlFunctions.class, "docEq", PolyValue.class, PolyValue.class ),
+    MQL_NE( MqlFunctions.class, "docNe", PolyValue.class, PolyValue.class ),
+    MQL_EXPR_QUERY_VALUE( MqlFunctions.class, "docExprQueryValue", PolyValue.class, List.class ),
+    MQL_EXPR_DOCUMENT( MqlFunctions.class, "docExprDocument", PolyValue.class, PolyValue[].class ),
+    MQL_EXPR_ARRAY( MqlFunctions.class, "docExprArray", PolyValue[].class ),
+    MQL_EXPR_EQ( MqlFunctions.class, "docExprEq", PolyValue.class, PolyValue.class ),
+    MQL_EXPR_NE( MqlFunctions.class, "docExprNe", PolyValue.class, PolyValue.class ),
+    MQL_EXPR_LT( MqlFunctions.class, "docExprLt", PolyValue.class, PolyValue.class ),
+    MQL_EXPR_LTE( MqlFunctions.class, "docExprLte", PolyValue.class, PolyValue.class ),
+    MQL_EXPR_GT( MqlFunctions.class, "docExprGt", PolyValue.class, PolyValue.class ),
+    MQL_EXPR_GTE( MqlFunctions.class, "docExprGte", PolyValue.class, PolyValue.class ),
     MQL_GT( MqlFunctions.class, "docGt", PolyValue.class, PolyValue.class ),
     MQL_GTE( MqlFunctions.class, "docGte", PolyValue.class, PolyValue.class ),
     MQL_LT( MqlFunctions.class, "docLt", PolyValue.class, PolyValue.class ),
@@ -508,34 +529,92 @@ public enum BuiltInMethod {
     MQL_GET_ARRAY( MqlFunctions.class, "docGetArray", PolyValue.class ),
     MQL_EXISTS( MqlFunctions.class, "docExists", PolyValue.class, PolyValue.class, List.class ),
     MQL_MERGE( MqlFunctions.class, "mergeDocument", PolyValue.class, PolyList.class, PolyValue[].class ),
+    MQL_MERGE_ADD( MqlFunctions.class, "mergeDocumentAdd", PolyValue.class, PolyList.class, PolyValue[].class ),
     MQL_NOT_UNSET( MqlFunctions.class, "notUnset", PolyValue.class ),
+
+    // GeoFunctions
+    MQL_GEO_INTERSECTS( MqlFunctions.class, "docGeoIntersects", PolyValue.class, PolyValue.class ),
+    MQL_GEO_WITHIN( MqlFunctions.class, "docGeoWithin", PolyValue.class, PolyValue.class, PolyValue.class ),
+    MQL_GEO_DISTANCE( MqlFunctions.class, "docGeoDistance", PolyValue.class, PolyValue.class, PolyValue.class ),
+//    MQL_NEAR( MqlFunctions.class, "docNear", PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class ),
+//    MQL_NEAR_SPHERE( MqlFunctions.class, "docNearSphere", PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class ),
+//    MQL_GEO_NEAR( MqlFunctions.class, "notUnset", PolyValue.class ),
 
     MQL_PROJECT_INCLUDES( MqlFunctions.class, "projectIncludes", PolyValue.class, PolyList.class, PolyValue[].class ),
     MQL_REPLACE_ROOT( MqlFunctions.class, "replaceRoot", PolyValue.class ),
     CYPHER_LIKE( CypherFunctions.class, "like", PolyValue.class, PolyValue.class ),
+    CYPHER_EQUALS( CypherFunctions.class, "equal", PolyValue.class, PolyValue.class ),
+    CYPHER_NOT_EQUALS( CypherFunctions.class, "notEqual", PolyValue.class, PolyValue.class ),
+    CYPHER_IN( CypherFunctions.class, "in", PolyValue.class, PolyValue.class ),
+    CYPHER_LAST( CypherFunctions.class, "last", PolyValue.class ),
+    CYPHER_INDEX( CypherFunctions.class, "index", PolyValue.class, PolyValue.class ),
+    CYPHER_SLICE( CypherFunctions.class, "slice", PolyValue.class, PolyValue.class, PolyValue.class ),
+    CYPHER_MAP_CONSTRUCTOR( CypherFunctions.class, "constructMap", PolyValue[].class ),
+    CYPHER_NODES( CypherFunctions.class, "nodes", PolyValue.class ),
+    CYPHER_RELATIONSHIPS( CypherFunctions.class, "relationships", PolyValue.class ),
+    CYPHER_SHORTEST_PATH_VALUE( CypherFunctions.class, "shortestPathValue", PolyGraph.class, PolyPath.class, PolyValue.class, PolyValue.class,
+            PolyValue.class, Function0.class, Function0.class, Function0.class ),
+    CYPHER_LENGTH( CypherFunctions.class, "pathLength", PolyValue.class ),
+    CYPHER_SIZE( CypherFunctions.class, "size", PolyValue.class ),
+    CYPHER_SCALAR_FUNCTION( CypherScalarFunction.class, "evaluate", PolyString.class, PolyValue[].class ),
+    CYPHER_RAND( CypherScalarFunction.class, "random", PolyString.class ),
+    CYPHER_TEMPORAL_FUNCTION( CypherTemporalFunction.class, "evaluate", PolyString.class, PolyValue[].class, DataContext.class, PolyString.class ),
+    CYPHER_RANGE( CypherFunctions.class, "range", PolyValue.class, PolyValue.class, PolyValue.class ),
+    CYPHER_TYPE( CypherFunctions.class, "relationshipType", PolyValue.class ),
+    CYPHER_ID( CypherFunctions.class, "entityId", PolyValue.class ),
+    CYPHER_LABELS( CypherFunctions.class, "nodeLabels", PolyValue.class ),
+    CYPHER_ARITHMETIC( CypherFunctions.class, "arithmetic", PolyString.class, PolyValue.class, PolyValue.class ),
+    CYPHER_LESS_THAN( CypherFunctions.class, "lessThan", PolyValue.class, PolyValue.class ),
+    CYPHER_LESS_THAN_OR_EQUAL( CypherFunctions.class, "lessThanOrEqual", PolyValue.class, PolyValue.class ),
+    CYPHER_GREATER_THAN( CypherFunctions.class, "greaterThan", PolyValue.class, PolyValue.class ),
+    CYPHER_GREATER_THAN_OR_EQUAL( CypherFunctions.class, "greaterThanOrEqual", PolyValue.class, PolyValue.class ),
+    CYPHER_STARTS_WITH( CypherFunctions.class, "startsWith", PolyValue.class, PolyValue.class ),
+    CYPHER_ENDS_WITH( CypherFunctions.class, "endsWith", PolyValue.class, PolyValue.class ),
+    CYPHER_CONTAINS( CypherFunctions.class, "contains", PolyValue.class, PolyValue.class ),
     CYPHER_PATH_MATCH( CypherFunctions.class, "pathMatch", PolyGraph.class, PolyPath.class ),
-    CYPHER_HAS_LABEL( CypherFunctions.class, "hasLabel", PolyNode.class, PolyString.class ),
-    CYPHER_HAS_PROPERTY( CypherFunctions.class, "hasProperty", PolyNode.class, PolyString.class ),
+    CYPHER_SHORTEST_PATH_MATCH( CypherFunctions.class, "shortestPathMatch", PolyGraph.class, PolyPath.class ),
+    CYPHER_HAS_LABEL( CypherFunctions.class, "hasLabel", PolyValue.class, PolyValue.class ),
+    CYPHER_HAS_PROPERTY( CypherFunctions.class, "hasProperty", GraphPropertyHolder.class, PolyString.class ),
+    CYPHER_PROPERTY_EXISTS( CypherFunctions.class, "propertyExists", PolyValue.class, PolyString.class ),
+    CYPHER_PATTERN_EXISTS( CypherFunctions.class, "patternExists", PolyGraph.class, PolyPath.class, PolyValue.class, PolyString[].class, Function0[].class ),
+    CYPHER_GRAPH_VALUE( CypherFunctions.class, "graphValue", PolyGraph.class ),
     CYPHER_NODE_MATCH( CypherFunctions.class, "nodeMatch", PolyGraph.class, PolyNode.class ),
     CYPHER_NODE_EXTRACT( CypherFunctions.class, "nodeExtract", PolyGraph.class ),
     CYPHER_MATCH_CTOR( MatchEnumerable.class, List.class ),
     CYPHER_EXTRACT_FROM_PATH( CypherFunctions.class, "extractFrom", PolyPath.class, PolyString.class ),
-    CYPHER_EXTRACT_PROPERTY( CypherFunctions.class, "extractProperty", GraphPropertyHolder.class, PolyString.class ),
+    CYPHER_PATHS_DISJOINT( CypherFunctions.class, "pathsDisjoint", PolyPath.class, PolyPath.class ),
+    CYPHER_EXTRACT_PROPERTY( CypherFunctions.class, "extractProperty", PolyValue.class, PolyString.class ),
     CYPHER_EXTRACT_PROPERTIES( CypherFunctions.class, "extractProperties", GraphPropertyHolder.class ),
     CYPHER_EXTRACT_ID( CypherFunctions.class, "extractId", GraphPropertyHolder.class ),
+    CYPHER_MATCH_ELEMENT_ID( CypherFunctions.class, "matchElementId", PolyValue.class, PolyString.class ),
+    CYPHER_VALIDATE_MATCH_NODE( CypherFunctions.class, "validateMatchNode", PolyValue.class, PolyBoolean.class ),
+    CYPHER_MATCH_PROPERTIES( CypherFunctions.class, "matchProperties", PolyValue.class, Function0.class ),
+    CYPHER_MATCH_VISIBLE_PATH( CypherFunctions.class, "visibleMatchPath", PolyPath.class, PolyList.class ),
+    CYPHER_BOOLEAN_PREDICATE( CypherFunctions.class, "booleanPredicate", PolyValue.class ),
+    CYPHER_QUANTIFY( CypherFunctions.class, "quantify", OperatorName.class, PolyValue.class, Function1.class ),
+    CYPHER_MATCH_WITH_WHERE( CypherFunctions.class, "matchWithWhere", PolyBoolean.class, PolyBoolean.class ),
+    CYPHER_VALIDATE_MATCH_RELATIONSHIP_LIST( CypherFunctions.class, "validateMatchRelationshipList", PolyValue.class, PolyBoolean.class ),
     CYPHER_EXTRACT_LABELS( CypherFunctions.class, "extractLabels", GraphPropertyHolder.class ),
     CYPHER_EXTRACT_LABEL( CypherFunctions.class, "extractLabel", GraphPropertyHolder.class ),
     CYPHER_TO_LIST( CypherFunctions.class, "toList", PolyValue.class ),
     CYPHER_ADJUST_EDGE( CypherFunctions.class, "adjustEdge", PolyEdge.class, PolyNode.class, PolyNode.class ),
-    CYPHER_SET_PROPERTY( CypherFunctions.class, "setProperty", GraphPropertyHolder.class, PolyString.class, PolyValue.class ),
-    CYPHER_SET_PROPERTIES( CypherFunctions.class, "setProperties", GraphPropertyHolder.class, List.class, List.class, PolyBoolean.class ),
-    CYPHER_SET_LABELS( CypherFunctions.class, "setLabels", GraphPropertyHolder.class, List.class, PolyBoolean.class ),
-    CYPHER_REMOVE_LABELS( CypherFunctions.class, "removeLabels", GraphPropertyHolder.class, List.class ),
-    CYPHER_REMOVE_PROPERTY( CypherFunctions.class, "removeProperty", GraphPropertyHolder.class, String.class ),
+    CYPHER_CREATE_NODE( CypherFunctions.class, "createNode", PolyNode.class, PolyString.class, List.class, List.class ),
+    CYPHER_CREATE_EDGE( CypherFunctions.class, "createEdge", PolyEdge.class, PolyString.class, PolyValue.class, PolyValue.class, List.class, List.class ),
+    CYPHER_CREATE_PATH( CypherFunctions.class, "createPath", List.class ),
+    CYPHER_SET_PROPERTY( CypherFunctions.class, "setProperty", PolyValue.class, PolyString.class, PolyValue.class ),
+    CYPHER_SET_PROPERTIES( CypherFunctions.class, "setProperties", PolyValue.class, PolyValue.class, PolyBoolean.class ),
+    CYPHER_SET_LABELS( CypherFunctions.class, "setLabels", PolyValue.class, List.class, PolyBoolean.class ),
+    CYPHER_REMOVE_LABELS( CypherFunctions.class, "removeLabels", PolyValue.class, List.class ),
+    CYPHER_REMOVE_PROPERTY( CypherFunctions.class, "removeProperty", PolyValue.class, PolyString.class ),
+    CYPHER_POINT( CypherFunctions.class, "point", PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class, PolyValue.class ),
+    CYPHER_DISTANCE( CypherFunctions.class, "distance", PolyValue.class, PolyValue.class ),
+    CYPHER_DISTANCE_NEO4J( CypherFunctions.class, "distanceNeo4j", PolyValue.class, PolyValue.class ),
+    CYPHER_WITHIN_BBOX( CypherFunctions.class, "withinBBox", PolyValue.class, PolyValue.class, PolyValue.class ),
+    CYPHER_WITHIN_GEOMETRY( CypherFunctions.class, "withinGeometry", PolyValue.class, PolyValue.class ),
     TO_NODE( CypherFunctions.class, "toNode", Enumerable.class ),
     TO_EDGE( CypherFunctions.class, "toEdge", Enumerable.class ),
     TO_GRAPH( CypherFunctions.class, "toGraph", Enumerable.class, Enumerable.class ),
-    SPLIT_GRAPH_MODIFY( CrossModelFunctions.class, "sendGraphModifies", DataContext.class, List.class, List.class, Operation.class ),
+    SPLIT_GRAPH_MODIFY( CrossModelFunctions.class, "sendGraphModifies", DataContext.class, List.class, List.class, Operation.class, boolean.class ),
     X_MODEL_TABLE_TO_NODE( CrossModelFunctions.class, "tableToNodes", Enumerable.class, PolyString.class, List.class ),
     X_MODEL_MERGE_NODE_COLLECTIONS( CrossModelFunctions.class, "mergeNodeCollections", List.class ),
     X_MODEL_COLLECTION_TO_NODE( CrossModelFunctions.class, "collectionToNodes", Enumerable.class, PolyString.class ),
@@ -545,12 +624,8 @@ public enum BuiltInMethod {
     SINGLE_TO_ARRAY_ENUMERABLE( Functions.class, "singleToArray", Enumerable.class ),
     TO_JSON( PolyValue.class, "toPolyJson" );
 
-    private static final String toIntOptional = "toIntOptional";
-    public final Method method;
-    public final Constructor<?> constructor;
-    public final Field field;
-
     public static final ImmutableMap<Method, BuiltInMethod> MAP;
+    private static final String toIntOptional = "toIntOptional";
 
 
     static {
@@ -562,6 +637,11 @@ public enum BuiltInMethod {
         }
         MAP = builder.build();
     }
+
+
+    public final Method method;
+    public final Constructor<?> constructor;
+    public final Field field;
 
 
     BuiltInMethod( Method method, Constructor<?> constructor, Field field ) {

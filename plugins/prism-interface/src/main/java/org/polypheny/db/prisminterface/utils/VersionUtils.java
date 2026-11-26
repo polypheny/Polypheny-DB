@@ -24,7 +24,7 @@ import lombok.Getter;
 
 public class VersionUtils {
 
-    private static final String API_VERSION_PROPERTIES = "prism-api-version.properties";
+    private static final String API_VERSION_PROPERTIES = "/org/polypheny/db/prisminterface/prism-api-version.properties";
 
     @Getter
     private static final int MAJOR_API_VERSION;
@@ -36,7 +36,7 @@ public class VersionUtils {
 
     static {
         Properties properties = new Properties();
-        try ( InputStream inputStream = VersionUtils.class.getClassLoader().getResourceAsStream( API_VERSION_PROPERTIES ) ) {
+        try ( InputStream inputStream = VersionUtils.class.getResourceAsStream( API_VERSION_PROPERTIES ) ) {
             if ( inputStream != null ) {
                 properties.load( inputStream );
                 API_VERSION_STRING = properties.getProperty( "version" );

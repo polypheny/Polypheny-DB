@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,12 @@ import com.google.common.base.Preconditions;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
 import lombok.NonNull;
 import lombok.Value;
@@ -35,6 +38,7 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.ParameterExpression;
 import org.polypheny.db.algebra.AlgFieldCollation;
+import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.NullCollation;
 import org.polypheny.db.algebra.core.Aggregate;
@@ -49,6 +53,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystemImpl;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.TimeUnitRange;
+import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.sql.language.dialect.JethroDataSqlDialect;
 import org.polypheny.db.sql.language.dialect.JethroDataSqlDialect.JethroInfo;
 import org.polypheny.db.sql.language.util.SqlBuilder;
@@ -57,8 +62,12 @@ import org.polypheny.db.sql.language.validate.SqlType;
 import org.polypheny.db.type.BasicPolyType;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
+import org.polypheny.db.type.VectorType;
+import org.polypheny.db.type.VectorType.ElementType;
 import org.polypheny.db.type.entity.PolyBinary;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyBlob;
 import org.polypheny.db.type.entity.spatial.PolyGeometry;
 import org.polypheny.db.util.temporal.DateTimeUtils;
@@ -79,17 +88,18 @@ public class SqlDialect {
      * Empty context.
      */
     public static final Context EMPTY_CONTEXT = emptyContext();
-
+    private static final char[] HEXITS = {
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f',
+    };
+    @NonNull
+    protected NullCollation nullCollation;
+    @NonNull
+    protected Set<SqlDbFeature> supportedFeatures = new HashSet<>();
     @NonNull
     String name;
-
     String identifierQuoteString;
     String identifierEndQuoteString;
     String identifierEscapedQuote;
-
-    @NonNull
-    protected NullCollation nullCollation;
-
     @NonNull
     AlgDataTypeSystem dataTypeSystem;
 
@@ -134,6 +144,23 @@ public class SqlDialect {
                 NullCollation.HIGH,
                 AlgDataTypeSystemImpl.DEFAULT,
                 JethroDataSqlDialect.JethroInfo.EMPTY );
+    }
+
+
+    /**
+     * Returns whether the string contains any characters outside the comfortable 7-bit ASCII range (32 through 127).
+     *
+     * @param s String
+     * @return Whether string contains any non-7-bit-ASCII characters
+     */
+    private static boolean containsNonAscii( String s ) {
+        for ( int i = 0; i < s.length(); i++ ) {
+            char c = s.charAt( i );
+            if ( c < 32 || c >= 128 ) {
+                return true;
+            }
+        }
+        return false;
     }
 
 
@@ -245,6 +272,11 @@ public class SqlDialect {
     }
 
 
+    public void unparseCharStringLiteral( SqlWriter writer, PolyString value ) {
+        writer.literal( value.toPrefixedString() );
+    }
+
+
     public void unparseSqlDatetimeArithmetic( SqlWriter writer, SqlCall call, Kind kind, int leftPrec, int rightPrec ) {
         final SqlWriter.Frame frame = writer.startList( "(", ")" );
         ((SqlNode) call.operand( 0 )).unparse( writer, leftPrec, rightPrec );
@@ -323,23 +355,6 @@ public class SqlDialect {
 
 
     /**
-     * Returns whether the string contains any characters outside the comfortable 7-bit ASCII range (32 through 127).
-     *
-     * @param s String
-     * @return Whether string contains any non-7-bit-ASCII characters
-     */
-    private static boolean containsNonAscii( String s ) {
-        for ( int i = 0; i < s.length(); i++ ) {
-            char c = s.charAt( i );
-            if ( c < 32 || c >= 128 ) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-
-    /**
      * Converts a string into a unicode string literal. For example,
      * <code>can't{tab}run\</code> becomes <code>u'can''t\0009run\\'</code>.
      */
@@ -362,11 +377,6 @@ public class SqlDialect {
         }
         buf.append( "'" );
     }
-
-
-    private static final char[] HEXITS = {
-            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f',
-    };
 
 
     protected boolean allowsAs() {
@@ -512,6 +522,30 @@ public class SqlDialect {
             type = new PolyTypeFactoryImpl( AlgDataTypeSystem.DEFAULT ).createPolyType( PolyType.BINARY );
         }
         return (SqlNode) SqlTypeUtil.convertTypeToSpec( type );
+    }
+
+
+    /**
+     * Returns the cast type for a bound parameter in generated SQL.
+     */
+    public SqlNode getParameterCastSpec( AlgDataType type ) {
+        return getCastSpec( type );
+    }
+
+
+    /**
+     * Returns whether this dialect can evaluate the call in a pushed-down JDBC plan.
+     */
+    public boolean supportsRexCall( AlgNode alg, RexCall rexCall ) {
+        return true;
+    }
+
+
+    /**
+     * Rewrites a generated SQL call using the logical operand types available in its Rex call.
+     */
+    public SqlCall rewriteRexCall( RexCall rexCall, SqlCall sqlCall ) {
+        return sqlCall;
     }
 
 
@@ -695,8 +729,37 @@ public class SqlDialect {
     }
 
 
+    public List<OperatorName> supportedKnnFunctions() {
+        return List.of();
+    }
+
+
+    public boolean supportsVector() {
+        return false;
+    }
+
+
     public boolean supportsComplexBinary() {
         return true;
+    }
+
+
+    /**
+     * Returns whether this dialect supports a specific database feature (e.g., pgvector for PostgreSQL).
+     * Override in dialect to use.
+     */
+    public boolean supportsFeature( SqlDbFeature feature ) {
+        return false;
+    }
+
+
+    public void addSupportedFeatures( Set<SqlDbFeature> features ) {
+        supportedFeatures.addAll( features );
+    }
+
+
+    public Set<SqlDbFeature> getSupportedFeatures() {
+        return Collections.unmodifiableSet( supportedFeatures );
     }
 
 
@@ -763,11 +826,88 @@ public class SqlDialect {
     }
 
 
+    public IntervalParameterStrategy getIntervalParameterStrategy() {
+        return IntervalParameterStrategy.CAST;
+    }
+
+
+    /**
+     * Override this to provide a custom Linq4j Expression when the JDBC driver does not
+     * support standard {@code java.sql.Array} retrieval for a specific column type.
+     *
+     * <p>If {@link Optional#empty()} is returned, the caller falls back to the default
+     * {@code getArray()} path. Any returned expression must evaluate to a
+     * {@code Collection<? extends PolyValue>} suitable for {@link PolyList#of}.
+     */
+    public Optional<Expression> getCustomArrayRetrievalExpression( ParameterExpression resultSet, int i, AlgDataType fieldType ) {
+        return Optional.empty();
+    }
+
+
+    /**
+     * Dialect specific setup on new connection, e.g. register certain non-standard types.
+     */
+    public void initializeConnection( java.sql.Connection conn ) throws java.sql.SQLException {
+
+    }
+
+
+    /**
+     * Returns whether the underlying database supports a vector with the given {@link ElementType}.
+     */
+    public boolean vectorPushdownTypeIsPresent( VectorType.ElementType vectorType ) {
+        return false;
+    }
+
+
+    /**
+     * <p>Takes a vector type, i.e. the {@link ElementType} of a vector and returns the database specific object for that vector type.</p>
+     * <p>Each dialect needs to overwrite this method, if providing dedicated vectors requiring non-standard vector database objects, in order to implement correct handling.</p>
+     * <p>It is strongly advised to first check {@link SqlDialect#vectorPushdownTypeIsPresent(ElementType)} since otherwise the object will be null.</p>
+     *
+     * @param vectorType The type of the vector elements.
+     * @param vectorAsList A {@link PolyList} representing the vector values.
+     * @return The database specific representation of the vector. Can be {@code null}.
+     */
+    public Object getVectorDbObject( VectorType.ElementType vectorType, PolyList<PolyValue> vectorAsList ) {
+        return null;
+    }
+
+
+    /**
+     * <p>Takes a vector type, i.e. the {@link ElementType} and returns the type string of the vector type.</p>
+     * <p>Each dialect needs to overwrite this method, if providing dedicated vectors with non-standard type definitions, in order to implement correct handling.</p>
+     * <p>It is strongly advised to first check {@link SqlDialect#vectorPushdownTypeIsPresent(ElementType)} since otherwise the string will be null.</p>
+     *
+     * @param vectorType the element type of the vector indicating the vector type
+     * @return type string of the vector type
+     */
+    public String getTypeString( VectorType.ElementType vectorType ) {
+        return null;
+    }
+
+
+    /**
+     * Returns a SqlNode that represents a vector literal for this dialect.
+     * Returns null if the dialect does not have a special syntax for vectors.
+     */
+    public SqlNode getVectorLiteral( VectorType vectorType, PolyList<PolyValue> vectorAsList, ParserPos pos ) {
+        return null;
+    }
+
+
     public enum IntervalParameterStrategy {CAST, MULTIPLICATION, NONE}
 
 
-    public IntervalParameterStrategy getIntervalParameterStrategy() {
-        return IntervalParameterStrategy.CAST;
+    /**
+     * Whether this JDBC driver needs you to pass a Calendar object to methods such as {@link ResultSet#getTimestamp(int, java.util.Calendar)}.
+     */
+    public enum CalendarPolicy {
+        NONE,
+        NULL,
+        LOCAL,
+        DIRECT,
+        SHIFT
     }
 
 
@@ -809,18 +949,6 @@ public class SqlDialect {
 
 
     /**
-     * Whether this JDBC driver needs you to pass a Calendar object to methods such as {@link ResultSet#getTimestamp(int, java.util.Calendar)}.
-     */
-    public enum CalendarPolicy {
-        NONE,
-        NULL,
-        LOCAL,
-        DIRECT,
-        SHIFT
-    }
-
-
-    /**
      * Information for creating a dialect.
      * <p>
      * It is immutable; to "set" a property, call one of the "with" methods, which returns a new context with the desired property value.
@@ -836,6 +964,5 @@ public class SqlDialect {
     ) {
 
     }
-
 
 }

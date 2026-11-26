@@ -34,8 +34,12 @@
 package org.polypheny.db.algebra.enumerable;
 
 
+import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.core.Union;
+import org.polypheny.db.algebra.enumerable.lpg.EnumerableLpgUnion;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalRelUnion;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.plan.Convention;
@@ -47,16 +51,25 @@ import org.polypheny.db.plan.Convention;
 public class EnumerableUnionRule extends ConverterRule {
 
     EnumerableUnionRule() {
-        super( LogicalRelUnion.class, Convention.NONE, EnumerableConvention.INSTANCE, "EnumerableUnionRule" );
+        this( LogicalRelUnion.class, "EnumerableUnionRule" );
+    }
+
+
+    EnumerableUnionRule( Class<? extends Union> type, String description ) {
+        super( type, Convention.NONE, EnumerableConvention.INSTANCE, description );
     }
 
 
     @Override
     public AlgNode convert( AlgNode alg ) {
-        final LogicalRelUnion union = (LogicalRelUnion) alg;
+        final Union union = (Union) alg;
         final EnumerableConvention out = EnumerableConvention.INSTANCE;
         final AlgTraitSet traitSet = union.getTraitSet().replace( out );
-        return new EnumerableUnion( alg.getCluster(), traitSet, convertList( union.getInputs(), out ), union.all );
+        List<AlgNode> inputs = convertList( union.getInputs(), out );
+        if ( union instanceof LogicalLpgUnion ) {
+            return new EnumerableLpgUnion( alg.getCluster(), traitSet, inputs, union.all );
+        }
+        return new EnumerableUnion( alg.getCluster(), traitSet, inputs, union.all );
     }
 
 }

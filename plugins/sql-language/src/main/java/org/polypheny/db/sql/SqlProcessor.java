@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,7 @@ import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.runtime.PolyphenyDbException;
+import org.polypheny.db.runtime.SqlStateException;
 import org.polypheny.db.sql.language.SqlBasicCall;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlInsert;
@@ -85,8 +86,6 @@ public class SqlProcessor extends Processor {
 
     private static final ParserConfig parserConfig;
 
-    private PolyphenyDbSqlValidator validator;
-
 
     static {
         SqlParser.ConfigBuilder configConfigBuilder = Parser.configBuilder();
@@ -94,6 +93,9 @@ public class SqlProcessor extends Processor {
         configConfigBuilder.setQuotedCasing( Casing.UNCHANGED );
         parserConfig = configConfigBuilder.build();
     }
+
+
+    private PolyphenyDbSqlValidator validator;
 
 
     public SqlProcessor() {
@@ -166,7 +168,7 @@ public class SqlProcessor extends Processor {
         } catch ( Exception e ) {
             log.error( "Exception while validating query", e );
             String message = e.getLocalizedMessage();
-            throw new GenericRuntimeException( "Exception while validating query: " + (message == null ? "unrecoverable error" : message) );
+            throw new GenericRuntimeException( "Exception while validating query: " + (message == null ? "unrecoverable error" : message), e );
         }
         stopWatch.stop();
         if ( log.isTraceEnabled() ) {
@@ -258,6 +260,10 @@ public class SqlProcessor extends Processor {
 
             catalogTable = getTable( transaction, (SqlIdentifier) insert.getTargetTable() );
 
+            if ( !(insert.getSource() instanceof SqlBasicCall) ) {
+                return;
+            }
+
             SqlNodeList newColumnList = new SqlNodeList( ParserPos.ZERO );
             int size = catalogTable.getColumns().size();
             if ( dataModel == DataModel.DOCUMENT ) {
@@ -309,12 +315,12 @@ public class SqlProcessor extends Processor {
                                             ParserPos.ZERO );
                                     break;
                                 default:
-                                    throw new PolyphenyDbException( "Not yet supported default value type: " + defaultValue.type );
+                                    throw new PolyphenyDbException( "Not yet supported default value type: " + defaultValue.type, null, "0A000" );
                             }
                         } else if ( column.nullable ) {
                             newValues[i][pos] = SqlLiteral.createNull( ParserPos.ZERO );
                         } else {
-                            throw new PolyphenyDbException( "The not nullable field '" + column.name + "' is missing in the insert statement and has no default value defined." );
+                            throw new PolyphenyDbException( "The not nullable field '" + column.name + "' is missing in the insert statement and has no default value defined.", null, "23502" );
                         }
                     }
                     i++;
@@ -368,16 +374,16 @@ public class SqlProcessor extends Processor {
         long namespaceId;
         String tableOldName;
         if ( tableName.names.size() == 3 ) { // DatabaseName.SchemaName.TableName
-            namespaceId = snapshot.getNamespace( tableName.names.get( 1 ) ).orElseThrow().id;
+            namespaceId = snapshot.getNamespace( tableName.names.get( 1 ) ).orElseThrow( () -> new SqlStateException( "No value present", "3F000" ) ).id;
             tableOldName = tableName.names.get( 2 );
         } else if ( tableName.names.size() == 2 ) { // SchemaName.TableName
-            namespaceId = snapshot.getNamespace( tableName.names.get( 0 ) ).orElseThrow().id;
+            namespaceId = snapshot.getNamespace( tableName.names.get( 0 ) ).orElseThrow( () -> new SqlStateException( "No value present", "3F000" ) ).id;
             tableOldName = tableName.names.get( 1 );
         } else { // TableName
             namespaceId = snapshot.getNamespace( transaction.getDefaultNamespace().name ).orElseThrow().id;
             tableOldName = tableName.names.get( 0 );
         }
-        return snapshot.rel().getTable( namespaceId, tableOldName ).orElseThrow( () -> new GenericRuntimeException( "Could not find table with name " + tableName.names ) );
+        return snapshot.rel().getTable( namespaceId, tableOldName ).orElseThrow( () -> new SqlStateException( "Could not find table with name " + tableName.names, "42P01" ) );
     }
 
 

@@ -335,7 +335,7 @@ public class RexToLixTranslator {
         if ( convert == null ) {
             convert = convert( operand, typeFactory.getJavaClass( targetType ) );
         }
-        // Going from anything to CHAR(n) or VARCHAR(n), make sure value is no longer than n.
+        // Enforce the declared length of character and binary casts.
         boolean pad = false;
         boolean truncate = true;
         switch ( targetType.getPolyType() ) {
@@ -364,10 +364,10 @@ public class RexToLixTranslator {
                             // fall through
                         default:
                             if ( truncate || pad ) {
-                                convert = Expressions.call(
-                                        pad ? BuiltInMethod.TRUNCATE_OR_PAD.method : BuiltInMethod.TRUNCATE.method,
-                                        convert,
-                                        Expressions.constant( targetPrecision ) );
+                                boolean binary = PolyType.BINARY_TYPES.contains( targetType.getPolyType() );
+                                BuiltInMethod truncateMethod = binary ? BuiltInMethod.TRUNCATE_BINARY : BuiltInMethod.TRUNCATE;
+                                BuiltInMethod padMethod = binary ? BuiltInMethod.TRUNCATE_OR_PAD_BINARY : BuiltInMethod.TRUNCATE_OR_PAD;
+                                convert = Expressions.call( (pad ? padMethod : truncateMethod).method, convert, Expressions.constant( targetPrecision ) );
                             }
                     }
                 }
@@ -460,6 +460,13 @@ public class RexToLixTranslator {
                     return replace.get( expr );
                 }
                 return translate( deref( expr ), nullAs, storageType );
+            case NAME_INDEX_REF:
+                Expression replacement = replace.get( expr );
+                if ( replacement != null ) {
+                    Expression typedValue = Types.castIfNecessary( typeFactory.getJavaClass( expr.getType() ), replacement );
+                    return handleNullUnboxingIfNecessary( typedValue, nullAs, storageType );
+                }
+                throw new GenericRuntimeException( "cannot translate expression " + expr );
             case LITERAL:
                 return translateLiteral(
                         (RexLiteral) expr,
@@ -940,6 +947,13 @@ public class RexToLixTranslator {
             return this;
         }
         return new RexToLixTranslator( program, typeFactory, root, inputGetter, block, ImmutableMap.of(), builder, conformance, this, correlates, replace );
+    }
+
+
+    RexToLixTranslator withReplacement( RexNode rex, Expression value ) {
+        Map<RexNode, Expression> replacements = new HashMap<>( replace );
+        replacements.put( rex, value );
+        return new RexToLixTranslator( program, typeFactory, root, inputGetter, list, exprNullableMap, builder, conformance, this, correlates, replacements );
     }
 
 

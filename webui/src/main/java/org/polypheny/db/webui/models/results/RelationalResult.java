@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,9 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
      * ExpressionType of the result: if the data is from a table/view/arbitrary query
      */
     public ResultType type;
+    public String[] changeDescriptions;
+    public Long dataRefreshRowCount;
+    public boolean sourceEntityDeleted;
 
 
     @JsonCreator
@@ -77,6 +80,9 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
             @JsonProperty("UIRequest") UIRequest request,
             @JsonProperty("int") int affectedTuples,
             @JsonProperty("ResultType") ResultType type,
+            @JsonProperty("changeDescriptions") String[] changeDescriptions,
+            @JsonProperty("dataRefreshRowCount") Long dataRefreshRowCount,
+            @JsonProperty("sourceEntityDeleted") boolean sourceEntityDeleted,
             @JsonProperty("hasMoreRows") boolean hasMore,
             @JsonProperty("language") QueryLanguage language,
             @JsonProperty("isRolledBack") boolean isRolledBack ) {
@@ -95,11 +101,14 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
                 hasMore,
                 language,
                 affectedTuples,
-                isRolledBack);
+                isRolledBack );
         this.table = table;
         this.tables = tables;
         this.request = request;
         this.type = type;
+        this.changeDescriptions = changeDescriptions;
+        this.dataRefreshRowCount = dataRefreshRowCount;
+        this.sourceEntityDeleted = sourceEntityDeleted;
     }
 
 
@@ -128,6 +137,9 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
         private UIRequest request;
         private Throwable exception;
         private ResultType type;
+        private String[] changeDescriptions;
+        private Long dataRefreshRowCount;
+        private boolean sourceEntityDeleted;
 
 
         public B table( String table ) {
@@ -156,6 +168,24 @@ public class RelationalResult extends Result<String[], UiColumnDefinition> {
 
         public B type( ResultType type ) {
             this.type = type;
+            return self();
+        }
+
+
+        public B changeDescriptions( String[] changeDescriptions ) {
+            this.changeDescriptions = changeDescriptions;
+            return self();
+        }
+
+
+        public B dataRefreshRowCount( Long dataRefreshRowCount ) {
+            this.dataRefreshRowCount = dataRefreshRowCount;
+            return self();
+        }
+
+
+        public B sourceEntityDeleted( boolean sourceEntityDeleted ) {
+            this.sourceEntityDeleted = sourceEntityDeleted;
             return self();
         }
 

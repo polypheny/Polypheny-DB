@@ -42,12 +42,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import org.apache.calcite.linq4j.Ord;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.SingleAlg;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.fun.AggFunction;
 import org.polypheny.db.algebra.logical.relational.LogicalRelAggregate;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -62,6 +62,7 @@ import org.polypheny.db.algebra.rules.AggregateProjectPullUpConstantsRule;
 import org.polypheny.db.algebra.rules.AggregateReduceFunctionsRule;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Function;
@@ -383,7 +384,15 @@ public abstract class Aggregate extends SingleAlg {
     private boolean typeMatchesInferred( final AggregateCall aggCall, final Litmus litmus ) {
         Function aggFunction = aggCall.getAggregation();
         AggCallBinding callBinding = aggCall.createBinding( this );
-        AlgDataType type = aggFunction.inferReturnType( callBinding );
+        Kind kind = aggFunction.getKind();
+        AlgDataType type = traitSet.contains( ModelTrait.GRAPH ) && callBinding.getOperandCount() == 1
+                ? switch ( kind ) {
+                    case SUM, AVG, STDDEV_SAMP, STDDEV_POP -> LaxAggregateCall.inferGraphNumericType(
+                            getCluster().getTypeFactory(), kind, callBinding.getOperandType( 0 ) );
+                    case COLLECT -> getCluster().getTypeFactory().createArrayType( callBinding.getOperandType( 0 ), -1 );
+                    default -> aggFunction.inferReturnType( callBinding );
+                }
+                : aggFunction.inferReturnType( callBinding );
         AlgDataType expectedType = aggCall.type;
         if ( type.isNullable() != expectedType.isNullable() ) {
             // During PolyAlgebra parsing, the type might become non-nullable. We do not want to throw an error in this case.
@@ -416,17 +425,6 @@ public abstract class Aggregate extends SingleAlg {
      */
     public Group getGroupType() {
         return Group.induce( groupSet, groupSets );
-    }
-
-
-    @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                input.algCompareString() + "$" +
-                (aggCalls != null ? aggCalls.stream().map( Objects::toString ).collect( Collectors.joining( " $ " ) ) : "") + "$" +
-                (groupSet != null ? groupSet.toString() : "") + "$" +
-                (groupSets != null ? groupSets.stream().map( Objects::toString ).collect( Collectors.joining( " $ " ) ) : "") + "$" +
-                indicator + "&";
     }
 
 

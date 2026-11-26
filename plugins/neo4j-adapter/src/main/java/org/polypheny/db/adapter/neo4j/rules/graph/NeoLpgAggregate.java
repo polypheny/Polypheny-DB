@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,25 +16,30 @@
 
 package org.polypheny.db.adapter.neo4j.rules.graph;
 
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.as_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.distinct_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.list_;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.literal_;
+import static org.polypheny.db.adapter.neo4j.util.NeoStatements.quoteIdentifier;
 import static org.polypheny.db.adapter.neo4j.util.NeoStatements.with_;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.IntFunction;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.adapter.neo4j.NeoGraphImplementor;
 import org.polypheny.db.adapter.neo4j.rules.NeoGraphAlg;
-import org.polypheny.db.adapter.neo4j.util.NeoStatements.OperatorStatement;
+import org.polypheny.db.adapter.neo4j.util.NeoStatements.NeoStatement;
 import org.polypheny.db.adapter.neo4j.util.NeoUtil;
+import org.polypheny.db.adapter.neo4j.util.Translator;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.core.lpg.LpgAggregate;
-import org.polypheny.db.algebra.core.lpg.LpgProject;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgPlanner;
@@ -70,39 +75,37 @@ public class NeoLpgAggregate extends LpgAggregate implements NeoGraphAlg {
 
     @Override
     public void implement( NeoGraphImplementor implementor ) {
-        implementor.visitChild( 0, getInput() );
-        if ( implementor.getLast() instanceof LpgProject || implementor.getLast() instanceof NeoLpgMatch ) {
-            OperatorStatement last = implementor.removeLast();
-            List<String> finalRow = new ArrayList<>();
-            for ( AlgDataTypeField ignored : getTupleType().getFields() ) {
-                finalRow.add( null );
-            }
-
-            List<String> lastNames = implementor.getLast().getTupleType().getFieldNames();
-            List<String> currentNames = getTupleType().getFieldNames();
-
-            for ( RexNameRef name : groups ) {
-                finalRow.set( currentNames.indexOf( name.name ), name.name );
-            }
-            for ( LaxAggregateCall agg : aggCalls ) {
-                List<String> refs = new ArrayList<>();
-                if ( agg.getInput().isEmpty() ) {
-                    refs.add( "*" );
-                } else {
-                    refs.add( lastNames.get( ((RexIndexRef) agg.getInput().get()).getIndex() ) );
-                }
-                int i = currentNames.indexOf( agg.name );
-                if ( i == -1 ) {
-                    i = currentNames.indexOf( agg.function.getOperatorName().name() );
-                }
-
-                finalRow.set( i, Objects.requireNonNull( NeoUtil.getOpAsNeo( agg.function.getOperatorName(), List.of(), null ) ).apply( refs ) );
-            }
-
-            implementor.add( with_( list_( finalRow.stream().map( e -> literal_( PolyString.of( e ) ) ).toList() ) ) );
-
+        final IntFunction<String> inputExpression;
+        if ( getInput() instanceof NeoLpgProject project ) {
+            // Translate the grouping keys and arguments in the projection's input scope.
+            implementor.visitChild( 0, project.getInput() );
+            Translator translator = new Translator( project.getTupleType(), project.getInput().getTupleType(),
+                    Map.of(), null, implementor.getGraph().mappingLabel, false );
+            inputExpression = index -> project.getProjects().get( index ).accept( translator );
+        } else {
+            implementor.visitChild( 0, getInput() );
+            List<String> inputNames = getInput().getTupleType().getFieldNames();
+            inputExpression = index -> quoteIdentifier( inputNames.get( index ) );
         }
 
+        List<String> resultNames = getTupleType().getFieldNames();
+        List<NeoStatement> result = new ArrayList<>( Collections.nCopies( resultNames.size(), null ) );
+        for ( RexNameRef group : groups ) {
+            result.set( resultNames.indexOf( group.name ), alias( inputExpression.apply( group.getIndex().orElseThrow() ), group.name ) );
+        }
+        for ( LaxAggregateCall aggregate : aggCalls ) {
+            String argument = aggregate.getInput().map( ref -> inputExpression.apply( ((RexIndexRef) ref).getIndex() ) ).orElse( "*" );
+            String expression = Objects.requireNonNull( NeoUtil.getOpAsNeo( aggregate.function.getOperatorName(), List.of(), null, List.of() ) )
+                    .apply( List.of( argument ) );
+            result.set( resultNames.indexOf( aggregate.name ), alias( expression, aggregate.name ) );
+        }
+        implementor.add( with_( aggCalls.isEmpty() ? distinct_( list_( result ) ) : list_( result ) ) );
+    }
+
+
+    private static NeoStatement alias( String expression, String name ) {
+        NeoStatement value = literal_( PolyString.of( expression ) );
+        return expression.equals( quoteIdentifier( name ) ) ? value : as_( value, name );
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -71,12 +71,12 @@ import org.polypheny.db.type.entity.numerical.PolyLong;
 
 public class BsonUtil {
 
-    private final static List<Pair<String, String>> mappings = new ArrayList<>();
-    private final static List<String> stops = new ArrayList<>();
     public static final String DOC_MONTH_KEY = "m";
     public static final String DOC_MILLIS_KEY = "ms";
     public static final String DOC_MEDIA_TYPE_KEY = "_type";
     public static final String DOC_MEDIA_ID_KEY = "_id";
+    private final static List<Pair<String, String>> mappings = new ArrayList<>();
+    private final static List<String> stops = new ArrayList<>();
 
 
     static {
@@ -201,6 +201,15 @@ public class BsonUtil {
             case AUDIO, IMAGE, VIDEO, FILE -> handleMultimedia( bucket, obj );
             case INTERVAL -> handleInterval( obj );
             case JSON -> handleDocument( obj );
+            case DOCUMENT -> {
+                if ( obj.getType() != PolyType.DOCUMENT ) {
+                    // Fixes the case where the document contains only a single of another type. This influences
+                    // how a value is converted to JSON, when executing inside MongoBD, e.g. a number inside a
+                    // document is converted as string (see default case) without this check.
+                    yield getAsBson( obj, obj.getType(), bucket );
+                }
+                yield new BsonString( obj.toString() );
+            }
             default -> new BsonString( obj.toString() );
         };
     }
@@ -525,7 +534,7 @@ public class BsonUtil {
             case STRING:
                 return PolyString.of( input.asString().getValue() );
             case DOCUMENT:
-                Map<PolyString, PolyValue> document = new HashMap<>();
+                Map<PolyString, PolyValue> document = new LinkedHashMap<>();
 
                 for ( Entry<String, BsonValue> entry : input.asDocument().entrySet() ) {
                     document.put( PolyString.of( entry.getKey() ), toPolyValue( entry.getValue() ) );

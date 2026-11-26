@@ -35,7 +35,6 @@ package org.polypheny.db.algebra.core;
 
 
 import java.util.List;
-import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgInput;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
@@ -74,14 +73,6 @@ public abstract class Union extends SetOp {
             dRows *= 0.5;
         }
         return dRows;
-    }
-
-
-    @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                inputs.stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) ) + "$" +
-                all + "&";
     }
 
 

@@ -16,10 +16,10 @@
 
 package org.polypheny.db.prisminterface.statementProcessing;
 
-import com.google.common.collect.ImmutableMap;
 import java.util.List;
-import java.util.Map;
 import lombok.SneakyThrows;
+import org.jetbrains.annotations.Nullable;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
@@ -27,6 +27,7 @@ import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.languages.LanguageManager;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
+import org.polypheny.db.prisminterface.PIClient;
 import org.polypheny.db.prisminterface.PIServiceException;
 import org.polypheny.db.prisminterface.relational.RelationalMetaRetriever;
 import org.polypheny.db.prisminterface.statements.PIPreparedStatement;
@@ -34,8 +35,10 @@ import org.polypheny.db.prisminterface.statements.PIStatement;
 import org.polypheny.db.processing.ImplementationContext;
 import org.polypheny.db.processing.Processor;
 import org.polypheny.db.processing.QueryContext;
+import org.polypheny.db.processing.QueryContext.ParsedQueryContext;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.transaction.TransactionManager;
 import org.polypheny.db.util.Pair;
 import org.polypheny.prism.Frame;
 import org.polypheny.prism.StatementResult;
@@ -44,17 +47,81 @@ public class StatementProcessor {
 
     private static final String ORIGIN = "prism-interface";
 
-    private static final Map<DataModel, Executor> RESULT_RETRIEVERS =
-            ImmutableMap.<DataModel, Executor>builder()
-                    .put( DataModel.RELATIONAL, new RelationalExecutor() )
-                    .put( DataModel.DOCUMENT, new DocumentExecutor() )
-                    .build();
+
+    public static Node parseGraphStatement( PIStatement piStatement ) {
+        return parseGraphStatement( piStatement, piStatement.getLanguage().processorSupplier().get() );
+    }
+
+
+    public static Node parseUpdateBatchMember( PIStatement piStatement ) {
+        Processor processor = piStatement.getLanguage().processorSupplier().get();
+        Node parsed;
+        if ( piStatement.getLanguage().dataModel() == DataModel.GRAPH ) {
+            parsed = parseGraphStatement( piStatement, processor );
+        } else {
+            List<? extends Node> statements = processor.parse( piStatement.getQuery() );
+            if ( statements.size() != 1 ) {
+                throw new PIServiceException( "An update batch requires exactly one statement per member", "42601" );
+            }
+            parsed = statements.get( 0 );
+        }
+        if ( !processor.isUpdateOnly( parsed ) ) {
+            throw new PIServiceException( "Update batch statements must update data without returning rows", "0A000" );
+        }
+        return parsed;
+    }
+
+
+    private static Node parseGraphStatement( PIStatement piStatement, Processor processor ) {
+        List<? extends Node> statements = processor.parse( piStatement.getQuery() );
+        if ( statements.size() != 1 ) {
+            throw new PIServiceException( "Prism requires exactly one Cypher statement per request.", "42601" );
+        }
+        return statements.get( 0 );
+    }
+
+
+    /**
+     * Checks every parsed operation before using a transaction shared with an open result.
+     */
+    public static @Nullable List<ParsedQueryContext> parseWithOpenAutocommitResult( PIStatement piStatement ) {
+        PIClient client = piStatement.getClient();
+        if ( !client.isAutoCommit() || !client.getStatementManager().hasOpenResult( false ) ) {
+            return null;
+        }
+
+        QueryContext context = queryContext( piStatement, client.getTransactionManager() );
+        // The registered MQL parser may also generate DDL for a missing collection.
+        List<ParsedQueryContext> parsed = piStatement.getLanguage().parser().apply( context );
+        if ( parsed.isEmpty() ) {
+            throw new PIServiceException( "The " + piStatement.getLanguage().serializedName() + " query is empty", "42601" );
+        }
+        if ( parsed.stream().anyMatch( query -> query.getQueryNode().filter( StatementProcessor::isReadOnly ).isEmpty() ) ) {
+            throw new PIServiceException( "Close or finish the open result before executing a write or command in autocommit mode", "25001" );
+        }
+        return parsed;
+    }
+
+
+    private static boolean isReadOnly( Node statement ) {
+        return !statement.isDdl() && (statement.isA( Kind.QUERY ) || statement.getKind() == Kind.EXPLAIN);
+    }
+
+
+    public static void implement( PIStatement piStatement ) {
+        implement( piStatement, null );
+    }
+
+
+    public static void implement( PIStatement piStatement, @Nullable Node parsedStatement ) {
+        implement( piStatement, parsedStatement, parseWithOpenAutocommitResult( piStatement ) );
+    }
 
 
     // @SneakyThrows is needed for rethrowing implementation.get( 0 ).getException() without
     // having to annotate everything with "throws Throwable" or wrapping it in another Exception
     @SneakyThrows
-    public static void implement( PIStatement piStatement ) {
+    public static void implement( PIStatement piStatement, @Nullable Node parsedStatement, @Nullable List<ParsedQueryContext> preParsedQueries ) {
         Statement statement = piStatement.getStatement();
         if ( statement == null ) {
             throw new PIServiceException( "Statement is not linked to a PolyphenyStatement",
@@ -62,14 +129,11 @@ public class StatementProcessor {
                     9003
             );
         }
-        QueryContext context = QueryContext.builder()
-                .query( piStatement.getQuery() )
-                .language( piStatement.getLanguage() )
-                .namespaceId( piStatement.getNamespace().id )
-                .transactionManager( piStatement.getTransaction().getTransactionManager() )
-                .origin( ORIGIN )
-                .build();
-        List<ImplementationContext> implementations = LanguageManager.getINSTANCE().anyPrepareQuery( context, statement );
+        QueryContext context = queryContext( piStatement, statement.getTransaction().getTransactionManager() );
+        if ( parsedStatement != null ) {
+            context = ParsedQueryContext.fromQuery( context.getQuery(), parsedStatement, context );
+        }
+        List<ImplementationContext> implementations = LanguageManager.getINSTANCE().anyPrepareQuery( context, statement, preParsedQueries );
         if ( implementations.stream().anyMatch( i -> i.getQuery().isAutoGenerated() ) ) {
             // we remove additional transaction which where opened for auto generation todo adjust if interface supports it
             implementations.stream()
@@ -86,49 +150,39 @@ public class StatementProcessor {
     }
 
 
+    private static QueryContext queryContext( PIStatement piStatement, TransactionManager transactionManager ) {
+        return QueryContext.builder()
+                .query( piStatement.getQuery() )
+                .language( piStatement.getLanguage() )
+                .namespaceId( piStatement.getNamespace().id )
+                .transactionManager( transactionManager )
+                .origin( ORIGIN )
+                .build();
+    }
+
+
     public static StatementResult executeAndGetResult( PIStatement piStatement ) {
-        Executor executor = RESULT_RETRIEVERS.get( piStatement.getLanguage().dataModel() );
-        if ( executor == null ) {
-            throw new PIServiceException( "No result retriever registered for namespace type "
-                    + piStatement.getLanguage().dataModel(),
-                    "I9004",
-                    9004
-            );
-        }
-        return executor.executeAndGetResult( piStatement );
+        return ResultExecutor.executeCount( piStatement );
     }
 
 
     public static StatementResult executeAndGetResult( PIStatement piStatement, int fetchSize ) {
-        Executor executor = RESULT_RETRIEVERS.get( piStatement.getLanguage().dataModel() );
-        if ( executor == null ) {
-            throw new PIServiceException( "No result retriever registered for namespace type "
-                    + piStatement.getLanguage().dataModel(),
-                    "I9004",
-                    9004
-            );
-        }
-        return executor.executeAndGetResult( piStatement, fetchSize );
+        return ResultExecutor.execute( piStatement, fetchSize );
     }
 
 
     public static Frame fetch( PIStatement piStatement, int fetchSize ) {
-        Executor executor = RESULT_RETRIEVERS.get( piStatement.getLanguage().dataModel() );
-        if ( executor == null ) {
-            throw new PIServiceException( "No result retriever registered for namespace type "
-                    + piStatement.getLanguage().dataModel(),
-                    "I9004",
-                    9004
-            );
-        }
-        return executor.fetch( piStatement, fetchSize );
+        return ResultExecutor.fetch( piStatement, fetchSize );
     }
 
 
     public static void prepare( PIPreparedStatement piStatement ) {
+        QueryLanguage queryLanguage = piStatement.getLanguage();
+        if ( queryLanguage.dataModel() == DataModel.GRAPH ) {
+            throw new PIServiceException( "Indexed prepared Cypher statements are not supported by Prism. Use named parameters.", "0A000" );
+        }
         Transaction transaction = piStatement.getClient().getOrCreateNewTransaction();
         String query = piStatement.getQuery();
-        QueryLanguage queryLanguage = piStatement.getLanguage();
 
         Processor queryProcessor = transaction.getProcessor( queryLanguage );
         Node parsed = queryProcessor.parse( query ).get( 0 );

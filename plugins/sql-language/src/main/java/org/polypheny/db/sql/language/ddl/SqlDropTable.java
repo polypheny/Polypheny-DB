@@ -61,7 +61,7 @@ public class SqlDropTable extends SqlDropObject {
                 // It is ok that there is no table with this name because "IF EXISTS" was specified
                 return;
             } else {
-                throw new GenericRuntimeException( "There exists no entity with the name %s and 'IF EXISTS' was not specified", name );
+                throw ddlError( "42P01", "There exists no entity with the name %s and 'IF EXISTS' was not specified", name );
             }
         }
 

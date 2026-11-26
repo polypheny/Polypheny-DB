@@ -41,6 +41,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.Pattern;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.runtime.SqlStateException;
 import org.polypheny.db.sql.language.SqlCall;
 import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlNode;
@@ -162,7 +163,7 @@ public class IdentifierNamespace extends AbstractNamespace {
 
             return new EntityNamespace( validator, entity );
         }
-        throw new GenericRuntimeException( "Entity not found" );
+        throw new SqlStateException( "Entity not found", "42P01" );
     }
 
 
@@ -173,7 +174,16 @@ public class IdentifierNamespace extends AbstractNamespace {
             Entity table = resolvedNamespace.getEntity();
             if ( validator.shouldExpandIdentifiers() ) {
                 // TODO:  expand qualifiers for column references also
-                List<String> qualifiedNames = List.of( table.name );
+                List<String> qualifiedNames;
+                try {
+                    qualifiedNames = List.of( table.name );
+                } catch ( NullPointerException e ) {
+                    if ( table != null ) {
+                        throw e;
+                    }
+                    // Keep the legacy diagnostic while distinguishing a failed lookup from a server bug.
+                    throw new SqlStateException( e.getMessage(), "42P01", e );
+                }
                 // Assign positions to the components of the fully-qualified identifier, as best we can. We assume that qualification adds names to the front, e.g. FOO.BAR becomes BAZ.FOO.BAR.
                 List<ParserPos> poses = new ArrayList<>( Collections.nCopies( qualifiedNames.size(), id.getPos() ) );
                 int offset = qualifiedNames.size() - id.names.size();
@@ -188,7 +198,15 @@ public class IdentifierNamespace extends AbstractNamespace {
             }
         }
 
-        AlgDataType rowType = resolvedNamespace.getTupleType();
+        AlgDataType rowType;
+        try {
+            rowType = resolvedNamespace.getTupleType();
+        } catch ( NullPointerException e ) {
+            if ( !(resolvedNamespace instanceof EntityNamespace) || resolvedNamespace.getEntity() != null ) {
+                throw e;
+            }
+            throw new SqlStateException( e.getMessage(), "42P01", e );
+        }
 
         if ( extendList != null ) {
             if ( !(resolvedNamespace instanceof EntityNamespace) ) {

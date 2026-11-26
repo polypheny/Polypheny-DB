@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -118,6 +118,15 @@ public class CastValue implements SettingValue {
 
         @Getter(AccessLevel.NONE)
         boolean asJson;
+        @JsonIgnore
+        @NonFinal
+        AlgDataType algDataType; // set with buildType
+        @JsonIgnore
+        @NonFinal
+        Function<PolyValue, PolyValue> converter; // set with buildType
+        @JsonIgnore
+        @NonFinal
+        PolyValue nullValue; // set with buildType
 
 
         @java.beans.ConstructorProperties({ "source", "target", "type", "nullable", "collectionsType", "precision", "scale", "dimension", "cardinality", "asJson" })
@@ -135,6 +144,43 @@ public class CastValue implements SettingValue {
         }
 
 
+        public static SingleCast of( String source, PolyType type, boolean nullable ) {
+            return SingleCast.of( source, type, null, nullable );
+        }
+
+
+        public static SingleCast of( String source, PolyType type, Integer precision, boolean nullable ) {
+            return new SingleCast(
+                    source,
+                    null,
+                    type,
+                    nullable,
+                    "",
+                    precision,
+                    null,
+                    null,
+                    null,
+                    false
+            );
+        }
+
+
+        public static SingleCast of( String source ) {
+            return new SingleCast(
+                    source,
+                    null,
+                    null,
+                    true,
+                    "",
+                    null,
+                    null,
+                    null,
+                    null,
+                    true
+            );
+        }
+
+
         @JsonProperty("asJson")
         @JsonInclude(JsonInclude.Include.NON_NULL)
         public Boolean asJson() {
@@ -145,20 +191,6 @@ public class CastValue implements SettingValue {
         public boolean asJsonBoolean() {
             return asJson; // separate method since asJson is only used for serialization
         }
-
-
-        @JsonIgnore
-        @NonFinal
-        AlgDataType algDataType; // set with buildType
-
-
-        @JsonIgnore
-        @NonFinal
-        Function<PolyValue, PolyValue> converter; // set with buildType
-
-        @JsonIgnore
-        @NonFinal
-        PolyValue nullValue; // set with buildType
 
 
         @JsonIgnore
@@ -200,7 +232,8 @@ public class CastValue implements SettingValue {
                         collectionsType,
                         cardinality,
                         dimension,
-                        nullable );
+                        nullable,
+                        true );
 
                 converter = PolyValue.getConverter( type );
                 nullValue = PolyValue.getNull( PolyValue.classFrom( type ) );
@@ -236,43 +269,6 @@ public class CastValue implements SettingValue {
                 return PolyList.of( converter.apply( value ) );
             }
             return converter.apply( value );
-        }
-
-
-        public static SingleCast of( String source, PolyType type, boolean nullable ) {
-            return SingleCast.of( source, type, null, nullable );
-        }
-
-
-        public static SingleCast of( String source, PolyType type, Integer precision, boolean nullable ) {
-            return new SingleCast(
-                    source,
-                    null,
-                    type,
-                    nullable,
-                    "",
-                    precision,
-                    null,
-                    null,
-                    null,
-                    false
-            );
-        }
-
-
-        public static SingleCast of( String source ) {
-            return new SingleCast(
-                    source,
-                    null,
-                    null,
-                    true,
-                    "",
-                    null,
-                    null,
-                    null,
-                    null,
-                    true
-            );
         }
 
     }

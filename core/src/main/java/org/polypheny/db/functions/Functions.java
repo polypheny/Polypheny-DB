@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,10 +56,12 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
@@ -100,16 +102,24 @@ import org.polypheny.db.functions.util.ProductPolyListEnumerator;
 import org.polypheny.db.interpreter.Row;
 import org.polypheny.db.runtime.ComparableList;
 import org.polypheny.db.runtime.Like;
+import org.polypheny.db.runtime.SqlStateException;
+import org.polypheny.db.runtime.SqlStateProvider;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.PolyTypeFactoryImpl;
 import org.polypheny.db.type.entity.PolyBinary;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyInterval;
 import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
+import org.polypheny.db.type.entity.document.PolyDocument;
+import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
+import org.polypheny.db.type.entity.graph.PolyGraph;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
+import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
@@ -117,6 +127,7 @@ import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.util.BsonUtil;
 import org.polypheny.db.util.ByteString;
+import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Static;
 
 
@@ -169,7 +180,7 @@ public class Functions {
     }
 
 
-    public static PolyDouble distance( List<PolyNumber> value, List<PolyNumber> target, PolyString metric, List<PolyNumber> weights ) {
+    private static PolyDouble distance( List<PolyNumber> value, List<PolyNumber> target, PolyString metric, List<PolyNumber> weights ) {
         DistanceFunctions.verifyInputs( value, target, weights );
         return switch ( metric.value ) {
             case "L2" -> DistanceFunctions.l2MetricWeighted( value, target, weights );
@@ -177,12 +188,13 @@ public class Functions {
             case "L2SQUARED" -> DistanceFunctions.l2SquaredMetricWeighted( value, target, weights );
             case "CHISQUARED" -> DistanceFunctions.chiSquaredMetricWeighted( value, target, weights );
             case "COSINE" -> DistanceFunctions.cosineMetricWeighted( value, target, weights );
+            case "INNER_PRODUCT" -> DistanceFunctions.innerProductMetricWeighted( value, target, weights );
             default -> PolyDouble.of( 0.0 );
         };
     }
 
 
-    public static PolyDouble distance( List<PolyNumber> value, List<PolyNumber> target, PolyString metric ) {
+    private static PolyDouble distance( List<PolyNumber> value, List<PolyNumber> target, PolyString metric ) {
         DistanceFunctions.verifyInputs( value, target, null );
         return switch ( metric.value ) {
             case "L2" -> DistanceFunctions.l2Metric( value, target );
@@ -190,34 +202,80 @@ public class Functions {
             case "L2SQUARED" -> DistanceFunctions.l2SquaredMetric( value, target );
             case "CHISQUARED" -> DistanceFunctions.chiSquaredMetric( value, target );
             case "COSINE" -> DistanceFunctions.cosineMetric( value, target );
+            case "INNER_PRODUCT" -> DistanceFunctions.innerProductMetric( value, target );
             default -> PolyDouble.of( 0.0 );
         };
     }
 
 
-    private static class MetadataModel {
+    public static PolyDouble l1Distance( PolyValue value, PolyValue target ) {
+        return DistanceFunctions.l1Metric( toNumberList( value ), toNumberList( target )
+        );
+    }
 
-        String name;
-        String value;
-        List<MetadataModel> tags = new ArrayList<>();
+
+    public static PolyDouble l2Distance( PolyValue value, PolyValue target ) {
+        return DistanceFunctions.l2Metric( toNumberList( value ), toNumberList( target )
+        );
+    }
 
 
-        MetadataModel( final Directory dir ) {
-            this.name = dir.getName();
+    public static PolyDouble cosDistance( PolyValue value, PolyValue target ) {
+        return DistanceFunctions.cosineMetric( toNumberList( value ), toNumberList( target ) );
+    }
+
+
+    public static PolyDouble hammingDistance( PolyValue value, PolyValue target ) {
+        return DistanceFunctions.hammingMetric(
+                value.asList().stream().map( e -> (PolyBoolean) e ).toList(),
+                target.asList().stream().map( e -> (PolyBoolean) e ).toList() );
+    }
+
+
+    public static PolyDouble jaccardDistance( PolyValue value, PolyValue target ) {
+        return DistanceFunctions.jaccardMetric(
+                value.asList().stream().map( e -> (PolyBoolean) e ).toList(),
+                target.asList().stream().map( e -> (PolyBoolean) e ).toList() );
+    }
+
+
+    public static PolyDouble innerProductDistance( PolyValue value, PolyValue target ) {
+        return DistanceFunctions.innerProductMetric( toNumberList( value ), toNumberList( target ) );
+    }
+
+
+    public static PolyDouble distance( PolyValue value, PolyValue target, PolyValue metric ) {
+        return distance( toNumberList( value ), toNumberList( target ), metric.asString() );
+    }
+
+
+    public static PolyDouble distance( PolyValue value, PolyValue target, PolyValue metric, PolyValue weights ) {
+        return distance( toNumberList( value ), toNumberList( target ), metric.asString(),
+                toNumberList( weights ) );
+    }
+
+
+    private static List<PolyNumber> toNumberList( PolyValue v ) {
+        if ( v.isList() ) {
+            return v.asList().value.stream().map( e -> {
+                if ( e instanceof PolyNumber n ) {
+                    return n;
+                }
+                if ( e instanceof PolyString s ) {
+                    return (PolyNumber) PolyDouble.of( Double.parseDouble( s.value ) );
+                }
+                throw new GenericRuntimeException( "Cannot convert list element " + e + " to number" );
+            } ).toList();
         }
 
-
-        MetadataModel( final Tag tag ) {
-            this.name = tag.getTagName();
-            this.value = tag.getDescription();
+        if ( v.isString() ) {
+            String raw = v.asString().value.trim().replaceAll( "^\\[|\\]$", "" );
+            return Arrays.stream( raw.split( "," ) )
+                    .map( s -> (PolyNumber) PolyDouble.of( Double.parseDouble( s.trim() )
+                    ) )
+                    .toList();
         }
-
-
-        MetadataModel addTag( Tag tag ) {
-            tags.add( new MetadataModel( tag ) );
-            return this;
-        }
-
+        throw new GenericRuntimeException( "Cannot convert " + v + " to number list" );
     }
 
 
@@ -308,6 +366,140 @@ public class Functions {
     }
 
 
+    @SuppressWarnings("unused")
+    public static Enumerable<PolyValue[]> appendGraphRowId( Enumerable<?> source ) {
+        return source.select( item -> {
+            PolyValue[] row;
+            if ( item instanceof PolyValue[] fields ) {
+                row = fields;
+            } else if ( item instanceof List<?> fields ) {
+                row = fields.toArray( PolyValue[]::new );
+            } else {
+                row = new PolyValue[]{ (PolyValue) item };
+            }
+            PolyValue[] withId = java.util.Arrays.copyOf( row, row.length + 1 );
+            withId[row.length] = PolyString.of( UUID.randomUUID().toString() );
+            return withId;
+        } );
+    }
+
+
+    @SuppressWarnings({ "unused", "unchecked" })
+    public static <T> Enumerable<T> materializeGraphRows( Enumerable<T> source ) {
+        return materializeGraphRows( source, false );
+    }
+
+
+    @SuppressWarnings({ "unused", "unchecked" })
+    public static <T> Enumerable<T> materializeGraphRows( Enumerable<T> source, boolean withGraph ) {
+        List<T> rows = new ArrayList<>();
+        Map<Pair<PolyType, PolyString>, GraphPropertyHolder> bindings = new HashMap<>();
+        try ( Enumerator<T> input = source.enumerator() ) {
+            while ( input.moveNext() ) {
+                T row = input.current();
+                if ( row instanceof Object[] fields ) {
+                    Object[] snapshot = fields.clone();
+                    for ( int i = 0; i < snapshot.length; i++ ) {
+                        snapshot[i] = bindGraphValue( snapshot[i], bindings );
+                    }
+                    rows.add( (T) snapshot );
+                } else {
+                    rows.add( (T) bindGraphValue( row, bindings ) );
+                }
+            }
+        }
+        if ( withGraph && !rows.isEmpty() ) {
+            // SET expressions mutate the canonical row bindings before writing them to the store.
+            Object[] last = (Object[]) rows.get( rows.size() - 1 );
+            int graphIndex = last.length - 1;
+            PolyGraph snapshot = (PolyGraph) last[graphIndex];
+            PolyGraph graph = new PolyGraph( snapshot.id, PolyMap.of( snapshot.getNodes() ), PolyMap.of( snapshot.getEdges() ) );
+            graph.getNodes().replaceAll( ( id, node ) -> bindings.getOrDefault( Pair.of( PolyType.NODE, id ), node ).asNode() );
+            graph.getEdges().replaceAll( ( id, edge ) -> bindings.getOrDefault( Pair.of( PolyType.EDGE, id ), edge ).asEdge() );
+            for ( T row : rows ) {
+                ((Object[]) row)[graphIndex] = graph;
+            }
+        }
+        return Linq4j.asEnumerable( rows );
+    }
+
+
+    private static Object bindGraphValue( Object value, Map<Pair<PolyType, PolyString>, GraphPropertyHolder> bindings ) {
+        // Independent MATCH clauses can load separate instances of the same element.
+        if ( value instanceof GraphPropertyHolder element ) {
+            return bindGraphElement( element, bindings );
+        }
+        if ( value instanceof PolyPath path ) {
+            return path.rebindGraphValues( part -> (PolyValue) bindGraphValue( part, bindings ) );
+        }
+        if ( value instanceof PolyList<?> list ) {
+            return PolyList.copyOf( list.stream().map( item -> (PolyValue) bindGraphValue( item, bindings ) ).toList() );
+        }
+        if ( value instanceof PolyDictionary map ) {
+            Map<PolyString, PolyValue> entries = new HashMap<>();
+            map.forEach( ( key, item ) -> entries.put( key, (PolyValue) bindGraphValue( item, bindings ) ) );
+            return new PolyDictionary( entries );
+        }
+        return value;
+    }
+
+
+    private static GraphPropertyHolder bindGraphElement( GraphPropertyHolder element, Map<Pair<PolyType, PolyString>, GraphPropertyHolder> bindings ) {
+        return bindings.computeIfAbsent( Pair.of( element.getType(), element.id ), key -> element );
+    }
+
+
+    @SuppressWarnings("unused")
+    public static Enumerable<PolyValue[]> streamGraphRows( DataContext context, Enumerable<PolyValue[]> provider,
+            Function0<Enumerable<PolyValue[]>> collector, List<PolyType> polyTypes, boolean batchGraphWrites ) {
+        AlgDataTypeFactory factory = context.getStatement().getTransaction().getTypeFactory();
+        List<AlgDataType> parameterTypes = polyTypes.stream().map( factory::createPolyType ).toList();
+        List<Map<Long, PolyValue>> valuesBackup = context.getParameterValues();
+        Map<Long, AlgDataType> typesBackup = context.getParameterTypes();
+        List<PolyValue[]> rows = new ArrayList<>();
+        // Capture the complete input before modifying the store that provides it.
+        try ( Enumerator<PolyValue[]> input = provider.enumerator() ) {
+            while ( input.moveNext() ) {
+                rows.add( input.current().clone() );
+            }
+        }
+
+        try {
+            if ( batchGraphWrites && !rows.isEmpty() ) {
+                // A DELETE clause validates all its node and relationship targets together.
+                context.resetParameterValues();
+                for ( int i = 0; i < parameterTypes.size(); i++ ) {
+                    int index = i;
+                    context.addParameterValues( i, parameterTypes.get( i ), rows.stream().map( row -> row[index] ).toList() );
+                }
+                drainGraphWrites( collector );
+            } else {
+                for ( PolyValue[] row : rows ) {
+                    context.resetParameterValues();
+                    for ( int i = 0; i < parameterTypes.size(); i++ ) {
+                        context.addParameterValues( i, parameterTypes.get( i ), Collections.singletonList( row[i] ) );
+                    }
+                    drainGraphWrites( collector );
+                }
+            }
+        } finally {
+            context.resetParameterValues();
+            context.setParameterTypes( typesBackup );
+            context.setParameterValues( valuesBackup );
+        }
+        return Linq4j.asEnumerable( rows );
+    }
+
+
+    private static void drainGraphWrites( Function0<Enumerable<PolyValue[]>> collector ) {
+        try ( Enumerator<PolyValue[]> updates = collector.apply().enumerator() ) {
+            while ( updates.moveNext() ) {
+                // Drain all adapters' writes before exposing any returning rows.
+            }
+        }
+    }
+
+
     private static AlgDataType deriveType( AlgDataTypeFactory factory, PolyType type ) {
         if ( type == PolyType.CHAR ) {
             return factory.createPolyType( PolyType.VARCHAR );
@@ -373,10 +565,11 @@ public class Functions {
                 results.add( object );
             }
         } catch ( Exception e ) {
-            throw new ConstraintViolationException( Joiner.on( "\n" ).join( msgs ) );
+            // Keep the diagnostic without classifying an unexpected execution failure as a violation.
+            throw new GenericRuntimeException( Joiner.on( "\n" ).join( msgs ), e );
         }
 
-        List<PolyNumber> validationIndexes = new ArrayList<>();
+        List<Integer> validationIndexes = new ArrayList<>();
 
         // constraint is not parameterized atm, as it would require asymmetric parameterization
         Map<Long, AlgDataType> backupTypes = context.getParameterTypes();
@@ -384,14 +577,17 @@ public class Functions {
         context.resetParameterValues();
 
         for ( PolyValue[] object : control.apply() ) {
-            validationIndexes.add( object[1].asNumber() );
+            validationIndexes.add( object[1].asNumber().intValue() );
         }
         if ( validationIndexes.isEmpty() ) {
             return Linq4j.asEnumerable( results );
         } else {
             // force rollback
-            throw new ConstraintViolationException( Joiner.on( "\n" )
-                    .join( validationIndexes.stream().map( ( PolyNumber index ) -> msgs.get( index.intValue() ) ).toList() ) );
+            String message = Joiner.on( "\n" ).join( validationIndexes.stream().map( msgs::get ).toList() );
+            String firstState = ConstraintViolationException.sqlStateFor( exceptions.get( validationIndexes.get( 0 ) ) );
+            String sqlState = validationIndexes.stream().allMatch( index -> firstState.equals( ConstraintViolationException.sqlStateFor( exceptions.get( index ) ) ) )
+                    ? firstState : ConstraintViolationException.INTEGRITY_CONSTRAINT_VIOLATION;
+            throw new ConstraintViolationException( message, sqlState );
         }
     }
 
@@ -867,8 +1063,6 @@ public class Functions {
         return PolyBoolean.of( Pattern.matches( regex, s.value ) );
     }
 
-    // =
-
 
     /**
      * SQL <code>=</code> operator applied to number values.
@@ -881,6 +1075,8 @@ public class Functions {
         }
         return PolyBoolean.of( b0.bigDecimalValue().stripTrailingZeros().equals( b1.bigDecimalValue().stripTrailingZeros() ) );
     }
+
+    // =
 
 
     /**
@@ -911,8 +1107,6 @@ public class Functions {
         return clazz.isInstance( o0 ) && clazz.isInstance( o1 );
     }
 
-    // <>
-
 
     /**
      * SQL <code>&lt;gt;</code> operator applied to Object values (including String; neither side may be null).
@@ -924,7 +1118,7 @@ public class Functions {
         return PolyBoolean.of( b0.compareTo( b1 ) != 0 );
     }
 
-    // <
+    // <>
 
 
     /**
@@ -945,6 +1139,8 @@ public class Functions {
 
         throw notComparable( "<", b0, b1 );
     }
+
+    // <
 
 
     public static PolyBoolean lt( PolyNumber b0, PolyNumber b1 ) {
@@ -968,7 +1164,6 @@ public class Functions {
     public static PolyBoolean lt( PolyNumber b0, PolyTemporal b1 ) {
         return lt( b0, PolyLong.of( b1.getMillisSinceEpoch() ) );
     }
-    // <=
 
 
     /**
@@ -989,6 +1184,7 @@ public class Functions {
 
         throw notComparable( "<=", b0, b1 );
     }
+    // <=
 
 
     public static PolyBoolean le( PolyNumber b0, PolyNumber b1 ) {
@@ -997,8 +1193,6 @@ public class Functions {
         }
         return PolyBoolean.of( b0.compareTo( b1 ) <= 0 );
     }
-
-    // >
 
 
     /**
@@ -1010,6 +1204,8 @@ public class Functions {
         }
         return PolyBoolean.of( b0.bigDecimalValue().compareTo( b1.bigDecimalValue() ) > 0 );
     }
+
+    // >
 
 
     /**
@@ -1032,8 +1228,6 @@ public class Functions {
         throw notComparable( ">", b0, b1 );
     }
 
-    // >=
-
 
     /**
      * SQL <code>&ge;</code> operator applied to BigDecimal values.
@@ -1044,6 +1238,8 @@ public class Functions {
         }
         return PolyBoolean.of( b0.bigDecimalValue().compareTo( b1.bigDecimalValue() ) >= 0 );
     }
+
+    // >=
 
 
     public static PolyBoolean ge( PolyTemporal b0, PolyTemporal b1 ) {
@@ -1076,8 +1272,6 @@ public class Functions {
 
     }
 
-    // +
-
 
     /**
      * SQL <code>+</code> operator applied to BigDecimal values.
@@ -1085,6 +1279,8 @@ public class Functions {
     public static PolyNumber plus( PolyNumber b0, PolyNumber b1 ) {
         return (b0 == null || b1 == null) ? null : b0.plus( b1 );
     }
+
+    // +
 
 
     /**
@@ -1102,8 +1298,6 @@ public class Functions {
         throw notArithmetic( "+", b0, b1 );
     }
 
-    // -
-
 
     /**
      * SQL <code>-</code> operator applied to BigDecimal values.
@@ -1111,6 +1305,8 @@ public class Functions {
     public static PolyNumber minus( PolyNumber b0, PolyNumber b1 ) {
         return (b0 == null || b1 == null) ? null : b0.subtract( b1 );
     }
+
+    // -
 
 
     public static PolyValue minus( PolyValue b0, PolyValue b1 ) {
@@ -1133,8 +1329,6 @@ public class Functions {
         throw notArithmetic( "-", b0, b1 );
     }
 
-    // /
-
 
     /**
      * SQL <code>/</code> operator applied to Object values (at least one operand has ANY type; either may be null).
@@ -1151,11 +1345,21 @@ public class Functions {
         throw notArithmetic( "/", b0, b1 );
     }
 
+    // /
+
 
     public static PolyNumber divide( PolyNumber b0, PolyNumber b1 ) {
-        return (b0 == null || b1 == null)
-                ? null
-                : b0.divide( b1 );
+        if ( b0 == null || b1 == null ) {
+            return null;
+        }
+        try {
+            return b0.divide( b1 );
+        } catch ( ArithmeticException e ) {
+            if ( b1.bigDecimalValue().signum() == 0 ) {
+                throw new SqlStateException( e.getMessage(), "22012", e );
+            }
+            throw e;
+        }
     }
 
 
@@ -1208,8 +1412,6 @@ public class Functions {
                 op, b1.getClass().toString() ).ex();
     }
 
-    // &
-
 
     /**
      * Helper function for implementing <code>BIT_AND</code>
@@ -1219,7 +1421,7 @@ public class Functions {
         return b0 & b1;
     }
 
-    // |
+    // &
 
 
     /**
@@ -1230,7 +1432,7 @@ public class Functions {
         return b0 | b1;
     }
 
-    // EXP
+    // |
 
 
     /**
@@ -1240,7 +1442,7 @@ public class Functions {
         return PolyBigDecimal.of( Math.exp( number.doubleValue() ) );
     }
 
-    // POWER
+    // EXP
 
 
     /**
@@ -1250,7 +1452,7 @@ public class Functions {
         return PolyDouble.of( Math.pow( base.doubleValue(), exp.doubleValue() ) );
     }
 
-    // LN
+    // POWER
 
 
     /**
@@ -1260,7 +1462,7 @@ public class Functions {
         return PolyBigDecimal.of( Math.log( number.doubleValue() ) );
     }
 
-    // LOG10
+    // LN
 
 
     /**
@@ -1270,16 +1472,26 @@ public class Functions {
         return PolyBigDecimal.of( Math.log10( number.doubleValue() ) );
     }
 
-    // MOD
+    // LOG10
 
 
     /**
      * SQL <code>MOD</code> operator applied to byte values.
      */
     public static PolyNumber mod( PolyNumber b0, PolyNumber b1 ) {
-        final BigDecimal[] bigDecimals = b0.bigDecimalValue().divideAndRemainder( b1.bigDecimalValue() );
-        return PolyBigDecimal.of( bigDecimals[1] );
+        BigDecimal dividend = b0.bigDecimalValue();
+        BigDecimal divisor = b1.bigDecimalValue();
+        try {
+            return PolyBigDecimal.of( dividend.divideAndRemainder( divisor )[1] );
+        } catch ( ArithmeticException e ) {
+            if ( divisor.signum() == 0 ) {
+                throw new DivisionByZeroException( e );
+            }
+            throw e;
+        }
     }
+
+    // MOD
 
 
     public static PolyNumber mod( PolyValue b0, PolyValue b1 ) {
@@ -1294,12 +1506,35 @@ public class Functions {
         throw notArithmetic( "mod", b0, b1 );
     }
 
-    // FLOOR
+
+    private static final class DivisionByZeroException extends ArithmeticException implements SqlStateProvider {
+
+        private DivisionByZeroException( ArithmeticException cause ) {
+            super( cause.getMessage() );
+            initCause( cause );
+        }
+
+
+        @Override
+        public String getSqlState() {
+            return "22012";
+        }
+
+
+        @Override
+        public String toString() {
+            // Cause-only wrappers include this rendering in the legacy diagnostic.
+            return getCause().toString();
+        }
+
+    }
 
 
     public static PolyNumber floor( PolyNumber b0 ) {
         return PolyBigDecimal.of( b0.bigDecimalValue().setScale( 0, RoundingMode.FLOOR ) );
     }
+
+    // FLOOR
 
 
     /**
@@ -1309,12 +1544,12 @@ public class Functions {
         return b0.floor( b1 );
     }
 
-    // CEIL
-
 
     public static PolyNumber ceil( PolyNumber b0 ) {
         return PolyBigDecimal.of( b0.bigDecimalValue().setScale( 0, RoundingMode.CEILING ) );
     }
+
+    // CEIL
 
 
     /**
@@ -1324,8 +1559,6 @@ public class Functions {
         return b0.ceil( b1 );
     }
 
-    // ABS
-
 
     /**
      * SQL <code>ABS</code> operator applied to byte values.
@@ -1333,6 +1566,8 @@ public class Functions {
     public static PolyNumber abs( PolyNumber number ) {
         return PolyBigDecimal.of( number.bigDecimalValue().abs() );
     }
+
+    // ABS
 
 
     /**
@@ -1345,8 +1580,6 @@ public class Functions {
         throw new GenericRuntimeException( "ABS can only be applied to numbers" );
     }
 
-    // ACOS
-
 
     /**
      * SQL <code>ACOS</code> operator applied to BigDecimal values.
@@ -1354,6 +1587,8 @@ public class Functions {
     public static PolyNumber acos( PolyNumber b0 ) {
         return PolyDouble.of( Math.acos( b0.doubleValue() ) );
     }
+
+    // ACOS
 
 
     /**
@@ -1639,8 +1874,6 @@ public class Functions {
                                 : (Boolean) cannotConvert( o, boolean.class );
     }
 
-    // Don't need parseByte etc. - Byte.parseByte is sufficient.
-
 
     @SuppressWarnings("unused")
     public static byte toByte( Object o ) {
@@ -1648,6 +1881,8 @@ public class Functions {
                 : o instanceof Number ? toByte( (Number) o )
                         : Byte.parseByte( o.toString() );
     }
+
+    // Don't need parseByte etc. - Byte.parseByte is sufficient.
 
 
     public static byte toByte( Number number ) {
@@ -1867,6 +2102,14 @@ public class Functions {
     }
 
 
+    public static PolyBinary truncateOrPad( PolyBinary s, int maxLength ) {
+        if ( s == null || s.value == null ) {
+            return null;
+        }
+        return s.length() == maxLength ? s : PolyBinary.of( truncateOrPad( new ByteString( s.value ), maxLength ) );
+    }
+
+
     /**
      * SQL {@code POSITION(seek IN string)} function.
      */
@@ -1964,8 +2207,12 @@ public class Functions {
     /**
      * SQL {@code REPLACE(string, search, replacement)} function.
      */
-    public static String replace( String s, String search, String replacement ) {
-        return s.replace( search, replacement );
+    @Nullable
+    public static PolyString replace( @Nullable PolyString s, @Nullable PolyString search, @Nullable PolyString replacement ) {
+        if ( s == null || s.isNull() || search == null || search.isNull() || replacement == null || replacement.isNull() ) {
+            return null;
+        }
+        return search.value.isEmpty() ? s : PolyString.of( s.value.replace( search.value, replacement.value ), s.charset );
     }
 
 
@@ -2067,7 +2314,7 @@ public class Functions {
 
 
     public static PolyBoolean isTrue( PolyBoolean b ) {
-        return PolyBoolean.of( b != null && b.value );
+        return PolyBoolean.of( b != null && Boolean.TRUE.equals( b.value ) );
     }
 
 
@@ -2112,7 +2359,7 @@ public class Functions {
 
     @SuppressWarnings("unused")
     public static PolyBoolean isNotFalse( PolyBoolean b ) {
-        return PolyBoolean.of( b == null || b.value );
+        return PolyBoolean.of( b == null || !Boolean.FALSE.equals( b.value ) );
     }
 
 
@@ -2485,6 +2732,9 @@ public class Functions {
 
     @SuppressWarnings("unused")
     public static Object jsonValueExpression( PolyValue input ) {
+        if ( input instanceof PolyMap<?, ?> || input instanceof PolyList<?> || input instanceof PolyBigDecimal ) {
+            return input;
+        }
         return jsonValueExpression( PolyString.of( input.toJson() ) );
     }
 
@@ -2559,41 +2809,100 @@ public class Functions {
             }
             PathMode mode = PathMode.valueOf( matcher.group( 1 ).toUpperCase( Locale.ROOT ) );
             String pathWff = matcher.group( 2 );
-            DocumentContext ctx = switch ( mode ) {
-                case STRICT -> JsonPath.parse(
-                        input.toJson(),
-                        Configuration
-                                .builder()
-                                .jsonProvider( JSON_PATH_JSON_PROVIDER )
-                                .mappingProvider( JSON_PATH_MAPPING_PROVIDER )
-                                .build() );
-                case LAX -> JsonPath.parse(
-                        input.toJson(),
-                        Configuration
-                                .builder()
-                                .options( Option.SUPPRESS_EXCEPTIONS )
-                                .jsonProvider( JSON_PATH_JSON_PROVIDER )
-                                .mappingProvider( JSON_PATH_MAPPING_PROVIDER )
-                                .build() );
-                default -> throw Static.RESOURCE.illegalJsonPathModeInPathSpec( mode.toString(), pathSpec.value ).ex();
-            };
+            Configuration.ConfigurationBuilder builder = Configuration.builder()
+                    .jsonProvider( JSON_PATH_JSON_PROVIDER )
+                    .mappingProvider( JSON_PATH_MAPPING_PROVIDER );
+            if ( mode == PathMode.LAX ) {
+                builder.options( Option.SUPPRESS_EXCEPTIONS );
+            }
+            Configuration configuration = builder.build();
+            Object document = input instanceof PolyMap<?, ?> || input instanceof PolyList<?> || input instanceof PolyBigDecimal
+                    ? jsonPathInput( input )
+                    : null;
+            DocumentContext ctx = document == null ? JsonPath.parse( input.toJson(), configuration ) : JsonPath.parse( document, configuration );
             try {
-                Object json = ctx.read( pathWff );
-                PolyValue val;
-                try {
-                    val = json == null ? null : PolyValue.fromJson( json.toString() );
-                } catch ( GenericRuntimeException e ) {
-                    // if the BsonParser cannot parse it we might try as string
-                    val = PolyValue.fromJson( "\"" + json + "\"" );
-                }
-
-                return PathContext.withReturned( mode, val );
+                Object result = ctx.read( pathWff );
+                return PathContext.withReturned( mode, result == null ? null : jsonPathResultToPolyValue( result ) );
             } catch ( Exception e ) {
                 return PathContext.withStrictException( e );
             }
         } catch ( Exception e ) {
             return PathContext.withUnknownException( e );
         }
+    }
+
+
+    private static Object jsonPathInput( PolyValue value ) {
+        if ( value == null || value.isNull() ) {
+            return null;
+        }
+        if ( value instanceof PolyMap<?, ?> map ) {
+            if ( map.map == null ) {
+                return null;
+            }
+            Map<String, Object> document = new LinkedHashMap<>();
+            map.forEach( ( key, element ) -> {
+                String field = key.isString() ? String.valueOf( key.asString().value ) : key.toJson();
+                document.put( field, jsonPathInput( element ) );
+            } );
+            return document;
+        }
+        if ( value instanceof PolyList<?> list ) {
+            return list.value == null ? null : list.stream().map( Functions::jsonPathInput ).collect( Collectors.toCollection( ArrayList::new ) );
+        }
+        return switch ( value.getType() ) {
+            case CHAR, VARCHAR, TEXT, BOOLEAN, TINYINT, SMALLINT, INTEGER, DECIMAL -> value.toJava();
+            case BIGINT -> {
+                Long number = value.asLong().value;
+                if ( number != null && number == number.intValue() ) {
+                    yield number.intValue();
+                }
+                yield number;
+            }
+            case DOUBLE -> {
+                Double number = value.asDouble().value;
+                yield number == null || Double.isFinite( number ) ? number : JSON_PATH_JSON_PROVIDER.parse( value.toJson() );
+            }
+            case DATE, TIME, TIMESTAMP -> value.asTemporal().getMillisSinceEpoch() == null ? null : value.toJson();
+            default -> JSON_PATH_JSON_PROVIDER.parse( value.toJson() );
+        };
+    }
+
+
+    private static PolyValue jsonPathResultToPolyValue( Object result ) {
+        if ( result == null ) {
+            return PolyNull.NULL;
+        }
+        if ( result instanceof String text ) {
+            return PolyString.of( text );
+        }
+        if ( result instanceof Boolean bool ) {
+            return PolyBoolean.of( bool );
+        }
+        if ( result instanceof Integer number ) {
+            return PolyInteger.of( number );
+        }
+        if ( result instanceof Long number ) {
+            return PolyLong.of( number );
+        }
+        if ( result instanceof BigInteger number ) {
+            return PolyBigDecimal.of( new BigDecimal( number ) );
+        }
+        if ( result instanceof BigDecimal number ) {
+            return PolyBigDecimal.of( number );
+        }
+        if ( result instanceof Number number ) {
+            return PolyDouble.of( number );
+        }
+        if ( result instanceof Collection<?> values ) {
+            return PolyList.copyOf( values.stream().map( Functions::jsonPathResultToPolyValue ).toList() );
+        }
+        if ( result instanceof Map<?, ?> values ) {
+            Map<PolyString, PolyValue> document = new HashMap<>();
+            values.forEach( ( key, value ) -> document.put( PolyString.of( (String) key ), jsonPathResultToPolyValue( value ) ) );
+            return PolyDocument.ofDocument( document );
+        }
+        throw new GenericRuntimeException( "Unsupported JSON path result type: " + result.getClass().getName() );
     }
 
 
@@ -2619,6 +2928,17 @@ public class Functions {
 
 
     public static PolyValue jsonValueAny( PolyValue input, JsonValueEmptyOrErrorBehavior emptyBehavior, PolyValue defaultValueOnEmpty, JsonValueEmptyOrErrorBehavior errorBehavior, PolyValue defaultValueOnError ) {
+        return jsonValueAny( input, emptyBehavior, defaultValueOnEmpty, errorBehavior, defaultValueOnError, value -> value );
+    }
+
+
+    public static PolyValue jsonValueAny(
+            PolyValue input,
+            JsonValueEmptyOrErrorBehavior emptyBehavior,
+            PolyValue defaultValueOnEmpty,
+            JsonValueEmptyOrErrorBehavior errorBehavior,
+            PolyValue defaultValueOnError,
+            Function1<PolyValue, PolyValue> cast ) {
         final PathContext context = (PathContext) input;
         final Exception exc;
         if ( context.exc != null ) {
@@ -2629,18 +2949,22 @@ public class Functions {
                 return switch ( emptyBehavior ) {
                     case ERROR -> throw Static.RESOURCE.emptyResultOfJsonValueFuncNotAllowed().ex();
                     case NULL -> null;
-                    case DEFAULT -> defaultValueOnEmpty;
+                    case DEFAULT -> cast.apply( defaultValueOnEmpty );
                 };
             } else if ( context.mode == PathMode.STRICT && !isScalarObject( value ) ) {
                 exc = Static.RESOURCE.scalarValueRequiredInStrictModeOfJsonValueFunc( value.toString() ).ex();
             } else {
-                return value;
+                try {
+                    return cast.apply( value );
+                } catch ( RuntimeException e ) {
+                    exc = e;
+                }
             }
         }
         return switch ( errorBehavior ) {
             case ERROR -> throw toUnchecked( exc );
             case NULL -> null;
-            case DEFAULT -> defaultValueOnError;
+            case DEFAULT -> cast.apply( defaultValueOnError );
         };
     }
 
@@ -2839,6 +3163,32 @@ public class Functions {
      */
     public enum FlatProductInputType {
         SCALAR, LIST, MAP
+    }
+
+
+    private static class MetadataModel {
+
+        String name;
+        String value;
+        List<MetadataModel> tags = new ArrayList<>();
+
+
+        MetadataModel( final Directory dir ) {
+            this.name = dir.getName();
+        }
+
+
+        MetadataModel( final Tag tag ) {
+            this.name = tag.getTagName();
+            this.value = tag.getDescription();
+        }
+
+
+        MetadataModel addTag( Tag tag ) {
+            tags.add( new MetadataModel( tag ) );
+            return this;
+        }
+
     }
 
 }

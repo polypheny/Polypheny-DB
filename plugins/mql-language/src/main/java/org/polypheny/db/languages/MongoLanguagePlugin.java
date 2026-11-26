@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,18 +61,6 @@ public class MongoLanguagePlugin extends PolyPlugin {
      */
     public MongoLanguagePlugin( PluginContext context ) {
         super( context );
-    }
-
-
-    @Override
-    public void start() {
-        startup();
-    }
-
-
-    @Override
-    public void stop() {
-        super.stop();
     }
 
 
@@ -139,16 +127,21 @@ public class MongoLanguagePlugin extends PolyPlugin {
     }
 
 
-    public String preprocessing( String query, QueryContext context ) {
-        return query;
-    }
-
-
     public static void registerOperators() {
         if ( isInit ) {
             throw new GenericRuntimeException( "Mql operators were already registered." );
         }
         register( OperatorName.MQL_EQUALS, new LangFunctionOperator( "MQL_EQUALS", Kind.EQUALS, PolyType.BOOLEAN ) );
+        register( OperatorName.MQL_NOT_EQUALS, new LangFunctionOperator( "MQL_NOT_EQUALS", Kind.NOT_EQUALS, PolyType.BOOLEAN ) );
+        register( OperatorName.MQL_EXPR_QUERY_VALUE, new LangFunctionOperator( "MQL_EXPR_QUERY_VALUE", Kind.OTHER_FUNCTION, PolyType.DOCUMENT ) );
+        register( OperatorName.MQL_EXPR_DOCUMENT, new LangFunctionOperator( "MQL_EXPR_DOCUMENT", Kind.OTHER_FUNCTION, PolyType.DOCUMENT ) );
+        register( OperatorName.MQL_EXPR_ARRAY, new LangFunctionOperator( "MQL_EXPR_ARRAY", Kind.OTHER_FUNCTION, PolyType.ARRAY ) );
+        register( OperatorName.MQL_EXPR_EQUALS, new LangFunctionOperator( "MQL_EXPR_EQUALS", Kind.EQUALS, PolyType.BOOLEAN ) );
+        register( OperatorName.MQL_EXPR_NOT_EQUALS, new LangFunctionOperator( "MQL_EXPR_NOT_EQUALS", Kind.NOT_EQUALS, PolyType.BOOLEAN ) );
+        register( OperatorName.MQL_EXPR_LT, new LangFunctionOperator( "MQL_EXPR_LT", Kind.LESS_THAN, PolyType.BOOLEAN ) );
+        register( OperatorName.MQL_EXPR_LTE, new LangFunctionOperator( "MQL_EXPR_LTE", Kind.LESS_THAN_OR_EQUAL, PolyType.BOOLEAN ) );
+        register( OperatorName.MQL_EXPR_GT, new LangFunctionOperator( "MQL_EXPR_GT", Kind.GREATER_THAN, PolyType.BOOLEAN ) );
+        register( OperatorName.MQL_EXPR_GTE, new LangFunctionOperator( "MQL_EXPR_GTE", Kind.GREATER_THAN_OR_EQUAL, PolyType.BOOLEAN ) );
 
         register( OperatorName.MQL_SIZE_MATCH, new LangFunctionOperator( "MQL_SIZE_MATCH", Kind.MQL_SIZE_MATCH, PolyType.BOOLEAN ) );
 
@@ -198,6 +191,8 @@ public class MongoLanguagePlugin extends PolyPlugin {
 
         register( OperatorName.MQL_MERGE, new LangFunctionOperator( OperatorName.MQL_MERGE.name(), Kind.OTHER, PolyType.DOCUMENT ) );
 
+        register( OperatorName.MQL_MERGE_ADD, new LangFunctionOperator( OperatorName.MQL_MERGE_ADD.name(), Kind.OTHER, PolyType.DOCUMENT ) );
+
         register( OperatorName.MQL_REPLACE_ROOT, new LangFunctionOperator( OperatorName.MQL_REPLACE_ROOT.name(), Kind.OTHER, PolyType.DOCUMENT ) );
 
         register( OperatorName.MQL_PROJECT_INCLUDES, new LangFunctionOperator( OperatorName.MQL_PROJECT_INCLUDES.name(), Kind.OTHER, PolyType.DOCUMENT ) );
@@ -212,12 +207,43 @@ public class MongoLanguagePlugin extends PolyPlugin {
 
         register( OperatorName.MINUS, new LangFunctionOperator( OperatorName.MINUS.name(), Kind.MINUS, PolyType.DOCUMENT ) );
 
+        // Geospatial Functions
+
+        register( OperatorName.MQL_GEO_INTERSECTS, new LangFunctionOperator( "MQL_GEO_INTERSECTS", Kind.MQL_GEO_INTERSECTS, PolyType.BOOLEAN ) );
+
+        register( OperatorName.MQL_GEO_WITHIN, new LangFunctionOperator( "MQL_GEO_WITHIN", Kind.MQL_GEO_WITHIN, PolyType.BOOLEAN ) );
+
+        register( OperatorName.MQL_GEO_DISTANCE, new LangFunctionOperator( "MQL_GEO_DISTANCE", Kind.MQL_GEO_DISTANCE, PolyType.BOOLEAN ) );
+
+        register( OperatorName.MQL_NEAR, new LangFunctionOperator( "MQL_NEAR", Kind.MQL_NEAR, PolyType.OTHER ) );
+
+        register( OperatorName.MQL_NEAR_SPHERE, new LangFunctionOperator( "MQL_NEAR_SPHERE", Kind.MQL_NEAR_SPHERE, PolyType.OTHER ) );
+
+        register( OperatorName.MQL_GEO_NEAR, new LangFunctionOperator( "MQL_GEO_NEAR", Kind.MQL_GEO_NEAR, PolyType.OTHER ) );
+
         isInit = true;
     }
 
 
     private static void register( OperatorName name, Operator operator ) {
         OperatorRegistry.register( QueryLanguage.from( "mongo" ), name, operator );
+    }
+
+
+    @Override
+    public void start() {
+        startup();
+    }
+
+
+    @Override
+    public void stop() {
+        super.stop();
+    }
+
+
+    public String preprocessing( String query, QueryContext context ) {
+        return query;
     }
 
 

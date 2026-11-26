@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,12 @@
 
 package org.polypheny.db.mql;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.polypheny.db.TestHelper.MongoConnection.toDoc;
 
 import com.google.common.collect.ImmutableList;
+import com.google.gson.JsonParser;
 import java.util.Arrays;
 import java.util.List;
 import org.bson.BsonDocument;
@@ -27,6 +29,7 @@ import org.bson.BsonString;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.webui.models.results.DocResult;
 
@@ -123,6 +126,31 @@ public class DmlTest extends MqlTestTemplate {
                         updated,
                         true,
                         true ) );
+    }
+
+
+    @Test
+    @EnabledIfSystemProperty(named = "store.default", matches = "hsqldb")
+    public void arithmeticUpdatesPreserveExactIntegerResults() {
+        insertMany( List.of(
+                "{\"_id\":\"incInt\",\"n\":2147483647}",
+                "{\"_id\":\"incLong\",\"n\":9223372036854775807}",
+                "{\"_id\":\"mulInt\",\"n\":1000000000}" ) );
+
+        update( "{\"_id\":\"incInt\"}", "{\"$inc\":{\"n\":1}}" );
+        update( "{\"_id\":\"incLong\"}", "{\"$inc\":{\"n\":1}}" );
+        update( "{\"_id\":\"mulInt\"}", "{\"$mul\":{\"n\":3}}" );
+
+        assertStoredNumber( "incInt", "2147483648" );
+        assertStoredNumber( "incLong", "9223372036854775808" );
+        assertStoredNumber( "mulInt", "3000000000" );
+    }
+
+
+    private void assertStoredNumber( String id, String value ) {
+        String[] data = find( "{\"_id\":\"%s\"}".formatted( id ), "{}" ).getData();
+        assertEquals( 1, data.length );
+        assertEquals( value, JsonParser.parseString( data[0] ).getAsJsonObject().get( "n" ).getAsString() );
     }
 
 

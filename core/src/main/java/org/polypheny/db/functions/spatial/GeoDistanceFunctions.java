@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import org.polypheny.db.type.entity.spatial.PolyGeometry;
 public class GeoDistanceFunctions {
 
     // Define the radius of the Earth's sphere (in meters)
-    private static final double EARTH_RADIUS_M = 6371.0 * 1000;
+    public static final double EARTH_RADIUS_M = 6371.0 * 1000;
 
 
     private GeoDistanceFunctions() {

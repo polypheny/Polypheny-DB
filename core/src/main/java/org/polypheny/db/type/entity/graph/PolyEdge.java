@@ -61,6 +61,7 @@ public class PolyEdge extends GraphPropertyHolder {
     @NonFinal
     @Accessors(fluent = true)
     @JsonProperty
+    // An absent range means exactly one hop. An absent upper bound means there is no length limit.
     public Pair<Integer, Integer> fromTo;
 
 
@@ -87,14 +88,6 @@ public class PolyEdge extends GraphPropertyHolder {
         this.left = left;
         this.right = right;
         this.direction = direction;
-    }
-
-
-    public int getVariants() {
-        if ( fromTo == null ) {
-            return 1;
-        }
-        return fromTo.right - fromTo.left + 1;
     }
 
 
@@ -140,26 +133,28 @@ public class PolyEdge extends GraphPropertyHolder {
     }
 
 
+    public @Nullable Integer getMaxLength() {
+        return fromTo == null ? Integer.valueOf( 1 ) : fromTo.right;
+    }
+
+
+    public boolean hasEmptyRange() {
+        Integer maxLength = getMaxLength();
+        return maxLength != null && maxLength < getMinLength();
+    }
+
+
     public String getRangeDescriptor() {
         if ( fromTo == null ) {
             return "";
         }
-        String range = "*";
-
-        if ( fromTo.left != null && fromTo.right != null ) {
-            if ( fromTo.left.equals( fromTo.right ) ) {
-                return range + fromTo.right;
-            }
-            return range + fromTo.left + ".." + fromTo.right;
+        if ( fromTo.right == null ) {
+            return getMinLength() == 1 ? "*" : "*" + fromTo.left + "..";
         }
-        if ( fromTo.right != null ) {
-            return fromTo.right.toString();
+        if ( fromTo.left.equals( fromTo.right ) ) {
+            return "*" + fromTo.right;
         }
-
-        if ( fromTo.left != null ) {
-            return fromTo.left.toString();
-        }
-        return range;
+        return "*" + fromTo.left + ".." + fromTo.right;
     }
 
 
@@ -168,8 +163,7 @@ public class PolyEdge extends GraphPropertyHolder {
         if ( !this.isSameType( o ) ) {
             return -1;
         }
-        return this.equals( o.asEdge() ) ? 0 : -1;
-
+        return id.compareTo( o.asEdge().id );
     }
 
 
@@ -189,7 +183,7 @@ public class PolyEdge extends GraphPropertyHolder {
                         PolyEdge.class );
         if ( fromTo != null ) {
             expression = Expressions.call( expression, "fromTo",
-                    Expressions.call( BuiltInMethod.PAIR_OF.method, Expressions.constant( fromTo.left ), Expressions.constant( fromTo.right ) ) );
+                    Expressions.call( BuiltInMethod.PAIR_OF.method, Expressions.constant( fromTo.left, Integer.class ), Expressions.constant( fromTo.right, Integer.class ) ) );
         }
         return expression;
     }

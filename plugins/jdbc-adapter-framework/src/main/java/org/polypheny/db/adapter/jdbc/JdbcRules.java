@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,9 +36,11 @@ package org.polypheny.db.adapter.jdbc;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 import lombok.Getter;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
@@ -109,6 +111,8 @@ import org.polypheny.db.sql.language.SqlFunction;
 import org.polypheny.db.sql.language.fun.SqlItemOperator;
 import org.polypheny.db.tools.AlgBuilderFactory;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeUtil;
+import org.polypheny.db.type.VectorType;
 import org.polypheny.db.util.ImmutableBitSet;
 import org.polypheny.db.util.Pair;
 import org.polypheny.db.util.Quadruple;
@@ -124,11 +128,11 @@ import org.slf4j.Logger;
  */
 public class JdbcRules {
 
+    protected static final Logger LOGGER = PolyphenyDbTrace.getPlannerTracer();
+
+
     private JdbcRules() {
     }
-
-
-    protected static final Logger LOGGER = PolyphenyDbTrace.getPlannerTracer();
 
 
     public static List<AlgOptRule> rules( JdbcConvention out ) {
@@ -154,6 +158,14 @@ public class JdbcRules {
 
 
     /**
+     * Returns whether this JDBC data source can implement a given aggregate function.
+     */
+    private static boolean canImplement( SqlAggFunction aggregation, SqlDialect sqlDialect ) {
+        return sqlDialect.supportsAggregateFunction( aggregation.getKind() );
+    }
+
+
+    /**
      * Abstract base class for rule that converts to JDBC.
      */
     abstract static class JdbcConverterRule extends ConverterRule {
@@ -168,8 +180,26 @@ public class JdbcRules {
                 JdbcConvention out,
                 AlgBuilderFactory algBuilderFactory,
                 String description ) {
-            super( clazz, predicate, in, out, algBuilderFactory, description );
+            super( clazz, alg -> predicate.test( alg ) && supportsExpressions( alg, out.dialect ), in, out, algBuilderFactory, description );
             this.out = out;
+        }
+
+
+        private static boolean supportsExpressions( AlgNode alg, SqlDialect dialect ) {
+            final Stream<? extends RexNode> expressions;
+            if ( alg instanceof Calc calc ) {
+                RexProgram program = calc.getProgram();
+                expressions = Stream.concat( program.getProjectList().stream(), Stream.ofNullable( program.getCondition() ) )
+                        .map( program::expandLocalRef );
+            } else if ( alg instanceof Sort sort ) {
+                expressions = Stream.concat( sort.getChildExps().stream(), Stream.of( sort.offset, sort.fetch ).filter( Objects::nonNull ) );
+            } else if ( alg instanceof RelModify<?> modify && modify.getSourceExpressions() != null ) {
+                expressions = modify.getSourceExpressions().stream();
+            } else {
+                expressions = alg.getChildExps().stream();
+            }
+
+            return expressions.noneMatch( e -> UnsupportedRexCallVisitor.containsUnsupportedCall( e, List.of( call -> !dialect.supportsRexCall( alg, call ) ) ) );
         }
 
     }
@@ -246,9 +276,17 @@ public class JdbcRules {
                 }
                 newInputs.add( input );
             }
-            if ( convertInputTraits && !canJoinOnCondition( join.getCondition() ) ) {
-                return null;
+            if ( convertInputTraits ) {
+                if ( join.getCondition().isAlwaysTrue() ) {
+                    if ( !out.dialect.supportsVector() || !hasVectorColumn( newInputs.get( 0 ) )
+                            || !hasVectorColumn( newInputs.get( 1 ) ) ) {
+                        return null;
+                    }
+                } else if ( !canJoinOnCondition( join.getCondition() ) ) {
+                    return null;
+                }
             }
+
             if ( containsAggregateSubquery( join.getLeft() ) || containsAggregateSubquery( join.getRight() ) ) {
                 return null;
             }
@@ -265,6 +303,12 @@ public class JdbcRules {
                 LOGGER.debug( e.toString() );
                 return null;
             }
+        }
+
+
+        private boolean hasVectorColumn( AlgNode input ) {
+            return input.getTupleType().getFields().stream()
+                    .anyMatch( f -> f.getType() instanceof VectorType );
         }
 
 
@@ -472,14 +516,6 @@ public class JdbcRules {
             return implementor.implement( this );
         }
 
-
-        @Override
-        public String algCompareString() {
-            return this.getClass().getSimpleName() + "$" +
-                    input.algCompareString() + "$" +
-                    (program != null ? program.toString() : "") + "&";
-        }
-
     }
 
 
@@ -501,7 +537,7 @@ public class JdbcRules {
             return (out.dialect.supportsWindowFunctions()
                     || !RexOver.containsOver( project.getProjects(), null ))
                     && !userDefinedFunctionInProject( project )
-                    && !knnFunctionInProject( project )
+                    && (!knnFunctionInProject( project ) || supportsKnnFunctionInProject( out.dialect, project ))
                     && !multimediaFunctionInProject( project )
                     && !contains( project, List.of( OperatorName.INITCAP ) )
                     && (!geoFunctionInProject( project ) || supportsGeoFunction( out.dialect, project ))
@@ -599,6 +635,18 @@ public class JdbcRules {
         }
 
 
+        private static boolean supportsKnnFunctionInProject( SqlDialect dialect, Project project ) {
+            CheckingKnnFunctionSupportVisitor visitor = new CheckingKnnFunctionSupportVisitor( dialect );
+            for ( RexNode node : project.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.supportsKnnFunction() ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
         @Override
         public AlgNode convert( AlgNode alg ) {
             final Project project = (Project) alg;
@@ -680,7 +728,7 @@ public class JdbcRules {
                     filter -> (
                             !userDefinedFunctionInFilter( filter )
                                     && !containUnsupportedArray( filter, out )
-                                    && !knnFunctionInFilter( filter )
+                                    && (!knnFunctionInFilter( filter ) || supportsKnnFunctionInFilter( out.dialect, filter ))
                                     && !multimediaFunctionInFilter( filter )
                                     && (!geoFunctionInFilter( filter ) || supportsGeoFunctionInFilter( out.dialect, filter ))
                                     && !DocumentRules.containsJson( filter )
@@ -713,6 +761,18 @@ public class JdbcRules {
             for ( RexNode node : filter.getChildExps() ) {
                 node.accept( visitor );
                 if ( visitor.containsKnnFunction() ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+        private static boolean supportsKnnFunctionInFilter( SqlDialect dialect, Filter filter ) {
+            CheckingKnnFunctionSupportVisitor visitor = new CheckingKnnFunctionSupportVisitor( dialect );
+            for ( RexNode node : filter.getChildExps() ) {
+                node.accept( visitor );
+                if ( visitor.supportsKnnFunction() ) {
                     return true;
                 }
             }
@@ -770,7 +830,8 @@ public class JdbcRules {
 
         private static boolean isStringComparableArrayType( Filter filter ) {
             for ( AlgDataTypeField dataTypeField : filter.getTupleType().getFields() ) {
-                if ( dataTypeField.getType().getPolyType() == PolyType.ARRAY ) {
+                if ( dataTypeField.getType().getPolyType() == PolyType.ARRAY
+                        && !(dataTypeField.getType() instanceof VectorType) ) {
                     switch ( dataTypeField.getType().getComponentType().getPolyType() ) {
                         case BOOLEAN:
                         case TINYINT:
@@ -897,14 +958,6 @@ public class JdbcRules {
             }
         }
 
-    }
-
-
-    /**
-     * Returns whether this JDBC data source can implement a given aggregate function.
-     */
-    private static boolean canImplement( SqlAggFunction aggregation, SqlDialect sqlDialect ) {
-        return sqlDialect.supportsAggregateFunction( aggregation.getKind() );
     }
 
 
@@ -1516,6 +1569,56 @@ public class JdbcRules {
             Operator operator = call.getOperator();
             if ( operator instanceof Function && ((SqlFunction) operator).getFunctionCategory().isGeo() && dialect.supportedGeoFunctions().contains( operator.getOperatorName() ) ) {
                 supportsGeoFunction = true;
+            }
+            return super.visitCall( call );
+        }
+
+    }
+
+
+    private static class CheckingKnnFunctionSupportVisitor extends RexVisitorImpl<Void> {
+
+        private boolean supportsKnnFunction = false;
+        private SqlDialect dialect;
+
+
+        CheckingKnnFunctionSupportVisitor( SqlDialect dialect ) {
+            super( true );
+            this.dialect = dialect;
+        }
+
+
+        private static boolean isCompatibleQueryVector( AlgDataType t2 ) {
+            if ( t2 instanceof VectorType ) {
+                return true;
+            }
+            if ( t2.getPolyType() != PolyType.ARRAY ) {
+                return false;
+            }
+            AlgDataType comp = t2.getComponentType();
+            return comp != null && (PolyTypeUtil.isNumeric( comp ) || comp.getPolyType() == PolyType.BOOLEAN);
+        }
+
+
+        public boolean supportsKnnFunction() {
+            return supportsKnnFunction;
+        }
+
+
+        @Override
+        public Void visitCall( RexCall call ) {
+            Operator operator = call.getOperator();
+            if ( operator instanceof SqlFunction sqlFunction
+                    && sqlFunction.getFunctionCategory().isKnn()
+                    && dialect.supportedKnnFunctions().contains( sqlFunction.getOperatorName() )
+                    && call.operands.size() >= 2 ) {
+                AlgDataType t1 = call.operands.get( 0 ).getType();
+                AlgDataType t2 = call.operands.get( 1 ).getType();
+                if ( t1 instanceof VectorType vectorType
+                        && isCompatibleQueryVector( t2 )
+                        && dialect.vectorPushdownTypeIsPresent( vectorType.getVectorElementType() ) ) {
+                    supportsKnnFunction = true;
+                }
             }
             return super.visitCall( call );
         }

@@ -109,10 +109,9 @@ public class EnumerableInterpreter extends SingleAlg implements EnumerableAlg {
 
 
     @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$"
-                + input.algCompareString() + "$"
-                + factor + "&";
+    public boolean isImplementationCacheable() {
+        // The generated code reads the input plan stashed in the current statement's data context.
+        return false;
     }
 
 

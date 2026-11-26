@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,16 +65,13 @@ public class PolyPluginManager extends DefaultPluginManager {
 
     @Getter
     private final static AtomicReference<PersistentMonitoringRepository> PERSISTENT_MONITORING = new AtomicReference<>( null );
-
-    @Getter
-    public static ObservableMap<String, PluginWrapper> PLUGINS = new ObservableMap<>();
-
-    public static List<Runnable> AFTER_INIT = new ArrayList<>();
-
-    @Getter
-    private static PluginClassLoader mainClassLoader;
     // create the plugin manager
     private static final PolyPluginManager pluginManager;
+    @Getter
+    public static ObservableMap<String, PluginWrapper> PLUGINS = new ObservableMap<>();
+    public static List<Runnable> AFTER_INIT = new ArrayList<>();
+    @Getter
+    private static PluginClassLoader mainClassLoader;
 
 
     static {
@@ -119,25 +116,6 @@ public class PolyPluginManager extends DefaultPluginManager {
 
     public static void initAfterRestore( ) {
         getPLUGINS().values().forEach( p -> ((PolyPlugin) p.getPlugin()).afterRestoreInit() );
-    }
-
-
-    @Override
-    protected PluginFactory createPluginFactory() {
-        return new DefaultPluginFactory() {
-            @Override
-            protected Plugin createInstance( Class<?> pluginClass, PluginWrapper pluginWrapper ) {
-                PluginContext context = new PluginContext( pluginWrapper.getRuntimeMode() );
-                try {
-                    Constructor<?> constructor = pluginClass.getConstructor( PluginContext.class );
-                    return (Plugin) constructor.newInstance( context );
-                } catch ( Exception e ) {
-                    log.error( e.getMessage(), e );
-                }
-
-                return null;
-            }
-        };
     }
 
 
@@ -188,6 +166,34 @@ public class PolyPluginManager extends DefaultPluginManager {
     }
 
 
+    public static PluginClassLoader getCustomClassLoader( PluginDescriptor pluginDescriptor ) {
+        if ( mainClassLoader == null ) {
+            //mainClassLoader = new URLClassLoader( new URL[0], PolyPluginManager.class.getClassLoader() );
+            mainClassLoader = new PluginClassLoader( pluginManager, pluginDescriptor, PolyPluginManager.class.getClassLoader(), ClassLoadingStrategy.APD );
+        }
+        return mainClassLoader;
+    }
+
+
+    @Override
+    protected PluginFactory createPluginFactory() {
+        return new DefaultPluginFactory() {
+            @Override
+            protected Plugin createInstance( Class<?> pluginClass, PluginWrapper pluginWrapper ) {
+                PluginContext context = new PluginContext( pluginWrapper.getRuntimeMode() );
+                try {
+                    Constructor<?> constructor = pluginClass.getConstructor( PluginContext.class );
+                    return (Plugin) constructor.newInstance( context );
+                } catch ( Exception e ) {
+                    log.error( e.getMessage(), e );
+                }
+
+                return null;
+            }
+        };
+    }
+
+
     /**
      * Creates a single {@link ClassLoader}, which holds the classes for all loaded plugins.
      *
@@ -211,15 +217,6 @@ public class PolyPluginManager extends DefaultPluginManager {
                         return getCustomClassLoader( pluginDescriptor );
                     }
                 } );
-    }
-
-
-    public static PluginClassLoader getCustomClassLoader( PluginDescriptor pluginDescriptor ) {
-        if ( mainClassLoader == null ) {
-            //mainClassLoader = new URLClassLoader( new URL[0], PolyPluginManager.class.getClassLoader() );
-            mainClassLoader = new PluginClassLoader( pluginManager, pluginDescriptor, PolyPluginManager.class.getClassLoader(), ClassLoadingStrategy.APD );
-        }
-        return mainClassLoader;
     }
 
 

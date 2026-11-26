@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -127,7 +127,7 @@ public class DocumentAggregateToAggregateRule extends AlgOptRule {
 
         // RexNode doc = builder.getRexBuilder().makeCall( DocumentType.ofId(), OperatorRegistry.get( QueryLanguage.from( "mongo" ), OperatorName.MQL_MERGE ), nodes );
 
-        call.transformTo( LogicalDocumentProject.create( enumerableAggregate, docs, List.of() ) );
+        call.transformTo( LogicalDocumentProject.create( enumerableAggregate, docs, List.of(), Map.of() ) );
         // call.transformTo( LogicalAggregate.create( alg.getInput(), alg.groupSet, alg.groupSets, alg.aggCalls ) );*/
     }
 

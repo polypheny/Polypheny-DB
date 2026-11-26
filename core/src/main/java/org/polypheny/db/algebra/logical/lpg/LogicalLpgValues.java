@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeSystem;
 import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.catalog.entity.Entity;
 import org.polypheny.db.catalog.snapshot.Snapshot;
+import org.polypheny.db.functions.CrossModelFunctions;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexLiteral;
@@ -59,9 +60,9 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
 
     public static final BasicPolyType ID_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.VARCHAR, 36 )
             .createWithCharsetAndCollation( Charsets.UTF_8, Collation.IMPLICIT );
-    public static final BasicPolyType LABEL_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.VARCHAR, 255 )
+    public static final BasicPolyType LABEL_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.TEXT )
             .createWithCharsetAndCollation( Charsets.UTF_8, Collation.IMPLICIT );
-    public static final BasicPolyType VALUE_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.VARCHAR, 255 )
+    public static final BasicPolyType VALUE_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.TEXT )
             .createWithCharsetAndCollation( Charsets.UTF_8, Collation.IMPLICIT );
     public static final BasicPolyType NODE_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.NODE );
     public static final BasicPolyType EDGE_TYPE = new BasicPolyType( AlgDataTypeSystem.DEFAULT, PolyType.EDGE );
@@ -125,6 +126,11 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
     }
 
 
+    private static RexLiteral getStringLiteral( String value, BasicPolyType type ) {
+        return new RexLiteral( PolyString.of( value ), type, PolyType.VARCHAR );
+    }
+
+
     @Override
     public List<AlgNode> getRelationalEquivalent( List<AlgNode> values, List<Entity> entities, Snapshot snapshot ) {
         AlgTraitSet out = traitSet.replace( ModelTrait.RELATIONAL );
@@ -177,19 +183,17 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
             RexLiteral id = getStringLiteral( node.id.value, ID_TYPE );
 
             for ( Entry<PolyString, PolyValue> entry : node.properties.entrySet() ) {
+                if ( entry.getValue() == null || entry.getValue().isNull() ) {
+                    continue;
+                }
                 ImmutableList.Builder<RexLiteral> row = ImmutableList.builder();
                 row.add( id );
                 row.add( getStringLiteral( entry.getKey().value, LABEL_TYPE ) );
-                row.add( getStringLiteral( entry.getValue().toString(), VALUE_TYPE ) );
+                row.add( getStringLiteral( CrossModelFunctions.graphPropertyStorageValue( entry.getValue() ), VALUE_TYPE ) );
                 rows.add( row.build() );
             }
         }
         return rows.build();
-    }
-
-
-    private static RexLiteral getStringLiteral( String value, BasicPolyType type ) {
-        return new RexLiteral( PolyString.of( value ), type, PolyType.VARCHAR );
     }
 
 
@@ -215,10 +219,13 @@ public class LogicalLpgValues extends LpgValues implements RelationalTransformab
             RexLiteral id = getStringLiteral( edge.id.value, ID_TYPE );
 
             for ( Entry<PolyString, PolyValue> entry : edge.properties.entrySet() ) {
+                if ( entry.getValue() == null || entry.getValue().isNull() ) {
+                    continue;
+                }
                 ImmutableList.Builder<RexLiteral> row = ImmutableList.builder();
                 row.add( id );
                 row.add( getStringLiteral( entry.getKey().value, LABEL_TYPE ) );
-                row.add( getStringLiteral( entry.getValue().toString(), VALUE_TYPE ) );
+                row.add( getStringLiteral( CrossModelFunctions.graphPropertyStorageValue( entry.getValue() ), VALUE_TYPE ) );
                 rows.add( row.build() );
             }
         }

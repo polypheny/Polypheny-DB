@@ -65,6 +65,8 @@ import org.polypheny.db.algebra.AlgVisitor;
 import org.polypheny.db.algebra.constant.ExplainLevel;
 import org.polypheny.db.algebra.convert.Converter;
 import org.polypheny.db.algebra.convert.ConverterRule;
+import org.polypheny.db.algebra.core.Correlate;
+import org.polypheny.db.algebra.enumerable.EnumerableRules;
 import org.polypheny.db.algebra.enumerable.common.ModelSwitcherRule;
 import org.polypheny.db.algebra.metadata.AlgMetadataProvider;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -824,6 +826,8 @@ public class VolcanoPlanner extends AbstractAlgPlanner {
 
     public void registerModelRules() {
         // Graph
+        addRule( EnumerableRules.ENUMERABLE_LPG_JOIN_RULE );
+        addRule( EnumerableRules.ENUMERABLE_LPG_UNION_RULE );
         addRule( LpgToEnumerableRule.PROJECT_TO_ENUMERABLE );
         addRule( LpgToEnumerableRule.FILTER_TO_ENUMERABLE );
         addRule( LpgToEnumerableRule.AGGREGATE_TO_ENUMERABLE );
@@ -869,7 +873,9 @@ public class VolcanoPlanner extends AbstractAlgPlanner {
         if ( alg.getTraitSet().getTrait( ConventionTraitDef.INSTANCE ) == Convention.NONE ) {
             return costFactory.makeInfiniteCost();
         }
-        AlgOptCost cost = mq.getNonCumulativeCost( alg );
+        // Correlate's own cost includes rescans of the right input. Recalculate it as the
+        // input subset improves so an early infinite cost cannot hide a feasible plan.
+        AlgOptCost cost = alg instanceof Correlate ? alg.computeSelfCost( this, mq ) : mq.getNonCumulativeCost( alg );
         if ( !zeroCost.isLt( cost ) ) {
             // cost must be positive, so nudge it
             cost = costFactory.makeTinyCost();

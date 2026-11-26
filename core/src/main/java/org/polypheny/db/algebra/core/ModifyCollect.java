@@ -18,7 +18,6 @@ package org.polypheny.db.algebra.core;
 
 
 import java.util.List;
-import java.util.stream.Collectors;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
@@ -41,14 +40,6 @@ public abstract class ModifyCollect extends SetOp {
     @Override
     public double estimateTupleCount( AlgMetadataQuery mq ) {
         return 1;
-    }
-
-
-    @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                inputs.stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) ) + "$" +
-                all + "&";
     }
 
 

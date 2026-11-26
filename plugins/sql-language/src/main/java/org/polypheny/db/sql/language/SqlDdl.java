@@ -37,6 +37,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.nodes.Operator;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.runtime.SqlStateException;
 import org.polypheny.db.transaction.locking.Lockable;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
 import org.polypheny.db.transaction.locking.LockableUtils;
@@ -94,7 +95,7 @@ public abstract class SqlDdl extends SqlCall {
     protected LogicalTable getTableFailOnEmpty( Context context, SqlIdentifier tableName ) {
         Optional<? extends LogicalEntity> table = searchEntity( context, tableName );
         if ( table.isEmpty() ) {
-            throw new GenericRuntimeException( "Could not find relational entity with name: " + String.join( ".", tableName.names ) );
+            throw ddlError( "42P01", "Could not find relational entity with name: " + String.join( ".", tableName.names ) );
         }
         if ( table.get().unwrap( LogicalTable.class ).isEmpty() ) {
             throw new GenericRuntimeException( String.format( "Could not find a relational entity with name: %s,but an entity of type: %s",
@@ -102,6 +103,13 @@ public abstract class SqlDdl extends SqlCall {
                     table.get().dataModel ) );
         }
         return table.get().unwrap( LogicalTable.class ).get();
+    }
+
+
+    protected static GenericRuntimeException ddlError( String sqlState, String message, Object... args ) {
+        String formatted = String.format( message, args );
+        // Preserve the original rendering for callers that include the exception's type in their own message.
+        return new GenericRuntimeException( formatted, new SqlStateException( formatted, sqlState ) );
     }
 
 

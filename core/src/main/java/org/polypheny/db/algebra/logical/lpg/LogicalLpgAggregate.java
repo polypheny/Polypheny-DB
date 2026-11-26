@@ -17,26 +17,49 @@
 package org.polypheny.db.algebra.logical.lpg;
 
 import java.util.List;
+import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgShuttle;
+import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.core.LaxAggregateCall;
 import org.polypheny.db.algebra.core.lpg.LpgAggregate;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.polyalg.arguments.LaxAggArg;
 import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
 import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.plan.AlgCluster;
+import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.plan.AlgTraitSet;
 import org.polypheny.db.rex.RexNameRef;
 
 
 public class LogicalLpgAggregate extends LpgAggregate {
 
+    @Getter
+    private final boolean writeCount;
+
 
     public LogicalLpgAggregate( AlgCluster cluster, AlgTraitSet traits, AlgNode child, @NotNull List<RexNameRef> groups, List<LaxAggregateCall> aggCalls, AlgDataType tupleType ) {
+        this( cluster, traits, child, groups, aggCalls, tupleType, false );
+    }
+
+
+    private LogicalLpgAggregate( AlgCluster cluster, AlgTraitSet traits, AlgNode child, List<RexNameRef> groups, List<LaxAggregateCall> aggCalls,
+            AlgDataType tupleType, boolean writeCount ) {
         super( cluster, traits, child, groups, aggCalls, tupleType );
+        this.writeCount = writeCount;
+    }
+
+
+    public static LogicalLpgAggregate countWrites( AlgNode input ) {
+        AlgCluster cluster = input.getCluster();
+        AlgDataType rowType = AlgOptUtil.createDmlRowType( Kind.INSERT, cluster.getTypeFactory() );
+        LaxAggregateCall count = LaxAggregateCall.create( rowType.getFieldNames().get( 0 ), OperatorRegistry.getAgg( OperatorName.COUNT ), null );
+        return new LogicalLpgAggregate( cluster, input.getTraitSet(), input, List.of(), List.of( count ), rowType, true );
     }
 
 
@@ -58,7 +81,7 @@ public class LogicalLpgAggregate extends LpgAggregate {
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new LogicalLpgAggregate( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), groups, aggCalls, rowType );
+        return new LogicalLpgAggregate( inputs.get( 0 ).getCluster(), traitSet, inputs.get( 0 ), groups, aggCalls, rowType, writeCount );
     }
 
 

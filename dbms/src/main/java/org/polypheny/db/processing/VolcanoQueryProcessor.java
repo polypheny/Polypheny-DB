@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,18 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.AlgCollationTraitDef;
 import org.polypheny.db.algebra.enumerable.EnumerableInterpreterRule;
 import org.polypheny.db.algebra.enumerable.EnumerableRules;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgCall;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgForeach;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgMergeRows;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgSetRows;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgShortestPathJoin;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgWriteRow;
 import org.polypheny.db.algebra.enumerable.common.EnumerableBindable.EnumerableToBindableConverterRule;
 import org.polypheny.db.algebra.enumerable.common.EnumerableModifyToStreamerRule;
 import org.polypheny.db.algebra.enumerable.document.DocumentAggregateToAggregateRule;
 import org.polypheny.db.algebra.enumerable.document.DocumentFilterToCalcRule;
+import org.polypheny.db.algebra.enumerable.document.DocumentGeoNearUnwrap;
+import org.polypheny.db.algebra.enumerable.document.DocumentNearUnwrap;
 import org.polypheny.db.algebra.enumerable.document.DocumentProjectToCalcRule;
 import org.polypheny.db.algebra.enumerable.document.DocumentSortToSortRule;
 import org.polypheny.db.algebra.rules.AggregateExpandDistinctAggregatesRule;
@@ -73,9 +81,6 @@ import org.polypheny.db.transaction.locking.LockablesRegistry;
 @Getter
 public class VolcanoQueryProcessor extends AbstractQueryProcessor {
 
-    private final VolcanoPlanner planner;
-
-
     public static final List<AlgOptRule> ENUMERABLE_RULES =
             ImmutableList.of(
                     EnumerableRules.ENUMERABLE_JOIN_RULE,
@@ -91,6 +96,8 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     EnumerableRules.ENUMERABLE_PROJECT_TO_CALC_RULE,
                     DocumentProjectToCalcRule.INSTANCE,
                     DocumentFilterToCalcRule.INSTANCE,
+                    DocumentNearUnwrap.INSTANCE,
+                    DocumentGeoNearUnwrap.INSTANCE,
                     DocumentAggregateToAggregateRule.INSTANCE,
                     DocumentSortToSortRule.INSTANCE,
                     EnumerableRules.ENUMERABLE_PROJECT_RULE,
@@ -115,10 +122,15 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     EnumerableRules.ENUMERABLE_TABLE_SCAN_RULE,
                     EnumerableRules.ENUMERABLE_TRANSFORMER_RULE,
                     EnumerableRules.ENUMERABLE_GRAPH_MATCH_RULE,
+                    LogicalLpgWriteRow.TO_ENUMERABLE,
+                    LogicalLpgCall.TO_ENUMERABLE,
+                    LogicalLpgForeach.TO_ENUMERABLE,
+                    LogicalLpgMergeRows.TO_ENUMERABLE,
+                    LogicalLpgSetRows.TO_ENUMERABLE,
+                    LogicalLpgShortestPathJoin.TO_ENUMERABLE,
                     EnumerableRules.ENUMERABLE_UNWIND_RULE,
                     EnumerableRules.ENUMERABLE_DOCUMENT_UNWIND_RULE,
                     EnumerableRules.ENUMERABLE_GRAPH_TRANSFORMER_RULE );
-
     public static final List<AlgOptRule> PRE_PROCESS_RULES =
             ImmutableList.of(
                     AllocationToPhysicalScanRule.REL_INSTANCE,
@@ -129,8 +141,6 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     AllocationToPhysicalModifyRule.GRAPH_INSTANCE,
                     ScanRule.INSTANCE
             );
-
-
     public static final List<AlgOptRule> DEFAULT_RULES =
             ImmutableList.of(
                     RuntimeConfig.JOIN_COMMUTE.getBoolean()
@@ -154,7 +164,6 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     SortJoinTransposeRule.INSTANCE,
                     SortRemoveConstantKeysRule.INSTANCE,
                     SortUnionTransposeRule.INSTANCE );
-
     public static final List<AlgOptRule> CONSTANT_REDUCTION_RULES =
             ImmutableList.of(
                     ReduceExpressionsRules.PROJECT_INSTANCE,
@@ -165,6 +174,7 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     ValuesReduceRule.PROJECT_FILTER_INSTANCE,
                     ValuesReduceRule.PROJECT_INSTANCE,
                     AggregateValuesRule.INSTANCE );
+    private final VolcanoPlanner planner;
 
 
     public VolcanoQueryProcessor( Statement statement ) {

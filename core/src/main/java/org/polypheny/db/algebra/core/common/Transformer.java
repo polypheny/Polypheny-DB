@@ -18,7 +18,6 @@ package org.polypheny.db.algebra.core.common;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import org.polypheny.db.algebra.AbstractAlgNode;
@@ -101,15 +100,6 @@ public class Transformer extends AbstractAlgNode {
     public void replaceInput( int ordinalInParent, AlgNode p ) {
         assert ordinalInParent < inputs.size();
         this.inputs.set( ordinalInParent, p );
-    }
-
-
-    @Override
-    public String algCompareString() {
-        return getClass().getSimpleName() + "$"
-                + inModelTrait + "$"
-                + outModelTrait + "$"
-                + inputs.stream().map( AlgNode::algCompareString ).collect( Collectors.joining( "$" ) ) + "&";
     }
 
 

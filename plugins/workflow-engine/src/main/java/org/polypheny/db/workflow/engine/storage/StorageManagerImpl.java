@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,11 +102,10 @@ public class StorageManagerImpl implements StorageManager {
     private final TransactionManager transactionManager;
 
     private final Map<UUID, Transaction> localTransactions = new ConcurrentHashMap<>();
-    private Transaction extractTransaction;
-    private Transaction loadTransaction;
-
     private final long relNamespace;
     private final long docNamespace;
+    private Transaction extractTransaction;
+    private Transaction loadTransaction;
 
 
     public StorageManagerImpl( TransactionManager transactionManager, UUID sessionId, Map<DataModel, String> defaultStores ) {
@@ -126,13 +125,108 @@ public class StorageManagerImpl implements StorageManager {
         }
 
         String relNsName = getNamespaceName( REL_PREFIX );
-        relNamespace = ddlManager.createNamespace(
-                relNsName, DataModel.RELATIONAL, true, false, true, null );
-        registeredNamespaces.put( relNamespace, relNsName );
-
         String docNsName = getNamespaceName( DOC_PREFIX );
-        docNamespace = ddlManager.createNamespace( docNsName, DataModel.DOCUMENT, true, false, true, null );
+        Pair<Long, Long> namespaces = transactionManager.runCatalogWrite( ORIGIN + "-CreateCheckpointNamespaces", transaction -> {
+            Statement statement = transaction.createStatement();
+            long relational = ddlManager.createNamespace( relNsName, DataModel.RELATIONAL, true, false, true, statement );
+            long document = ddlManager.createNamespace( docNsName, DataModel.DOCUMENT, true, false, true, statement );
+            return Pair.of( relational, document );
+        } );
+        relNamespace = namespaces.left;
+        docNamespace = namespaces.right;
+        registeredNamespaces.put( relNamespace, relNsName );
         registeredNamespaces.put( docNamespace, docNsName );
+    }
+
+
+    public static List<FieldInformation> getFieldInfo( AlgDataType tupleType ) {
+        List<FieldInformation> columns = new ArrayList<>();
+
+        int position = 0;
+        for ( AlgDataTypeField field : tupleType.getFields() ) {
+            FieldInformation info = new FieldInformation(
+                    field.getName(),
+                    getColTypeInfo( field ),
+                    Collation.getDefaultCollation(),
+                    null,
+                    position
+            );
+            columns.add( info );
+            position++;
+        }
+        return columns;
+    }
+
+
+    private static ColumnTypeInformation getColTypeInfo( AlgDataTypeField field ) {
+        AlgDataType type = field.getType();
+        boolean isArray = false;
+        if ( type.getPolyType() == PolyType.ARRAY ) {
+            type = type.getComponentType();
+            isArray = true;
+        }
+        return new ColumnTypeInformation(
+                type.getPolyType(),
+                field.getType().getPolyType(),
+                type.getRawPrecision(),
+                type.getScale(),
+                isArray ? (int) ((ArrayType) field.getType()).getDimension() : -1,
+                isArray ? (int) ((ArrayType) field.getType()).getCardinality() : -1,
+                field.getType().isNullable(),
+                field.getType().getComponentType() == null || field.getType().getComponentType().isNullable() );
+    }
+
+
+    private static void acquireSchemaLock( Transaction transaction, long namespaceId ) throws DeadlockException {
+        LogicalNamespace namespace = Catalog.snapshot().getNamespace( namespaceId ).orElse( null );
+        if ( namespace == null ) {
+            return; // for graphs, the namespace is already removed when the checkpoint is dropped
+        }
+        // in theory we would need an EXCLUSIVE lock, but this does not work if a different transaction is currently reading a checkpoint in the same namespace
+        transaction.acquireLockable( LockablesRegistry.INSTANCE.getOrCreateLockable( namespace ), LockType.SHARED );
+    }
+
+
+    /**
+     * Removes all namespaces and associated checkpoints that currently exist.
+     * This should only be called on startup to clean up anything that was not removed.
+     */
+    public static void clearAll( TransactionManager transactionManager ) {
+        DdlManager ddlManager = DdlManager.getInstance();
+        for ( LogicalNamespace ns : Catalog.snapshot().getNamespaces( null ) ) {
+            String name = ns.getName();
+            boolean relational = name.startsWith( REL_PREFIX ) && name.length() == REL_PREFIX.length() + 32;
+            boolean document = name.startsWith( DOC_PREFIX ) && name.length() == DOC_PREFIX.length() + 32;
+            boolean graph = name.startsWith( LPG_PREFIX ) && name.length() == LPG_PREFIX.length() + 2 * 32 + 3; // assumes single-digit outport indexes
+            if ( !relational && !document && !graph ) {
+                continue;
+            }
+            Transaction transaction = QueryUtils.startTransaction( transactionManager, Catalog.defaultNamespaceId, "ClearAllCheckpoints" );
+            try {
+                acquireSchemaLock( transaction, ns.id );
+                transaction.acquireCatalogWriteLock();
+                if ( relational ) {
+                    for ( LogicalTable table : transaction.getSnapshot().rel().getTablesFromNamespace( ns.id ) ) {
+                        ddlManager.dropTable( table, transaction.createStatement() );
+                    }
+                    ddlManager.dropNamespace( name, false, transaction.createStatement() );
+                } else if ( document ) {
+                    for ( LogicalCollection collection : transaction.getSnapshot().doc().getCollections( ns.id, null ) ) {
+                        ddlManager.dropCollection( collection, transaction.createStatement() );
+                    }
+                    ddlManager.dropNamespace( name, false, transaction.createStatement() );
+                } else {
+                    ddlManager.dropGraph( ns.id, false, transaction.createStatement() );
+                }
+                transaction.commit();
+            } finally {
+                if ( transaction.isActive() ) {
+                    transaction.rollback( null );
+                }
+            }
+
+        }
+
     }
 
 
@@ -228,6 +322,7 @@ public class StorageManagerImpl implements StorageManager {
 
         try {
             acquireSchemaLock( transaction, relNamespace );
+            transaction.acquireCatalogWriteLock();
             ddlManager.createTable(
                     relNamespace,
                     tableName,
@@ -262,6 +357,7 @@ public class StorageManagerImpl implements StorageManager {
         Transaction transaction = QueryUtils.startTransaction( transactionManager, docNamespace, "DocCreate" );
         try {
             acquireSchemaLock( transaction, docNamespace );
+            transaction.acquireCatalogWriteLock();
             ddlManager.createCollection(
                     docNamespace,
                     collectionName,
@@ -291,10 +387,11 @@ public class StorageManagerImpl implements StorageManager {
         }
         String graphName = getGraphName( activityId, outputIdx );
         Transaction transaction = QueryUtils.startTransaction( transactionManager, Catalog.defaultNamespaceId, "LpgCreate" );
-        // no lock required since we create a new namespace
-        DataStore<?> store = getStore( storeName );
+        DataStore<?> store;
         long graphId;
         try {
+            transaction.acquireCatalogWriteLock();
+            store = getStore( storeName );
             graphId = ddlManager.createGraph(
                     graphName,
                     true,
@@ -474,6 +571,8 @@ public class StorageManagerImpl implements StorageManager {
                 .put( outputIdx, Pair.of( entity, meta ) );
     }
 
+    // Utils:
+
 
     private DataStore<?> getStore( String storeName ) {
         return adapterManager.getStore( storeName ).orElseThrow( () -> new IllegalArgumentException( "Adapter does not exist: " + storeName ) );
@@ -482,45 +581,59 @@ public class StorageManagerImpl implements StorageManager {
 
     private void dropEntity( LogicalEntity entity ) {
         Transaction transaction = QueryUtils.startTransaction( transactionManager, entity.getNamespaceId(), "DropCheckpoint" );
-        Statement statement = transaction.createStatement();
-        acquireSchemaLock( transaction, entity.getNamespaceId() );
-        switch ( entity.dataModel ) {
-            case RELATIONAL -> ddlManager.dropTable( (LogicalTable) entity, statement );
-            case DOCUMENT -> ddlManager.dropCollection( (LogicalCollection) entity, statement );
-            case GRAPH -> ddlManager.dropGraph( entity.getId(), true, statement );
+        try {
+            acquireSchemaLock( transaction, entity.getNamespaceId() );
+            transaction.acquireCatalogWriteLock();
+            Statement statement = transaction.createStatement();
+            switch ( entity.dataModel ) {
+                case RELATIONAL -> ddlManager.dropTable( (LogicalTable) entity, statement );
+                case DOCUMENT -> ddlManager.dropCollection( (LogicalCollection) entity, statement );
+                case GRAPH -> ddlManager.dropGraph( entity.getId(), true, statement );
+            }
+            transaction.commit();
+        } finally {
+            if ( transaction.isActive() ) {
+                transaction.rollback( null );
+            }
         }
-        transaction.commit();
     }
 
 
     private void dropNamespaces() {
         Transaction transaction = QueryUtils.startTransaction( transactionManager, relNamespace, "DropNamespaces" );
-        for ( Entry<Long, String> entry : registeredNamespaces.entrySet() ) {
-            acquireSchemaLock( transaction, entry.getKey() );
-            ddlManager.dropNamespace( entry.getValue(), true, transaction.createStatement() );
+        try {
+            for ( long namespaceId : registeredNamespaces.keySet() ) {
+                acquireSchemaLock( transaction, namespaceId );
+            }
+            transaction.acquireCatalogWriteLock();
+            for ( String namespace : registeredNamespaces.values() ) {
+                ddlManager.dropNamespace( namespace, true, transaction.createStatement() );
+            }
+            transaction.commit();
+        } finally {
+            if ( transaction.isActive() ) {
+                transaction.rollback( null );
+            }
         }
-        transaction.commit();
         registeredNamespaces.clear();
     }
 
 
     private void addDefaultCheckpointAdapterIfMissing() {
-        if ( Catalog.getInstance().getAdapters().values().stream().anyMatch( a -> a.uniqueName.equals( DEFAULT_CHECKPOINT_ADAPTER ) ) ) {
-            STARTED_ADAPTER.set( true );
-            return;
-        }
-        if ( STARTED_ADAPTER.compareAndSet( false, true ) ) {
-            log.info( "Adding default workflow checkpoint adapter: " + DEFAULT_CHECKPOINT_ADAPTER );
-            AdapterTemplate storeTemplate = AdapterManager.getAdapterTemplate( "HSQLDB", AdapterType.STORE );
-            Map<String, String> settings = new HashMap<>( storeTemplate.getDefaultSettings() );
-            settings.put( "trxControlMode", "locks" );
-            settings.put( "type", "File" );
-            settings.put( "tableType", "Cached" );
-            ddlManager.createStore( DEFAULT_CHECKPOINT_ADAPTER, storeTemplate.getAdapterName(), AdapterType.STORE, settings, storeTemplate.getDefaultMode() );
-        }
+        transactionManager.runCatalogWrite( ORIGIN + "-CreateCheckpointAdapter", transaction -> {
+            if ( Catalog.getInstance().getAdapters().values().stream().noneMatch( a -> a.uniqueName.equals( DEFAULT_CHECKPOINT_ADAPTER ) ) ) {
+                log.info( "Adding default workflow checkpoint adapter: " + DEFAULT_CHECKPOINT_ADAPTER );
+                AdapterTemplate storeTemplate = AdapterManager.getAdapterTemplate( "HSQLDB", AdapterType.STORE );
+                Map<String, String> settings = new HashMap<>( storeTemplate.getDefaultSettings() );
+                settings.put( "trxControlMode", "locks" );
+                settings.put( "type", "File" );
+                settings.put( "tableType", "Cached" );
+                ddlManager.createStore( DEFAULT_CHECKPOINT_ADAPTER, storeTemplate.getAdapterName(), AdapterType.STORE, settings, storeTemplate.getDefaultMode() );
+            }
+            return null;
+        } );
+        STARTED_ADAPTER.set( true );
     }
-
-    // Utils:
 
 
     private String findDuplicateField( AlgDataType type ) {
@@ -538,53 +651,6 @@ public class StorageManagerImpl implements StorageManager {
 
     private List<ConstraintInformation> getPkConstraint( String pkCol ) {
         return List.of( new ConstraintInformation( "PRIMARY KEY", ConstraintType.PRIMARY, List.of( pkCol ) ) );
-    }
-
-
-    public static List<FieldInformation> getFieldInfo( AlgDataType tupleType ) {
-        List<FieldInformation> columns = new ArrayList<>();
-
-        int position = 0;
-        for ( AlgDataTypeField field : tupleType.getFields() ) {
-            FieldInformation info = new FieldInformation(
-                    field.getName(),
-                    getColTypeInfo( field ),
-                    Collation.getDefaultCollation(),
-                    null,
-                    position
-            );
-            columns.add( info );
-            position++;
-        }
-        return columns;
-    }
-
-
-    private static ColumnTypeInformation getColTypeInfo( AlgDataTypeField field ) {
-        AlgDataType type = field.getType();
-        boolean isArray = false;
-        if ( type.getPolyType() == PolyType.ARRAY ) {
-            type = type.getComponentType();
-            isArray = true;
-        }
-        return new ColumnTypeInformation(
-                type.getPolyType(),
-                field.getType().getPolyType(),
-                type.getRawPrecision(),
-                type.getScale(),
-                isArray ? (int) ((ArrayType) field.getType()).getDimension() : -1,
-                isArray ? (int) ((ArrayType) field.getType()).getCardinality() : -1,
-                field.getType().isNullable() );
-    }
-
-
-    private static void acquireSchemaLock( Transaction transaction, long namespaceId ) throws DeadlockException {
-        LogicalNamespace namespace = Catalog.snapshot().getNamespace( namespaceId ).orElse( null );
-        if ( namespace == null ) {
-            return; // for graphs, the namespace is already removed when the checkpoint is dropped
-        }
-        // in theory we would need an EXCLUSIVE lock, but this does not work if a different transaction is currently reading a checkpoint in the same namespace
-        transaction.acquireLockable( LockablesRegistry.INSTANCE.getOrCreateLockable( namespace ), LockType.SHARED );
     }
 
 
@@ -628,43 +694,6 @@ public class StorageManagerImpl implements StorageManager {
 
         dropAllCheckpoints();
         dropNamespaces();
-    }
-
-
-    /**
-     * Removes all namespaces and associated checkpoints that currently exist.
-     * This should only be called on startup to clean up anything that was not removed.
-     */
-    public static void clearAll( TransactionManager transactionManager ) {
-        DdlManager ddlManager = DdlManager.getInstance();
-        for ( LogicalNamespace ns : Catalog.snapshot().getNamespaces( null ) ) {
-            Transaction transaction = QueryUtils.startTransaction( transactionManager, Catalog.defaultNamespaceId, "ClearAllCheckpoints" );
-            try {
-                acquireSchemaLock( transaction, ns.id );
-                String name = ns.getName();
-                if ( name.startsWith( REL_PREFIX ) && name.length() == REL_PREFIX.length() + 32 ) {
-                    for ( LogicalTable table : transaction.getSnapshot().rel().getTablesFromNamespace( ns.id ) ) {
-                        ddlManager.dropTable( table, transaction.createStatement() );
-                    }
-                    ddlManager.dropNamespace( name, false, transaction.createStatement() );
-                } else if ( name.startsWith( DOC_PREFIX ) && name.length() == DOC_PREFIX.length() + 32 ) {
-                    for ( LogicalCollection collection : transaction.getSnapshot().doc().getCollections( ns.id, null ) ) {
-                        ddlManager.dropCollection( collection, transaction.createStatement() );
-                    }
-                    ddlManager.dropNamespace( name, false, transaction.createStatement() );
-
-                } else if ( name.startsWith( LPG_PREFIX ) && name.length() == LPG_PREFIX.length() + 2 * 32 + 3 ) { // assumes no activity doesn't have outport with idx > 9
-                    ddlManager.dropGraph( ns.id, false, transaction.createStatement() );
-                }
-                transaction.commit();
-            } finally {
-                if ( transaction.isActive() ) {
-                    transaction.rollback( null );
-                }
-            }
-
-        }
-
     }
 
 }

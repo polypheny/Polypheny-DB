@@ -130,7 +130,13 @@ public abstract class AbstractDqlRouter extends BaseRouter implements Router {
 
     @Override
     public <T extends AlgNode & LpgAlg> AlgNode routeGraph( RoutedAlgBuilder builder, T alg, Statement statement ) {
-        if ( alg.getInputs().size() == 1 ) {
+        if ( alg.getNodeType() == NodeType.JOIN || alg.getNodeType() == NodeType.UNION ) {
+            for ( int i = 0; i < alg.getInputs().size(); i++ ) {
+                AlgNode input = routeGraph( builder, (AlgNode & LpgAlg) alg.getInput( i ), statement );
+                alg.replaceInput( i, builder.stackSize() > 0 ? builder.build() : input );
+            }
+            return alg;
+        } else if ( alg.getInputs().size() == 1 ) {
             routeGraph( builder, (AlgNode & LpgAlg) alg.getInput( 0 ), statement );
             if ( builder.stackSize() > 0 ) {
                 alg.replaceInput( 0, builder.build() );

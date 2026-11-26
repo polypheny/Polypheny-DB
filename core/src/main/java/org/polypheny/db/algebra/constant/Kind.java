@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -116,6 +116,18 @@ public enum Kind {
      * distance functions.
      */
     DISTANCE,
+
+    L1_DISTANCE,
+
+    L2_DISTANCE,
+
+    COSINE_DISTANCE,
+
+    HAMMING_DISTANCE,
+
+    JACCARD_DISTANCE,
+
+    INNER_PRODUCT_DISTANCE,
 
     /**
      * GEO functions.
@@ -1322,6 +1334,19 @@ public enum Kind {
      * Document model {@code $exists} operator
      */
     MQL_EXISTS,
+
+    MQL_GEO_INTERSECTS,
+
+    MQL_GEO_WITHIN,
+
+    MQL_GEO_DISTANCE,
+
+    MQL_NEAR,
+
+    MQL_NEAR_SPHERE,
+
+    MQL_GEO_NEAR,
+
     /*
      * Deserialize operator
      */
@@ -1593,6 +1618,16 @@ public enum Kind {
     }
 
 
+    @SafeVarargs
+    private static <E extends Enum<E>> EnumSet<E> concat( EnumSet<E> set0, EnumSet<E>... sets ) {
+        EnumSet<E> set = set0.clone();
+        for ( EnumSet<E> s : sets ) {
+            set.addAll( s );
+        }
+        return set;
+    }
+
+
     /**
      * Returns the kind that corresponds to this operator but in the opposite direction. Or returns this,
      * if this kind is not reversible.
@@ -1711,15 +1746,5 @@ public enum Kind {
      */
     public final boolean belongsTo( Collection<Kind> category ) {
         return category.contains( this );
-    }
-
-
-    @SafeVarargs
-    private static <E extends Enum<E>> EnumSet<E> concat( EnumSet<E> set0, EnumSet<E>... sets ) {
-        EnumSet<E> set = set0.clone();
-        for ( EnumSet<E> s : sets ) {
-            set.addAll( s );
-        }
-        return set;
     }
 }

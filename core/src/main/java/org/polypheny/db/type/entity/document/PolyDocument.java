@@ -20,10 +20,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.TreeNode;
+import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -31,7 +30,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.jsontype.TypeDeserializer;
 import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
-import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.google.common.collect.ImmutableMap;
 import io.activej.serializer.BinaryInput;
 import io.activej.serializer.BinaryOutput;
 import io.activej.serializer.BinarySerializer;
@@ -40,7 +39,9 @@ import io.activej.serializer.CorruptedDataException;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.def.SimpleSerializerDef;
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.EqualsAndHashCode;
@@ -72,7 +73,7 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
 
     public PolyDocument( @JsonProperty("map") @Deserialize("map") Map<PolyString, PolyValue> value, @JsonProperty("isUnset") @Deserialize("isUnset") boolean isUnset ) {
-        super( value, PolyType.DOCUMENT, MapType.DOCUMENT );
+        super( value, PolyType.DOCUMENT, MapType.DOCUMENT, true );
         this.isUnset = isUnset;
     }
 
@@ -83,14 +84,12 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
 
     public PolyDocument( PolyString key, PolyValue value ) {
-        this( new HashMap<>() {{
-            put( key, value );
-        }} );
+        this( Collections.singletonMap( key, value ) );
     }
 
 
     public static PolyDocument ofUnset() {
-        return new PolyDocument( new HashMap<>(), true );
+        return new PolyDocument( Map.of(), true );
     }
 
 
@@ -101,7 +100,7 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
     @SafeVarargs
     public PolyDocument( Pair<PolyString, PolyValue>... value ) {
-        this( Map.ofEntries( value ) );
+        this( ImmutableMap.copyOf( List.of( value ) ) );
     }
 
 
@@ -120,7 +119,7 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
     @Override
     public Expression asExpression() {
-        return Expressions.new_( PolyDocument.class, super.asExpression(), Expressions.constant( isUnset ) );
+        return Expressions.new_( PolyDocument.class, mapExpression(), Expressions.constant( isUnset ) );
     }
 
 
@@ -163,10 +162,10 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
                 @Override
                 public PolyDocument decode( BinaryInput in ) throws CorruptedDataException {
-                    Map<PolyString, PolyValue> map = new HashMap<>();
                     if ( in.readBoolean() ) {
                         return PolyDocument.ofUnset();
                     }
+                    Map<PolyString, PolyValue> map = new LinkedHashMap<>();
                     long size = in.readLong();
                     for ( long i = 0; i < size; i++ ) {
                         map.put(
@@ -238,16 +237,54 @@ public class PolyDocument extends PolyMap<PolyString, PolyValue> {
 
         @Override
         public PolyDocument deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
-            TreeNode n = p.readValueAsTree();
-
-            Map<PolyString, PolyValue> values = new HashMap<>( n.size() );
-            for ( JsonNode e : ((ArrayNode) n.get( KEY_VALUE_KEY )) ) {
-                PolyString key = PolyString.of( e.get( 0 ).asText() );
-                PolyValue value = JSON_WRAPPER.readValue( e.get( 1 ).traverse( p.getCodec() ), PolyValue.class );
-                values.put( key, value );
+            LinkedHashMap<PolyString, PolyValue> values = null;
+            JsonToken token = p.hasToken( JsonToken.START_OBJECT ) ? p.nextToken() : p.currentToken();
+            while ( token == JsonToken.FIELD_NAME ) {
+                String field = p.currentName();
+                p.nextToken();
+                if ( KEY_VALUE_KEY.equals( field ) ) {
+                    values = readPairs( p, ctxt );
+                } else {
+                    p.skipChildren();
+                }
+                token = p.nextToken();
             }
+            if ( token != JsonToken.END_OBJECT ) {
+                ctxt.reportWrongTokenException( PolyDocument.class, JsonToken.END_OBJECT, "Expected a typed document object" );
+            }
+            if ( values == null ) {
+                return ctxt.reportInputMismatch( PolyDocument.class, "Missing document entries field '%s'", KEY_VALUE_KEY );
+            }
+            return new PolyDocument( values );
+        }
 
-            return PolyDocument.ofDocument( values );
+
+        private LinkedHashMap<PolyString, PolyValue> readPairs( JsonParser p, DeserializationContext ctxt ) throws IOException {
+            if ( !p.hasToken( JsonToken.START_ARRAY ) ) {
+                ctxt.reportWrongTokenException( PolyDocument.class, JsonToken.START_ARRAY, "Expected an array of document entries" );
+            }
+            LinkedHashMap<PolyString, PolyValue> values = new LinkedHashMap<>();
+            JsonToken token;
+            while ( (token = p.nextToken()) == JsonToken.START_ARRAY ) {
+                if ( p.nextToken() == JsonToken.END_ARRAY ) {
+                    return ctxt.reportInputMismatch( PolyDocument.class, "Missing document entry key" );
+                }
+                PolyString key = PolyString.of( ctxt.readTree( p ).asText() );
+                if ( p.nextToken() == JsonToken.END_ARRAY ) {
+                    return ctxt.reportInputMismatch( PolyDocument.class, "Missing value for document key '%s'", key );
+                }
+                values.put( key, readTypedJsonValue( p, ctxt ) );
+                while ( p.nextToken() != JsonToken.END_ARRAY ) {
+                    if ( p.currentToken() == null ) {
+                        return ctxt.reportInputMismatch( PolyDocument.class, "Incomplete entry for document key '%s'", key );
+                    }
+                    p.skipChildren();
+                }
+            }
+            if ( token != JsonToken.END_ARRAY ) {
+                ctxt.reportWrongTokenException( PolyDocument.class, JsonToken.END_ARRAY, "Expected a document entry pair or the end of the entries array" );
+            }
+            return values;
         }
 
     }

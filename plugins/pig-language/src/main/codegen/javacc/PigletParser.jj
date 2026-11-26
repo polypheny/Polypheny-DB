@@ -46,6 +46,7 @@ import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.util.CoreUtil;
 import org.polypheny.db.runtime.PolyphenyDbContextException;
+import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.piglet.Ast.*;
 import org.polypheny.db.util.trace.PolyphenyDbTrace;
 import org.polypheny.db.util.Pair;
@@ -162,8 +163,11 @@ JAVACODE NodeParseException convertException(Throwable ex) {
     ex = ece.getCause();
   }
 
+  boolean syntaxError = ex instanceof ParseException
+    || (ex instanceof TokenMgrError && ((TokenMgrError) ex).errorCode == TokenMgrError.LEXICAL_ERROR)
+    || (ex instanceof PolyphenyDbException && ex.getCause() == null);
   return new NodeParseException(ex.getMessage(), pos, expectedTokenSequences,
-      tokenImage, ex);
+      tokenImage, ex, syntaxError);
 }
 
 /*****************************************

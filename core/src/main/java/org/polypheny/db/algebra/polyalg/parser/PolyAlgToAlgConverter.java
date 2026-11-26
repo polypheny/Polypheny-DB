@@ -33,6 +33,7 @@ import org.polypheny.db.algebra.AlgFieldCollation;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
+import org.polypheny.db.algebra.constant.ResultKind;
 import org.polypheny.db.algebra.constant.SemiJoinType;
 import org.polypheny.db.algebra.core.AggregateCall;
 import org.polypheny.db.algebra.core.CorrelationId;
@@ -135,7 +136,9 @@ public class PolyAlgToAlgConverter {
                 node instanceof Sort
                         ? ((Sort) node).collation
                         : AlgCollations.EMPTY;
-        return new AlgRoot( node, tupleType, Kind.SELECT, fields, collation );
+        AlgRoot plan = new AlgRoot( node, tupleType, Kind.SELECT, fields, collation );
+        DataModel model = plan.getModel() == null ? null : plan.getModel().dataModel();
+        return plan.withResultKind( ResultKind.forStatement( plan.kind, model, tupleType ) );
     }
 
 
@@ -573,13 +576,22 @@ public class PolyAlgToAlgConverter {
 
     private LaxAggregateCall convertLaxAggCall( PolyAlgExpression exp, String name, Context ctx ) {
         RexNode input = null;
+        boolean distinct = false;
         if ( !exp.getChildExps().isEmpty() ) {
-            input = convertRexNode( exp.getOnlyChild(), ctx );
+            PolyAlgExpression operand = exp.getOnlyChild();
+            List<PolyAlgLiteral> literals = operand.getLiterals();
+            distinct = literals.size() > 1 && literals.get( 0 ).toString().equals( "DISTINCT" );
+            if ( distinct ) {
+                operand = new PolyAlgExpression(
+                        literals.subList( 1, literals.size() ), operand.getChildExps(), operand.getDataType(),
+                        List.copyOf( operand.getExtensions().values() ), operand.getPos() );
+            }
+            input = convertRexNode( operand, ctx );
         }
         if ( name == null ) {
             name = exp.getDefaultAlias();
         }
-        return LaxAggregateCall.create( name, exp.getAggFunction(), input );
+        return LaxAggregateCall.create( name, exp.getAggFunction(), input, distinct );
     }
 
 

@@ -20,10 +20,13 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.experimental.NonFinal;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.jetbrains.annotations.NotNull;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.temporal.DateTimeUtils;
@@ -31,11 +34,36 @@ import org.polypheny.db.util.temporal.DateTimeUtils;
 @NonFinal
 public abstract class PolyTemporal extends PolyNumber {
 
+    private static final Pattern NEGATIVE_EXPONENT = Pattern.compile( "[+-]?(?:([0-9]+)(?:\\.[0-9]*)?|\\.[0-9]+)[eE]-([0-9]+)" );
+
     public static Expression MILLIS_OF_DAY = PolyLong.of( DateTimeUtils.MILLIS_PER_DAY ).asExpression();
 
 
     public PolyTemporal( PolyType type ) {
         super( type );
+    }
+
+
+    protected static PolyBigDecimal parseEpochString( PolyString text ) {
+        try {
+            return PolyBigDecimal.convert( text );
+        } catch ( NumberFormatException e ) {
+            Matcher exponent = NEGATIVE_EXPONENT.matcher( text.value.trim() );
+            if ( exponent.matches() ) {
+                String whole = exponent.group( 1 );
+                int wholeDigits = whole == null ? 0 : whole.length();
+                String magnitude = exponent.group( 2 );
+                long shift = 0;
+                for ( int i = 0; i < magnitude.length(); i++ ) {
+                    shift = shift * 10 + magnitude.charAt( i ) - '0';
+                    if ( shift >= wholeDigits ) {
+                        // The decimal point moves past all whole digits, so the integral part is zero.
+                        return PolyBigDecimal.of( BigDecimal.ZERO );
+                    }
+                }
+            }
+            throw e;
+        }
     }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,6 +111,14 @@ public abstract class Join extends BiAlg {
         this.condition = Objects.requireNonNull( condition );
         this.variablesSet = ImmutableSet.copyOf( variablesSet );
         this.joinType = Objects.requireNonNull( joinType );
+    }
+
+
+    protected static Triple<RexNode, Set<CorrelationId>, JoinAlgType> extractArgs( PolyAlgArgs args ) {
+        RexArg condition = args.getArg( "condition", RexArg.class );
+        EnumArg<JoinAlgType> type = args.getEnumArg( "type", JoinAlgType.class );
+        List<CorrelationId> variables = args.getListArg( "variables", CorrelationArg.class ).map( CorrelationArg::getCorrId );
+        return Triple.of( condition.getNode(), new HashSet<>( variables ), type.getArg() );
     }
 
 
@@ -250,24 +258,6 @@ public abstract class Join extends BiAlg {
 
 
     @Override
-    public String algCompareString() {
-        return this.getClass().getSimpleName() + "$" +
-                left.algCompareString() + "$" +
-                right.algCompareString() + "$" +
-                (condition != null ? condition.hashCode() : "") + "$" +
-                (joinType != null ? joinType.name() : "") + "&";
-    }
-
-
-    protected static Triple<RexNode, Set<CorrelationId>, JoinAlgType> extractArgs( PolyAlgArgs args ) {
-        RexArg condition = args.getArg( "condition", RexArg.class );
-        EnumArg<JoinAlgType> type = args.getEnumArg( "type", JoinAlgType.class );
-        List<CorrelationId> variables = args.getListArg( "variables", CorrelationArg.class ).map( CorrelationArg::getCorrId );
-        return Triple.of( condition.getNode(), new HashSet<>( variables ), type.getArg() );
-    }
-
-
-    @Override
     public PolyAlgArgs bindArguments() {
         PolyAlgArgs args = new PolyAlgArgs( getPolyAlgDeclaration() );
 
@@ -276,6 +266,5 @@ public abstract class Join extends BiAlg {
                 .put( "variables", new ListArg<>( variablesSet.asList(), CorrelationArg::new ) );
         return args;
     }
-
 
 }

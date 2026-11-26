@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,12 +29,12 @@ import org.polypheny.db.adapter.annotations.AdapterSettingDirectory;
 @Accessors(chain = true)
 public class AbstractAdapterSettingDirectory extends AbstractAdapterSetting {
 
+    public transient final Map<String, InputStream> inputStreams;
     @Setter
     public String directory;
     //This field is necessary for the UI and needs to be initialized to be serialized to JSON.
     @Setter
     public String[] fileNames = new String[]{ "" };
-    public transient final Map<String, InputStream> inputStreams;
 
 
     public AbstractAdapterSettingDirectory( String name, String defaultValue, boolean canBeNull, String subOf, boolean required, boolean modifiable, List<DeploySetting> modes, int position, String description ) {
@@ -63,6 +63,12 @@ public class AbstractAdapterSettingDirectory extends AbstractAdapterSetting {
     @Override
     public String getValue() {
         return directory;
+    }
+
+
+    @Override
+    public void validate( String s ) {
+
     }
 
 }

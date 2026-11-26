@@ -17,7 +17,10 @@
 package org.polypheny.db.cypher;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.algebra.AlgDecorrelator;
@@ -31,6 +34,7 @@ import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter;
 import org.polypheny.db.cypher.parser.CypherParser;
 import org.polypheny.db.cypher.parser.CypherParser.CypherParserConfig;
+import org.polypheny.db.cypher.query.CypherSingleQuery;
 import org.polypheny.db.languages.NodeParseException;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
@@ -44,6 +48,12 @@ import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.transaction.locking.Lockable.LockType;
 import org.polypheny.db.transaction.locking.LockablesRegistry;
+import org.polypheny.db.type.entity.PolyList;
+import org.polypheny.db.type.entity.PolyNull;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
+import org.polypheny.db.type.entity.relational.PolyMap;
 import org.polypheny.db.util.DeadlockException;
 import org.polypheny.db.util.Pair;
 
@@ -86,6 +96,92 @@ public class CypherProcessor extends Processor {
             log.debug( "Parsing PolyCypher statement ... done. [{}]", stopWatch );
         }
         return parsed;
+    }
+
+
+    @Override
+    public PreparedNamedQuery prepareNamedQuery( String query ) {
+        CypherParser parser = CypherParser.create( query, parserConfig );
+        CypherStatement statement = parsePreparedStatement( parser );
+        if ( statement.isDdl() ) {
+            throw new GenericRuntimeException( "Prepared Cypher statements do not support DDL" );
+        }
+        List<CypherParameter> parameters = parser.getParameters();
+        for ( CypherParameter parameter : parameters ) {
+            if ( parameter.getParameterType() != ParameterType.ANY ) {
+                throw new GenericRuntimeException( "Cypher parameter $" + parameter.getName() + " must be used as a value expression" );
+            }
+        }
+        List<String> names = parameters.stream().map( CypherParameter::getName ).distinct().toList();
+        return new PreparedNamedQuery( names, values -> bindNamedQuery( query, names, values ) );
+    }
+
+
+    private Node bindNamedQuery( String query, List<String> names, Map<String, PolyValue> values ) {
+        Map<String, PolyValue> bindings = new HashMap<>();
+        for ( String name : names ) {
+            PolyValue value = values.get( name );
+            if ( value == null ) {
+                throw new GenericRuntimeException( "Missing Cypher parameter: $" + name );
+            }
+            bindings.put( name, normalizeParameter( name, value ) );
+        }
+        Set<String> expectedNames = Set.copyOf( names );
+        values.keySet().stream().filter( name -> !expectedNames.contains( name ) ).sorted().findFirst().ifPresent( name -> {
+            throw new GenericRuntimeException( "Unexpected Cypher parameter: $" + name );
+        } );
+
+        // Parse the original text again so each execution receives its own AST with typed values.
+        CypherParser parser = CypherParser.create( query, parserConfig );
+        parser.setBindings( Map.copyOf( bindings ) );
+        return parsePreparedStatement( parser );
+    }
+
+
+    private static PolyValue normalizeParameter( String name, PolyValue value ) {
+        if ( value == null ) {
+            return PolyNull.NULL;
+        }
+        // Prism encodes Cypher maps as documents. Normalize them only when binding a Cypher query.
+        if ( value instanceof PolyMap<?, ?> map ) {
+            Map<PolyString, PolyValue> entries = new HashMap<>();
+            map.forEach( ( key, entry ) -> {
+                if ( !(key instanceof PolyString field) || field.isNull() ) {
+                    throw new GenericRuntimeException( "Cypher map parameter $" + name + " must have string keys" );
+                }
+                entries.put( field, normalizeParameter( name, entry ) );
+            } );
+            return new PolyDictionary( entries );
+        }
+        if ( value instanceof PolyList<?> list ) {
+            return PolyList.copyOf( list.stream().map( element -> normalizeParameter( name, element ) ).toList() );
+        }
+        if ( !isScalarParameter( value ) ) {
+            throw new GenericRuntimeException( "Unsupported Cypher parameter type for $" + name + ": " + value.getType() );
+        }
+        return value;
+    }
+
+
+    private static boolean isScalarParameter( PolyValue value ) {
+        return switch ( value.getType() ) {
+            case NULL, BOOLEAN, INTEGER, BIGINT, DECIMAL, VARCHAR, BINARY, DATE, TIME, TIMESTAMP -> true;
+            case FLOAT, DOUBLE -> Double.isFinite( value.asNumber().doubleValue() );
+            default -> false;
+        };
+    }
+
+
+    private static CypherStatement parsePreparedStatement( CypherParser parser ) {
+        try {
+            List<CypherStatement> statements = parser.parseStmts();
+            if ( statements.size() != 1 ) {
+                throw new GenericRuntimeException( "A prepared Cypher query must contain exactly one statement." );
+            }
+            return statements.get( 0 );
+        } catch ( NodeParseException e ) {
+            throw new GenericRuntimeException( e );
+        }
     }
 
 
@@ -139,6 +235,18 @@ public class CypherProcessor extends Processor {
     @Override
     public String getQuery( Node parsed, QueryParameters parameters ) {
         return parameters.getQuery();
+    }
+
+
+    @Override
+    public boolean isUpdateOnly( Node statement ) {
+        if ( statement.isDdl() ) {
+            return true;
+        }
+        if ( !(statement instanceof CypherSingleQuery query) ) {
+            return false;
+        }
+        return query.isUpdateOnly();
     }
 
 

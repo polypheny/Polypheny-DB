@@ -77,6 +77,8 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
     final Map<Integer, Value> updates = new HashMap<>();
     final Integer[] pkMapping;
     final File hardlinkFolder;
+    private final String stagedInsertPrefix;
+    private final String stagedDeletePrefix;
     private boolean ongoing = true;
 
 
@@ -154,7 +156,9 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
         }
         // We want to read data where an insert has been prepared and skip data where a deletion has been prepared.
         String xidHash = FileStore.SHA.hashString( dataContext.getStatement().getTransaction().getXid().toString(), FileStore.CHARSET ).toString();
-        FileFilter fileFilter = file -> !file.isHidden() && !file.getName().startsWith( "~$" ) && (!file.getName().startsWith( "_" ) || file.getName().startsWith( "_ins_" + xidHash ));
+        stagedInsertPrefix = "_ins_" + xidHash + "_";
+        stagedDeletePrefix = "_del_" + xidHash + "_";
+        FileFilter fileFilter = file -> !file.isHidden() && !file.getName().startsWith( "~$" ) && (!file.getName().startsWith( "_" ) || file.getName().startsWith( stagedInsertPrefix ));
         for ( long colId : columnIds ) {
             File columnFolder = FileStore.getColumnFolder( rootPath, colId, partitionId );
             columnFolders.add( columnFolder );
@@ -296,11 +300,15 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
 
 
     private void handleDelete( File currentFile ) throws IOException {
+        String name = currentFile.getName();
+        boolean pendingInsert = name.startsWith( stagedInsertPrefix );
         for ( File colFolder : columnFolders ) {
-            File source = new File( colFolder, currentFile.getName() );
-            File target = new File( colFolder, getNewFileName( Operation.DELETE, currentFile.getName() ) );
-            if ( source.exists() ) {
-                Files.move( source.toPath(), target.toPath() );
+            File source = new File( colFolder, name );
+            if ( pendingInsert ) {
+                // A row inserted by this transaction has no committed version to restore.
+                Files.deleteIfExists( source.toPath() );
+            } else if ( source.exists() ) {
+                Files.move( source.toPath(), new File( colFolder, stagedDeletePrefix + name ).toPath() );
             }
         }
         updateDeleteCount++;
@@ -450,19 +458,12 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
 
 
     String getNewFileName( final Operation operation, final String hashCode ) {
-        String operationAbbreviation = switch ( operation ) {
-            case INSERT -> "ins";
-            case DELETE -> "del";
+        String prefix = switch ( operation ) {
+            case INSERT -> stagedInsertPrefix;
+            case DELETE -> stagedDeletePrefix;
             default -> throw new GenericRuntimeException( "Did not expect operation " + operation );
-        };//must be of length 3!
-        return "_"// underline at the beginning of files that are not yet committed
-                + operationAbbreviation
-                + "_"
-                //XID
-                + FileStore.SHA.hashString( dataContext.getStatement().getTransaction().getXid().toString(), FileStore.CHARSET )
-                + "_"
-                //PK hash
-                + FileStore.SHA.hashString( hashCode, FileStore.CHARSET );
+        };
+        return prefix + FileStore.SHA.hashString( hashCode, FileStore.CHARSET );
     }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2025 The Polypheny Project
+ * Copyright 2019-2026 The Polypheny Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,11 +28,9 @@ import io.activej.serializer.annotations.Serialize;
 import java.beans.PropertyChangeListener;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.polypheny.db.adapter.Adapter;
@@ -56,7 +54,6 @@ import org.polypheny.db.catalog.entity.LogicalQueryInterface;
 import org.polypheny.db.catalog.entity.LogicalUser;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
-import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.impl.allocation.PolyAllocDocCatalog;
 import org.polypheny.db.catalog.impl.allocation.PolyAllocGraphCatalog;
@@ -95,57 +92,43 @@ public class PolyCatalog extends Catalog implements PolySerializable {
             .configure( MapperFeature.AUTO_DETECT_SETTERS, false )
             .configure( SerializationFeature.FAIL_ON_EMPTY_BEANS, false )
             .build();
-
-    @Getter
-    private final BinarySerializer<PolyCatalog> serializer = PolySerializable.buildSerializer( PolyCatalog.class );
-
-    // indicates if the state has advanced and the snapshot has to be recreated or can be reused // trx without ddl
-    private long lastCommitSnapshotId = 0;
-
     @Serialize
     @JsonProperty
     public final Map<Long, LogicalCatalog> logicalCatalogs;
-
     @Serialize
     @JsonProperty
     public final Map<Long, AllocationCatalog> allocationCatalogs;
-
     @Serialize
     @JsonProperty
     @Getter
     public final Map<Long, LogicalUser> users;
-
     @Serialize
     @JsonProperty
     @Getter
     public final Map<Long, LogicalAdapter> adapters;
-
     @Serialize
     @JsonProperty
     @Getter
     public final Map<Long, LogicalQueryInterface> interfaces;
-
     @Getter
     public final Map<Long, AdapterCatalog> adapterCatalogs;
-
     @Serialize
     @JsonProperty
     public final Map<Long, AdapterRestore> adapterRestore;
-
     @Serialize
     @JsonProperty
     public final IdBuilder idBuilder;
-
-    private final Persister persister;
-
     @Getter
-    private Snapshot snapshot;
-    private String backup;
-
+    private final BinarySerializer<PolyCatalog> serializer = PolySerializable.buildSerializer( PolyCatalog.class );
+    private final Persister persister;
     private final AtomicBoolean dirty = new AtomicBoolean( false );
-
     @Getter
     PropertyChangeListener changeListener = evt -> dirty.set( true );
+    // indicates if the state has advanced and the snapshot has to be recreated or can be reused // trx without ddl
+    private long lastCommitSnapshotId = 0;
+    @Getter
+    private volatile Snapshot snapshot;
+    private String backup;
 
 
     public PolyCatalog() {
@@ -228,18 +211,39 @@ public class PolyCatalog extends Catalog implements PolySerializable {
         log.debug( "commit" );
 
         this.adapterRestore.clear();
-        adapterCatalogs.forEach( ( id, catalog ) -> {
-            Map<Long, List<PhysicalEntity>> restore = catalog.allocToPhysicals.entrySet().stream().collect( Collectors.toMap( Entry::getKey, a -> a.getValue().stream().map( key -> catalog.physicals.get( key ).normalize() ).toList() ) );
-            this.adapterRestore.put( id, new AdapterRestore( id, restore, catalog.allocations ) );
-        } );
+        adapterCatalogs.forEach( ( id, catalog ) -> this.adapterRestore.put( id, catalog.createRestoreSnapshot() ) );
 
-        this.backup = serialize();
+        String committedState = serialize();
 
         updateSnapshot();
-        persister.write( backup );
+        persister.write( committedState );
+        this.backup = committedState;
         this.dirty.set( false );
 
         this.lastCommitSnapshotId = snapshot.id();
+    }
+
+
+    @Override
+    public Runnable captureRollback() {
+        CatalogRollback state = new CatalogRollback();
+        state.capture( users );
+        state.capture( logicalCatalogs );
+        state.capture( allocationCatalogs );
+        state.capture( adapters );
+        state.capture( interfaces );
+        state.capture( adapterCatalogs );
+        state.capture( adapterRestore );
+        logicalCatalogs.values().forEach( catalog -> catalog.captureRollback( state ) );
+        allocationCatalogs.values().forEach( catalog -> catalog.captureRollback( state ) );
+        adapterCatalogs.values().forEach( catalog -> catalog.captureRollback( state ) );
+
+        boolean wasDirty = dirty.get();
+        return () -> {
+            state.restore();
+            dirty.set( wasDirty );
+            updateSnapshot();
+        };
     }
 
 
@@ -379,6 +383,7 @@ public class PolyCatalog extends Catalog implements PolySerializable {
     @Override
     public void dropNamespace( long id ) {
         logicalCatalogs.remove( id );
+        allocationCatalogs.remove( id );
 
         change();
     }
@@ -478,7 +483,6 @@ public class PolyCatalog extends Catalog implements PolySerializable {
                 getLogicalRel( view.namespaceId ).setNodeAndCollation( view.id, algRoot.alg, algRoot.collation );
             }
         } );
-        transaction.commit();
     }
 
 
