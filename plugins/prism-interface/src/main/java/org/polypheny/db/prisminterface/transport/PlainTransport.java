@@ -44,6 +44,7 @@ public class PlainTransport implements Transport {
 
     private State state;
     private ByteBuffer bb;
+    private long frameStartedAtNanos;
 
 
     PlainTransport( SocketChannel con ) throws IOException {
@@ -134,10 +135,15 @@ public class PlainTransport implements Transport {
     }
 
 
-    public Optional<byte[]> tryReceiveMessage() throws IOException {
+    @Override
+    public Optional<ReceivedFrame> tryReceiveMessage() throws IOException {
+        boolean startOfFrame = state == State.READ_LENGTH && bb.position() == 0;
         int res = con.read( bb );
         if ( res == -1 ) {
             throw new EOFException();
+        }
+        if ( startOfFrame && res > 0 ) {
+            frameStartedAtNanos = System.nanoTime();
         }
         if ( bb.remaining() > 0 ) {
             return Optional.empty();
@@ -157,7 +163,7 @@ public class PlainTransport implements Transport {
             byte[] msg = bb.array();
             bb = ByteBuffer.allocate( 8 );
             state = State.READ_LENGTH;
-            return Optional.of( msg );
+            return Optional.of( new ReceivedFrame( msg, frameStartedAtNanos ) );
         }
     }
 

@@ -32,7 +32,6 @@ import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.iface.AuthenticationException;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.nodes.Node;
-import org.polypheny.db.prisminterface.PIRequestReader.ReceivedRequest;
 import org.polypheny.db.prisminterface.statementProcessing.StatementProcessor;
 import org.polypheny.db.prisminterface.statements.BatchProgress;
 import org.polypheny.db.prisminterface.statements.PIPreparedIndexedStatement;
@@ -41,6 +40,7 @@ import org.polypheny.db.prisminterface.statements.PIStatement;
 import org.polypheny.db.prisminterface.statements.PIUnparameterizedStatement;
 import org.polypheny.db.prisminterface.statements.PIUnparameterizedStatementBatch;
 import org.polypheny.db.prisminterface.transport.Transport;
+import org.polypheny.db.prisminterface.transport.Transport.ReceivedFrame;
 import org.polypheny.db.prisminterface.utils.PrismUtils;
 import org.polypheny.db.prisminterface.utils.PrismValueDeserializer;
 import org.polypheny.db.prisminterface.utils.PropertyUtils;
@@ -149,7 +149,7 @@ class PIService {
     }
 
 
-    private boolean handleFirstMessage( BlockingQueue<Optional<ReceivedRequest>> waiting ) throws IOException {
+    private boolean handleFirstMessage( BlockingQueue<Optional<ReceivedFrame>> waiting ) throws IOException {
         boolean success = false;
         Request firstReq = Request.parseFrom( readOneMessage( waiting ).payload() );
 
@@ -176,11 +176,11 @@ class PIService {
     }
 
 
-    private Response handleRequest( Request req, long receivedAtNanos ) throws IOException {
+    private Response handleRequest( Request req, long startedAtNanos ) throws IOException {
         PIClient client = uuid == null ? null : clientManager.getClient( uuid );
         List<Transaction> observed = client == null ? List.of() : client.observeTransactionBoundaries( req.getTypeCase() == TypeCase.COMMIT_REQUEST );
         Response r;
-        try ( PIQueryDeadline deadline = PIQueryDeadline.start( req, client, receivedAtNanos ) ) {
+        try ( PIQueryDeadline deadline = PIQueryDeadline.start( req, client, startedAtNanos ) ) {
             queryDeadline = deadline;
             try {
                 checkQueryDeadline();
@@ -215,7 +215,7 @@ class PIService {
 
 
     private void handleMessages() throws IOException {
-        BlockingQueue<Optional<ReceivedRequest>> waiting = reader.addConnection( con, connectionId );
+        BlockingQueue<Optional<ReceivedFrame>> waiting = reader.addConnection( con, connectionId );
 
         if ( !handleFirstMessage( waiting ) ) {
             return;
@@ -223,8 +223,8 @@ class PIService {
 
         try {
             while ( true ) {
-                ReceivedRequest message = readOneMessage( waiting );
-                Response r = handleRequest( Request.parseFrom( message.payload() ), message.receivedAtNanos() );
+                ReceivedFrame message = readOneMessage( waiting );
+                Response r = handleRequest( Request.parseFrom( message.payload() ), message.startedAtNanos() );
                 if ( r.getTypeCase() == Response.TypeCase.DISCONNECT_RESPONSE ) {
                     break;
                 }
@@ -284,7 +284,7 @@ class PIService {
     }
 
 
-    private ReceivedRequest readOneMessage( BlockingQueue<Optional<ReceivedRequest>> waiting ) throws IOException {
+    private ReceivedFrame readOneMessage( BlockingQueue<Optional<ReceivedFrame>> waiting ) throws IOException {
         while ( true ) {
             try {
                 return waiting.take().orElseThrow( EOFException::new );

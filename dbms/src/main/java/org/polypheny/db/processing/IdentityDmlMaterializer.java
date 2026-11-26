@@ -31,6 +31,7 @@ import org.polypheny.db.PolyImplementation;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataStore.NumericAssignment;
+import org.polypheny.db.adapter.DataStore.NumericExpression;
 import org.polypheny.db.adapter.index.Index;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.algebra.AlgNode;
@@ -63,7 +64,9 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.partition.PartitionManager;
 import org.polypheny.db.partition.PartitionManagerFactory;
 import org.polypheny.db.partition.properties.PartitionProperty;
+import org.polypheny.db.processing.shuttles.QueryParameterizer;
 import org.polypheny.db.rex.RexBuilder;
+import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
@@ -229,7 +232,7 @@ final class IdentityDmlMaterializer {
         Map<AlgDataTypeField, Map<Integer, NumericAssignment>> nativeAssignments = new LinkedHashMap<>();
         for ( AlgDataTypeField field : fields ) {
             PolyType target = field.getType().getPolyType();
-            if ( !PolyType.NUMERIC_TYPES.contains( target ) || target == PolyType.DECIMAL ) {
+            if ( !PolyType.NUMERIC_TYPES.contains( target ) ) {
                 continue;
             }
             Map<Integer, NumericAssignment> assignments = new LinkedHashMap<>();
@@ -237,15 +240,13 @@ final class IdentityDmlMaterializer {
             for ( int i = 0; i < rows.size(); i++ ) {
                 List<PolyValue> row = rows.get( i );
                 PolyValue value = row.get( index );
-                if ( value == null || value.isNull() || !value.isNumber() ) {
-                    continue;
-                }
                 AssignmentInput input = assignmentInputs.get( i ).get( index );
-                if ( input != null && input.type().getPolyType() != target ) {
-                    assignments.put( i, new NumericAssignment( value, input.type(), input.literal() ) );
+                boolean hasNumber = value != null && !value.isNull() && value.isNumber();
+                if ( input != null && requiresNativeAssignment( input, field.getType(), hasNumber ) ) {
+                    assignments.put( i, new NumericAssignment( value, input.type(), input.expression() ) );
                     continue;
                 }
-                if ( target != PolyType.BIGINT || value.isInteger() || value.isLong() ) {
+                if ( !hasNumber || target != PolyType.BIGINT || value.isInteger() || value.isLong() ) {
                     continue;
                 }
                 try {
@@ -274,6 +275,25 @@ final class IdentityDmlMaterializer {
         for ( AlgDataTypeField field : conversionOrder ) {
             convertOnPlacement( modify, table, statement, field, partitionField, partitions, rows, nativeAssignments.get( field ) );
         }
+    }
+
+
+    private static boolean requiresNativeAssignment( AssignmentInput input, AlgDataType target, boolean hasNumber ) {
+        RexNode expression = input.expression() == null ? null : input.expression().node();
+        if ( expression instanceof RexCall ) {
+            return true;
+        }
+        if ( !hasNumber ) {
+            return false;
+        }
+        if ( target.getPolyType() == PolyType.DECIMAL ) {
+            // The destination still performs the final assignment. Only explicitly typed
+            // source parameters need their own DECIMAL constraint applied first.
+            return expression instanceof RexDynamicParam
+                    && (input.type().getPolyType() != PolyType.DECIMAL || input.type().getPrecision() != target.getPrecision()
+                    || input.type().getScale() != target.getScale());
+        }
+        return input.type().getPolyType() != target.getPolyType();
     }
 
 
@@ -791,7 +811,7 @@ final class IdentityDmlMaterializer {
         }
         if ( source instanceof LogicalRelValues values ) {
             for ( ImmutableList<RexLiteral> tuple : values.getTuples() ) {
-                addSourceRow( rows, assignmentInputs, source, tuple, new ArrayList<>( tuple.stream().map( RexLiteral::getValue ).toList() ), parameterizeLiterals );
+                addSourceRow( rows, assignmentInputs, source, tuple, new ArrayList<>( tuple.stream().map( RexLiteral::getValue ).toList() ), binding, parameterizeLiterals );
             }
             return;
         }
@@ -802,7 +822,7 @@ final class IdentityDmlMaterializer {
             for ( RexNode expression : project.getProjects() ) {
                 row.add( expression instanceof RexLiteral literal ? literal.getValue() : binding.get( ((RexDynamicParam) expression).getIndex() ) );
             }
-            addSourceRow( rows, assignmentInputs, source, project.getProjects(), row, parameterizeLiterals );
+            addSourceRow( rows, assignmentInputs, source, project.getProjects(), row, binding, parameterizeLiterals );
             return;
         }
 
@@ -817,7 +837,7 @@ final class IdentityDmlMaterializer {
             PolyImplementation implementation = statement.getQueryProcessor().prepareQuery( query, parameterRowType, false, true, false );
             List<? extends RexNode> expressions = source instanceof LogicalRelProject project ? project.getProjects() : List.of();
             for ( List<PolyValue> row : implementation.execute( statement, -1 ).getAllRowsAndClose() ) {
-                addSourceRow( rows, assignmentInputs, source, expressions, row, parameterizeLiterals );
+                addSourceRow( rows, assignmentInputs, source, expressions, row, binding, parameterizeLiterals );
             }
         } finally {
             context.setParameterTypes( originalTypes );
@@ -827,26 +847,42 @@ final class IdentityDmlMaterializer {
 
 
     private static void addSourceRow( List<List<PolyValue>> rows, List<List<AssignmentInput>> assignmentInputs,
-            AlgNode source, List<? extends RexNode> expressions, List<PolyValue> row, boolean parameterizeLiterals ) {
+            AlgNode source, List<? extends RexNode> expressions, List<PolyValue> row, Map<Long, PolyValue> binding, boolean parameterizeLiterals ) {
         rows.add( row );
         if ( assignmentInputs == null ) {
             return;
         }
         AlgDataTypeFactory typeFactory = source.getCluster().getTypeFactory();
         boolean parameterizedValues = source instanceof LogicalRelValues && parameterizeLiterals;
+        boolean scalarProject = source instanceof LogicalRelProject project && project.getInput() instanceof LogicalRelValues values
+                && values.getTuples().size() == 1;
         List<AssignmentInput> inputs = new ArrayList<>( row.size() );
         for ( int i = 0; i < row.size(); i++ ) {
             RexNode expression = i < expressions.size() ? expressions.get( i ) : null;
             PolyValue value = row.get( i );
-            // Parameterized VALUES use the destination's normal JDBC binding. Other inputs can
-            // retain a distinct source type, including parameters constrained by an explicit cast.
-            if ( value == null || value.isNull() || !value.isNumber() || parameterizedValues ) {
+            if ( scalarProject && expression instanceof RexCall && PolyType.NUMERIC_TYPES.contains( expression.getType().getPolyType() )
+                    && RexUtil.isConstant( expression ) ) {
+                inputs.add( new AssignmentInput( expression.getType(), numericExpression( expression, binding, parameterizeLiterals ) ) );
+                continue;
+            }
+            if ( value == null || value.isNull() || !value.isNumber() ) {
                 inputs.add( null );
+                continue;
+            }
+            if ( parameterizedValues ) {
+                AlgDataType type = source.getTupleType().getFields().get( i ).getType();
+                inputs.add( PolyType.NUMERIC_TYPES.contains( type.getPolyType() )
+                        ? new AssignmentInput( type, new NumericExpression( new RexDynamicParam( type, 0 ), Map.of( 0L, value ) ) ) : null );
+                continue;
+            }
+            if ( parameterizeLiterals && scalarProject && expression instanceof RexLiteral literal
+                    && PolyType.NUMERIC_TYPES.contains( literal.getType().getPolyType() ) ) {
+                inputs.add( new AssignmentInput( literal.getType(), numericExpression( literal, binding, true ) ) );
                 continue;
             }
             if ( expression instanceof RexDynamicParam parameter ) {
                 inputs.add( PolyType.NUMERIC_TYPES.contains( parameter.getType().getPolyType() )
-                        ? new AssignmentInput( parameter.getType(), null ) : null );
+                        ? new AssignmentInput( parameter.getType(), new NumericExpression( parameter, binding ) ) : null );
                 continue;
             }
             PolyType sourceType = expression != null && PolyType.APPROX_TYPES.contains( expression.getType().getPolyType() )
@@ -866,13 +902,29 @@ final class IdentityDmlMaterializer {
                     && RexUtil.isLiteral( expression, true ) ) {
                 literal = expression instanceof RexLiteral folded ? folded : new RexLiteral( value, expression.getType(), sourceType, true );
             }
-            inputs.add( new AssignmentInput( inputType, literal ) );
+            inputs.add( new AssignmentInput( inputType, literal == null ? null : new NumericExpression( literal, Map.of() ) ) );
         }
         assignmentInputs.add( inputs );
     }
 
 
-    private record AssignmentInput( AlgDataType type, RexLiteral literal ) {
+    private static NumericExpression numericExpression( RexNode expression, Map<Long, PolyValue> binding, boolean parameterizeLiterals ) {
+        if ( !parameterizeLiterals ) {
+            return new NumericExpression( expression, binding );
+        }
+        // Rewrite literals exactly as for ordinary INSERT, before rendering on the store.
+        QueryParameterizer parameterizer = new QueryParameterizer( 0, List.of(), false );
+        RexNode parameterized = expression.accept( parameterizer );
+        Map<Long, PolyValue> values = new HashMap<>();
+        parameterizer.getValues().values().forEach( parameters -> {
+            DataContext.ParameterValue parameter = parameters.get( 0 );
+            values.put( parameter.index(), parameter.value() );
+        } );
+        return new NumericExpression( parameterized, values );
+    }
+
+
+    private record AssignmentInput( AlgDataType type, NumericExpression expression ) {
     }
 
 

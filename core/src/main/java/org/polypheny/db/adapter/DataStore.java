@@ -31,7 +31,7 @@ import org.polypheny.db.catalog.catalogs.AdapterCatalog;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.logistic.IndexCategory;
 import org.polypheny.db.plan.AlgCluster;
-import org.polypheny.db.rex.RexLiteral;
+import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.transaction.Transaction;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
@@ -64,17 +64,28 @@ public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> imp
 
     /** Converts numeric assignments before the coordinator routes or indexes the resulting keys. */
     public List<PolyValue> castNumericAssignments( Transaction transaction, AlgCluster cluster, AlgDataType target, List<NumericAssignment> assignments ) {
-        return assignments.stream().<PolyValue>map( assignment -> switch ( target.getPolyType() ) {
-            case TINYINT, SMALLINT, INTEGER -> PolyInteger.of( assignment.value().asNumber().intValue() );
-            case BIGINT -> PolyLong.of( assignment.value().asNumber().bigDecimalValue().setScale( 0, RoundingMode.DOWN ).longValueExact() );
-            case REAL, FLOAT -> PolyFloat.of( assignment.value().asNumber().floatValue() );
-            case DOUBLE -> PolyDouble.of( assignment.value().asNumber().doubleValue() );
-            default -> throw new IllegalArgumentException( "Unsupported numeric assignment target " + target );
+        return assignments.stream().map( assignment -> {
+            PolyValue value = assignment.value();
+            if ( value == null || value.isNull() ) {
+                return value;
+            }
+            return switch ( target.getPolyType() ) {
+                case TINYINT, SMALLINT, INTEGER -> PolyInteger.of( value.asNumber().intValue() );
+                case DECIMAL -> value;
+                case BIGINT -> PolyLong.of( value.asNumber().bigDecimalValue().setScale( 0, RoundingMode.DOWN ).longValueExact() );
+                case REAL, FLOAT -> PolyFloat.of( value.asNumber().floatValue() );
+                case DOUBLE -> PolyDouble.of( value.asNumber().doubleValue() );
+                default -> throw new IllegalArgumentException( "Unsupported numeric assignment target " + target );
+            };
         } ).toList();
     }
 
 
-    public record NumericAssignment( PolyValue value, AlgDataType inputType, RexLiteral literal ) {
+    public record NumericAssignment( PolyValue value, AlgDataType inputType, NumericExpression expression ) {
+    }
+
+
+    public record NumericExpression( RexNode node, Map<Long, PolyValue> parameters ) {
     }
 
 

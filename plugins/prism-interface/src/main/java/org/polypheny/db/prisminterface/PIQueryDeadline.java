@@ -59,10 +59,10 @@ final class PIQueryDeadline extends QueryExecutionScope {
     private PIServiceException timeoutFailure;
 
 
-    private PIQueryDeadline( PIClient client, long timeoutMillis, long receivedAtNanos ) {
+    private PIQueryDeadline( PIClient client, long timeoutMillis, long startedAtNanos ) {
         this.client = client;
         long timeoutNanos = TimeUnit.MILLISECONDS.toNanos( timeoutMillis );
-        deadlineNanos = receivedAtNanos + timeoutNanos;
+        deadlineNanos = startedAtNanos + timeoutNanos;
         timer = DEADLINES.schedule( this::expire, Math.max( 0L, deadlineNanos - System.nanoTime() ), TimeUnit.NANOSECONDS );
         activate();
     }
@@ -74,7 +74,7 @@ final class PIQueryDeadline extends QueryExecutionScope {
     }
 
 
-    static @Nullable PIQueryDeadline start( Request request, @Nullable PIClient client, long receivedAtNanos ) {
+    static @Nullable PIQueryDeadline start( Request request, @Nullable PIClient client, long startedAtNanos ) {
         if ( client == null || !client.supportsQueryTimeouts() ) {
             return null;
         }
@@ -85,7 +85,7 @@ final class PIQueryDeadline extends QueryExecutionScope {
                 if ( values.size() == 1 ) {
                     long timeout = values.get( 0 );
                     if ( timeout > 0 && timeout <= MAX_TIMEOUT_MILLIS ) {
-                        return new PIQueryDeadline( client, timeout, receivedAtNanos );
+                        return new PIQueryDeadline( client, timeout, startedAtNanos );
                     }
                 }
             }

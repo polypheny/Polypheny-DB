@@ -21,6 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.protobuf.UnknownFieldSet;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -139,12 +142,7 @@ class PrismQueryTimeoutTest {
             int previous = readPayload( observer );
             PlainTransport socket = new PlainTransport( "localhost", 20590 );
             try {
-                send( socket, 1, Request.newBuilder().setConnectionRequest( ConnectionRequest.newBuilder()
-                        .setMajorApiVersion( 2 ).setMinorApiVersion( 5 ).setUsername( "pa" ).setPassword( "" )
-                        .setConnectionProperties( ConnectionProperties.newBuilder().setIsAutoCommit( false ) ) ) );
-                Response handshake = receive( socket, 1 );
-                assertTrue( handshake.getConnectionResponse().getIsCompatible() );
-                assertEquals( List.of( 1L ), handshake.getConnectionResponse().getUnknownFields().getField( 50001 ).getVarintList() );
+                connectManual( socket );
 
                 Transaction holder = TestHelper.getInstance().getTransactionManager().startTransaction( Catalog.defaultUserId, null, "Prism timeout test" );
                 try {
@@ -169,6 +167,39 @@ class PrismQueryTimeoutTest {
                 socket.close();
             }
         }
+    }
+
+
+    @Test
+    void streamedTimeoutDoesNotExecuteOrRollBackEarlierManualWork() throws Exception {
+        try ( PrismConnection observer = new PrismConnection( true, 5 ); FragmentedTransport socket = new FragmentedTransport() ) {
+            int previous = readPayload( observer );
+            connectManual( socket );
+            send( socket, 2, Request.newBuilder().setExecuteUnparameterizedStatementRequest( directUpdate( 1 ) ) );
+            assertEquals( 1, receive( socket, 2 ).getStatementResponse().getResult().getScalar() );
+
+            Request timed = withTimeout( Request.newBuilder().setExecuteUnparameterizedStatementRequest( directUpdate( 10 ) ) ).setId( 3 ).build();
+            socket.sendWithSplitHeader( timed );
+            Response expired = Response.parseFrom( socket.receiveMessage() );
+            assertEquals( 3, expired.getId() );
+            assertTrue( expired.getLast() );
+            assertEquals( Response.TypeCase.ERROR_RESPONSE, expired.getTypeCase() );
+            assertEquals( "57014", expired.getErrorResponse().getDetails().getState() );
+
+            send( socket, 4, Request.newBuilder().setCommitRequest( CommitRequest.getDefaultInstance() ) );
+            assertEquals( Response.TypeCase.COMMIT_RESPONSE, receive( socket, 4 ).getTypeCase() );
+            assertEquals( previous + 1, readPayload( observer ) );
+        }
+    }
+
+
+    private static void connectManual( PlainTransport socket ) throws Exception {
+        send( socket, 1, Request.newBuilder().setConnectionRequest( ConnectionRequest.newBuilder()
+                .setMajorApiVersion( 2 ).setMinorApiVersion( 5 ).setUsername( "pa" ).setPassword( "" )
+                .setConnectionProperties( ConnectionProperties.newBuilder().setIsAutoCommit( false ) ) ) );
+        Response handshake = receive( socket, 1 );
+        assertTrue( handshake.getConnectionResponse().getIsCompatible() );
+        assertEquals( List.of( 1L ), handshake.getConnectionResponse().getUnknownFields().getField( 50001 ).getVarintList() );
     }
 
 
@@ -240,6 +271,28 @@ class PrismQueryTimeoutTest {
         Execution( Response.TypeCase responseType ) {
             this.responseType = responseType;
         }
+    }
+
+
+    private static final class FragmentedTransport extends PlainTransport implements AutoCloseable {
+
+        private FragmentedTransport() throws IOException {
+            super( "localhost", 20590 );
+        }
+
+
+        private void sendWithSplitHeader( Request request ) throws IOException, InterruptedException {
+            byte[] payload = request.toByteArray();
+            ByteBuffer frame = ByteBuffer.allocate( Long.BYTES + payload.length ).order( ByteOrder.LITTLE_ENDIAN );
+            frame.putLong( payload.length ).put( payload ).flip();
+            ByteBuffer prefix = frame.slice();
+            prefix.limit( 1 );
+            writeEntireBuffer( prefix );
+            TimeUnit.MILLISECONDS.sleep( 750 );
+            frame.position( prefix.limit() );
+            writeEntireBuffer( frame );
+        }
+
     }
 
 }

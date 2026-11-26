@@ -635,6 +635,138 @@ class IdentityJdbcKeysTest {
 
 
     @Test
+    void projectedNumericExpressionsUseTheOrdinaryWriteSemantics() throws SQLException {
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
+            sql.executeUpdate( "CREATE TABLE projected_numeric_expr (id INTEGER PRIMARY KEY, narrow INTEGER, wide BIGINT, "
+                    + "real_num REAL, double_num DOUBLE, amount DECIMAL(12,4), nested_amount DECIMAL(12,4))" );
+            try {
+                for ( boolean parameterize : new boolean[]{ true, false } ) {
+                    sql.executeUpdate( "ALTER CONFIG 'runtime/parameterizeDML' SET " + parameterize );
+                    String prefix = "INSERT INTO projected_numeric_expr (id,narrow,wide) VALUES ";
+                    String expressions = ", CAST(42.5 AS DOUBLE) + CAST(0.0 AS DOUBLE), -CAST(42.5 AS DOUBLE))";
+                    String foldedFields = "narrow, wide";
+                    assertEquals( 1, sql.executeUpdate( prefix + "(1" + expressions ) );
+                    List<Object> folded = readProjectedExpression( sql, 1, foldedFields );
+                    assertEquals( 1, sql.executeUpdate( prefix + "(2" + expressions, new String[]{ "narrow", "wide" } ) );
+                    try ( ResultSet keys = sql.getGeneratedKeys() ) {
+                        assertNumericWidths( keys, folded );
+                    }
+                    try ( ResultSet projected = sql.executeQuery( prefix + "(3" + expressions + " RETURNING " + foldedFields ) ) {
+                        assertNumericWidths( projected, folded );
+                    }
+                    for ( int id : new int[]{ 2, 3 } ) {
+                        assertEquals( folded, readProjectedExpression( sql, id, foldedFields ) );
+                    }
+
+                    String prepared = "INSERT INTO projected_numeric_expr (id,real_num,double_num,amount,nested_amount) VALUES "
+                            + "(?, CAST(? AS DOUBLE) * CAST(1.0 AS DOUBLE), CAST(? AS REAL) * CAST(1.0 AS REAL), "
+                            + "CAST(? AS DECIMAL(5,2)), CAST(CAST(? AS DECIMAL(6,3)) AS DECIMAL(5,2)))";
+                    String preparedFields = "real_num, double_num, amount, nested_amount";
+                    try ( PreparedStatement plain = jdbc.getConnection().prepareStatement( prepared );
+                            PreparedStatement keys = jdbc.getConnection().prepareStatement( prepared, new String[]{ "real_num", "double_num", "amount", "nested_amount" } );
+                            PreparedStatement returning = jdbc.getConnection().prepareStatement( prepared + " RETURNING " + preparedFields ) ) {
+                        bindProjectedExpressions( plain, 4 );
+                        assertEquals( 1, plain.executeUpdate() );
+                        List<Object> expected = readProjectedExpression( sql, 4, preparedFields );
+                        bindProjectedExpressions( keys, 5 );
+                        assertEquals( 1, keys.executeUpdate() );
+                        try ( ResultSet projected = keys.getGeneratedKeys() ) {
+                            assertNumericWidths( projected, expected );
+                        }
+                        bindProjectedExpressions( returning, 6 );
+                        try ( ResultSet projected = returning.executeQuery() ) {
+                            assertNumericWidths( projected, expected );
+                        }
+                        for ( int id : new int[]{ 5, 6 } ) {
+                            assertEquals( expected, readProjectedExpression( sql, id, preparedFields ) );
+                        }
+                    }
+                    sql.executeUpdate( "DELETE FROM projected_numeric_expr" );
+                }
+            } finally {
+                sql.executeUpdate( "ALTER CONFIG 'runtime/parameterizeDML' SET true" );
+                sql.executeUpdate( "DROP TABLE projected_numeric_expr" );
+            }
+        }
+    }
+
+
+    private static void bindProjectedExpressions( PreparedStatement statement, int id ) throws SQLException {
+        statement.setInt( 1, id );
+        statement.setDouble( 2, -0.0 );
+        statement.setFloat( 3, -0.0f );
+        statement.setBigDecimal( 4, new BigDecimal( "42.495" ) );
+        statement.setBigDecimal( 5, new BigDecimal( "41.9946" ) );
+    }
+
+
+    private static List<Object> readProjectedExpression( Statement sql, int id, String fields ) throws SQLException {
+        try ( ResultSet stored = sql.executeQuery( "SELECT " + fields + " FROM projected_numeric_expr WHERE id = " + id ) ) {
+            assertTrue( stored.next() );
+            List<Object> values = new ArrayList<>();
+            for ( int column = 1; column <= stored.getMetaData().getColumnCount(); column++ ) {
+                values.add( stored.getObject( column ) );
+            }
+            return values;
+        }
+    }
+
+
+    @Test
+    void projectedDecimalCastUsesTheSameRangeCheckAsAnOrdinaryInsert() throws SQLException {
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
+            sql.executeUpdate( "CREATE TABLE projected_decimal_cast (id INTEGER PRIMARY KEY, amount DECIMAL(12,4))" );
+            try {
+                String insert = "INSERT INTO projected_decimal_cast VALUES (?, CAST(? AS DECIMAL(5,2)))";
+                try ( PreparedStatement plain = jdbc.getConnection().prepareStatement( insert );
+                        PreparedStatement keys = jdbc.getConnection().prepareStatement( insert, new String[]{ "amount" } );
+                        PreparedStatement returning = jdbc.getConnection().prepareStatement( insert + " RETURNING amount" ) ) {
+                    BigDecimal input = new BigDecimal( "1000" );
+                    plain.setInt( 1, 1 );
+                    plain.setBigDecimal( 2, input );
+                    keys.setInt( 1, 2 );
+                    keys.setBigDecimal( 2, input );
+                    returning.setInt( 1, 3 );
+                    returning.setBigDecimal( 2, input );
+                    try {
+                        assertEquals( 1, plain.executeUpdate() );
+                    } catch ( SQLException failure ) {
+                        assertEquals( "22003", failure.getSQLState() );
+                        assertEquals( failure.getSQLState(), assertThrows( SQLException.class, keys::executeUpdate ).getSQLState() );
+                        assertEquals( failure.getSQLState(), assertThrows( SQLException.class, returning::executeQuery ).getSQLState() );
+                        try ( ResultSet stored = sql.executeQuery( "SELECT amount FROM projected_decimal_cast" ) ) {
+                            assertFalse( stored.next() );
+                        }
+                        return;
+                    }
+                    List<Object> expected;
+                    try ( ResultSet stored = sql.executeQuery( "SELECT amount FROM projected_decimal_cast WHERE id = 1" ) ) {
+                        assertTrue( stored.next() );
+                        expected = List.of( stored.getBigDecimal( 1 ) );
+                    }
+                    assertEquals( 1, keys.executeUpdate() );
+                    try ( ResultSet projected = keys.getGeneratedKeys() ) {
+                        assertNumericWidths( projected, expected );
+                    }
+                    try ( ResultSet projected = returning.executeQuery() ) {
+                        assertNumericWidths( projected, expected );
+                    }
+                    try ( ResultSet stored = sql.executeQuery( "SELECT amount FROM projected_decimal_cast WHERE id IN (2,3)" ) ) {
+                        for ( int row = 0; row < 2; row++ ) {
+                            assertTrue( stored.next() );
+                            assertEquals( expected.get( 0 ), stored.getBigDecimal( 1 ) );
+                        }
+                        assertFalse( stored.next() );
+                    }
+                }
+            } finally {
+                sql.executeUpdate( "DROP TABLE projected_decimal_cast" );
+            }
+        }
+    }
+
+
+    @Test
     void approximateProjectionsKeepStoredCarriersAndSpecialFloatingValues() throws SQLException {
         try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
             sql.executeUpdate( "CREATE TABLE native_projected_float (id INTEGER PRIMARY KEY, real_num REAL, double_num DOUBLE)" );

@@ -30,10 +30,12 @@ import java.util.stream.Collectors;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.ExtensionPoint;
+import org.polypheny.db.adapter.DataContext.ParameterValue;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.RelationalModifyDelegate;
 import org.polypheny.db.adapter.jdbc.JdbcImplementor;
+import org.polypheny.db.adapter.jdbc.JdbcRules.JdbcProjectRule;
 import org.polypheny.db.adapter.jdbc.JdbcSchema;
 import org.polypheny.db.adapter.jdbc.JdbcTable;
 import org.polypheny.db.adapter.jdbc.JdbcUtils;
@@ -43,6 +45,7 @@ import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandlerException;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.logical.relational.LogicalRelValues;
+import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
@@ -57,16 +60,24 @@ import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.prepare.Context;
+import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexDynamicParam;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.runtime.PolyphenyDbException;
 import org.polypheny.db.schema.Namespace;
 import org.polypheny.db.sql.language.SqlDbFeature;
 import org.polypheny.db.sql.language.SqlDialect;
+import org.polypheny.db.sql.language.SqlIdentifier;
 import org.polypheny.db.sql.language.SqlLiteral;
+import org.polypheny.db.sql.language.SqlNode;
+import org.polypheny.db.sql.language.SqlNodeList;
+import org.polypheny.db.sql.language.SqlSelect;
+import org.polypheny.db.sql.language.util.SqlString;
 import org.polypheny.db.transaction.PolyXid;
 import org.polypheny.db.transaction.QueryExecutionScope;
 import org.polypheny.db.transaction.Transaction;
@@ -74,6 +85,7 @@ import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.VectorType;
 import org.polypheny.db.type.entity.PolyNull;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
@@ -457,25 +469,26 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
             for ( int offset = 0; offset < assignments.size(); offset += batchSize ) {
                 int count = Math.min( batchSize, assignments.size() - offset );
                 List<RexNode> expressions = new ArrayList<>( count );
-                List<NumericAssignment> bindings = new ArrayList<>( count );
+                List<ParameterValue> bindings = new ArrayList<>( count );
                 List<String> names = new ArrayList<>( count );
                 for ( int i = 0; i < count; i++ ) {
                     NumericAssignment assignment = assignments.get( offset + i );
-                    if ( assignment.literal() != null ) {
-                        expressions.add( cluster.getRexBuilder().makeAbstractCast( target, assignment.literal() ) );
-                    } else {
-                        AlgDataType input = assignment.inputType();
-                        RexDynamicParam parameter = new RexDynamicParam( input, bindings.size() );
-                        bindings.add( assignment );
-                        expressions.add( input.getPolyType() == target.getPolyType()
-                                ? parameter : cluster.getRexBuilder().makeAbstractCast( target, parameter ) );
-                    }
+                    expressions.add( numericAssignmentSource( cluster, assignment, bindings ) );
                     names.add( "bound_value_" + i );
                 }
-                LogicalRelProject casts = LogicalRelProject.create( LogicalRelValues.createOneRow( cluster ), expressions, names );
+                LogicalRelProject sources = LogicalRelProject.create( LogicalRelValues.createOneRow( cluster ), expressions, names );
                 JdbcImplementor implementor = new JdbcImplementor( dialect, transaction.getTypeFactory(), currentJdbcSchema );
-                String sql = implementor.visitChild( 0, casts ).asStatement().toSqlString( dialect ).getSql();
-                try ( PreparedStatement select = handler.prepareStatement( sql ) ) {
+                // As in INSERT ... SELECT, evaluate the source (including explicit casts)
+                // before assigning to the destination type. Inlining the two casts can
+                // let the store infer a bound parameter's type from the destination.
+                SqlSelect destination = implementor.visitChild( 0, sources ).subSelect();
+                List<SqlNode> castColumns = names.stream()
+                        .map( name -> (SqlNode) OperatorRegistry.get( OperatorName.CAST ).createCall(
+                                ParserPos.ZERO, new SqlIdentifier( name, ParserPos.ZERO ), dialect.getCastSpec( target ) ) )
+                        .toList();
+                destination.setSelectList( new SqlNodeList( castColumns, ParserPos.ZERO ) );
+                SqlString sql = destination.toSqlString( dialect );
+                try ( PreparedStatement select = handler.prepareStatement( sql.getSql() ) ) {
                     long remaining = QueryExecutionScope.remainingTimeoutMillis();
                     if ( remaining > 0 ) {
                         try {
@@ -484,9 +497,12 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
                             log.debug( "The adapter does not support a native assignment query timeout", e );
                         }
                     }
-                    for ( int i = 0; i < bindings.size(); i++ ) {
-                        NumericAssignment input = bindings.get( i );
-                        ResultSetEnumerable.setDynamicParam( select, i + 1, input.value(), input.inputType(), handler );
+                    List<Integer> parameterOrder = sql.getDynamicParameters();
+                    if ( parameterOrder != null ) {
+                        for ( int i = 0; i < parameterOrder.size(); i++ ) {
+                            ParameterValue parameter = bindings.get( parameterOrder.get( i ) );
+                            ResultSetEnumerable.setDynamicParam( select, i + 1, parameter.value(), parameter.type(), handler );
+                        }
                     }
                     try ( ResultSet row = select.executeQuery() ) {
                         if ( !row.next() ) {
@@ -496,6 +512,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
                             PolyValue value = switch ( target.getPolyType() ) {
                                 case TINYINT, SMALLINT, INTEGER -> PolyInteger.of( row.getInt( i ) );
                                 case BIGINT -> PolyLong.of( row.getLong( i ) );
+                                case DECIMAL -> PolyBigDecimal.of( row.getBigDecimal( i ) );
                                 case REAL, FLOAT -> PolyFloat.of( row.getFloat( i ) );
                                 case DOUBLE -> PolyDouble.of( row.getDouble( i ) );
                                 default -> throw new IllegalArgumentException( "Unsupported numeric assignment target " + target );
@@ -511,6 +528,26 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
         } catch ( ConnectionHandlerException e ) {
             throw new GenericRuntimeException( e );
         }
+    }
+
+
+    private RexNode numericAssignmentSource( AlgCluster cluster, NumericAssignment assignment, List<ParameterValue> bindings ) {
+        NumericExpression expression = assignment.expression();
+        if ( expression != null && (!(expression.node() instanceof RexCall) || JdbcProjectRule.supports( currentJdbcSchema.getConvention(),
+                LogicalRelProject.create( LogicalRelValues.createOneRow( cluster ), List.of( expression.node() ), List.of( "assignment" ) ) )) ) {
+            return expression.node().accept( new RexShuttle() {
+                @Override
+                public RexNode visitDynamicParam( RexDynamicParam parameter ) {
+                    int index = bindings.size();
+                    bindings.add( new ParameterValue( index, parameter.getType(), expression.parameters().get( parameter.getIndex() ) ) );
+                    return new RexDynamicParam( parameter.getType(), index );
+                }
+            } );
+        }
+        AlgDataType input = assignment.inputType();
+        int index = bindings.size();
+        bindings.add( new ParameterValue( index, input, assignment.value() ) );
+        return new RexDynamicParam( input, index );
     }
 
 
