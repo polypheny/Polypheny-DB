@@ -16,6 +16,7 @@
 
 package org.polypheny.db.cypher.cypher2alg;
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -31,10 +32,14 @@ import org.polypheny.db.algebra.core.JoinAlgType;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgCall;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgFilter;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgJoin;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgListSubquery;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgProject;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgShortestPathJoin;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgSort;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgValues;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.algebra.type.AlgRecordType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.plan.AlgCluster;
@@ -42,6 +47,7 @@ import org.polypheny.db.plan.AlgOptUtil;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexIndexRef;
+import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.rex.RexShuttle;
 import org.polypheny.db.rex.RexUtil;
@@ -86,6 +92,9 @@ final class CypherSubqueryInputs extends AlgShuttleImpl {
 
     @Override
     public AlgNode visit( AlgNode node ) {
+        if ( node instanceof LogicalLpgShortestPathJoin shortest && containsExists( shortest.getCondition() ) ) {
+            return lowerShortestPathJoin( shortest );
+        }
         if ( !(node instanceof LogicalLpgJoin join) || !containsExists( join.getCondition() ) ) {
             return super.visit( node );
         }
@@ -94,15 +103,7 @@ final class CypherSubqueryInputs extends AlgShuttleImpl {
         if ( join.getJoinType() == JoinAlgType.LEFT ) {
             // Apply the predicate to right-hand candidates before OPTIONAL MATCH introduces a null row.
             CorrelationId id = cluster.createCorrel();
-            RexNode outer = rexBuilder.makeCorrel( left.getTupleType(), id );
-            RexNode condition = join.getCondition().accept( new RexShuttle() {
-                @Override
-                public RexNode visitIndexRef( RexIndexRef ref ) {
-                    return ref.getIndex() < width( left )
-                            ? rexBuilder.makeFieldAccess( outer, ref.getIndex() )
-                            : rexBuilder.makeInputRef( ref.getType(), ref.getIndex() - width( left ) );
-                }
-            } );
+            RexNode condition = correlateJoinCondition( join.getCondition(), left, id );
             AlgNode candidates = LogicalLpgFilter.create( right, condition ).accept( this );
             return new LogicalLpgCall( left.accept( this ), candidates, id, ImmutableBitSet.range( width( left ) ), SemiJoinType.LEFT );
         }
@@ -113,6 +114,43 @@ final class CypherSubqueryInputs extends AlgShuttleImpl {
         }
         AlgNode candidates = LogicalLpgJoin.create( left, right, RexUtil.composeConjunction( rexBuilder, regular ), join.getJoinType() );
         return LogicalLpgFilter.create( candidates, RexUtil.composeConjunction( rexBuilder, subqueries ) ).accept( this );
+    }
+
+
+    private AlgNode lowerShortestPathJoin( LogicalLpgShortestPathJoin join ) {
+        AlgNode left = join.getLeft().accept( this );
+        CorrelationId correlation = cluster.createCorrel();
+        RexNode condition = correlateJoinCondition( join.getCondition(), left, correlation );
+        List<RexNode> regular = new ArrayList<>();
+        List<RexNode> subqueries = new ArrayList<>();
+        for ( RexNode conjunct : AlgOptUtil.conjunctions( condition ) ) {
+            (containsExists( conjunct ) ? subqueries : regular).add( conjunct );
+        }
+        AlgNode candidates = join.getRight();
+        if ( !regular.isEmpty() ) {
+            candidates = LogicalLpgFilter.create( candidates, RexUtil.composeConjunction( rexBuilder, regular ) );
+        }
+        candidates = LogicalLpgFilter.create( candidates, RexUtil.composeConjunction( rexBuilder, subqueries ) ).accept( this );
+
+        // Choose from the qualifying candidates for this input row before adding an optional null row.
+        AlgNode unit = LogicalLpgValues.create( cluster, left.getTraitSet(), new AlgRecordType( List.of() ), ImmutableList.of( ImmutableList.of() ) );
+        AlgNode shortest = new LogicalLpgShortestPathJoin( unit, candidates, rexBuilder.makeLiteral( true ), false,
+                join.getPathColumns(), join.getGroupColumns(), join.getAllTies() );
+        return new LogicalLpgCall( left, shortest, correlation, ImmutableBitSet.range( width( left ) ),
+                join.isOptional() ? SemiJoinType.LEFT : SemiJoinType.INNER );
+    }
+
+
+    private RexNode correlateJoinCondition( RexNode condition, AlgNode left, CorrelationId id ) {
+        RexNode outer = rexBuilder.makeCorrel( left.getTupleType(), id );
+        return condition.accept( new RexShuttle() {
+            @Override
+            public RexNode visitIndexRef( RexIndexRef ref ) {
+                return ref.getIndex() < width( left )
+                        ? rexBuilder.makeFieldAccess( outer, ref.getIndex() )
+                        : rexBuilder.makeInputRef( ref.getType(), ref.getIndex() - width( left ) );
+            }
+        } );
     }
 
 
@@ -166,7 +204,7 @@ final class CypherSubqueryInputs extends AlgShuttleImpl {
 
     private final class ExistsReference extends RexShuttle {
 
-        private final Map<Exists, RexNode> lowered = new IdentityHashMap<>();
+        private final Map<RexCall, RexNode> lowered = new IdentityHashMap<>();
         private AlgNode rows;
 
 
@@ -177,13 +215,19 @@ final class CypherSubqueryInputs extends AlgShuttleImpl {
 
         @Override
         public RexNode visitCall( RexCall call ) {
-            if ( !(call instanceof Exists subquery) ) {
-                return super.visitCall( call );
-            }
             // A sort predicate can capture a projected alias containing this same subquery.
-            RexNode existing = lowered.get( subquery );
+            RexNode existing = lowered.get( call );
             if ( existing != null ) {
                 return existing;
+            }
+            if ( !(call instanceof Exists subquery) ) {
+                if ( isListScope( call.getOperator().getOperatorName() )
+                        && call.operands.subList( 2, call.operands.size() ).stream().anyMatch( CypherSubqueryInputs::containsExists ) ) {
+                    RexNode reference = lowerListScope( call );
+                    lowered.put( call, reference );
+                    return reference;
+                }
+                return super.visitCall( call );
             }
             List<RexNode> projected = new ArrayList<>( subquery.operands.stream().map( operand -> operand.accept( this ) ).toList() );
             int captures = projected.size();
@@ -209,6 +253,57 @@ final class CypherSubqueryInputs extends AlgShuttleImpl {
             RexNode reference = rexBuilder.makeInputRef( rows, originalWidth );
             lowered.put( subquery, reference );
             return reference;
+        }
+
+
+        private boolean isListScope( OperatorName operator ) {
+            return switch ( operator ) {
+                case CYPHER_LIST_COMPREHENSION, CYPHER_ALL_MATCH, CYPHER_ANY_MATCH, CYPHER_NONE_MATCH, CYPHER_SINGLE_MATCH -> true;
+                default -> false;
+            };
+        }
+
+
+        private RexNode lowerListScope( RexCall call ) {
+            RexNode list = call.operands.get( 0 ).accept( this );
+            RexNameRef element = (RexNameRef) call.operands.get( 1 );
+            int elementIndex = width( rows );
+            String resultName = "$existsList" + elementIndex;
+            List<RexNode> outerValues = new ArrayList<>( columns( rows, 0, elementIndex ) );
+            outerValues.add( list );
+            List<PolyString> outerNames = new ArrayList<>( names( rows ) );
+            outerNames.add( PolyString.of( resultName ) );
+            AlgNode input = LogicalLpgProject.create( rows, outerValues, outerNames );
+
+            AlgDataType iterationType = cluster.getTypeFactory().builder().addAll( rows.getTupleType().getFields() )
+                    .add( resultName, null, element.getType() ).build();
+            CorrelationId correlation = cluster.createCorrel();
+            RexNode binding = rexBuilder.makeCorrel( iterationType, correlation );
+            RexShuttle scoped = new RexShuttle() {
+                @Override
+                public RexNode visitIndexRef( RexIndexRef ref ) {
+                    return rexBuilder.makeFieldAccess( binding, ref.getIndex() );
+                }
+
+
+                @Override
+                public RexNode visitNameRef( RexNameRef ref ) {
+                    return element.equals( ref ) ? rexBuilder.makeFieldAccess( binding, elementIndex ) : ref;
+                }
+            };
+            AlgDataType unitType = cluster.getTypeFactory().builder().build();
+            AlgNode body = LogicalLpgValues.create( cluster, rows.getTraitSet(), unitType, ImmutableList.of( ImmutableList.of() ) );
+            RexNode value = call.operands.get( 2 ).accept( scoped );
+            OperatorName operator = call.getOperator().getOperatorName();
+            if ( operator == OperatorName.CYPHER_LIST_COMPREHENSION ) {
+                body = LogicalLpgFilter.create( body, value );
+                value = call.operands.get( 3 ).accept( scoped );
+            }
+            body = LogicalLpgProject.create( body, List.of( value ), List.of( PolyString.of( resultName ) ) ).accept( CypherSubqueryInputs.this );
+            AlgDataType resultType = cluster.getTypeFactory().builder().addAll( rows.getTupleType().getFields() )
+                    .add( resultName, null, call.getType() ).build();
+            rows = new LogicalLpgListSubquery( input, body, correlation, iterationType, resultType, operator );
+            return rexBuilder.makeInputRef( rows, elementIndex );
         }
 
     }

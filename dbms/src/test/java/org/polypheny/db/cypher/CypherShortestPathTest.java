@@ -126,6 +126,29 @@ class CypherShortestPathTest extends CypherTestTemplate {
 
 
     @Test
+    void appliesExistsBeforeSelectingShortestPathsAndAddingOptionalRows() {
+        assertEquals( 2, count( """
+                MATCH p=shortestPath((:Origin)-[:ROAD*]->(:Destination {key:'b'}))
+                WHERE EXISTS { WITH length(p) AS hops WHERE hops = 2 RETURN hops }
+                RETURN length(p)
+                """ ) );
+        GraphResult result = execute( """
+                MATCH (a:Origin), (b:Destination {key:'b'})
+                UNWIND [0,1,1,2] AS minimum
+                OPTIONAL MATCH p=allShortestPaths((a)-[:ROAD*]->(b))
+                WHERE EXISTS { WITH length(p) AS hops WHERE hops > minimum RETURN hops }
+                RETURN minimum, length(p) AS hops ORDER BY minimum
+                """ );
+        assertEquals( 6, result.getData().length );
+        assertEquals( 1, number( result, 0, 1 ) );
+        for ( int row = 1; row < 5; row++ ) {
+            assertEquals( 2, number( result, row, 1 ) );
+        }
+        assertNull( cell( result, 5, 1 ) );
+    }
+
+
+    @Test
     void returnsAListOfShortestPathsForBoundEndpointsInAnExpression() {
         assertEquals( 2, count( """
                 MATCH (a:Origin), (b:Destination {key:'b'})

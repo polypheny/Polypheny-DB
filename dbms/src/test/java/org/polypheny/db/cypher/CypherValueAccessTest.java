@@ -76,6 +76,49 @@ class CypherValueAccessTest extends CypherTestTemplate {
 
 
     @Test
+    void requiresBackticksForReservedIdentifiersAndAllowsSchemaNames() {
+        assertError( "WITH 1 AS mAtCh RETURN 1", "Reserved word" );
+        assertError( "RETURN $LIMIT", "Reserved word" );
+        assertError( "RETURN SET(1)", "Reserved word" );
+        assertError( "MATCH (WHERE) RETURN 1", "Reserved word" );
+
+        GraphResult result = execute( """
+                CREATE (`MATCH`:RETURN {WHERE: 7})-[:WITH]->()
+                RETURN `MATCH`.WHERE AS value, exists(`MATCH`.WHERE) AS present
+                """ );
+        assertEquals( 7, number( result, 0 ) );
+        assertTrue( cell( result, 1 ).asBoolean().value );
+    }
+
+
+    @Test
+    void recognizesSupplementaryUnicodeLettersInIdentifiers() {
+        String letter = Character.toString( 0x10400 );
+        String digit = Character.toString( 0x1D7CE );
+        GraphResult result = execute( "WITH 7 AS " + letter + digit + " RETURN " + letter + digit );
+        assertEquals( 7, number( result, 0 ) );
+        assertError( "WITH 1 AS " + digit + " RETURN 1", "Invalid Unicode character" );
+        assertError( "WITH 1 AS a" + Character.toString( 0x1F600 ) + " RETURN 1", "Invalid Unicode character" );
+    }
+
+
+    @Test
+    void resolvesQualifiedFunctionsOnlyInTheirDeclaredNamespace() {
+        assertError( "RETURN no_such_namespace.length(null)", "UnknownFunction: no_such_namespace.length" );
+        assertError( "RETURN no_such_namespace.point.distance(null, null)", "UnknownFunction" );
+        assertError( "RETURN point.length(null)", "UnknownFunction: point.length" );
+        assertError( "RETURN duration.size([])", "UnknownFunction: duration.size" );
+
+        GraphResult result = execute( """
+                RETURN duration.inDays(date('2020-01-01'), date('2020-01-02')).days AS days,
+                       point.distance(point({x: 0, y: 0}), point({x: 3, y: 4})) AS distance
+                """ );
+        assertEquals( 1, number( result, 0 ) );
+        assertEquals( 5.0, cell( result, 1 ).asNumber().doubleValue() );
+    }
+
+
+    @Test
     void exposesNodesRelationshipsAndLengthInTraversalOrder() {
         execute( "CREATE (:PathSource {name:'start'})-[:ACCESS {weight:5}]->()-[:ACCESS {weight:7}]->(:PathEnd {name:'end'})" );
         GraphResult result = execute( """
@@ -171,10 +214,10 @@ class CypherValueAccessTest extends CypherTestTemplate {
 
     @Test
     void preservesUnicodeEscapesInUnaliasedColumnNames() {
-        String expression = "n + \\u006e";
-        GraphResult result = execute( "WITH 1 AS n\nRETURN " + expression );
+        String expression = "n + '\\u006e'";
+        GraphResult result = execute( "WITH 'a' AS n\nRETURN " + expression );
         assertEquals( expression, result.getHeader()[0].name );
-        assertEquals( 2, number( result, 0 ) );
+        assertEquals( "an", cell( result, 0 ).asString().value );
     }
 
 

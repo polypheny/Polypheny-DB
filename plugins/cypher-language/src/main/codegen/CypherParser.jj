@@ -24,8 +24,8 @@ options {
   DEBUG_LOOKAHEAD = false;
   DEBUG_TOKEN_MANAGER = false;
   ERROR_REPORTING = true;
-  JAVA_UNICODE_ESCAPE = true;
-  UNICODE_INPUT = false;
+  JAVA_UNICODE_ESCAPE = false;
+  UNICODE_INPUT = true;
   IGNORE_CASE = false;
   USER_TOKEN_MANAGER = false;
   USER_CHAR_STREAM = false;
@@ -46,8 +46,10 @@ import java.io.Reader;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import com.google.common.collect.ImmutableList;
 import org.polypheny.db.cypher.ActionType;
 import org.polypheny.db.cypher.ddl.CypherCreateIndex.IndexType;
@@ -104,6 +106,15 @@ import org.polypheny.db.cypher.ParameterType;
 import org.polypheny.db.cypher.clause.CypherOrderItem;
 
 public class CypherParserImpl extends CypherAbstractParserImpl {
+
+    private static final Set<String> RESERVED_WORDS = Set.of(
+            "ADD", "ALL", "AND", "AS", "ASC", "ASCENDING", "BY", "CALL", "CASE",
+            "CONSTRAINT", "CONTAINS", "CREATE", "DELETE", "DESC", "DESCENDING",
+            "DETACH", "DISTINCT", "DO", "DROP", "ELSE", "END", "ENDS", "EXISTS",
+            "FALSE", "FOR", "IN", "IS", "LIMIT", "MANDATORY", "MATCH", "MERGE",
+            "NOT", "NULL", "OF", "ON", "OPTIONAL", "OR", "ORDER", "REMOVE",
+            "REQUIRE", "RETURN", "SCALAR", "SET", "SKIP", "STARTS", "THEN", "TRUE",
+            "UNION", "UNIQUE", "UNWIND", "WHEN", "WHERE", "WITH", "XOR", "YIELD" );
 
     private String sourceQuery;
     private List<Integer> lineOffsets;
@@ -162,6 +173,18 @@ public class CypherParserImpl extends CypherAbstractParserImpl {
         return t != null ? CypherFactory.inputPosition( t.beginOffset, t.beginLine, t.beginColumn ) : null;
     }
 
+    private void requireIdentifier( Token t ) {
+        if ( t.kind != ESCAPED_SYMBOLIC_NAME && RESERVED_WORDS.contains( t.image.toUpperCase( Locale.ROOT ) ) ) {
+            for ( int i = 0; i < t.image.length(); i++ ) {
+                if ( t.image.charAt( i ) >= 128 ) {
+                    return;
+                }
+            }
+            throw new org.polypheny.db.cypher.cypher2alg.CypherSyntaxException(
+                    "UnexpectedSyntax: Reserved word '" + t.image + "' requires backticks when used as an identifier." );
+        }
+    }
+
     private void assertValidType( Token t, String expected, String actual ) throws Exception
     {
         if ( expected != null && !expected.equals(actual) )
@@ -198,6 +221,36 @@ PARSER_END(CypherParserImpl)
 
 TOKEN_MGR_DECLS :
 {
+    private static void validateSupplementaryIdentifierCharacters( String identifier ) {
+        for ( int i = 0; i < identifier.length(); ) {
+            int codePoint = identifier.codePointAt( i );
+            if ( Character.isSupplementaryCodePoint( codePoint ) ) {
+                int category = Character.getType( codePoint );
+                boolean valid = i == 0
+                        ? Character.isUnicodeIdentifierStart( codePoint ) || category == Character.CONNECTOR_PUNCTUATION
+                        : (Character.isUnicodeIdentifierPart( codePoint ) && !Character.isIdentifierIgnorable( codePoint ))
+                          || category == Character.CURRENCY_SYMBOL;
+                if ( !valid ) {
+                    throw new org.polypheny.db.cypher.cypher2alg.CypherSyntaxException(
+                            "UnexpectedSyntax: Invalid Unicode character in an unescaped identifier." );
+                }
+            }
+            i += Character.charCount( codePoint );
+        }
+    }
+
+    private void appendStringEscape( char value ) {
+        image.setLength( image.length() - 2 );
+        image.append( value );
+    }
+
+    private void appendUtf16Escape() {
+        int start = image.length() - 6;
+        char codeUnit = (char) Integer.parseInt( image.substring( start + 2 ), 16 );
+        image.setLength( start );
+        image.append( codeUnit );
+    }
+
     private void appendUtf32Escape() {
         int start = image.length() - 10;
         long codePoint = Long.parseLong( image.substring( start + 2 ), 16 );
@@ -212,6 +265,11 @@ TOKEN_MGR_DECLS :
     private static void rejectUtf32Escape() {
         throw new org.polypheny.db.cypher.cypher2alg.CypherSyntaxException(
                 "InvalidUnicodeLiteral: A UTF-32 escape must contain eight hex digits for a Unicode scalar value." );
+    }
+
+    private static void rejectUtf16Escape() {
+        throw new org.polypheny.db.cypher.cypher2alg.CypherSyntaxException(
+                "InvalidUnicodeLiteral: A UTF-16 escape must contain four hex digits." );
     }
 }
 
@@ -271,35 +329,28 @@ TOKEN :
 
 <STRING1,STRING2> MORE :
 {
-    < "\\U" <HEX_DIGIT> <HEX_DIGIT> <HEX_DIGIT> <HEX_DIGIT> <HEX_DIGIT> <HEX_DIGIT> <HEX_DIGIT> <HEX_DIGIT> >
+    "\\\\" { appendStringEscape( '\\' ); }
+    | "\\\'" { appendStringEscape( '\'' ); }
+    | "\\\"" { appendStringEscape( '"' ); }
+    | "\\b" { appendStringEscape( '\b' ); }
+    | "\\f" { appendStringEscape( '\f' ); }
+    | "\\n" { appendStringEscape( '\n' ); }
+    | "\\r" { appendStringEscape( '\r' ); }
+    | "\\t" { appendStringEscape( '\t' ); }
+    | < "\\u" <HEX_DIGIT> <HEX_DIGIT> <HEX_DIGIT> <HEX_DIGIT> >
+        { appendUtf16Escape(); }
+    | "\\u" { rejectUtf16Escape(); }
+    | < "\\U" <HEX_DIGIT> <HEX_DIGIT> <HEX_DIGIT> <HEX_DIGIT> <HEX_DIGIT> <HEX_DIGIT> <HEX_DIGIT> <HEX_DIGIT> >
         { appendUtf32Escape(); }
     | "\\U" { rejectUtf32Escape(); }
 }
 
 MORE : { < STRING1_OPEN: "'" > : STRING1 }
-<STRING1> MORE: { "\\\\" { image.delete( image.length() - 2, image.length() ); image.append( "\\" ); } }
-<STRING1> MORE: { "\\\'" { image.delete( image.length() - 2, image.length() ); image.append( "'" ); } }
-<STRING1> MORE: { "\\\"" { image.delete( image.length() - 2, image.length() ); image.append( "\"" ); } }
-<STRING1> MORE: { "\\b" { image.delete( image.length() - 2, image.length() ); image.append( "\b" ); } }
-<STRING1> MORE: { "\\f" { image.delete( image.length() - 2, image.length() ); image.append( "\f" ); } }
-<STRING1> MORE: { "\\n" { image.delete( image.length() - 2, image.length() ); image.append( "\n" ); } }
-<STRING1> MORE: { "\\r" { image.delete( image.length() - 2, image.length() ); image.append( "\r" ); } }
-<STRING1> MORE: { "\\t" { image.delete( image.length() - 2, image.length() ); image.append( "\t" ); } }
-<STRING1> MORE: { "\\u[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]" }
-<STRING1> MORE: { < ~["'"] > }
+<STRING1> MORE: { < ~["'","\\"] > }
 <STRING1> TOKEN: { <STRING_LITERAL1: "'"> { matchedToken.image = image.substring( 1, image.length() - 1 ); } : DEFAULT }
 
 MORE : { < STRING2_OPEN: "\"" > : STRING2 }
-<STRING2> MORE: { "\\\\" { image.delete( image.length() - 2, image.length() ); image.append( "\\" ); } }
-<STRING2> MORE: { "\\\'" { image.delete( image.length() - 2, image.length() ); image.append( "'" ); } }
-<STRING2> MORE: { "\\\"" { image.delete( image.length() - 2, image.length() ); image.append( "\"" ); } }
-<STRING2> MORE: { "\\b" { image.delete( image.length() - 2, image.length() ); image.append( "\b" ); } }
-<STRING2> MORE: { "\\f" { image.delete( image.length() - 2, image.length() ); image.append( "\f" ); } }
-<STRING2> MORE: { "\\n" { image.delete( image.length() - 2, image.length() ); image.append( "\n" ); } }
-<STRING2> MORE: { "\\r" { image.delete( image.length() - 2, image.length() ); image.append( "\r" ); } }
-<STRING2> MORE: { "\\t" { image.delete( image.length() - 2, image.length() ); image.append( "\t" ); } }
-<STRING2> MORE: { "\\u[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]" }
-<STRING2> MORE: { < ~["\""] > }
+<STRING2> MORE: { < ~["\"","\\"] > }
 <STRING2> TOKEN: { <STRING_LITERAL2: "\""> { matchedToken.image = image.substring( 1, image.length() - 1 ); } : DEFAULT }
 
 MORE : { < ESCAPED_SYMBOLIC_NAME_OPEN: "`" > : ESC_SYMB_NAME }
@@ -527,7 +578,9 @@ TOKEN [IGNORE_CASE] :
 
 TOKEN :
 {
-    < IDENTIFIER: <LETTER> (<PART_LETTER>)* >
+    < IDENTIFIER: (<LETTER> | <SUPPLEMENTARY_CODE_POINT>) (<PART_LETTER> | <SUPPLEMENTARY_CODE_POINT>)* >
+        { validateSupplementaryIdentifierCharacters( matchedToken.image ); }
+    | < #SUPPLEMENTARY_CODE_POINT: ["\ud800"-"\udbff"] ["\udc00"-"\udfff"] >
     | < #LETTER:
         [  // all chars for which Character.isJavaIdentifierStart(c) && Character.getType(c) != Character.CURRENCY_SYMBOL is true
             "\u0041"-"\u005a",
@@ -1989,7 +2042,7 @@ String ProcedureName() :
     Token t;
 }
 {
-    t=SymbolicNameString()
+    t=IdentifierName()
     {
         return t.image;
     }
@@ -2001,7 +2054,7 @@ CypherCallResultItem ProcedureResultItem() :
     CypherVariable v = null;
 }
 {
-    t=SymbolicNameString() ( <AS> v=Variable() )?
+    t=IdentifierName() ( <AS> v=Variable() )?
     {
         return CypherFactory.createCallResultItem( pos( t ), t.image,  v );
     }
@@ -2996,7 +3049,6 @@ CypherParameter Parameter( ParameterType type ) :
 CypherExpression FunctionInvocation() :
 {
     Token before = token;
-    Token nameSpaceToken;
     Token nameToken;
     List<String> namespace;
     boolean distinct = false;
@@ -3005,6 +3057,12 @@ CypherExpression FunctionInvocation() :
 }
 {
     namespace=Namespace() nameToken=SymbolicNameString()
+    {
+        // EXISTS(...) is the legacy property and pattern predicate.
+        if ( nameToken.kind != EXISTS || !namespace.isEmpty() ) {
+            requireIdentifier( nameToken );
+        }
+    }
     <LPAREN>
         ( LOOKAHEAD( 2 ) <DISTINCT> { distinct=true; })?
         ( e=Expression() { arguments.add( e ); } )? ( "," e=Expression() { arguments.add( e ); } )*
@@ -3020,7 +3078,7 @@ List<String> Namespace() :
     List<String> parts = new ArrayList();
 }
 {
-    ( LOOKAHEAD( 2 ) t=SymbolicNameString() { parts.add( t.image ); } <DOT> )*
+    ( LOOKAHEAD( 2 ) t=IdentifierName() { parts.add( t.image ); } <DOT> )*
     {
         return parts;
     }
@@ -3028,12 +3086,12 @@ List<String> Namespace() :
 
 List<CypherVariable> VariableList1() :
 {
-    Token t;
+    CypherVariable variable;
     List<CypherVariable> list = new ArrayList();
 }
 {
-    t=SymbolicNameString() { list.add( CypherFactory.newVariable( pos( t ), t.image ) ); }
-    ( "," t=SymbolicNameString() { list.add( CypherFactory.newVariable( pos( t ), t.image) ); })*
+    variable=Variable() { list.add( variable ); }
+    ( "," variable=Variable() { list.add( variable ); } )*
     {
         return list;
     }
@@ -3044,7 +3102,7 @@ CypherVariable Variable() :
     Token t;
 }
 {
-    t=SymbolicNameString()
+    t=IdentifierName()
     {
         return CypherFactory.newVariable( pos( t ), t.image );
     }
@@ -5420,6 +5478,18 @@ Token SymbolicNameString() :
         | t=UnescapedSymbolicNameString()
     )
     {
+        return t;
+    }
+}
+
+Token IdentifierName() :
+{
+    Token t;
+}
+{
+    t=SymbolicNameString()
+    {
+        requireIdentifier( t );
         return t;
     }
 }

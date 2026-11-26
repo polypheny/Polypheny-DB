@@ -68,23 +68,30 @@ public class CypherFunctionInvocation extends CypherExpression {
         this.namespace = namespace;
         this.scalarFunction = namespace.isEmpty() ? CypherScalarFunction.named( image ) : null;
         String qualifiedName = namespace.isEmpty() ? image : String.join( ".", namespace ) + "." + image;
-        this.temporalFunction = CypherTemporalFunction.named( qualifiedName );
-        if ( temporalFunction == null && !namespace.isEmpty() && CypherTemporalFunction.named( namespace.get( 0 ) ) != null ) {
-            throw new CypherSyntaxException( "Unknown Cypher temporal function: " + qualifiedName );
-        }
+        this.temporalFunction = namespace.size() <= 1 && !image.contains( "." )
+                && (namespace.isEmpty() || !namespace.get( 0 ).contains( "." ))
+                ? CypherTemporalFunction.named( qualifiedName )
+                : null;
         if ( temporalFunction != null ) {
             String arityError = temporalFunction.arityError( arguments.size() );
             if ( arityError != null ) {
                 throw new CypherSyntaxException( arityError );
             }
             this.op = OperatorName.CYPHER_TEMPORAL_FUNCTION;
+        } else if ( !namespace.isEmpty() ) {
+            this.op = switch ( qualifiedName.toLowerCase( Locale.ROOT ) ) {
+                case "point.distance" -> OperatorName.DISTANCE;
+                case "point.withinbbox" -> OperatorName.CYPHER_WITHIN_BBOX;
+                case "point.withingeometry" -> OperatorName.CYPHER_WITHIN_GEOMETRY;
+                default -> throw new CypherSyntaxException( "UnknownFunction: " + qualifiedName );
+            };
         } else if ( scalarFunction != null ) {
             String arityError = scalarFunction.arityError( arguments.size() );
             if ( arityError != null ) {
                 throw new CypherSyntaxException( arityError );
             }
             this.op = scalarFunction == CypherScalarFunction.RAND ? OperatorName.CYPHER_RAND : OperatorName.CYPHER_SCALAR_FUNCTION;
-        } else if ( namespace.isEmpty() && image.equalsIgnoreCase( "rels" ) ) {
+        } else if ( image.equalsIgnoreCase( "rels" ) ) {
             this.op = OperatorName.CYPHER_RELATIONSHIPS;
         } else if ( operatorNames.contains( image.toUpperCase( Locale.ROOT ) ) ) {
             this.op = OperatorName.valueOf( image.toUpperCase( Locale.ROOT ) );

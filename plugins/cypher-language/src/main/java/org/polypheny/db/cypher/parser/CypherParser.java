@@ -79,12 +79,6 @@ public class CypherParser implements Parser {
                 throw new CypherLexicalError( e );
             }
             throw e;
-        } catch ( Error e ) {
-            // JavaCC's character stream reports malformed Unicode escapes as a plain Error.
-            if ( e.getClass() == Error.class && e.getMessage() != null && e.getMessage().startsWith( "Invalid escape character at line " ) ) {
-                throw new NodeParseException( "InvalidUnicodeLiteral: " + e.getMessage(), null, null, null, e, true );
-            }
-            throw e;
         }
     }
 

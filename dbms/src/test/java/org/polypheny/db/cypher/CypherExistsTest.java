@@ -19,6 +19,7 @@ package org.polypheny.db.cypher;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -68,8 +69,8 @@ class CypherExistsTest extends CypherTestTemplate {
     void absentOptionalBindingsReturnFalse() {
         GraphResult result = execute( """
                 MATCH (origin:Person {name:'Ada'})
-                OPTIONAL MATCH (origin)-[r:MISSING]->(end)
-                RETURN exists(r.score), exists(end.name), exists((end)-[:KNOWS]->())
+                OPTIONAL MATCH (origin)-[r:MISSING]->(isolated)
+                RETURN exists(r.score), exists(isolated.name), exists((isolated)-[:KNOWS]->())
                 """ );
         assertEquals( List.of( false, false, false ), flags( result ) );
     }
@@ -201,6 +202,44 @@ class CypherExistsTest extends CypherTestTemplate {
 
 
     @Test
+    void capturesTheCurrentElementInListFiltersAndProjections() {
+        GraphResult result = execute( """
+                WITH 'Lin' AS fallback
+                RETURN [name IN ['Missing', fallback, 'Ada', fallback]
+                        WHERE EXISTS { MATCH (n:Person) WHERE n.name = name AND n.enabled IS NULL }] AS matching,
+                       [name IN [fallback, null, 'Missing']
+                        | EXISTS { MATCH (n:Person) WHERE n.name = name }] AS flags
+                """ );
+        assertEquals( List.of( "Lin", "Lin" ), cell( result, 0, 0 ).asList().stream().map( item -> item.asString().value ).toList() );
+        assertEquals( List.of( true, false, false ), cell( result, 0, 1 ).asList().stream().map( item -> item.asBoolean().value ).toList() );
+    }
+
+
+    @Test
+    void capturesBothListScopesAndPreservesQuantifierResults() {
+        GraphResult result = execute( """
+                RETURN any(prefix IN ['A', 'L'] WHERE any(suffix IN ['da', 'in']
+                         WHERE EXISTS { MATCH (n:Person) WHERE n.name = prefix + suffix })),
+                       all(name IN [] WHERE EXISTS { MATCH (n:Person) WHERE n.name = name }),
+                       none(name IN [null, ' missing '] WHERE EXISTS { MATCH (n:Person) WHERE n.name = name }),
+                       single(name IN ['Lin', 'Ada'] WHERE EXISTS { MATCH (n:Person) WHERE n.name = name })
+                """ );
+        assertEquals( List.of( true, true, true, false ), flags( result ) );
+        GraphResult nullList = execute( "RETURN [name IN null WHERE EXISTS { MATCH (n:Person) WHERE n.name = name }] AS result" );
+        assertNull( nullList.getData()[0][0] );
+    }
+
+
+    @Test
+    void rejectsShadowingAnOuterExistsBinding() {
+        assertError( "WITH 1 AS x RETURN EXISTS { WITH 2 AS x RETURN x }", "variablealreadybound" );
+        assertError( "WITH 1 AS x RETURN EXISTS { WITH 2 AS y UNWIND [y] AS x RETURN x }", "variablealreadybound" );
+        assertError( "RETURN [x IN [1] | EXISTS { WITH 2 AS x RETURN x }]", "variablealreadybound" );
+        assertEquals( List.of( true ), flags( execute( "WITH 1 AS x RETURN EXISTS { WITH x AS x WHERE x = 1 RETURN x }" ) ) );
+    }
+
+
+    @Test
     void capturesProjectedExistsAliasInOrderBySubqueries() {
         GraphResult result = execute( """
                 MATCH (a:Person)
@@ -212,6 +251,23 @@ class CypherExistsTest extends CypherTestTemplate {
         assertEquals( "Ada", cell( result, 3, 0 ).asString().value );
         assertFalse( cell( result, 0, 1 ).asBoolean().value );
         assertTrue( cell( result, 3, 1 ).asBoolean().value );
+    }
+
+
+    @Test
+    void capturesTheReturnedValueOfAVolatileAliasWhenSorting() {
+        GraphResult result = execute( """
+                UNWIND range(1, 40) AS n
+                RETURN n, rand() AS draw
+                ORDER BY EXISTS { WITH draw WHERE draw >= 0.5 RETURN draw }, n
+                """ );
+        assertEquals( 40, result.getData().length );
+        boolean upperHalf = false;
+        for ( int row = 0; row < result.getData().length; row++ ) {
+            boolean high = cell( result, row, 1 ).asNumber().doubleValue() >= 0.5;
+            assertFalse( upperHalf && !high );
+            upperHalf |= high;
+        }
     }
 
 

@@ -43,6 +43,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.function.Deterministic;
 import org.apache.calcite.linq4j.function.EqualityComparer;
@@ -577,17 +578,54 @@ public class CypherFunctions {
         if ( isNull( value ) ) {
             return null;
         }
-        if ( !(value instanceof PolyList<?> items) ) {
-            throw new GenericRuntimeException( "List comprehension requires a list, got %s.", value.getType() );
-        }
         List<PolyValue> result = new ArrayList<>();
-        for ( PolyValue item : items ) {
+        for ( PolyValue item : comprehensionItems( value ) ) {
             PolyValue element = isNull( item ) ? null : item;
             if ( PolyBoolean.TRUE.equals( predicate.apply( element ) ) ) {
                 result.add( projection.apply( element ) );
             }
         }
         return PolyList.copyOf( result );
+    }
+
+
+    private static PolyList<?> comprehensionItems( PolyValue value ) {
+        if ( value instanceof PolyList<?> items ) {
+            return items;
+        }
+        throw new GenericRuntimeException( "List comprehension requires a list, got %s.", value.getType() );
+    }
+
+
+    public static Enumerable<PolyValue[]> evaluateListSubquery( Enumerable<PolyValue[]> source, OperatorName operator,
+            Function1<PolyValue[], Enumerable<PolyValue[]>> body ) {
+        return source.select( row -> {
+            int listIndex = row.length - 1;
+            PolyValue list = row[listIndex];
+            PolyValue[] bindings = row.clone();
+            Function1<PolyValue, PolyValue[]> evaluate = item -> {
+                bindings[listIndex] = item;
+                try ( Enumerator<PolyValue[]> results = body.apply( bindings ).enumerator() ) {
+                    return results.moveNext() ? results.current() : null;
+                }
+            };
+            if ( operator == OperatorName.CYPHER_LIST_COMPREHENSION ) {
+                bindings[listIndex] = null;
+                if ( !isNull( list ) ) {
+                    List<PolyValue> values = new ArrayList<>();
+                    for ( PolyValue item : comprehensionItems( list ) ) {
+                        PolyValue[] result = evaluate.apply( isNull( item ) ? null : item );
+                        if ( result != null ) {
+                            values.add( result[0] );
+                        }
+                    }
+                    bindings[listIndex] = PolyList.copyOf( values );
+                }
+            } else {
+                bindings[listIndex] = quantify( operator, list, item -> (PolyBoolean) evaluate.apply( item )[0] );
+            }
+            return bindings;
+        } );
     }
 
 

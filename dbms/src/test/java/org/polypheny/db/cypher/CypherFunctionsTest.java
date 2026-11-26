@@ -311,7 +311,7 @@ class CypherFunctionsTest extends CypherTestTemplate {
     @Test
     void createsInclusiveIntegerRangesInEitherDirection() {
         GraphResult result = execute( """
-                RETURN range(-1, 1) AS ascending, range(4, -1, -2) AS descending,
+                RETURN range(-1, 1) AS `ascending`, range(4, -1, -2) AS `descending`,
                        range(1, 0) AS incompatibleDirection, range(7, 7, -2) AS singleton,
                        range(null, 5) AS absentStart, range(1, null) AS absentEnd,
                        range(1, 5, null) AS absentStep

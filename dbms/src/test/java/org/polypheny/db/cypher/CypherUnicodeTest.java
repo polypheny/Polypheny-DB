@@ -30,6 +30,53 @@ import org.polypheny.db.webui.models.results.GraphResult;
 class CypherUnicodeTest extends CypherTestTemplate {
 
     @Test
+    void decodesUtf16EscapesWithinStringDelimiters() {
+        GraphResult result = execute( """
+                RETURN '\\u0027' AS singleQuote, "\\u0022" AS doubleQuote,
+                       '\\u005c' AS backslash, '\\uD83D\\uDE00' AS supplementary,
+                       '\\\\u0027' AS escapedBackslash
+                """ );
+
+        assertEquals( "'", value( result, 0, 0 ).asString().value );
+        assertEquals( "\"", value( result, 0, 1 ).asString().value );
+        assertEquals( "\\", value( result, 0, 2 ).asString().value );
+        assertEquals( Character.toString( 0x1F600 ), value( result, 0, 3 ).asString().value );
+        assertEquals( "\\u0027", value( result, 0, 4 ).asString().value );
+    }
+
+
+    @Test
+    void rejectsUnknownStringEscapes() {
+        for ( String literal : List.of( "'\\q'", "\"\\q\"" ) ) {
+            String error = CypherConnection.executeGetResponse( "RETURN " + literal ).getError();
+            assertNotNull( error, literal );
+            assertTrue( error.contains( "UnexpectedSyntax" ), error );
+        }
+    }
+
+
+    @Test
+    void rejectsMalformedUtf16Escapes() {
+        for ( String escape : List.of( "\\uH", "\\u002", "\\uu0027" ) ) {
+            String error = CypherConnection.executeGetResponse( "RETURN '" + escape + "'" ).getError();
+            assertNotNull( error, escape );
+            assertTrue( error.contains( "InvalidUnicodeLiteral" ), error );
+        }
+    }
+
+
+    @Test
+    void preservesLineFeedThenCarriageReturnWhenEvaluatingEscapes() {
+        GraphResult result = execute( """
+                RETURN '\\n\\r' AS classicEscapes, '\\u000A\\u000D\\\\r' AS unicodeEscapes
+                """ );
+
+        assertEquals( "\n\r", value( result, 0, 0 ).asString().value );
+        assertEquals( "\n\r\\r", value( result, 0, 1 ).asString().value );
+    }
+
+
+    @Test
     void decodesUtf32EscapesInBothQuoteStyles() {
         GraphResult result = execute( """
                 RETURN 'a\\U00010000b' AS singleQuoted, "\\U0001f600" AS doubleQuoted,
