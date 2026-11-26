@@ -20,6 +20,7 @@ import lombok.Getter;
 import org.polypheny.db.cypher.cypher2alg.CypherSyntaxException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
+import org.polypheny.db.cypher.cypher2alg.CypherTypeException;
 import org.polypheny.db.cypher.parser.StringPos;
 import org.polypheny.db.functions.CypherFunctions;
 import org.polypheny.db.languages.ParserPos;
@@ -71,9 +72,10 @@ public class CypherProperty extends CypherExpression {
     protected Pair<PolyString, RexNode> toRex( CypherContext context, RexType type ) {
         RexNode operand = subject.getRex( context, type ).right;
         switch ( operand.getType().getPolyType() ) {
-            case MAP, NODE, EDGE, ANY, NULL, DATE, TIME, TIMESTAMP, INTERVAL, CYPHER_TEMPORAL -> {
+            case MAP, DOCUMENT, NODE, EDGE, ANY, NULL, DATE, TIME, TIMESTAMP, INTERVAL, CYPHER_TEMPORAL -> {
             }
-            default -> throw new CypherSyntaxException( "Property access requires a map, node, relationship, or temporal value." );
+            case PATH -> throw new CypherSyntaxException( "InvalidArgumentType: A path does not expose properties." );
+            default -> throw new CypherTypeException( "InvalidArgumentType: Property access requires a map, node, relationship, or temporal value." );
         }
         if ( subject.getType() == ExpressionType.VARIABLE ) {
             return context.getPropertyExtract( getPropertyKey(), getSubjectName(), operand );

@@ -77,7 +77,7 @@ public class EnumerableLpgUnwind extends LpgUnwind implements EnumerableAlg {
                 PolyValue[] result = new PolyValue[row.length];
                 System.arraycopy( row, 0, result, 0, index );
                 System.arraycopy( row, index + 1, result, index, row.length - index - 1 );
-                result[row.length - 1] = item;
+                result[row.length - 1] = item == null || item.isNull() ? null : item;
                 return result;
             } );
         } );

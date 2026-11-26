@@ -58,6 +58,7 @@ import org.polypheny.db.algebra.metadata.AlgMdCollation;
 import org.polypheny.db.algebra.metadata.AlgMdDistribution;
 import org.polypheny.db.algebra.metadata.AlgMetadataQuery;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgOptCost;
 import org.polypheny.db.plan.AlgOptPredicateList;
@@ -144,6 +145,8 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
         Type inputJavaType = result.physType().getJavaTupleType();
         ParameterExpression inputEnumerator = Expressions.parameter( Types.of( Enumerator.class, inputJavaType ), "inputEnumerator" );
         Expression input = RexToLixTranslator.convert( Expressions.call( inputEnumerator, BuiltInMethod.ENUMERATOR_CURRENT.method ), inputJavaType );
+        boolean graph = getModel() == DataModel.GRAPH;
+        RexToLixTranslator.InputGetter inputGetter = new RexToLixTranslator.InputGetterImpl( input, result.physType(), graph );
 
         final RexBuilder rexBuilder = getCluster().getRexBuilder();
         final AlgMetadataQuery mq = AlgMetadataQuery.instance();
@@ -161,7 +164,7 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
                             program,
                             typeFactory,
                             builder2,
-                            new RexToLixTranslator.InputGetterImpl( input, result.physType() ),
+                            inputGetter,
                             implementor.allCorrelateVariables,
                             implementor.getConformance() );
             builder2.add(
@@ -184,7 +187,7 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
                         builder3,
                         physType,
                         DataContext.ROOT,
-                        new RexToLixTranslator.InputGetterImpl( input, result.physType() ),
+                        inputGetter,
                         implementor.allCorrelateVariables );
         builder3.add( Expressions.return_( null, physType.record( expressions ) ) );
         BlockStatement currentBody = builder3.toBlock();
@@ -221,6 +224,9 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
                                 EnumUtils.NO_PARAMS,
                                 currentBody ) ) );
 
+        Expression enumerator = graph && program.getExprList().stream().anyMatch( expression -> !RexUtil.isDeterministic( expression ) )
+                ? Expressions.call( EnumerableCalc.class, "memoizeCurrent", body )
+                : body;
         builder.add(
                 Expressions.return_(
                         null,
@@ -229,8 +235,54 @@ public class EnumerableCalc extends Calc implements EnumerableAlg {
                                 // TODO: generics
                                 //   Collections.singletonList(inputRowType),
                                 EnumUtils.NO_EXPRS,
-                                ImmutableList.<MemberDeclaration>of( Expressions.methodDecl( Modifier.PUBLIC, enumeratorType, BuiltInMethod.ENUMERABLE_ENUMERATOR.method.getName(), EnumUtils.NO_PARAMS, Blocks.toFunctionBlock( body ) ) ) ) ) );
+                                ImmutableList.<MemberDeclaration>of( Expressions.methodDecl( Modifier.PUBLIC, enumeratorType, BuiltInMethod.ENUMERABLE_ENUMERATOR.method.getName(), EnumUtils.NO_PARAMS, Blocks.toFunctionBlock( enumerator ) ) ) ) ) );
         return implementor.result( physType, builder.toBlock() );
+    }
+
+
+    /** Ensures that repeated reads of a row containing a volatile Cypher projection see the same values. */
+    public static <T> Enumerator<T> memoizeCurrent( Enumerator<T> input ) {
+        return new Enumerator<>() {
+            private T row;
+            private boolean computed;
+
+
+            @Override
+            public T current() {
+                if ( !computed ) {
+                    row = input.current();
+                    computed = true;
+                }
+                return row;
+            }
+
+
+            @Override
+            public boolean moveNext() {
+                clear();
+                return input.moveNext();
+            }
+
+
+            @Override
+            public void reset() {
+                clear();
+                input.reset();
+            }
+
+
+            @Override
+            public void close() {
+                clear();
+                input.close();
+            }
+
+
+            private void clear() {
+                row = null;
+                computed = false;
+            }
+        };
     }
 
 

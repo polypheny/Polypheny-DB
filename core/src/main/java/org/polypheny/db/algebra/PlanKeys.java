@@ -129,7 +129,7 @@ public final class PlanKeys {
             attributes( LogicalLpgScan.class, node -> List.of( entity( node.entity ) ) ),
             attributes( LogicalLpgMatch.class, node -> List.of( node.getNames(), node.getMatches(), node.isEnumerableOnly() ) ),
             attributes( LogicalLpgJoin.class, node -> List.of( node.getCondition(), node.getVariablesSet(), node.getJoinType() ) ),
-            attributes( LogicalLpgShortestPathJoin.class, node -> List.of( node.getCondition(), node.isOptional(), node.getPathColumns(), node.getGroupColumns() ) ),
+            attributes( LogicalLpgShortestPathJoin.class, node -> List.of( node.getCondition(), node.isOptional(), node.getPathColumns(), node.getGroupColumns(), node.getAllTies() ) ),
             attributes( LogicalLpgFilter.class, node -> List.of( node.getCondition() ) ),
             attributes( LogicalLpgProject.class, node -> List.of( node.getNames(), node.getProjects() ) ),
             attributes( LogicalLpgSetRows.class, node -> List.of( node.getActions(), node.getActionSlots(), node.getTargetCount() ) ),

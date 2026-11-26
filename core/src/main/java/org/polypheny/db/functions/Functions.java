@@ -87,6 +87,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.bson.BsonDocument;
 import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.GraphDeleteTargets;
 import org.polypheny.db.algebra.enumerable.JavaTupleFormat;
 import org.polypheny.db.algebra.exceptions.ConstraintViolationException;
 import org.polypheny.db.algebra.json.JsonConstructorNullClause;
@@ -117,8 +118,10 @@ import org.polypheny.db.type.entity.category.PolyNumber;
 import org.polypheny.db.type.entity.category.PolyTemporal;
 import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
+import org.polypheny.db.type.entity.graph.PolyEdge;
 import org.polypheny.db.type.entity.graph.PolyGraph;
 import org.polypheny.db.type.entity.graph.PolyDictionary;
+import org.polypheny.db.type.entity.graph.PolyNode;
 import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.type.entity.numerical.PolyBigDecimal;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
@@ -471,7 +474,13 @@ public class Functions {
                     int index = i;
                     context.addParameterValues( i, parameterTypes.get( i ), rows.stream().map( row -> row[index] ).toList() );
                 }
+                GraphDeleteTargets deleted = GraphDeleteTargets.collect( context.getParameterValues(), parameterTypes.size() );
                 drainGraphWrites( collector );
+                for ( PolyValue[] row : rows ) {
+                    for ( int i = parameterTypes.size(); i < row.length; i++ ) {
+                        row[i] = deletedGraphValue( row[i], deleted );
+                    }
+                }
             } else {
                 for ( PolyValue[] row : rows ) {
                     context.resetParameterValues();
@@ -490,6 +499,34 @@ public class Functions {
     }
 
 
+    private static PolyValue deletedGraphValue( PolyValue value, GraphDeleteTargets deleted ) {
+        if ( value instanceof PolyNode node && deleted.nodes().contains( node.id ) ) {
+            return node.copyAsDeleted();
+        }
+        if ( value instanceof PolyEdge edge && (deleted.edges().contains( edge.id )
+                || deleted.nodes().contains( edge.left ) || deleted.nodes().contains( edge.right )) ) {
+            return edge.copyAsDeleted();
+        }
+        if ( value instanceof PolyPath path ) {
+            return path.rebindGraphValues( part -> deletedGraphValue( part, deleted ) );
+        }
+        if ( value instanceof PolyList<?> list ) {
+            return PolyList.copyOf( list.stream().map( item -> deletedGraphValue( item, deleted ) ).toList() );
+        }
+        if ( value instanceof PolyDictionary dictionary ) {
+            Map<PolyString, PolyValue> entries = new HashMap<>();
+            dictionary.forEach( (key, item) -> entries.put( key, deletedGraphValue( item, deleted ) ) );
+            return new PolyDictionary( entries );
+        }
+        if ( value instanceof PolyMap<?, ?> map && value.isMap() ) {
+            Map<PolyValue, PolyValue> entries = new HashMap<>();
+            map.forEach( (key, item) -> entries.put( key, deletedGraphValue( item, deleted ) ) );
+            return PolyMap.of( entries, map.getMapType() );
+        }
+        return value;
+    }
+
+
     private static void drainGraphWrites( Function0<Enumerable<PolyValue[]>> collector ) {
         try ( Enumerator<PolyValue[]> updates = collector.apply().enumerator() ) {
             while ( updates.moveNext() ) {
@@ -504,6 +541,63 @@ public class Functions {
         return polyTypes.stream()
                 .map( type -> type == PolyType.ARRAY ? factory.createArrayType( factory.createPolyType( PolyType.ANY ), -1 ) : deriveType( factory, type ) )
                 .toList();
+    }
+
+
+    @SuppressWarnings("unused")
+    @SafeVarargs
+    public static <T> Enumerable<T> concatenateValueChunks( Function0<Enumerable<T>>... chunks ) {
+        return Linq4j.concat( Arrays.stream( chunks ).map( Function0::apply ).toList() );
+    }
+
+
+    @SuppressWarnings("unused")
+    public static <T> Enumerable<T> skipAndTakeGraphRows( Enumerable<T> source, long skip, long limit ) {
+        return new AbstractEnumerable<>() {
+            @Override
+            public Enumerator<T> enumerator() {
+                Enumerator<T> rows = source.enumerator();
+                return new Enumerator<>() {
+                    private long pendingSkip = skip;
+                    private long remaining = limit;
+
+                    @Override
+                    public T current() {
+                        return rows.current();
+                    }
+
+                    @Override
+                    public boolean moveNext() {
+                        if ( remaining == 0 ) {
+                            return false;
+                        }
+                        while ( pendingSkip > 0 && rows.moveNext() ) {
+                            pendingSkip--;
+                        }
+                        if ( pendingSkip > 0 || !rows.moveNext() ) {
+                            remaining = 0;
+                            return false;
+                        }
+                        if ( remaining > 0 ) {
+                            remaining--;
+                        }
+                        return true;
+                    }
+
+                    @Override
+                    public void reset() {
+                        rows.reset();
+                        pendingSkip = skip;
+                        remaining = limit;
+                    }
+
+                    @Override
+                    public void close() {
+                        rows.close();
+                    }
+                };
+            }
+        };
     }
 
 

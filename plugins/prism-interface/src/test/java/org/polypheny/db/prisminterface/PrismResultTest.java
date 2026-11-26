@@ -25,6 +25,8 @@ import static org.polypheny.db.prisminterface.CypherTest.singleRow;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Statement;
 import java.util.List;
 import java.util.Set;
@@ -36,8 +38,10 @@ import org.junit.jupiter.api.Timeout;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.catalog.Catalog;
+import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.prisminterface.CypherTest.PrismConnection;
 import org.polypheny.db.prisminterface.utils.PrismValueDeserializer;
+import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.prism.CommitRequest;
 import org.polypheny.prism.ErrorResponse;
 import org.polypheny.prism.ExecuteUnparameterizedStatementRequest;
@@ -193,6 +197,36 @@ class PrismResultTest {
 
             Frame frame = connection.execute( namespace, "sql", "SELECT id FROM prismresultzerodivisor", -1 ).getResult().getFrame();
             assertEquals( 1, integerValue( singleRow( relationalFrame( frame, true, List.of( "id" ) ) ).getValues( 0 ) ) );
+        }
+    }
+
+
+    @Test
+    void droppingGraphReclaimsItsFileStoreColumns() throws IOException {
+        assumeTrue( "file".equalsIgnoreCase( System.getProperty( "store.default" ) ) );
+        String graph = "prismfilegraphdrop";
+        String namespace = Catalog.DEFAULT_NAMESPACE_NAME;
+        try ( PrismConnection connection = new PrismConnection( true, 4 ) ) {
+            connection.execute( namespace, "sql", "CREATE GRAPH NAMESPACE " + graph, 1 );
+            try {
+                connection.execute( graph, "cypher", "CREATE (:A {score:1})-[:LINK {weight:2}]->(:B)", 1 );
+                var snapshot = Catalog.snapshot();
+                var graphAllocation = snapshot.alloc().getFromLogical( snapshot.getNamespace( graph ).orElseThrow().id ).get( 0 );
+                Path store = PolyphenyHomeDirManager.getInstance().getHomeFile( "data/file-store/store" + graphAllocation.adapterId ).orElseThrow().toPath();
+                var adapterCatalog = Catalog.getInstance().getAdapterCatalog( graphAllocation.adapterId ).orElseThrow();
+                List<Path> columns = adapterCatalog.getPhysicalsFromAllocs( graphAllocation.id ).stream()
+                        .map( entity -> entity.unwrapOrThrow( PhysicalTable.class ) )
+                        .flatMap( table -> table.getColumnIds().stream().map( id -> store.resolve( "col" + id + "_" + table.allocationId ) ) )
+                        .toList();
+                assertEquals( 12, columns.size() );
+                assertTrue( columns.stream().allMatch( Files::isDirectory ), columns::toString );
+
+                connection.execute( namespace, "sql", "DROP NAMESPACE " + graph, 1 );
+                assertTrue( columns.stream().noneMatch( Files::exists ), () -> "Columns left behind: " + columns.stream().filter( Files::exists ).toList() );
+                assertTrue( Catalog.snapshot().getNamespace( graph ).isEmpty() );
+            } finally {
+                connection.execute( namespace, "sql", "DROP NAMESPACE IF EXISTS " + graph, 1 );
+            }
         }
     }
 

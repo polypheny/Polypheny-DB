@@ -26,6 +26,7 @@ import org.polypheny.db.algebra.AlgRoot;
 import org.polypheny.db.algebra.constant.Kind;
 import org.polypheny.db.algebra.constant.ResultKind;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.ExecutableStatement;
 import org.polypheny.db.nodes.Node;
@@ -48,6 +49,11 @@ public abstract class Processor {
 
     public PreparedNamedQuery prepareNamedQuery( String query ) {
         throw new UnsupportedOperationException( "Named parameters are not supported by this query processor" );
+    }
+
+
+    public PreparedNamedQuery prepareNamedQuery( String query, LogicalNamespace namespace ) {
+        return prepareNamedQuery( query );
     }
 
 

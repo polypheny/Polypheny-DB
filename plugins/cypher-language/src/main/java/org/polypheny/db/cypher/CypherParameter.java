@@ -24,9 +24,11 @@ import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.runtime.SqlStateException;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
+import org.polypheny.db.type.entity.graph.PolyDictionary;
 import org.polypheny.db.util.Pair;
 
 public class CypherParameter extends CypherExpression {
@@ -61,24 +63,33 @@ public class CypherParameter extends CypherExpression {
         if ( value == null ) {
             throw new GenericRuntimeException( "Missing Cypher parameter: $" + name );
         }
+        if ( parameterType == ParameterType.MAP ) {
+            if ( value instanceof PolyDictionary properties ) {
+                // Graph creation filters out null properties on its own copy of the supplied map.
+                return new PolyDictionary( properties );
+            }
+            throw new SqlStateException( "InvalidArgumentType: Cypher properties parameter $" + name + " must be a map.", "22023" );
+        }
         return value;
     }
 
 
     @Override
     protected Pair<PolyString, RexNode> toRex( CypherContext context, RexType type ) {
-        PolyValue boundValue = getComparable();
-        RexNode literal;
+        return Pair.of( PolyString.of( "$" + name ), literal( context, getComparable() ) );
+    }
+
+
+    public static RexNode literal( CypherContext context, PolyValue boundValue ) {
         if ( boundValue.isNull() ) {
-            literal = context.rexBuilder.makeNullLiteral( context.typeFactory.createPolyType( PolyType.NULL ) );
-        } else if ( boundValue.isMap() ) {
+            return context.rexBuilder.makeNullLiteral( context.typeFactory.createPolyType( PolyType.NULL ) );
+        }
+        if ( boundValue.isMap() ) {
             AlgDataType mapType = context.typeFactory.createMapType(
                     context.typeFactory.createPolyType( PolyType.VARCHAR ), context.typeFactory.createPolyType( PolyType.ANY ) );
-            literal = context.rexBuilder.makeLiteral( boundValue, mapType );
-        } else {
-            literal = context.rexBuilder.makeLiteral( boundValue );
+            return context.rexBuilder.makeLiteral( boundValue, mapType );
         }
-        return Pair.of( PolyString.of( "$" + name ), literal );
+        return context.rexBuilder.makeLiteral( boundValue );
     }
 
 }

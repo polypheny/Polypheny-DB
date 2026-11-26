@@ -17,11 +17,12 @@
 package org.polypheny.db.cypher.expression;
 
 import java.util.List;
+import javax.annotation.Nullable;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.cypher.cypher2alg.CypherSyntaxException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.languages.OperatorRegistry;
@@ -53,12 +54,24 @@ public class CypherVariable extends CypherExpression {
 
     @Override
     protected Pair<PolyString, RexNode> toRex( CypherContext context, RexType type ) {
-        RexNode scoped = context.scopedVariable( name );
-        if ( scoped != null ) {
-            return Pair.of( PolyString.of( name ), scoped );
+        RexNode binding = findRex( context );
+        if ( binding == null ) {
+            throw new CypherSyntaxException( "The used variable is not known: " + name );
         }
+        return Pair.of( PolyString.of( name ), binding );
+    }
+
+
+    @Nullable
+    RexNode findRex( CypherContext context ) {
+        return context.resolveVariable( name, () -> findInInput( context ) );
+    }
+
+
+    @Nullable
+    private RexNode findInInput( CypherContext context ) {
         if ( !context.hasInput() ) {
-            throw new GenericRuntimeException( "The used variable is not known: %s", name );
+            return null;
         }
         AlgNode node = context.peek();
 
@@ -66,9 +79,7 @@ public class CypherVariable extends CypherExpression {
 
         if ( index >= 0 && context.isVisibleVariable( name ) ) {
             // search r  -> RowType(r:Edge)
-            return Pair.of(
-                    PolyString.of( name ),
-                    context.rexBuilder.makeInputRef( node.getTupleType().getFields().get( index ).getType(), index ) );
+            return context.rexBuilder.makeInputRef( node.getTupleType().getFields().get( index ).getType(), index );
         }
 
         for ( AlgDataTypeField field : node.getTupleType().getFields() ) {
@@ -77,18 +88,16 @@ public class CypherVariable extends CypherExpression {
                     if ( pathField.getName().equals( name ) ) {
                         // search r -> RowType(Path(r:Edge, n:Node))
                         RexIndexRef pathRef = context.rexBuilder.makeInputRef( field.getType(), field.getIndex() );
-                        return Pair.of(
-                                PolyString.of( name ),
-                                context.rexBuilder.makeCall(
-                                        pathField.getType(),
-                                        OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EXTRACT_FROM_PATH ),
-                                        List.of( pathRef, context.rexBuilder.makeLiteral( pathField.getName() ) ) ) );
+                        return context.rexBuilder.makeCall(
+                                pathField.getType(),
+                                OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EXTRACT_FROM_PATH ),
+                                List.of( pathRef, context.rexBuilder.makeLiteral( pathField.getName() ) ) );
                     }
                 }
             }
         }
 
-        throw new GenericRuntimeException( "The used variable is not known." );
+        return null;
     }
 
 

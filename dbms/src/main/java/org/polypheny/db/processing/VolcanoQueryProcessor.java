@@ -26,6 +26,7 @@ import org.polypheny.db.algebra.enumerable.EnumerableInterpreterRule;
 import org.polypheny.db.algebra.enumerable.EnumerableRules;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgCall;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgForeach;
+import org.polypheny.db.algebra.logical.lpg.LogicalLpgListSubquery;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgMergeRows;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgSetRows;
 import org.polypheny.db.algebra.logical.lpg.LogicalLpgShortestPathJoin;
@@ -125,6 +126,7 @@ public class VolcanoQueryProcessor extends AbstractQueryProcessor {
                     LogicalLpgWriteRow.TO_ENUMERABLE,
                     LogicalLpgCall.TO_ENUMERABLE,
                     LogicalLpgForeach.TO_ENUMERABLE,
+                    LogicalLpgListSubquery.TO_ENUMERABLE,
                     LogicalLpgMergeRows.TO_ENUMERABLE,
                     LogicalLpgSetRows.TO_ENUMERABLE,
                     LogicalLpgShortestPathJoin.TO_ENUMERABLE,

@@ -34,6 +34,14 @@ public abstract class PolyNumber extends PolyValue {
     }
 
 
+    public static @Nullable PolyNumber convert( @Nullable PolyValue value ) {
+        if ( value == null || value.isNull() ) {
+            return null;
+        }
+        return value instanceof PolyNumber number ? number : PolyBigDecimal.convert( value );
+    }
+
+
     public static int compareTo( PolyNumber b0, PolyNumber b1 ) {
         if ( b0 == null || b1 == null || b0.isNull() || b1.isNull() ) {
             return -1;

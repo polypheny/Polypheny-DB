@@ -248,7 +248,7 @@ public abstract class PruneEmptyRules {
                 @Override
                 public void onMatch( AlgOptRuleCall call ) {
                     Sort sort = call.alg( 0 );
-                    if ( sort.fetch != null && !(sort.fetch instanceof RexDynamicParam) && RexLiteral.intValue( sort.fetch ) == 0
+                    if ( sort.fetch != null && !(sort.fetch instanceof RexDynamicParam) && RexLiteral.longValue( sort.fetch ) == 0
                             && !containsReturningGraphWrite( sort.getInput() ) ) {
                         call.transformTo( call.builder().push( sort ).empty().build() );
                     }

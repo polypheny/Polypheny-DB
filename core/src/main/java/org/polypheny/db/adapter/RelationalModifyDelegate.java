@@ -105,7 +105,7 @@ public class RelationalModifyDelegate extends RelationalScanDelegate implements 
 
     @Override
     public void dropGraph( Context context, AllocationGraph allocation ) {
-        Modifiable.dropGraphSubstitute( modifiable, allocation.id );
+        Scannable.dropGraphSubstitute( modifiable, context, allocation );
     }
 
 

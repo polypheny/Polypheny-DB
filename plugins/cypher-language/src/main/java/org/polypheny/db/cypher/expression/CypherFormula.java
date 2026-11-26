@@ -20,6 +20,7 @@ import java.util.List;
 import lombok.Getter;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.cypher.cypher2alg.CypherSyntaxException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.functions.CypherFunctions;
@@ -90,8 +91,18 @@ public class CypherFormula extends CypherExpression {
             } else {
                 result = a == PolyType.DECIMAL || b == PolyType.DECIMAL ? PolyType.DECIMAL : PolyType.BIGINT;
             }
+        } else if ( !requiresRuntimeTypeCheck( a ) && !requiresRuntimeTypeCheck( b ) ) {
+            throw new CypherSyntaxException( "InvalidArgumentType: Invalid operand types for " + op + ": " + a + " and " + b + "." );
         }
         return context.typeFactory.createPolyType( result );
+    }
+
+
+    private static boolean requiresRuntimeTypeCheck( PolyType type ) {
+        return switch ( type ) {
+            case ANY, NULL, DATE, TIME, TIMESTAMP, INTERVAL, CYPHER_TEMPORAL -> true;
+            default -> false;
+        };
     }
 
 

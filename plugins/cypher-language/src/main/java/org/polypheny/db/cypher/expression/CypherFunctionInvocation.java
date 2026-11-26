@@ -43,6 +43,7 @@ import org.polypheny.db.rex.RexCall;
 import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.PolyTypeUtil;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
@@ -67,22 +68,31 @@ public class CypherFunctionInvocation extends CypherExpression {
         this.namespace = namespace;
         this.scalarFunction = namespace.isEmpty() ? CypherScalarFunction.named( image ) : null;
         String qualifiedName = namespace.isEmpty() ? image : String.join( ".", namespace ) + "." + image;
-        this.temporalFunction = CypherTemporalFunction.named( qualifiedName );
-        if ( temporalFunction == null && !namespace.isEmpty() && CypherTemporalFunction.named( namespace.get( 0 ) ) != null ) {
-            throw new CypherSyntaxException( "Unknown Cypher temporal function: " + qualifiedName );
-        }
+        this.temporalFunction = namespace.size() <= 1 && !image.contains( "." )
+                && (namespace.isEmpty() || !namespace.get( 0 ).contains( "." ))
+                ? CypherTemporalFunction.named( qualifiedName )
+                : null;
         if ( temporalFunction != null ) {
             String arityError = temporalFunction.arityError( arguments.size() );
             if ( arityError != null ) {
                 throw new CypherSyntaxException( arityError );
             }
             this.op = OperatorName.CYPHER_TEMPORAL_FUNCTION;
+        } else if ( !namespace.isEmpty() ) {
+            this.op = switch ( qualifiedName.toLowerCase( Locale.ROOT ) ) {
+                case "point.distance" -> OperatorName.DISTANCE;
+                case "point.withinbbox" -> OperatorName.CYPHER_WITHIN_BBOX;
+                case "point.withingeometry" -> OperatorName.CYPHER_WITHIN_GEOMETRY;
+                default -> throw new CypherSyntaxException( "UnknownFunction: " + qualifiedName );
+            };
         } else if ( scalarFunction != null ) {
             String arityError = scalarFunction.arityError( arguments.size() );
             if ( arityError != null ) {
                 throw new CypherSyntaxException( arityError );
             }
             this.op = scalarFunction == CypherScalarFunction.RAND ? OperatorName.CYPHER_RAND : OperatorName.CYPHER_SCALAR_FUNCTION;
+        } else if ( image.equalsIgnoreCase( "rels" ) ) {
+            this.op = OperatorName.CYPHER_RELATIONSHIPS;
         } else if ( operatorNames.contains( image.toUpperCase( Locale.ROOT ) ) ) {
             this.op = OperatorName.valueOf( image.toUpperCase( Locale.ROOT ) );
         } else if ( operatorNames.contains( "CYPHER_" + image.toUpperCase( Locale.ROOT ) ) ) {
@@ -91,6 +101,10 @@ public class CypherFunctionInvocation extends CypherExpression {
             this.op = OperatorName.CYPHER_WITHIN_BBOX;
         } else if ( image.equals( "withinGeometry" ) ) {
             this.op = OperatorName.CYPHER_WITHIN_GEOMETRY;
+        } else if ( image.equalsIgnoreCase( "startNode" ) ) {
+            this.op = OperatorName.CYPHER_START_NODE;
+        } else if ( image.equalsIgnoreCase( "endNode" ) ) {
+            this.op = OperatorName.CYPHER_END_NODE;
         } else {
             throw new GenericRuntimeException( "Used function is not supported!" );
         }
@@ -174,6 +188,9 @@ public class CypherFunctionInvocation extends CypherExpression {
             for ( CypherExpression argument : arguments ) {
                 operands.add( argument.getRex( context, type ).right );
             }
+            if ( scalarFunction == CypherScalarFunction.HEAD || scalarFunction == CypherScalarFunction.TAIL ) {
+                requireListOperand( operands.get( 1 ), scalarFunction.name().toLowerCase( Locale.ROOT ) + "() requires a list." );
+            }
             AlgDataType resultType = scalarFunction.resultType( context.typeFactory, operands.subList( 1, operands.size() ).stream().map( RexNode::getType ).toList() );
             return nullableCall( context, resultType, operands );
         }
@@ -250,6 +267,14 @@ public class CypherFunctionInvocation extends CypherExpression {
                 return exists( context, type );
             case VECTOR_DISTANCE:
                 return getVectorDistanceRex( context, type );
+            case COALESCE, CYPHER_COALESCE: {
+                if ( arguments.isEmpty() ) {
+                    throw new CypherSyntaxException( "coalesce() requires at least one argument." );
+                }
+                List<RexNode> operands = arguments.stream().map( argument -> argument.getRex( context, type ).right ).toList();
+                AlgDataType result = PolyTypeUtil.commonDynamicType( context.typeFactory, operands.stream().map( RexNode::getType ).toList() );
+                return context.rexBuilder.makeCall( result, OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_COALESCE ), operands );
+            }
             case LAST, CYPHER_LAST: {
                 if ( arguments.size() != 1 ) {
                     throw new CypherSyntaxException( "last() requires exactly one argument." );
@@ -277,6 +302,15 @@ public class CypherFunctionInvocation extends CypherExpression {
             case CYPHER_LABELS:
                 return unaryFunction( context, type, List.of( PolyType.NODE ),
                         context.typeFactory.createArrayType( context.typeFactory.createPolyType( PolyType.VARCHAR ), -1, 1 ), "a node" );
+            case CYPHER_KEYS, CYPHER_PROPERTIES:
+                AlgDataType stringType = context.typeFactory.createPolyType( PolyType.VARCHAR );
+                AlgDataType result = op == OperatorName.CYPHER_KEYS
+                        ? context.typeFactory.createArrayType( stringType, -1, 1 )
+                        : context.typeFactory.createMapType( stringType, context.typeFactory.createPolyType( PolyType.ANY ) );
+                return unaryFunction( context, type, List.of( PolyType.NODE, PolyType.EDGE, PolyType.MAP, PolyType.DOCUMENT ),
+                        result, "a node, relationship, or map" );
+            case CYPHER_START_NODE, CYPHER_END_NODE:
+                return relationshipEndpoint( context, type );
             default:
                 throw new NotImplementedException( "Cypher Function to alg conversion missing: " + getOperatorName() );
         }
@@ -312,7 +346,7 @@ public class CypherFunctionInvocation extends CypherExpression {
             }
         }
         if ( argument.getType() == ExpressionType.PATTERN && argument.getPattern() instanceof CypherEveryPathPattern pattern ) {
-            return CypherPatternExistence.toRex( pattern, context, type );
+            return CypherPatternExpression.exists( pattern, context, type );
         }
         throw new CypherSyntaxException( "exists() requires a property or path pattern argument." );
     }
@@ -326,7 +360,7 @@ public class CypherFunctionInvocation extends CypherExpression {
         RexNode path = arguments.get( 0 ).getRex( context, type ).right;
         PolyType pathType = path.getType().getPolyType();
         if ( pathType != PolyType.PATH && pathType != PolyType.NULL && pathType != PolyType.ANY ) {
-            throw new CypherSyntaxException( function + "() requires a path." );
+            throw new CypherSyntaxException( "InvalidArgumentType: " + function + "() requires a path." );
         }
         AlgDataType result = op == OperatorName.CYPHER_LENGTH
                 ? context.typeFactory.createPolyType( PolyType.BIGINT )
@@ -348,6 +382,17 @@ public class CypherFunctionInvocation extends CypherExpression {
     }
 
 
+    private RexNode relationshipEndpoint( CypherContext context, RexType type ) {
+        String function = op == OperatorName.CYPHER_START_NODE ? "startNode()" : "endNode()";
+        if ( arguments.size() != 1 ) {
+            throw new CypherSyntaxException( function + " requires exactly one argument." );
+        }
+        RexNode relationship = arguments.get( 0 ).getRex( context, type ).right;
+        requireOperand( relationship, List.of( PolyType.EDGE ), function + " requires a relationship." );
+        return nullableCall( context, context.nodeType, List.of( context.graphValue(), relationship ) );
+    }
+
+
     private RexNode rangeFunction( CypherContext context, RexType type ) {
         if ( arguments.size() < 2 || arguments.size() > 3 ) {
             throw new CypherSyntaxException( "range() requires two or three arguments." );
@@ -366,7 +411,7 @@ public class CypherFunctionInvocation extends CypherExpression {
     private void requireOperand( RexNode operand, List<PolyType> allowed, String message ) {
         PolyType type = operand.getType().getPolyType();
         if ( type != PolyType.ANY && type != PolyType.NULL && !allowed.contains( type ) ) {
-            throw new CypherSyntaxException( message );
+            throw new CypherSyntaxException( "InvalidArgumentType: " + message );
         }
     }
 

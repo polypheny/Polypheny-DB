@@ -71,6 +71,8 @@ import org.polypheny.db.util.PasswordGenerator;
 @AdapterSettingInteger(name = "maxConnections", defaultValue = 25, description = "Maximum number of concurrent connections opened by Polypheny-DB to this data store.")
 public class MonetdbStore extends AbstractJdbcStore {
 
+    private static final int DOCKER_PROBE_SOCKET_TIMEOUT_MS = 2_000;
+
     private String host;
     private int port;
     private String database;
@@ -135,7 +137,7 @@ public class MonetdbStore extends AbstractJdbcStore {
         port = Integer.parseInt( settings.get( "port" ) );
         database = settings.get( "database" );
         username = settings.get( "username" );
-        if ( !testConnection() ) {
+        if ( !testConnection( false ) ) {
             throw new GenericRuntimeException( "Unable to connect" );
         }
         ConnectionFactory connectionFactory = createConnectionFactory();
@@ -158,10 +160,15 @@ public class MonetdbStore extends AbstractJdbcStore {
 
 
     private ConnectionFactory createConnectionFactory() {
+        return createConnectionFactory( false );
+    }
+
+
+    private ConnectionFactory createConnectionFactory( boolean dockerProbe ) {
         BasicDataSource dataSource = new BasicDataSource();
         dataSource.setDriverClassName( "nl.cwi.monetdb.jdbc.MonetDriver" );
 
-        final String connectionUrl = getConnectionUrl( host, port, database );
+        final String connectionUrl = getConnectionUrl( host, port, database, dockerProbe );
         dataSource.setUrl( connectionUrl );
         dataSource.setUsername( username );
         dataSource.setPassword( settings.get( "password" ) );
@@ -362,8 +369,10 @@ public class MonetdbStore extends AbstractJdbcStore {
     }
 
 
-    private static String getConnectionUrl( final String dbHostname, final int dbPort, final String dbName ) {
-        return String.format( "jdbc:monetdb://%s:%d/%s", dbHostname, dbPort, dbName );
+    static String getConnectionUrl( String dbHostname, int dbPort, String dbName, boolean dockerProbe ) {
+        String url = String.format( "jdbc:monetdb://%s:%d/%s", dbHostname, dbPort, dbName );
+        // The JDBC driver waits for the MAPI greeting before sending credentials. Bound that wait so readiness can retry.
+        return dockerProbe ? url + "?so_timeout=" + DOCKER_PROBE_SOCKET_TIMEOUT_MS : url;
     }
 
 
@@ -376,16 +385,16 @@ public class MonetdbStore extends AbstractJdbcStore {
         this.host = hp.host();
         this.port = hp.port();
 
-        return testConnection();
+        return testConnection( true );
     }
 
 
-    private boolean testConnection() {
+    private boolean testConnection( boolean dockerProbe ) {
         ConnectionFactory connectionFactory = null;
         ConnectionHandler handler = null;
 
         try {
-            connectionFactory = createConnectionFactory();
+            connectionFactory = createConnectionFactory( dockerProbe );
 
             PolyXid randomXid = PolyXid.generateLocalTransactionIdentifier( PUID.randomPUID( Type.NODE ), PUID.randomPUID( Type.TRANSACTION ) );
             handler = connectionFactory.getOrCreateConnectionHandler( randomXid );

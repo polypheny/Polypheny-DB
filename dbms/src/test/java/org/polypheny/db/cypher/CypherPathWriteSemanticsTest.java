@@ -39,6 +39,21 @@ class CypherPathWriteSemanticsTest extends CypherTestTemplate {
 
 
     @Test
+    void createPathPropertiesCanUseEarlierBindingsAndTheirEndpoints() {
+        GraphResult result = execute( """
+                CREATE (a {p:1})-[r:R {p:b.p}]->(b {p:a.p+1})-[s:R {p:r.p+b.p}]->()
+                RETURN a.p, b.p, r.p, s.p
+                """ );
+
+        assertEquals( 1, result.getData().length );
+        assertEquals( 1, value( result, 0, 0 ).asNumber().intValue() );
+        assertEquals( 2, value( result, 0, 1 ).asNumber().intValue() );
+        assertEquals( 2, value( result, 0, 2 ).asNumber().intValue() );
+        assertEquals( 4, value( result, 0, 3 ).asNumber().intValue() );
+    }
+
+
+    @Test
     void unwindAfterEmptyMatchDoesNotCreateRowsOrNodes() {
         for ( String pattern : List.of( "(:Missing)", "(:Missing)-[:R*]->(:Missing)" ) ) {
             GraphResult result = execute( """

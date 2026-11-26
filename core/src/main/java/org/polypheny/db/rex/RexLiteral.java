@@ -494,6 +494,11 @@ public class RexLiteral extends RexNode implements Comparable<RexLiteral> {
     }
 
 
+    public static long longValue( RexNode node ) {
+        return findValue( node ).asNumber().longValue();
+    }
+
+
     public static PolyString stringValue( RexNode node ) {
         final PolyValue value = findValue( node );
         return (value == null) ? null : value.asString();

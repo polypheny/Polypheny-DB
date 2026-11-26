@@ -144,13 +144,15 @@ class ProjectionTest extends CypherTestTemplate {
 
 
     @Test
-    void reusesAnExactProjectedExpressionBeforeResolvingOutputAliases() {
+    void resolvesExactProjectionsAndGroupedOutputAliases() {
         assertEquals( List.of( List.of( -2, 1 ), List.of( -1, 2 ) ), integerRows( execute(
                 "UNWIND [1,2] AS x RETURN DISTINCT x * -1 AS neg, 3 - x AS x ORDER BY x * (-1)" ) ) );
-        assertEquals( List.of( List.of( 0, 1 ), List.of( 1, 2 ) ), integerRows( execute(
-                "UNWIND [0,1,3] AS n RETURN n % 2 AS bucket, count(n) AS n ORDER BY n%2" ) ) );
         assertEquals( List.of( List.of( 1 ), List.of( 2 ) ), integerRows( execute(
                 "UNWIND [[2],[1]] AS rs RETURN DISTINCT last(rs) AS value ORDER BY LAST(rs)" ) ) );
+
+        String grouped = "UNWIND [0,1,3] AS n RETURN n % 2 AS bucket, count(n) AS n ORDER BY ";
+        assertEquals( List.of( List.of( 1, 2 ), List.of( 0, 1 ) ), integerRows( execute( grouped + "n % 2" ) ) );
+        assertEquals( List.of( List.of( 0, 1 ), List.of( 1, 2 ) ), integerRows( execute( grouped + "bucket" ) ) );
     }
 
 
@@ -159,8 +161,11 @@ class ProjectionTest extends CypherTestTemplate {
         String match = "MATCH p=(:Start)-[:T*]->(:End) ";
         assertEquals( List.of( List.of( 1 ), List.of( 2 ) ), integerRows( execute(
                 match + "RETURN DISTINCT length(p) AS len ORDER BY length(p)" ) ) );
-        assertEquals( List.of( List.of( 1, 2 ), List.of( 2, 1 ) ), integerRows( execute(
-                match + "RETURN length(p) AS len, count(*) AS matches ORDER BY length(p)" ) ) );
+        String grouped = match + "RETURN length(p) AS len, count(*) AS matches ORDER BY ";
+        assertEquals( List.of( List.of( 1, 2 ), List.of( 2, 1 ) ), integerRows( execute( grouped + "len" ) ) );
+        String error = CypherConnection.executeGetResponse( grouped + "length(p)" ).getError();
+        assertNotNull( error );
+        assertTrue( error.contains( "AmbiguousAggregationExpression" ), error );
         assertEquals( List.of( List.of( 1, 2 ) ), integerRows( execute( """
                 UNWIND [1,2] AS x
                 WITH x % 2 AS bucket, sum(x + 1) AS total ORDER BY sum(x + 1) LIMIT 1

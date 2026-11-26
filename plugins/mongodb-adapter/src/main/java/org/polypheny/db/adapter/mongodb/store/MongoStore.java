@@ -247,7 +247,7 @@ public class MongoStore extends DataStore<DocAdapterCatalog> {
 
     @Override
     public void truncate( Context context, long allocId ) {
-        commitAll();
+        commitBeforeDdl( context );
         PhysicalEntity physical = adapterCatalog.fromAllocation( allocId, PhysicalEntity.class );
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         // DDL is auto-committed
@@ -267,8 +267,9 @@ public class MongoStore extends DataStore<DocAdapterCatalog> {
     }
 
 
-    public void commitAll() {
-        transactionProvider.commitAll();
+    private void commitBeforeDdl( Context context ) {
+        // DDL runs outside a MongoDB session. Only finish work owned by this statement's transaction.
+        transactionProvider.commit( context.getStatement().getTransaction().getXid() );
     }
 
 
@@ -292,7 +293,7 @@ public class MongoStore extends DataStore<DocAdapterCatalog> {
 
     @Override
     public List<PhysicalEntity> createCollection( Context context, LogicalCollection logical, AllocationCollection allocation ) {
-        commitAll();
+        commitBeforeDdl( context );
         String name = getPhysicalEntityName( allocation.id );
 
         if ( adapterCatalog.getNamespace( allocation.namespaceId ) == null ) {
@@ -318,7 +319,7 @@ public class MongoStore extends DataStore<DocAdapterCatalog> {
 
     @Override
     public void dropCollection( Context context, AllocationCollection allocation ) {
-        commitAll();
+        commitBeforeDdl( context );
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         PhysicalEntity collection = adapterCatalog.fromAllocation( allocation.id, PhysicalEntity.class );
         this.currentNamespace.database.getCollection( collection.name ).drop();
@@ -340,7 +341,7 @@ public class MongoStore extends DataStore<DocAdapterCatalog> {
 
     @Override
     public void dropTable( Context context, long allocId ) {
-        commitAll();
+        commitBeforeDdl( context );
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         PhysicalEntity physical = adapterCatalog.fromAllocation( allocId, PhysicalEntity.class );
 
@@ -351,7 +352,7 @@ public class MongoStore extends DataStore<DocAdapterCatalog> {
 
     @Override
     public void addColumn( Context context, long allocId, LogicalColumn logicalColumn ) {
-        commitAll();
+        commitBeforeDdl( context );
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         MongoEntity physical = adapterCatalog.fromAllocation( allocId, MongoEntity.class );
         String physicalName = getPhysicalColumnName( logicalColumn );
@@ -390,7 +391,7 @@ public class MongoStore extends DataStore<DocAdapterCatalog> {
 
     @Override
     public void dropColumn( Context context, long allocId, long columnId ) {
-        commitAll();
+        commitBeforeDdl( context );
         MongoEntity physical = adapterCatalog.fromAllocation( allocId, MongoEntity.class );
         PhysicalColumn column = adapterCatalog.getColumn( columnId, allocId );
 
@@ -431,7 +432,7 @@ public class MongoStore extends DataStore<DocAdapterCatalog> {
 
     @Override
     public String addIndex( Context context, LogicalIndex index, AllocationTable allocation ) {
-        commitAll();
+        commitBeforeDdl( context );
         MongoEntity physical = adapterCatalog.fromAllocation( allocation.id, MongoEntity.class );
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
         IndexTypes type = IndexTypes.valueOf( index.method.toUpperCase( Locale.ROOT ) );
@@ -467,7 +468,7 @@ public class MongoStore extends DataStore<DocAdapterCatalog> {
 
     @Override
     public void dropIndex( Context context, LogicalIndex index, long allocId ) {
-        commitAll();
+        commitBeforeDdl( context );
         MongoEntity physical = adapterCatalog.fromAllocation( allocId, MongoEntity.class );
         context.getStatement().getTransaction().registerInvolvedAdapter( this );
 
@@ -607,7 +608,7 @@ public class MongoStore extends DataStore<DocAdapterCatalog> {
 
     @Override
     public List<PhysicalEntity> createTable( Context context, LogicalTableWrapper logical, AllocationTableWrapper allocation ) {
-        commitAll();
+        commitBeforeDdl( context );
 
         if ( this.currentNamespace == null ) {
             updateNamespace( DEFAULT_DATABASE, allocation.table.id );

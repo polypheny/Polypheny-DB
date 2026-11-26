@@ -139,14 +139,14 @@ public class AlgMdTupleCount implements MetadataHandler<TupleCount> {
         if ( alg.offset instanceof RexDynamicParam ) {
             return rowCount;
         }
-        final int offset = alg.offset == null ? 0 : RexLiteral.intValue( alg.offset );
+        final long offset = alg.offset == null ? 0L : RexLiteral.longValue( alg.offset );
         rowCount = Math.max( rowCount - offset, 0D );
 
         if ( alg.fetch != null ) {
             if ( alg.fetch instanceof RexDynamicParam ) {
                 return rowCount;
             }
-            final int limit = RexLiteral.intValue( alg.fetch );
+            final long limit = RexLiteral.longValue( alg.fetch );
             if ( limit < rowCount ) {
                 return (double) limit;
             }
@@ -165,14 +165,14 @@ public class AlgMdTupleCount implements MetadataHandler<TupleCount> {
         if ( alg.offset instanceof RexDynamicParam ) {
             return rowCount;
         }
-        final int offset = alg.offset == null ? 0 : RexLiteral.intValue( alg.offset );
+        final long offset = alg.offset == null ? 0L : RexLiteral.longValue( alg.offset );
         rowCount = Math.max( rowCount - offset, 0D );
 
         if ( alg.fetch != null ) {
             if ( alg.fetch instanceof RexDynamicParam ) {
                 return rowCount;
             }
-            final int limit = RexLiteral.intValue( alg.fetch );
+            final long limit = RexLiteral.longValue( alg.fetch );
             if ( limit < rowCount ) {
                 return (double) limit;
             }

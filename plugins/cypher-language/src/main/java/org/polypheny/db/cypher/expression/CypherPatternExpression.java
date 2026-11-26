@@ -47,29 +47,52 @@ import org.polypheny.db.type.entity.graph.PolyPath;
 import org.polypheny.db.util.Pair;
 
 
-/** Lowers a relationship pattern used as a Boolean expression. */
-final class CypherPatternExistence {
+/** Compiles relationship patterns evaluated in a row's expression scope. */
+final class CypherPatternExpression {
 
     private final CypherContext context;
     private final RexType rexType;
+    private final boolean requireBoundVariables;
     private final Set<String> names = new HashSet<>();
     private final Map<String, PolyType> bindingTypes = new HashMap<>();
     private final List<RexNode> bindings = new ArrayList<>();
     private final List<RexNode> properties = new ArrayList<>();
 
 
-    private CypherPatternExistence( CypherContext context, RexType rexType ) {
+    private CypherPatternExpression( CypherContext context, RexType rexType, boolean requireBoundVariables ) {
         this.context = context;
         this.rexType = rexType;
+        this.requireBoundVariables = requireBoundVariables;
     }
 
 
-    static RexNode toRex( CypherEveryPathPattern pattern, CypherContext context, RexType rexType ) {
-        return new CypherPatternExistence( context, rexType ).compile( pattern );
+    static RexNode exists( CypherEveryPathPattern pattern, CypherContext context, RexType rexType ) {
+        CompiledPattern compiled = new CypherPatternExpression( context, rexType, true ).compile( pattern );
+        RexNode exists = context.rexBuilder.makeCall( context.booleanType,
+                OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_PATTERN_EXISTS ), compiled.operands() );
+        if ( pattern.getPredicates().isEmpty() ) {
+            return exists;
+        }
+
+        List<RexNode> predicates = new ArrayList<>();
+        predicates.add( exists );
+        for ( CypherExpression predicate : pattern.getPredicates() ) {
+            RexNode condition = context.booleanPredicate( predicate.getRex( context, RexType.FILTER ).right );
+            predicates.add( context.rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_TRUE ), condition ) );
+        }
+        return RexUtil.composeConjunction( context.rexBuilder, predicates );
     }
 
 
-    private RexNode compile( CypherEveryPathPattern pattern ) {
+    static RexNode paths( CypherEveryPathPattern pattern, CypherContext context, RexType rexType ) {
+        CompiledPattern compiled = new CypherPatternExpression( context, rexType, false ).compile( pattern );
+        AlgDataType paths = context.typeFactory.createArrayType( compiled.pathType(), -1, 1 );
+        return context.rexBuilder.makeCall( paths,
+                OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_PATTERN_PATHS ), compiled.operands() );
+    }
+
+
+    private CompiledPattern compile( CypherEveryPathPattern pattern ) {
         for ( CypherNodePattern node : pattern.getNodes() ) {
             addBinding( node.getVariable(), PolyType.NODE );
         }
@@ -95,22 +118,9 @@ final class CypherPatternExistence {
         }
         PolyPath template = PolyPath.create( nodes, relationships );
         AlgDataType pathType = context.typeFactory.createPathType( template.getPathType( context.typeFactory ) );
-        QueryLanguage cypher = QueryLanguage.from( "cypher" );
         List<RexNode> operands = new ArrayList<>( List.of( context.graphValue(), new RexLiteral( template, pathType, PolyType.PATH ), map( bindings ) ) );
         operands.addAll( properties );
-        RexNode exists = context.rexBuilder.makeCall( context.booleanType, OperatorRegistry.get( cypher, OperatorName.CYPHER_PATTERN_EXISTS ),
-                operands );
-        if ( pattern.getPredicates().isEmpty() ) {
-            return exists;
-        }
-
-        List<RexNode> predicates = new ArrayList<>();
-        predicates.add( exists );
-        for ( CypherExpression predicate : pattern.getPredicates() ) {
-            RexNode condition = context.booleanPredicate( predicate.getRex( context, RexType.FILTER ).right );
-            predicates.add( context.rexBuilder.makeCall( OperatorRegistry.get( OperatorName.IS_TRUE ), condition ) );
-        }
-        return RexUtil.composeConjunction( context.rexBuilder, predicates );
+        return new CompiledPattern( pathType, operands );
     }
 
 
@@ -127,7 +137,10 @@ final class CypherPatternExistence {
             return;
         }
         names.add( name );
-        RexNode value = variable.getRex( context, rexType ).right;
+        RexNode value = requireBoundVariables ? variable.getRex( context, rexType ).right : variable.findRex( context );
+        if ( value == null ) {
+            return;
+        }
         PolyType actual = value.getType().getPolyType();
         boolean compatible = expected == PolyType.ARRAY ? isRelationshipList( value.getType() ) : actual == expected;
         if ( !compatible && actual != PolyType.ANY && actual != PolyType.NULL ) {
@@ -166,6 +179,11 @@ final class CypherPatternExistence {
 
 
     private record ElementProperties( CypherVariable binding, Map<PolyString, PolyValue> literals ) {
+
+    }
+
+
+    private record CompiledPattern( AlgDataType pathType, List<RexNode> operands ) {
 
     }
 

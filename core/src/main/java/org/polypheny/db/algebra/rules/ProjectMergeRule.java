@@ -38,6 +38,7 @@ import java.util.List;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.AlgFactories;
 import org.polypheny.db.algebra.core.Project;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.plan.AlgOptRule;
 import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.plan.AlgOptUtil;
@@ -80,6 +81,10 @@ public class ProjectMergeRule extends AlgOptRule {
     public void onMatch( AlgOptRuleCall call ) {
         final Project topProject = call.alg( 0 );
         final Project bottomProject = call.alg( 1 );
+        // Inlining a Cypher projection can evaluate a volatile alias once per use.
+        if ( bottomProject.getModel() == DataModel.GRAPH && bottomProject.getProjects().stream().anyMatch( expression -> !RexUtil.isDeterministic( expression ) ) ) {
+            return;
+        }
         final AlgBuilder algBuilder = call.builder();
 
         // If one or both projects are permutations, short-circuit the complex logic of building a RexProgram.

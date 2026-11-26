@@ -31,7 +31,7 @@ import org.polypheny.db.type.entity.graph.GraphPropertyHolder;
 import org.polypheny.db.type.entity.graph.PolyPath;
 
 
-/** Chooses one candidate per endpoint pair after applying the enclosing MATCH predicates. */
+/** Selects shortest candidates per endpoint pair after applying the enclosing MATCH predicates. */
 public final class CypherShortestPathRows {
 
     private CypherShortestPathRows() {
@@ -39,7 +39,7 @@ public final class CypherShortestPathRows {
 
 
     public static Enumerable<PolyValue[]> join( Enumerable<PolyValue[]> left, Enumerable<PolyValue[]> right,
-            Predicate2<PolyValue[], PolyValue[]> condition, boolean optional, int rightSize, int[] shortestColumns, int[] groupColumns ) {
+            Predicate2<PolyValue[], PolyValue[]> condition, boolean optional, int rightSize, int[] shortestColumns, int[] groupColumns, boolean[] allTies ) {
         List<Input> inputs = new ArrayList<>();
         try ( Enumerator<PolyValue[]> rows = left.enumerator() ) {
             while ( rows.moveNext() ) {
@@ -49,15 +49,22 @@ public final class CypherShortestPathRows {
         if ( inputs.isEmpty() ) {
             return Linq4j.emptyEnumerable();
         }
+        boolean includeTies = false;
+        for ( boolean all : allTies ) {
+            includeTies |= all;
+        }
         try ( Enumerator<PolyValue[]> rows = right.enumerator() ) {
             while ( rows.moveNext() ) {
                 PolyValue[] candidate = rows.current();
                 List<Object> key = group( candidate, shortestColumns, groupColumns );
                 for ( Input input : inputs ) {
                     if ( condition.apply( input.row(), candidate ) ) {
-                        PolyValue[] best = input.paths().get( key );
-                        if ( best == null || shorter( candidate, best, shortestColumns ) ) {
-                            input.paths().put( key, candidate.clone() );
+                        List<PolyValue[]> best = input.paths().get( key );
+                        int comparison = best == null ? -1 : compareLengths( candidate, best.get( 0 ), shortestColumns );
+                        if ( comparison < 0 ) {
+                            input.paths().put( key, new ArrayList<>( List.<PolyValue[]>of( candidate.clone() ) ) );
+                        } else if ( comparison == 0 && includeTies && matchesSinglePaths( candidate, best.get( 0 ), shortestColumns, allTies ) ) {
+                            best.add( candidate.clone() );
                         }
                     }
                 }
@@ -69,7 +76,7 @@ public final class CypherShortestPathRows {
             if ( optional && input.paths().isEmpty() ) {
                 output.add( Arrays.copyOf( input.row(), input.row().length + rightSize ) );
             }
-            input.paths().values().forEach( candidate -> {
+            input.paths().values().stream().flatMap( List::stream ).forEach( candidate -> {
                 PolyValue[] row = Arrays.copyOf( input.row(), input.row().length + rightSize );
                 System.arraycopy( candidate, 0, row, input.row().length, rightSize );
                 output.add( row );
@@ -102,18 +109,36 @@ public final class CypherShortestPathRows {
     }
 
 
-    private static boolean shorter( PolyValue[] candidate, PolyValue[] current, int[] shortestColumns ) {
+    private static int compareLengths( PolyValue[] candidate, PolyValue[] current, int[] shortestColumns ) {
         for ( int index : shortestColumns ) {
             int cmp = Integer.compare( candidate[index].asPath().getEdges().size(), current[index].asPath().getEdges().size() );
             if ( cmp != 0 ) {
-                return cmp < 0;
+                return cmp;
             }
         }
-        return false;
+        return 0;
     }
 
 
-    private record Input( PolyValue[] row, Map<List<Object>, PolyValue[]> paths ) {
+    private static boolean matchesSinglePaths( PolyValue[] candidate, PolyValue[] current, int[] shortestColumns, boolean[] allTies ) {
+        for ( int i = 0; i < shortestColumns.length; i++ ) {
+            if ( allTies[i] ) {
+                continue;
+            }
+            // A single-shortest sibling keeps its chosen path when another pattern emits all ties.
+            var candidateEdges = candidate[shortestColumns[i]].asPath().getEdges();
+            var currentEdges = current[shortestColumns[i]].asPath().getEdges();
+            for ( int j = 0; j < candidateEdges.size(); j++ ) {
+                if ( !candidateEdges.get( j ).id.equals( currentEdges.get( j ).id ) ) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+
+    private record Input( PolyValue[] row, Map<List<Object>, List<PolyValue[]>> paths ) {
 
     }
 }

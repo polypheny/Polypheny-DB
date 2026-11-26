@@ -168,7 +168,11 @@ public class FileEnumerator implements Enumerator<PolyValue[]> {
         this.updateFiles = () -> {
             this.fileList = FileStore.getColumnFolder( rootPath, columnIds[0], partitionId ).listFiles( fileFilter );
         };
-        this.updateFiles.run();
+        // Inserts check the target filename directly. Listing staged rows before every
+        // insert makes a large streamed write repeatedly scan all rows written so far.
+        if ( operation != Operation.INSERT ) {
+            this.updateFiles.run();
+        }
 
         numOfCols = columnFolders.size();
         // create folder for the hardlinks

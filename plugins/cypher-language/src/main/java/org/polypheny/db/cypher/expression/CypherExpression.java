@@ -37,7 +37,6 @@ import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.rex.RexLiteral;
-import org.polypheny.db.rex.RexNameRef;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
@@ -87,7 +86,7 @@ public class CypherExpression extends CypherNode {
             if ( type != RexType.FILTER ) {
                 throw new CypherSyntaxException( "Use exists(pattern) to evaluate a pattern as a value expression." );
             }
-            return Pair.of( null, CypherPatternExistence.toRex( everyPath, context, RexType.PROJECT ) );
+            return Pair.of( null, CypherPatternExpression.exists( everyPath, context, RexType.PROJECT ) );
         }
 
         RexNode projected = context.projectedExpression( this );
@@ -123,10 +122,12 @@ public class CypherExpression extends CypherNode {
         if ( component == null ) {
             component = context.typeFactory.createPolyType( PolyType.ANY );
         }
-        Pair<RexNameRef, RexNode> predicate = context.quantifiedPredicate( variable.getName(), component, where );
         AlgDataType result = context.typeFactory.createTypeWithNullability( context.booleanType, true );
-        return Pair.of( null, context.rexBuilder.makeCall( result, OperatorRegistry.get( QueryLanguage.from( "cypher" ), operatorName ),
-                List.of( list, predicate.left, predicate.right ) ) );
+        return context.listBinding( variable.getName(), component, element -> {
+            RexNode predicate = context.booleanPredicate( where.getRex( context, RexType.FILTER ).right );
+            return Pair.of( null, context.rexBuilder.makeCall( result, OperatorRegistry.get( QueryLanguage.from( "cypher" ), operatorName ),
+                    List.of( list, element, predicate ) ) );
+        } );
     }
 
 

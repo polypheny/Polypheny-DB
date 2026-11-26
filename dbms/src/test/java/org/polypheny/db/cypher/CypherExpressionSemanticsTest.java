@@ -26,6 +26,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.TestHelper.CypherConnection;
+import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.graph.PolyPath;
@@ -41,6 +42,74 @@ class CypherExpressionSemanticsTest extends CypherTestTemplate {
                 CREATE (a:Origin {name:'A'})-[:LINK {year:1}]->(:Destination {name:'B'}),
                     (a)-[:LINK {year:2}]->(:Destination {name:'C'})
                 """ );
+    }
+
+
+    @Test
+    void unwoundNullsParticipateInCompoundPredicates() {
+        GraphResult result = execute( """
+                UNWIND [true, false, null] AS a
+                UNWIND [true, false, null] AS b
+                UNWIND [true, false, null] AS c
+                WITH a, b, c WHERE a IS NULL OR b IS NULL OR c IS NULL
+                RETURN count(*) AS matched
+                """ );
+        assertEquals( 19, cell( result, 0, 0 ).asNumber().intValue() );
+    }
+
+
+    @Test
+    void ordersByAnExpressionOverMultipleAggregates() {
+        GraphResult result = execute( """
+                UNWIND [1, 1, 2] AS n
+                RETURN n, n + count(*) * 10 + sum(n) AS score
+                ORDER BY score
+                """ );
+        assertEquals( 2, result.getData().length );
+        assertEquals( 2, cell( result, 0, 0 ).asNumber().intValue() );
+        assertEquals( 14, cell( result, 0, 1 ).asNumber().intValue() );
+        assertEquals( 1, cell( result, 1, 0 ).asNumber().intValue() );
+        assertEquals( 23, cell( result, 1, 1 ).asNumber().intValue() );
+    }
+
+
+    @Test
+    void ordersByTheProjectedAggregateExpressionInReturnAndWith() {
+        for ( String projection : List.of(
+                "RETURN n, count(*) + 1 AS score ORDER BY count(*) + 1 DESC",
+                "WITH n, count(*) + 1 AS score ORDER BY count(*) + 1 DESC RETURN n, score",
+                "RETURN n, count(*) + 1 AS score ORDER BY -(count(*) + 1)",
+                "WITH n, count(*) + 1 AS score ORDER BY -(count(*) + 1) RETURN n, score" ) ) {
+            GraphResult result = execute( "UNWIND [2, 1, 1] AS n " + projection );
+            assertEquals( 2, result.getData().length );
+            assertEquals( 1, cell( result, 0, 0 ).asNumber().intValue() );
+            assertEquals( 3, cell( result, 0, 1 ).asNumber().intValue() );
+            assertEquals( 2, cell( result, 1, 0 ).asNumber().intValue() );
+            assertEquals( 2, cell( result, 1, 1 ).asNumber().intValue() );
+        }
+        assertQueryError( """
+                UNWIND [2, 1, 1] AS n
+                RETURN n, count(*) + 1 AS score ORDER BY sum(n) + 1 DESC
+                """, "The aggregation used to order rows must also be projected" );
+    }
+
+
+    @Test
+    void ordersByAggregateAtomsAlreadyComputedInsideProjectedExpressions() {
+        for ( String projection : List.of(
+                "RETURN n AS grouping, n - 1 + count(n) AS score ORDER BY grouping + 2 - count(n)",
+                "WITH n AS grouping, n - 1 + count(n) AS score ORDER BY grouping + 2 - count(n) RETURN grouping, score" ) ) {
+            GraphResult result = execute( "UNWIND [2, 1, 1] AS n " + projection );
+            assertEquals( 2, result.getData().length );
+            assertEquals( 1, cell( result, 0, 0 ).asNumber().intValue() );
+            assertEquals( 2, cell( result, 0, 1 ).asNumber().intValue() );
+            assertEquals( 2, cell( result, 1, 0 ).asNumber().intValue() );
+            assertEquals( 2, cell( result, 1, 1 ).asNumber().intValue() );
+        }
+        assertQueryError( "UNWIND [2, 1, 1] AS n RETURN n, count(n) + 1 AS score ORDER BY count(DISTINCT n)",
+                "The aggregation used to order rows must also be projected" );
+        assertQueryError( "UNWIND [2, 1, 1] AS n RETURN n + 1 AS bucket, count(*) AS total ORDER BY n + 1",
+                "AmbiguousAggregationExpression" );
     }
 
 
@@ -106,6 +175,107 @@ class CypherExpressionSemanticsTest extends CypherTestTemplate {
         assertEquals( 1, nullOperand.getData().length );
         assertNull( cell( nullOperand, 0, 0 ) );
         assertNull( cell( nullOperand, 0, 1 ) );
+    }
+
+
+    @Test
+    void comprehensionsFilterBeforeProjectingAndPreserveLexicalScope() {
+        GraphResult result = execute( """
+                WITH 10 AS x
+                RETURN [x IN [1, 2] | [x IN [x, x + 1] WHERE x >= 2 | x * 2]] AS nested,
+                       [i IN [1, 2] | i + x] AS captured, x AS outerValue,
+                       [i IN [1, null, 2] WHERE i > 1] AS filtered,
+                       [i IN [0] WHERE false | 1 / i] AS skipped,
+                       [i IN null | i] AS missing
+                """ );
+        PolyList<?> nested = cell( result, 0, 0 ).asList();
+        assertEquals( List.of( 4 ), integers( nested.get( 0 ) ) );
+        assertEquals( List.of( 4, 6 ), integers( nested.get( 1 ) ) );
+        assertEquals( List.of( 11, 12 ), integers( cell( result, 0, 1 ) ) );
+        assertEquals( 10, cell( result, 0, 2 ).asNumber().intValue() );
+        assertEquals( List.of( 2 ), integers( cell( result, 0, 3 ) ) );
+        assertTrue( cell( result, 0, 4 ).asList().isEmpty() );
+        assertNull( cell( result, 0, 5 ) );
+        assertQueryError( "RETURN [i IN 1 | i] AS invalid", "List comprehension requires a list" );
+        assertQueryError( "RETURN [i IN [1] WHERE i] AS invalid", "Cypher predicates require a BOOLEAN" );
+        assertQueryError( """
+                MATCH (:Absent)
+                RETURN none(i IN ['Clara', 'Bob'] WHERE i % 2 = 0) AS invalid
+                """, "InvalidArgumentType" );
+    }
+
+
+    @Test
+    void tailKeepsGraphElementsAndCoalesceEvaluatesOnlyThroughTheFirstValue() {
+        GraphResult result = execute( """
+                MATCH p=(:Origin)-[:LINK]->(:Destination {name:'B'})
+                RETURN [n IN tail(nodes(p)) | n.name] AS names,
+                       size(tail(relationships(p))) AS edges, tail([]) AS empty,
+                       tail(null) AS missing, coalesce(null, tail([1, 2]), []) AS selected,
+                       coalesce(null, 7, 1 / 0) AS shortCircuit
+                """ );
+        assertEquals( PolyString.of( "B" ), cell( result, 0, 0 ).asList().get( 0 ) );
+        assertEquals( 0, cell( result, 0, 1 ).asNumber().intValue() );
+        assertTrue( cell( result, 0, 2 ).asList().isEmpty() );
+        assertNull( cell( result, 0, 3 ) );
+        assertEquals( List.of( 2 ), integers( cell( result, 0, 4 ) ) );
+        assertEquals( 7, cell( result, 0, 5 ).asNumber().intValue() );
+    }
+
+
+    @Test
+    void volatileComprehensionsAreEvaluatedOncePerInputRow() {
+        GraphResult result = execute( """
+                UNWIND range(1, 20) AS row
+                WITH [i IN range(1, 10) WHERE rand() > 0.5] AS selected
+                WITH selected, selected AS repeated
+                RETURN selected = repeated AS equal
+                """ );
+        assertEquals( 20, result.getData().length );
+        for ( int row = 0; row < result.getData().length; row++ ) {
+            assertTrue( cell( result, row, 0 ).asBoolean().value );
+        }
+
+        GraphResult filtered = execute( """
+                UNWIND range(1, 20) AS row
+                WITH [i IN range(1, 10) WHERE rand() > 0.5] AS selected
+                WHERE 5 IN selected
+                RETURN 5 IN selected AS retained
+                """ );
+        for ( int row = 0; row < filtered.getData().length; row++ ) {
+            assertTrue( cell( filtered, row, 0 ).asBoolean().value );
+        }
+    }
+
+
+    @Test
+    void retainsSeparateResultColumnsForRepeatedAggregateFunctions() {
+        GraphResult result = execute( """
+                MATCH (n)
+                RETURN count(*) + 1 AS next, count(n) AS nodes
+                """ );
+        assertEquals( 1, result.getData().length );
+        assertEquals( 4, cell( result, 0, 0 ).asNumber().intValue() );
+        assertEquals( 3, cell( result, 0, 1 ).asNumber().intValue() );
+    }
+
+
+    @Test
+    void aggregationCanSupplyAComprehensionInput() {
+        GraphResult result = execute( """
+                MATCH (n:Destination)
+                RETURN [item IN collect(n) | item.name] AS names
+                """ );
+        assertEquals( 1, result.getData().length );
+        assertEquals( List.of( "B", "C" ), cell( result, 0, 0 ).asList().stream().map( item -> item.asString().value ).sorted().toList() );
+        assertQueryError( "MATCH (n) RETURN [i IN [1, 2] | count(*)] AS invalid", "InvalidAggregation" );
+        assertQueryError( "MATCH (n) RETURN [i IN [1, 2] | count(i)] AS invalid", "InvalidAggregation" );
+        assertQueryError( "MATCH (n) RETURN none(i IN [1, 2] WHERE count(*) = i) AS invalid", "InvalidAggregation" );
+    }
+
+
+    private static List<Integer> integers( PolyValue value ) {
+        return value.asList().stream().map( item -> item.asNumber().intValue() ).toList();
     }
 
 

@@ -1032,7 +1032,7 @@ class CypherTest {
                         """, -1 );
                 Frame result = reader.execute( namespace, "cypher", """
                         MATCH (event:TemporalEvent)-[elapsed:ELAPSED]->(:TemporalDestination)
-                        RETURN event, elapsed, event.starts AS starts, event.starts.nanosecond AS nanosecond,
+                        RETURN event, elapsed, event.starts AS `starts`, event.starts.nanosecond AS nanosecond,
                                event.starts.timezone AS zone, event.starts = event.literal AS sameType,
                                elapsed.span.days AS days, elapsed.span.hours AS hours
                         """, -1 ).getResult().getFrame();
@@ -1055,7 +1055,7 @@ class CypherTest {
                         MATCH (event:TemporalEvent) SET event.starts = event.starts + duration('P1D')
                         """, -1 );
                 Frame update = reader.execute( namespace, "cypher", """
-                        MATCH (event:TemporalEvent) RETURN event.starts AS starts
+                        MATCH (event:TemporalEvent) RETURN event.starts AS `starts`
                         """, -1 ).getResult().getFrame();
                 assertEquals( stringParameter( "2024-04-01T00:00:00.123456789+02:00[Europe/Stockholm]" ),
                         singleRow( relationalFrame( update, true, List.of( "starts" ) ) ).getValues( 0 ) );
@@ -1154,13 +1154,20 @@ class CypherTest {
             assertEquals( "Bob", row.getValues( 0 ).getString().getString() );
 
             ProtoValue negative = PolyValueSerializer.serialize( PolyLong.of( -1L ) );
-            ProtoValue tooLarge = PolyValueSerializer.serialize( PolyLong.of( (long) Integer.MAX_VALUE + 1 ) );
+            ProtoValue largest = PolyValueSerializer.serialize( PolyLong.of( Long.MAX_VALUE ) );
             assertNamedCypherError( executeNamedCypher( connection, signature.getStatementId(), Map.of( "offset", negative, "count", one ) ),
-                    "SKIP requires an integer between 0 and " + Integer.MAX_VALUE );
-            assertNamedCypherError( executeNamedCypher( connection, signature.getStatementId(), Map.of( "offset", one, "count", tooLarge ) ),
-                    "LIMIT requires an integer between 0 and " + Integer.MAX_VALUE );
+                    "NegativeIntegerArgument: SKIP" );
+
+            Response longLimit = expect( executeNamedCypher( connection, signature.getStatementId(), Map.of( "offset", one, "count", largest ) ),
+                    Response.TypeCase.STATEMENT_RESULT );
+            assertEquals( List.of( "Bob", "Charlie" ),
+                    projectedNames( relationalFrame( longLimit.getStatementResult().getFrame(), true, List.of( "name" ) ) ) );
+            Response longSkip = expect( executeNamedCypher( connection, signature.getStatementId(), Map.of( "offset", largest, "count", one ) ),
+                    Response.TypeCase.STATEMENT_RESULT );
+            assertEquals( 0, relationalFrame( longSkip.getStatementResult().getFrame(), true, List.of( "name" ) ).getRowsCount() );
+
             assertNamedCypherError( executeNamedCypher( connection, signature.getStatementId(), Map.of( "offset", one, "count", stringParameter( "1" ) ) ),
-                    "LIMIT requires a non-negative integer" );
+                    "InvalidArgumentType: LIMIT" );
             connection.checkTransactions( 0 );
         }
     }
@@ -4327,11 +4334,11 @@ class CypherTest {
                 expect( setCypherResultFormat( reader, "relational" ), Response.TypeCase.SET_CLIENT_INFO_PROPERTIES_RESPONSE );
                 Map<String, String> staleWrites = Map.of(
                         "MATCH (n:StaleTarget) DELETE n WITH n SET n.value = 'changed' RETURN n.value AS value",
-                        "Graph node disappeared before the update",
+                        "DeletedEntityAccess",
                         "MATCH (n:StaleTarget) DELETE n WITH n CREATE (n)-[:DANGLING]->(:InvalidEndpoint)",
                         "Graph relationship requires exactly one source and one target node",
                         "MATCH ()-[r:STALE_EDGE]->() DELETE r WITH r SET r.value = 'changed' RETURN r.value AS value",
-                        "Graph relationship disappeared before the update" );
+                        "DeletedEntityAccess" );
                 for ( Map.Entry<String, String> staleWrite : staleWrites.entrySet() ) {
                     Response failure = expect( writer.send( statementRequest( namespace, "cypher", staleWrite.getKey(), -1 ) ), Response.TypeCase.ERROR_RESPONSE );
                     assertTrue( failure.getErrorResponse().getMessage().contains( staleWrite.getValue() ), failure.getErrorResponse().getMessage() );
@@ -4472,12 +4479,18 @@ class CypherTest {
             assertEquals( id, row.getValues( 0 ).getNode().getId() );
             assertEquals( "after", row.getValues( 1 ).getString().getString() );
 
+            var deletedAccess = expect( connection.send( statementRequest( WRITE_RETURN_NAMESPACE, "cypher",
+                    "MATCH (n:ReturningEdit) DELETE n RETURN n.name AS previous", 1 ) ), Response.TypeCase.ERROR_RESPONSE ).getErrorResponse();
+            assertTrue( deletedAccess.getMessage().contains( "DeletedEntityAccess" ), deletedAccess::getMessage );
+            assertEquals( "55000", deletedAccess.getDetails().getState(), deletedAccess::getMessage );
+            connection.checkTransactions( 0 );
+
             Frame read = connection.execute( WRITE_RETURN_NAMESPACE, "cypher",
                     "MATCH (n:ReturningEdit) RETURN n.name AS persisted", 1 ).getResult().getFrame();
             assertEquals( "after", singleRow( relationalFrame( read, true, List.of( "persisted" ) ) ).getValues( 0 ).getString().getString() );
 
             Frame deleted = connection.execute( WRITE_RETURN_NAMESPACE, "cypher",
-                    "MATCH (n:ReturningEdit) DELETE n RETURN n.name AS previous", 1 ).getResult().getFrame();
+                    "MATCH (n:ReturningEdit) WITH n, n.name AS previous DELETE n RETURN previous", 1 ).getResult().getFrame();
             assertEquals( "after", singleRow( relationalFrame( deleted, true, List.of( "previous" ) ) ).getValues( 0 ).getString().getString() );
             Frame absent = connection.execute( WRITE_RETURN_NAMESPACE, "cypher",
                     "MATCH (n:ReturningEdit) RETURN n", 1 ).getResult().getFrame();
@@ -4774,7 +4787,7 @@ class CypherTest {
 
             Frame paths = connection.cypher( """
                     MATCH p=(:Person)-[:KNOWS*]->(:Person)
-                    RETURN length(p) AS len, count(*) AS matches ORDER BY length(p)
+                    RETURN length(p) AS len, count(*) AS matches ORDER BY len
                     """, -1 ).getResult().getFrame();
             List<Row> grouped = relationalFrame( paths, true, List.of( "len", "matches" ) ).getRowsList();
             assertEquals( List.of( List.of( 1L, 2L ), List.of( 2L, 1L ) ), grouped.stream()

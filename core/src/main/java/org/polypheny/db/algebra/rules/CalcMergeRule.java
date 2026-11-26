@@ -44,6 +44,7 @@ import org.polypheny.db.plan.AlgOptRuleCall;
 import org.polypheny.db.rex.RexOver;
 import org.polypheny.db.rex.RexProgram;
 import org.polypheny.db.rex.RexProgramBuilder;
+import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.tools.AlgBuilderFactory;
 
 
@@ -75,6 +76,10 @@ public class CalcMergeRule extends AlgOptRule {
 
         // RB: I had problems with merging programs, because the row type did not match.
         if ( topCalc.getModel() == DataModel.DOCUMENT && bottomCalc.getModel() == DataModel.DOCUMENT ) {
+            return;
+        }
+        // A volatile Cypher WITH alias must keep its original evaluation boundary.
+        if ( bottomCalc.getModel() == DataModel.GRAPH && bottomCalc.getProgram().getExprList().stream().anyMatch( expression -> !RexUtil.isDeterministic( expression ) ) ) {
             return;
         }
 

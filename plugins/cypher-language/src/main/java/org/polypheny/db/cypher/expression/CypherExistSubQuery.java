@@ -16,22 +16,30 @@
 
 package org.polypheny.db.cypher.expression;
 
-import java.util.List;
 import lombok.Getter;
-import org.polypheny.db.cypher.pattern.CypherPattern;
+import org.polypheny.db.cypher.clause.CypherQuery;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
+import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.type.entity.PolyString;
+import org.polypheny.db.util.Pair;
 
 @Getter
 public class CypherExistSubQuery extends CypherExpression {
 
-    private List<CypherPattern> patterns;
-    private CypherExpression where;
+    private final CypherQuery query;
 
 
-    public CypherExistSubQuery( ParserPos pos, List<CypherPattern> patterns, CypherExpression where ) {
+    public CypherExistSubQuery( ParserPos pos, CypherQuery query ) {
         super( pos );
-        this.patterns = patterns;
-        this.where = where;
+        this.query = query;
+    }
+
+
+    @Override
+    public Pair<PolyString, RexNode> toRex( CypherContext context, RexType type ) {
+        return Pair.of( null, context.existsSubquery( this ) );
     }
 
 }

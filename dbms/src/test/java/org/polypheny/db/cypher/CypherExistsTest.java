@@ -17,7 +17,9 @@
 package org.polypheny.db.cypher;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -67,8 +69,8 @@ class CypherExistsTest extends CypherTestTemplate {
     void absentOptionalBindingsReturnFalse() {
         GraphResult result = execute( """
                 MATCH (origin:Person {name:'Ada'})
-                OPTIONAL MATCH (origin)-[r:MISSING]->(end)
-                RETURN exists(r.score), exists(end.name), exists((end)-[:KNOWS]->())
+                OPTIONAL MATCH (origin)-[r:MISSING]->(isolated)
+                RETURN exists(r.score), exists(isolated.name), exists((isolated)-[:KNOWS]->())
                 """ );
         assertEquals( List.of( false, false, false ), flags( result ) );
     }
@@ -161,6 +163,138 @@ class CypherExistsTest extends CypherTestTemplate {
                 """ );
         assertEquals( 1, matches.getData().length );
         assertEquals( "Lin", cell( matches, 0, 0 ).asString().value );
+    }
+
+
+    @Test
+    void evaluatesSubqueryCardinalityInsteadOfProjectedValues() {
+        GraphResult result = execute( """
+                RETURN EXISTS { RETURN false } AS present,
+                       EXISTS { MATCH (:Missing) RETURN true } AS absent,
+                       EXISTS { MATCH (:Missing) RETURN count(*) } AS aggregatesOnEmptyInput
+                """ );
+        assertEquals( List.of( true, false, true ), flags( result ) );
+    }
+
+
+    @Test
+    void acceptsReadOnlyUnionBranchesAndTestsTheirCombinedRows() {
+        GraphResult result = execute( """
+                RETURN EXISTS { UNWIND [] AS x RETURN x UNION RETURN 2 AS x } AS present,
+                       EXISTS { UNWIND [] AS x RETURN x UNION ALL UNWIND [] AS x RETURN x } AS absent
+                """ );
+        assertEquals( List.of( true, false ), flags( result ) );
+        assertError( "RETURN EXISTS { CREATE () RETURN 1 AS x UNION RETURN 2 AS x }", "read-only" );
+    }
+
+
+    @Test
+    void capturesWithAliasesFromFilterScope() {
+        GraphResult result = execute( """
+                UNWIND [1, 2] AS i
+                WITH i + 1 AS x
+                WHERE EXISTS { WITH x WHERE x = 3 RETURN x }
+                RETURN x
+                """ );
+        assertEquals( 1, result.getData().length );
+        assertEquals( 3, cell( result, 0, 0 ).asNumber().intValue() );
+    }
+
+
+    @Test
+    void capturesTheCurrentElementInListFiltersAndProjections() {
+        GraphResult result = execute( """
+                WITH 'Lin' AS fallback
+                RETURN [name IN ['Missing', fallback, 'Ada', fallback]
+                        WHERE EXISTS { MATCH (n:Person) WHERE n.name = name AND n.enabled IS NULL }] AS matching,
+                       [name IN [fallback, null, 'Missing']
+                        | EXISTS { MATCH (n:Person) WHERE n.name = name }] AS flags
+                """ );
+        assertEquals( List.of( "Lin", "Lin" ), cell( result, 0, 0 ).asList().stream().map( item -> item.asString().value ).toList() );
+        assertEquals( List.of( true, false, false ), cell( result, 0, 1 ).asList().stream().map( item -> item.asBoolean().value ).toList() );
+        GraphResult anonymous = execute( """
+                MATCH (:Person {name:'Lin'})
+                RETURN [n IN [1] WHERE EXISTS { RETURN n }] AS matching
+                """ );
+        assertEquals( 1, cell( anonymous, 0, 0 ).asList().get( 0 ).asNumber().intValue() );
+    }
+
+
+    @Test
+    void capturesBothListScopesAndPreservesQuantifierResults() {
+        GraphResult result = execute( """
+                RETURN any(prefix IN ['A', 'L'] WHERE any(suffix IN ['da', 'in']
+                         WHERE EXISTS { MATCH (n:Person) WHERE n.name = prefix + suffix })),
+                       all(name IN [] WHERE EXISTS { MATCH (n:Person) WHERE n.name = name }),
+                       none(name IN [null, ' missing '] WHERE EXISTS { MATCH (n:Person) WHERE n.name = name }),
+                       single(name IN ['Lin', 'Ada'] WHERE EXISTS { MATCH (n:Person) WHERE n.name = name })
+                """ );
+        assertEquals( List.of( true, true, true, false ), flags( result ) );
+        GraphResult nullList = execute( "RETURN [name IN null WHERE EXISTS { MATCH (n:Person) WHERE n.name = name }] AS result" );
+        assertNull( nullList.getData()[0][0] );
+    }
+
+
+    @Test
+    void rejectsShadowingAnOuterExistsBinding() {
+        assertError( "WITH 1 AS x RETURN EXISTS { WITH 2 AS x RETURN x }", "variablealreadybound" );
+        assertError( "WITH 1 AS x RETURN EXISTS { WITH 2 AS y UNWIND [y] AS x RETURN x }", "variablealreadybound" );
+        assertError( "RETURN [x IN [1] | EXISTS { WITH 2 AS x RETURN x }]", "variablealreadybound" );
+        assertEquals( List.of( true ), flags( execute( "WITH 1 AS x RETURN EXISTS { WITH x AS x WHERE x = 1 RETURN x }" ) ) );
+    }
+
+
+    @Test
+    void capturesProjectedExistsAliasInOrderBySubqueries() {
+        GraphResult result = execute( """
+                MATCH (a:Person)
+                RETURN a.name AS name, EXISTS { MATCH (a)-[:KNOWS]->() } AS hasFriend
+                ORDER BY EXISTS { RETURN 1 }, EXISTS { WITH hasFriend WHERE hasFriend RETURN hasFriend }, name
+                """ );
+        assertEquals( 4, result.getData().length );
+        assertEquals( "Isolated", cell( result, 0, 0 ).asString().value );
+        assertEquals( "Ada", cell( result, 3, 0 ).asString().value );
+        assertFalse( cell( result, 0, 1 ).asBoolean().value );
+        assertTrue( cell( result, 3, 1 ).asBoolean().value );
+    }
+
+
+    @Test
+    void capturesTheReturnedValueOfAVolatileAliasWhenSorting() {
+        GraphResult result = execute( """
+                UNWIND range(1, 40) AS n
+                RETURN n, rand() AS draw
+                ORDER BY EXISTS { WITH draw WHERE draw >= 0.5 RETURN draw }, n
+                """ );
+        assertEquals( 40, result.getData().length );
+        boolean upperHalf = false;
+        for ( int row = 0; row < result.getData().length; row++ ) {
+            boolean high = cell( result, row, 1 ).asNumber().doubleValue() >= 0.5;
+            assertFalse( upperHalf && !high );
+            upperHalf |= high;
+        }
+    }
+
+
+    @Test
+    void preservesBothScopesAndOptionalRows() {
+        GraphResult result = execute( """
+                MATCH (a:Person {name:'Ada'})
+                OPTIONAL MATCH (b:Person)
+                WHERE EXISTS { (a)-[:KNOWS]->(b) WHERE EXISTS { (b)-[:SELF]->() } }
+                RETURN b.name AS matched
+                """ );
+        assertEquals( 1, result.getData().length );
+        assertEquals( "Lin", cell( result, 0, 0 ).asString().value );
+
+        GraphResult unmatched = execute( """
+                MATCH (a:Person {name:'Ada'})
+                OPTIONAL MATCH (b:Person)
+                WHERE EXISTS { (a)-[:MISSING]->(b) }
+                RETURN EXISTS { (b)-[:SELF]->() } AS present
+                """ );
+        assertEquals( List.of( false ), flags( unmatched ) );
+        assertError( "MATCH (a) WHERE EXISTS { (a)-->(local) } RETURN local", "variable" );
     }
 
 
