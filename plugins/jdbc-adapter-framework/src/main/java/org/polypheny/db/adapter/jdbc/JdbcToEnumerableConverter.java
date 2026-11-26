@@ -48,6 +48,7 @@ import java.util.Calendar;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TimeZone;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -61,6 +62,7 @@ import org.apache.calcite.linq4j.tree.Primitive;
 import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.linq4j.tree.UnaryExpression;
 import org.polypheny.db.adapter.DataContext;
+import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.jdbc.JdbcRules.JdbcProject;
 import org.polypheny.db.adapter.jdbc.JdbcRules.JdbcTableModify;
 import org.polypheny.db.adapter.jdbc.connection.ConnectionHandler;
@@ -94,6 +96,7 @@ import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.runtime.Hook;
 import org.polypheny.db.schema.Schemas;
+import org.polypheny.db.sql.language.SqlDataTypeSpec;
 import org.polypheny.db.sql.language.SqlDialect;
 import org.polypheny.db.sql.language.SqlDialect.CalendarPolicy;
 import org.polypheny.db.sql.language.SqlIdentifier;
@@ -119,6 +122,7 @@ import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTime;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.BuiltInMethod;
+import org.polypheny.db.util.temporal.DateTimeUtils;
 
 
 /**
@@ -161,24 +165,28 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
 
 
     private final List<AlgDataTypeField> insertTargetFields;
+    private final Set<Long> nativeTemporalFields;
 
 
     protected JdbcToEnumerableConverter( AlgCluster cluster, AlgTraitSet traits, AlgNode input ) {
-        this( cluster, traits, input, List.of() );
+        this( cluster, traits, input, List.of(), Set.of() );
     }
 
 
-    private JdbcToEnumerableConverter( AlgCluster cluster, AlgTraitSet traits, AlgNode input, List<AlgDataTypeField> insertTargetFields ) {
+    private JdbcToEnumerableConverter( AlgCluster cluster, AlgTraitSet traits, AlgNode input, List<AlgDataTypeField> insertTargetFields,
+            Set<Long> nativeTemporalFields ) {
         super( cluster, ConventionTraitDef.INSTANCE, traits, input );
         this.insertTargetFields = List.copyOf( insertTargetFields );
+        this.nativeTemporalFields = Set.copyOf( nativeTemporalFields );
     }
 
 
-    public static Optional<AlgNode> readInsertSource( long adapterId, AlgNode physicalInsert, List<AlgDataTypeField> targetFields ) {
+    public static Optional<AlgNode> readInsertSource( long adapterId, AlgNode physicalInsert, List<AlgDataTypeField> targetFields,
+            Set<Long> nativeTemporalFields ) {
         if ( physicalInsert instanceof JdbcToEnumerableConverter converter && converter.getInput() instanceof JdbcTableModify insert
                 && insert.isInsert() && insert.getEntity().adapterId == adapterId
                 && insert.getInput().getTupleType().getFieldCount() == targetFields.size() ) {
-            return Optional.of( new JdbcToEnumerableConverter( converter.getCluster(), converter.getTraitSet(), insert.getInput(), targetFields ) );
+            return Optional.of( new JdbcToEnumerableConverter( converter.getCluster(), converter.getTraitSet(), insert.getInput(), targetFields, nativeTemporalFields ) );
         }
         return Optional.empty();
     }
@@ -191,7 +199,8 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
         InsertSourceOrdinals nativeSource = InsertSourceOrdinals.add(
                 converter.getInput(), firstOrdinal, JdbcProject::create, (input, ordinal) -> Optional.empty() );
         return Optional.of( new InsertSourceOrdinals(
-                new JdbcToEnumerableConverter( converter.getCluster(), converter.getTraitSet(), nativeSource.plan(), converter.insertTargetFields ),
+                new JdbcToEnumerableConverter( converter.getCluster(), converter.getTraitSet(), nativeSource.plan(),
+                        converter.insertTargetFields, converter.nativeTemporalFields ),
                 nativeSource.branchCount() ) );
     }
 
@@ -206,9 +215,13 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
         List<AlgDataTypeField> source = getInput().getTupleType().getFields();
         for ( int i = 0; i < source.size(); i++ ) {
             AlgDataTypeField field = source.get( i );
-            AlgDataType target = i < insertTargetFields.size() ? insertTargetFields.get( i ).getType() : field.getType();
-            AlgDataType type = i < insertTargetFields.size() && PolyType.NUMERIC_TYPES.contains( target.getPolyType() )
-                    ? factory.createTypeWithNullability( target, true ) : field.getType();
+            AlgDataType type = field.getType();
+            if ( i < insertTargetFields.size() ) {
+                AlgDataType target = insertTargetFields.get( i ).getType();
+                if ( DataStore.isInsertSourceAssignmentType( target.getPolyType() ) ) {
+                    type = factory.createTypeWithNullability( target, true );
+                }
+            }
             output.add( field.getId(), field.getName(), field.getPhysicalName(), type );
         }
         return output.build();
@@ -327,7 +340,7 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
 
     @Override
     public AlgNode copy( AlgTraitSet traitSet, List<AlgNode> inputs ) {
-        return new JdbcToEnumerableConverter( getCluster(), traitSet, AbstractAlgNode.sole( inputs ), insertTargetFields );
+        return new JdbcToEnumerableConverter( getCluster(), traitSet, AbstractAlgNode.sole( inputs ), insertTargetFields, nativeTemporalFields );
     }
 
 
@@ -526,9 +539,14 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             return PolyTime.of( (Integer) null );
         }
         try {
-            return PolyTime.of( (int) (LocalTime.parse( text ).toNanoOfDay() / 1_000_000) );
+            // HSQLDB can omit the leading zero on the hour.
+            String normalizedText = text.length() > 1 && text.charAt( 1 ) == ':' ? "0" + text : text;
+            return PolyTime.of( (int) (LocalTime.parse( normalizedText ).toNanoOfDay() / 1_000_000) );
         } catch ( DateTimeParseException e ) {
             if ( text.startsWith( "24:" ) ) {
+                if ( text.matches( "24:00(?::00(?:\\.0+)?)?" ) ) {
+                    return PolyTime.of( (int) DateTimeUtils.MILLIS_PER_DAY );
+                }
                 throw new SQLException( "The store returned a TIME outside the supported day.", "22008", e );
             }
             return PolyTime.ofNullable( result.getTime( index, Calendar.getInstance( TemporalFunctions.LOCAL_TZ ) ) );
@@ -543,6 +561,14 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
         return primitive == null
                 ? "getObject"
                 : "get" + Functions.initcap( primitive.primitiveName );
+    }
+
+
+    public static SqlNode assignmentCastType( SqlDialect dialect, AlgDataType target, boolean nativePrecision ) {
+        ParserPos pos = ParserPos.ZERO;
+        return nativePrecision
+                ? new SqlDataTypeSpec( new SqlIdentifier( target.getPolyType().getName(), pos ), -1, -1, null, null, pos )
+                : dialect.getCastSpec( target );
     }
 
 
@@ -564,9 +590,10 @@ public class JdbcToEnumerableConverter extends ConverterImpl implements Enumerab
             SqlIdentifier column = new SqlIdentifier( "insert_value_" + i, pos );
             aliasOperands.add( column );
             if ( i < insertTargetFields.size() ) {
-                AlgDataType target = insertTargetFields.get( i ).getType();
-                if ( PolyType.NUMERIC_TYPES.contains( target.getPolyType() ) ) {
-                    columns.add( (SqlNode) OperatorRegistry.get( OperatorName.CAST ).createCall( pos, column, dialect.getCastSpec( target ) ) );
+                AlgDataTypeField target = insertTargetFields.get( i );
+                if ( DataStore.isInsertSourceAssignmentType( target.getType().getPolyType() ) ) {
+                    SqlNode castType = assignmentCastType( dialect, target.getType(), nativeTemporalFields.contains( target.getId() ) );
+                    columns.add( (SqlNode) OperatorRegistry.get( OperatorName.CAST ).createCall( pos, column, castType ) );
                     continue;
                 }
             }

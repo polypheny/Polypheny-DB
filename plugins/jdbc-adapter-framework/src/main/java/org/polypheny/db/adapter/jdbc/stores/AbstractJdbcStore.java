@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -476,8 +477,8 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
 
     @Override
-    public Optional<AlgNode> readInsertSource( AlgNode physicalInsert, List<AlgDataTypeField> targetFields ) {
-        return JdbcToEnumerableConverter.readInsertSource( adapterId, physicalInsert, targetFields );
+    public Optional<AlgNode> readInsertSource( AlgNode physicalInsert, List<AlgDataTypeField> targetFields, Set<Long> nativeTemporalFields ) {
+        return JdbcToEnumerableConverter.readInsertSource( adapterId, physicalInsert, targetFields, nativeTemporalFields );
     }
 
 
@@ -489,18 +490,24 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
 
     @Override
     public List<PolyValue> castNumericAssignments( Transaction transaction, AlgCluster cluster, AlgDataType target, List<NumericAssignment> assignments ) {
-        return castAssignments( transaction, cluster, target, assignments, (assignment, bindings) -> numericAssignmentSource( cluster, assignment, bindings ) );
+        return castAssignments( transaction, cluster, target, dialect.getCastSpec( target ), assignments,
+                (assignment, bindings) -> numericAssignmentSource( cluster, assignment, bindings ) );
     }
 
 
     @Override
-    public List<PolyValue> castTemporalAssignments( Transaction transaction, AlgCluster cluster, AlgDataType target, List<PolyValue> values ) {
+    public List<PolyValue> castTemporalAssignments( Transaction transaction, AlgCluster cluster, AlgDataType target, boolean nativePrecision,
+            List<TemporalAssignment> assignments ) {
         AlgDataType input = cluster.getTypeFactory().createPolyType( target.getPolyType(), PolyType.MAX_DATETIME_PRECISION );
-        return castAssignments( transaction, cluster, target, values, (value, bindings) -> bindAssignment( input, value, bindings ) );
+        SqlNode castType = JdbcToEnumerableConverter.assignmentCastType( dialect, target, nativePrecision );
+        return castAssignments( transaction, cluster, target, castType, assignments,
+                (assignment, bindings) -> assignment.expression() == null
+                        ? bindAssignment( input, assignment.value(), bindings )
+                        : bindAssignmentExpression( assignment.expression(), assignment.parameters(), bindings ) );
     }
 
 
-    private <T> List<PolyValue> castAssignments( Transaction transaction, AlgCluster cluster, AlgDataType target, List<T> assignments,
+    private <T> List<PolyValue> castAssignments( Transaction transaction, AlgCluster cluster, AlgDataType target, SqlNode castType, List<T> assignments,
             BiFunction<T, List<ParameterValue>, RexNode> source ) {
         transaction.registerInvolvedAdapter( this );
         List<PolyValue> converted = new ArrayList<>( assignments.size() );
@@ -524,7 +531,7 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
                 SqlSelect destination = implementor.visitChild( 0, sources ).subSelect();
                 List<SqlNode> castColumns = names.stream()
                         .map( name -> (SqlNode) OperatorRegistry.get( OperatorName.CAST ).createCall(
-                                ParserPos.ZERO, new SqlIdentifier( name, ParserPos.ZERO ), dialect.getCastSpec( target ) ) )
+                                ParserPos.ZERO, new SqlIdentifier( name, ParserPos.ZERO ), castType ) )
                         .toList();
                 destination.setSelectList( new SqlNodeList( castColumns, ParserPos.ZERO ) );
                 SqlString sql = destination.toSqlString( dialect );
@@ -580,16 +587,19 @@ public abstract class AbstractJdbcStore extends DataStore<RelAdapterCatalog> imp
         NumericExpression expression = assignment.expression();
         if ( expression != null && (!(expression.node() instanceof RexCall) || JdbcProjectRule.supports( currentJdbcSchema.getConvention(),
                 LogicalRelProject.create( LogicalRelValues.createOneRow( cluster ), List.of( expression.node() ), List.of( "assignment" ) ) )) ) {
-            return expression.node().accept( new RexShuttle() {
-                @Override
-                public RexNode visitDynamicParam( RexDynamicParam parameter ) {
-                    int index = bindings.size();
-                    bindings.add( new ParameterValue( index, parameter.getType(), expression.parameters().get( parameter.getIndex() ) ) );
-                    return new RexDynamicParam( parameter.getType(), index );
-                }
-            } );
+            return bindAssignmentExpression( expression.node(), expression.parameters(), bindings );
         }
         return bindAssignment( assignment.inputType(), assignment.value(), bindings );
+    }
+
+
+    private static RexNode bindAssignmentExpression( RexNode expression, Map<Long, PolyValue> parameters, List<ParameterValue> bindings ) {
+        return expression.accept( new RexShuttle() {
+            @Override
+            public RexNode visitDynamicParam( RexDynamicParam parameter ) {
+                return bindAssignment( parameter.getType(), parameters.get( parameter.getIndex() ), bindings );
+            }
+        } );
     }
 
 

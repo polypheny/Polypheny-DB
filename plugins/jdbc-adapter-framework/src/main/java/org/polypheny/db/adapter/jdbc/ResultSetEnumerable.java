@@ -72,6 +72,7 @@ import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.type.entity.temporal.PolyDate;
 import org.polypheny.db.type.entity.temporal.PolyTimestamp;
 import org.polypheny.db.util.Static;
+import org.polypheny.db.util.temporal.DateTimeUtils;
 
 
 /**
@@ -273,7 +274,12 @@ public class ResultSetEnumerable extends AbstractEnumerable<PolyValue[]> {
                 }
                 break;
             case TIME:
-                preparedStatement.setTime( i, value.asTime().asSqlTime(), Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ) );
+                if ( value.asTime().getOfDay() == DateTimeUtils.MILLIS_PER_DAY ) {
+                    // java.sql.Time would bind the start of the day instead.
+                    preparedStatement.setString( i, value.asTime().toString() );
+                } else {
+                    preparedStatement.setTime( i, value.asTime().asSqlTime(), Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) ) );
+                }
                 break;
             case TIMESTAMP:
                 if ( dialect.handlesUtcIncorrectly() ) {

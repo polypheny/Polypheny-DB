@@ -188,6 +188,21 @@ class IdentityReplicaInsertVolatilityTest {
                             try ( ResultSet stored = sql.executeQuery( "SELECT id, qty FROM " + table + " ORDER BY id" ) ) {
                                 assertEquals( expected, readPairs( stored ) );
                             }
+
+                            if ( initialStore.equals( "postgresql" ) ) {
+                                sql.executeUpdate( "DELETE FROM " + table );
+                                for ( PreparedStatement statement : List.of( keys, returning ) ) {
+                                    // Both previews select source id=1. HSQLDB truncates
+                                    // this DOUBLE assignment to 42 and PostgreSQL rounds to 43.
+                                    statement.setDouble( 1, 42.75 );
+                                    statement.setBigDecimal( 2, BigDecimal.valueOf( 42 ) );
+                                }
+                                assertEquals( "22000", assertThrows( SQLException.class, keys::executeUpdate ).getSQLState() );
+                                assertEquals( "22000", assertThrows( SQLException.class, returning::executeQuery ).getSQLState() );
+                                try ( ResultSet stored = sql.executeQuery( "SELECT id FROM " + table ) ) {
+                                    assertFalse( stored.next() );
+                                }
+                            }
                         }
                     } finally {
                         sql.executeUpdate( "DROP TABLE " + table );

@@ -612,12 +612,13 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    Optional<List<List<PolyValue>>> readNativeInsertSource( LogicalRelModify insert, LogicalTable table, AlgDataType parameterRowType ) {
+    Optional<List<List<PolyValue>>> readNativeInsertSource( LogicalRelModify insert, LogicalTable table, AlgDataType parameterRowType,
+            Set<Long> nativeTemporalFields ) {
         if ( !(getPlanner() instanceof VolcanoPlanner planner) ) {
             return Optional.empty();
         }
         List<AlgDataTypeField> targetFields = table.getTupleType().getFields();
-        if ( targetFields.stream().noneMatch( field -> PolyType.NUMERIC_TYPES.contains( field.getType().getPolyType() ) ) ) {
+        if ( targetFields.stream().noneMatch( field -> DataStore.isInsertSourceAssignmentType( field.getType().getPolyType() ) ) ) {
             return Optional.empty();
         }
         Snapshot snapshot = statement.getTransaction().getSnapshot();
@@ -636,18 +637,20 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
         }
         List<Long> keyIds = snapshot.rel().getPrimaryKey( table.primaryKey ).orElseThrow().fieldIds;
         List<InsertSourceBranch> branches = placements.size() > 1
-                ? insertSourceBranches( insert.getInput() ) : List.of( InsertSourceBranch.STABLE );
+                ? insertSourceBranches( insert.getInput(), snapshot, insertSourceColumns( insert.getInput(), targetFields ) )
+                : List.of( InsertSourceBranch.STABLE );
         // Keep the original UNION's common typing. A trailing ordinal identifies each
         // branch's comparison rules without evaluating its expressions separately.
-        boolean marked = branches.size() > 1 && branches.stream().anyMatch( branch -> !branch.equals( InsertSourceBranch.STABLE ) );
+        boolean marked = branches.size() > 1 && branches.stream()
+                .anyMatch( branch -> branch.variableSelection() || !branch.volatileFields().isEmpty() );
         List<InsertSourceComparison> comparisons = (marked ? branches : List.of( branches.get( 0 ) )).stream()
                 .map( branch -> new InsertSourceComparison(
                         targetFields.stream()
                                 .filter( field -> !branch.volatileFields().contains( field.getIndex() ) )
-                                .filter( field -> keyIds.contains( field.getId() ) || PolyType.NUMERIC_TYPES.contains( field.getType().getPolyType() ) )
+                                .filter( field -> keyIds.contains( field.getId() ) || DataStore.isInsertSourceAssignmentType( field.getType().getPolyType() ) )
                                 .map( AlgDataTypeField::getIndex )
                                 .toList(),
-                        branch.variableSelection() ) )
+                        branch.variableSelection(), branch.identityFields() ) )
                 .toList();
 
         // Plan the ordinary DML without preparing or running its write, index or constraint actions.
@@ -681,7 +684,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 EnumerableStreamer streamer = write instanceof EnumerableStreamer streamingWrite ? streamingWrite : null;
                 AlgNode collector = streamer == null ? write : streamer.getCollector();
                 for ( DataStore<?> store : stores ) {
-                    Optional<AlgNode> source = store.readInsertSource( collector, targetFields );
+                    Optional<AlgNode> source = store.readInsertSource( collector, targetFields, nativeTemporalFields );
                     if ( source.isPresent() ) {
                         AlgNode preview = source.get();
                         if ( marked && streamer == null ) {
@@ -705,9 +708,9 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
                 context.setParameterValues( List.of( binding ) );
                 List<List<PolyValue>> first = reads.get( 0 ).read( context );
                 if ( reads.size() > 1 ) {
-                    Map<List<PolyValue>, Long> expected = nativeInsertRowCounts( first, comparisons, marked );
+                    InsertSourceRowCounts expected = nativeInsertRowCounts( first, comparisons, marked );
                     for ( InsertSourceRead read : reads.subList( 1, reads.size() ) ) {
-                        consistent &= expected.equals( nativeInsertRowCounts( read.read( context ), comparisons, marked ) );
+                        consistent &= expected.agreesWith( nativeInsertRowCounts( read.read( context ), comparisons, marked ) );
                     }
                 }
                 if ( marked ) {
@@ -730,36 +733,72 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private record InsertSourceBranch( Set<Integer> volatileFields, boolean variableSelection ) {
+    private record InsertSourceBranch( Set<Integer> volatileFields, boolean variableSelection, List<Integer> identityFields ) {
 
-        private static final InsertSourceBranch STABLE = new InsertSourceBranch( Set.of(), false );
-        private static final InsertSourceBranch VARIABLE = new InsertSourceBranch( Set.of(), true );
+        private static final InsertSourceBranch STABLE = new InsertSourceBranch( Set.of(), false, List.of() );
 
     }
 
 
-    private static List<InsertSourceBranch> insertSourceBranches( AlgNode source ) {
+    private record InsertSourceColumn( int targetField, int sourceField ) {
+    }
+
+
+    private static List<InsertSourceColumn> insertSourceColumns( AlgNode source, List<AlgDataTypeField> targetFields ) {
+        return targetFields.stream()
+                .filter( field -> sameInsertSourceType( source, field.getIndex(), field.getType() ) )
+                .map( field -> new InsertSourceColumn( field.getIndex(), field.getIndex() ) )
+                .toList();
+    }
+
+
+    private static List<InsertSourceBranch> insertSourceBranches( AlgNode source, Snapshot snapshot, List<InsertSourceColumn> columns ) {
         if ( source instanceof LogicalRelUnion union && union.all ) {
-            return union.getInputs().stream().flatMap( input -> insertSourceBranches( input ).stream() ).toList();
+            return union.getInputs().stream()
+                    .flatMap( input -> insertSourceBranches( input, snapshot, columns.stream()
+                            .filter( column -> sameInsertSourceType( input, column.sourceField(),
+                                    source.getTupleType().getFields().get( column.sourceField() ).getType() ) )
+                            .toList() ).stream() )
+                    .toList();
         }
         if ( source instanceof LogicalRelProject project ) {
-            return insertSourceBranches( project.getInput() ).stream()
-                    .map( branch -> branch.variableSelection() ? branch
-                            : new InsertSourceBranch( volatileProjectColumns( project, branch.volatileFields() ), false ) )
+            List<InsertSourceColumn> inputColumns = new ArrayList<>();
+            for ( InsertSourceColumn column : columns ) {
+                RexNode expression = project.getProjects().get( column.sourceField() );
+                if ( expression instanceof RexIndexRef ref && sameInsertSourceType( project.getInput(), ref.getIndex(), expression.getType() ) ) {
+                    inputColumns.add( new InsertSourceColumn( column.targetField(), ref.getIndex() ) );
+                }
+            }
+            return insertSourceBranches( project.getInput(), snapshot, inputColumns ).stream()
+                    .map( branch -> new InsertSourceBranch( volatileProjectColumns( project, branch.volatileFields() ),
+                            branch.variableSelection(), branch.identityFields() ) )
                     .toList();
         }
         if ( source instanceof LogicalRelFilter filter ) {
-            return insertSourceBranches( filter.getInput() ).stream()
-                    .map( branch -> isVolatileInsertExpression( filter.getCondition(), branch.volatileFields() )
-                            ? InsertSourceBranch.VARIABLE : branch )
+            return insertSourceBranches( filter.getInput(), snapshot, columns ).stream()
+                    .map( branch -> new InsertSourceBranch( branch.volatileFields(),
+                            branch.variableSelection() || isVolatileInsertExpression( filter.getCondition(), branch.volatileFields() ),
+                            branch.identityFields() ) )
                     .toList();
         }
-        if ( hasVolatileInsertExpression( source ) ) {
-            // This operator can obscure which fields and rows depend on a volatile expression.
-            // Keep its native assignment checks but make no assumptions about comparable rows.
-            return List.of( InsertSourceBranch.VARIABLE );
+        // Other operators can obscure which rows and fields depend on volatility.
+        // For comparable identities, require a complete, unconverted source key.
+        if ( source instanceof LogicalRelScan scan && scan.getEntity() instanceof LogicalTable table && table.primaryKey != null ) {
+            List<Long> key = snapshot.rel().getPrimaryKey( table.primaryKey ).orElseThrow().fieldIds;
+            Map<Long, Integer> tracked = new HashMap<>();
+            columns.forEach( column -> tracked.putIfAbsent( source.getTupleType().getFields().get( column.sourceField() ).getId(),
+                    column.targetField() ) );
+            if ( tracked.keySet().containsAll( key ) ) {
+                return List.of( new InsertSourceBranch( Set.of(), false, key.stream().map( tracked::get ).toList() ) );
+            }
         }
-        return List.of( InsertSourceBranch.STABLE );
+        return List.of( new InsertSourceBranch( Set.of(), hasVolatileInsertExpression( source ), List.of() ) );
+    }
+
+
+    private static boolean sameInsertSourceType( AlgNode source, int field, AlgDataType type ) {
+        return PolyTypeUtil.equalSansNullability( source.getCluster().getTypeFactory(),
+                source.getTupleType().getFields().get( field ).getType(), type );
     }
 
 
@@ -793,7 +832,7 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private static boolean isVolatileInsertExpression( RexNode expression ) {
+    static boolean isVolatileInsertExpression( RexNode expression ) {
         if ( expression instanceof RexSubQuery subQuery && hasVolatileInsertExpression( subQuery.alg ) ) {
             return true;
         }
@@ -882,27 +921,50 @@ public abstract class AbstractQueryProcessor implements QueryProcessor, Executio
     }
 
 
-    private record InsertSourceComparison( List<Integer> fields, boolean variableSelection ) {
+    private record InsertSourceComparison( List<Integer> fields, boolean variableSelection, List<Integer> identityFields ) {
     }
 
 
-    private static Map<List<PolyValue>, Long> nativeInsertRowCounts( List<List<PolyValue>> rows, List<InsertSourceComparison> comparisons, boolean marked ) {
-        Map<List<PolyValue>, Long> counts = new HashMap<>();
-        for ( List<PolyValue> row : rows ) {
-            InsertSourceComparison comparison = comparisons.get( marked ? insertSourceOrdinal( row ) : 0 );
-            // A dynamic selection can choose different source rows even when their
-            // resulting destination keys coincide. Its native casts still run above.
-            if ( comparison.variableSelection() ) {
-                continue;
-            }
-            List<PolyValue> stable = new ArrayList<>();
-            if ( marked ) {
-                stable.add( row.get( row.size() - 1 ) );
-            }
-            comparison.fields().forEach( field -> stable.add( row.get( field ) ) );
-            counts.merge( stable, 1L, Long::sum );
+    private record InsertSourceIdentity( int branch, List<PolyValue> sourceKey ) {
+    }
+
+
+    private record InsertSourceRowCounts( Map<List<PolyValue>, Long> stable, Map<InsertSourceIdentity, Map<List<PolyValue>, Long>> variable ) {
+
+        private boolean agreesWith( InsertSourceRowCounts other ) {
+            // A dynamic selection can choose different rows. Compare stable values
+            // only when both previews saw the same proven source identity.
+            return stable.equals( other.stable ) && variable.entrySet().stream().allMatch( entry -> {
+                Map<List<PolyValue>, Long> matching = other.variable.get( entry.getKey() );
+                return matching == null || matching.equals( entry.getValue() );
+            } );
         }
-        return counts;
+
+    }
+
+
+    private static InsertSourceRowCounts nativeInsertRowCounts( List<List<PolyValue>> rows, List<InsertSourceComparison> comparisons, boolean marked ) {
+        Map<List<PolyValue>, Long> stable = new HashMap<>();
+        Map<InsertSourceIdentity, Map<List<PolyValue>, Long>> variable = new HashMap<>();
+        for ( List<PolyValue> row : rows ) {
+            int branch = marked ? insertSourceOrdinal( row ) : 0;
+            InsertSourceComparison comparison = comparisons.get( branch );
+            if ( comparison.variableSelection() ) {
+                if ( !comparison.identityFields().isEmpty() ) {
+                    InsertSourceIdentity identity = new InsertSourceIdentity( branch, comparison.identityFields().stream().map( row::get ).toList() );
+                    variable.computeIfAbsent( identity, ignored -> new HashMap<>() )
+                            .merge( comparison.fields().stream().map( row::get ).toList(), 1L, Long::sum );
+                }
+            } else {
+                List<PolyValue> values = new ArrayList<>();
+                if ( marked ) {
+                    values.add( row.get( row.size() - 1 ) );
+                }
+                comparison.fields().forEach( field -> values.add( row.get( field ) ) );
+                stable.merge( values, 1L, Long::sum );
+            }
+        }
+        return new InsertSourceRowCounts( stable, variable );
     }
 
 

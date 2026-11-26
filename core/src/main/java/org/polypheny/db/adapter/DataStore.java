@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.pf4j.ExtensionPoint;
@@ -37,6 +38,7 @@ import org.polypheny.db.catalog.logistic.IndexCategory;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyValue;
 import org.polypheny.db.type.entity.numerical.PolyDouble;
 import org.polypheny.db.type.entity.numerical.PolyFloat;
@@ -71,11 +73,16 @@ public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> imp
     }
 
 
+    public static boolean isInsertSourceAssignmentType( PolyType type ) {
+        return PolyType.NUMERIC_TYPES.contains( type ) || type == PolyType.TIME || type == PolyType.TIMESTAMP;
+    }
+
+
     /**
-     * Builds a read-only plan for a native INSERT's source, with destination numeric
-     * assignments applied by the store before the coordinator materializes the rows.
+     * Builds a read-only plan for a native INSERT's source, with destination assignments
+     * applied by the store before the coordinator materializes the rows.
      */
-    public Optional<AlgNode> readInsertSource( AlgNode physicalInsert, List<AlgDataTypeField> targetFields ) {
+    public Optional<AlgNode> readInsertSource( AlgNode physicalInsert, List<AlgDataTypeField> targetFields, Set<Long> nativeTemporalFields ) {
         return Optional.empty();
     }
 
@@ -106,12 +113,17 @@ public abstract class DataStore<S extends AdapterCatalog> extends Adapter<S> imp
 
 
     /** Applies the store's temporal precision before a materialized INSERT writes or reports values. */
-    public List<PolyValue> castTemporalAssignments( Transaction transaction, AlgCluster cluster, AlgDataType target, List<PolyValue> values ) {
-        return values;
+    public List<PolyValue> castTemporalAssignments( Transaction transaction, AlgCluster cluster, AlgDataType target, boolean nativePrecision,
+            List<TemporalAssignment> assignments ) {
+        return assignments.stream().map( TemporalAssignment::value ).toList();
     }
 
 
     public record NumericAssignment( PolyValue value, AlgDataType inputType, NumericExpression expression ) {
+    }
+
+
+    public record TemporalAssignment( PolyValue value, RexNode expression, Map<Long, PolyValue> parameters ) {
     }
 
 

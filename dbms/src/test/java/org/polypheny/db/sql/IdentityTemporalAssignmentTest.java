@@ -28,6 +28,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.LocalTime;
 import java.util.Calendar;
@@ -42,6 +43,7 @@ import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.config.RuntimeConfig;
+import org.polypheny.db.util.temporal.DateTimeUtils;
 
 @Tag("adapter")
 class IdentityTemporalAssignmentTest {
@@ -49,6 +51,90 @@ class IdentityTemporalAssignmentTest {
     @BeforeAll
     static void start() {
         TestHelper.getInstance();
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void postgresTimeAtTheEndOfDayRemainsReadable( boolean parameterize ) throws SQLException {
+        assumeTrue( "postgresql".equals( PolyphenyDb.defaultStoreName ) );
+        boolean previousParameterization = RuntimeConfig.PARAMETERIZE_DML.getBoolean();
+        String table = "temporal_end_of_day";
+        String input = "TIME '23:59:59.999'";
+        Calendar utc = Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) );
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
+            sql.executeUpdate( "CREATE TABLE " + table + " (id INTEGER PRIMARY KEY, stamp TIME(0))" );
+            try {
+                sql.executeUpdate( "ALTER CONFIG 'runtime/parameterizeDML' SET " + parameterize );
+                String insert = "INSERT INTO " + table + " VALUES ";
+                assertEquals( 1, sql.executeUpdate( insert + "(1, " + input + ")" ) );
+                assertEquals( 1, sql.executeUpdate( insert + "(2, " + input + ")", new String[]{ "id" } ) );
+                try ( ResultSet keys = sql.getGeneratedKeys() ) {
+                    assertTrue( keys.next() );
+                    assertEquals( 2, keys.getInt( 1 ) );
+                    assertFalse( keys.next() );
+                }
+                try ( ResultSet returning = sql.executeQuery( insert + "(3, " + input + ") RETURNING stamp" ) ) {
+                    assertTrue( returning.next() );
+                    assertEquals( DateTimeUtils.MILLIS_PER_DAY, returning.getTime( 1, utc ).getTime() );
+                    assertFalse( returning.next() );
+                }
+                try ( ResultSet stored = sql.executeQuery( "SELECT stamp, CAST(stamp AS VARCHAR(24)) FROM " + table + " ORDER BY id" ) ) {
+                    for ( int i = 0; i < 3; i++ ) {
+                        assertTrue( stored.next() );
+                        assertEquals( DateTimeUtils.MILLIS_PER_DAY, stored.getTime( 1, utc ).getTime() );
+                        assertEquals( "24:00:00", stored.getString( 2 ) );
+                    }
+                    assertFalse( stored.next() );
+                }
+            } finally {
+                sql.executeUpdate( "ALTER CONFIG 'runtime/parameterizeDML' SET " + previousParameterization );
+                sql.executeUpdate( "DROP TABLE " + table );
+            }
+        }
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void barePostgresTimeKeepsTheNativePrimaryKey( boolean parameterize ) throws SQLException {
+        assumeTrue( "postgresql".equals( PolyphenyDb.defaultStoreName ) );
+        boolean previousParameterization = RuntimeConfig.PARAMETERIZE_DML.getBoolean();
+        String table = "temporal_bare_time_key";
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
+            sql.executeUpdate( "CREATE TABLE " + table + " (bucket INTEGER NOT NULL, stamp TIME NOT NULL, PRIMARY KEY (bucket, stamp))" );
+            try {
+                sql.executeUpdate( "ALTER CONFIG 'runtime/parameterizeDML' SET " + parameterize );
+                String insert = "INSERT INTO " + table + " VALUES ";
+                sql.executeUpdate( insert + "(1, TIME '12:34:57'), (2, TIME '12:34:57'), (3, TIME '12:34:57')" );
+                assertEquals( 1, sql.executeUpdate( insert + "(1, TIME '12:34:56.789')" ) );
+                assertEquals( 1, sql.executeUpdate( insert + "(2, TIME '12:34:56.789')", new String[]{ "stamp" } ) );
+                Calendar utc = Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) );
+                long expected = LocalTime.parse( "12:34:56.789" ).toNanoOfDay() / 1_000_000;
+                try ( ResultSet keys = sql.getGeneratedKeys() ) {
+                    assertTrue( keys.next() );
+                    assertEquals( expected, keys.getTime( 1, utc ).getTime() );
+                    assertFalse( keys.next() );
+                }
+                try ( ResultSet returning = sql.executeQuery( insert + "(3, TIME '12:34:56.789') RETURNING stamp" ) ) {
+                    assertTrue( returning.next() );
+                    assertEquals( expected, returning.getTime( 1, utc ).getTime() );
+                    assertFalse( returning.next() );
+                }
+                try ( ResultSet stored = sql.executeQuery( "SELECT CAST(stamp AS VARCHAR(24)) FROM " + table + " ORDER BY bucket, stamp" ) ) {
+                    for ( int i = 0; i < 3; i++ ) {
+                        assertTrue( stored.next() );
+                        assertEquals( "12:34:56.789", stored.getString( 1 ) );
+                        assertTrue( stored.next() );
+                        assertEquals( "12:34:57", stored.getString( 1 ) );
+                    }
+                    assertFalse( stored.next() );
+                }
+            } finally {
+                sql.executeUpdate( "ALTER CONFIG 'runtime/parameterizeDML' SET " + previousParameterization );
+                sql.executeUpdate( "DROP TABLE " + table );
+            }
+        }
     }
 
 
@@ -192,6 +278,120 @@ class IdentityTemporalAssignmentTest {
     }
 
 
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void projectedInsertPreservesExplicitTemporalSourcePrecision( boolean parameterize ) throws SQLException {
+        requireJdbcStore();
+        boolean previousParameterization = RuntimeConfig.PARAMETERIZE_DML.getBoolean();
+        String table = "temporal_source_casts";
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
+            sql.executeUpdate( "CREATE TABLE " + table + " (id INTEGER PRIMARY KEY, stamp TIMESTAMP(3), clock_val TIME(3))" );
+            try {
+                sql.executeUpdate( "ALTER CONFIG 'runtime/parameterizeDML' SET " + parameterize );
+                String insert = "INSERT INTO " + table + " VALUES (";
+                String literals = ", CAST(TIMESTAMP '2024-12-31 23:59:59.995' AS TIMESTAMP(2)), CAST(TIME '12:34:56.789' AS TIME(2)))";
+                assertEquals( 1, sql.executeUpdate( insert + "1" + literals ) );
+                TemporalValues expected = readStoredTemporalValues( sql, table, 1 );
+                assertEquals( 0, expected.stamp().getNanos() % 10_000_000 );
+                assertEquals( 0, expected.time().getNano() % 10_000_000 );
+                assertEquals( 1, sql.executeUpdate( insert + "2" + literals, new String[]{ "stamp", "clock_val" } ) );
+                assertEquals( expected, readProjectedTemporalValues( sql.getGeneratedKeys() ) );
+                assertEquals( expected, readStoredTemporalValues( sql, table, 2 ) );
+
+                String bindings = ", CAST(? AS TIMESTAMP(2)), CAST(? AS TIME(2)))";
+                try ( PreparedStatement plain = jdbc.getConnection().prepareStatement( insert + "3" + bindings );
+                        PreparedStatement returning = jdbc.getConnection().prepareStatement( insert + "4" + bindings + " RETURNING stamp, clock_val" ) ) {
+                    bindTemporalSources( plain );
+                    bindTemporalSources( returning );
+                    assertEquals( 1, plain.executeUpdate() );
+                    TemporalValues preparedExpected = readStoredTemporalValues( sql, table, 3 );
+                    assertEquals( preparedExpected, readProjectedTemporalValues( returning.executeQuery() ) );
+                    assertEquals( preparedExpected, readStoredTemporalValues( sql, table, 4 ) );
+                }
+            } finally {
+                sql.executeUpdate( "ALTER CONFIG 'runtime/parameterizeDML' SET " + previousParameterization );
+                sql.executeUpdate( "DROP TABLE " + table );
+            }
+        }
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(booleans = { false, true })
+    void temporalSourceCastsApplyOnEveryReplica( boolean parameterize ) throws SQLException {
+        assumeTrue( "postgresql".equals( PolyphenyDb.defaultStoreName ) );
+        boolean previousParameterization = RuntimeConfig.PARAMETERIZE_DML.getBoolean();
+        String table = "temporal_replica_source_casts";
+        try ( JdbcConnection jdbc = new JdbcConnection( true ); Statement sql = jdbc.getConnection().createStatement() ) {
+            TestHelper.addHsqldb( "temporal_source_replica", sql );
+            try {
+                sql.executeUpdate( "CREATE TABLE " + table + " (id INTEGER PRIMARY KEY, stamp TIMESTAMP(3), clock_val TIME(3)) ON STORE temporal_source_replica" );
+                try {
+                    sql.executeUpdate( "ALTER TABLE " + table + " ADD PLACEMENT ON STORE postgresql" );
+                    sql.executeUpdate( "ALTER CONFIG 'runtime/parameterizeDML' SET " + parameterize );
+                    String insert = "INSERT INTO " + table + " VALUES (";
+                    String returning = " RETURNING stamp, clock_val";
+                    String casts = "CAST(TIMESTAMP '2024-12-31 23:59:59.995' AS TIMESTAMP(2)), CAST(TIME '12:34:56.789' AS TIME(2))";
+                    String raw = insert + "1, " + casts + ")" + returning;
+                    if ( parameterize ) {
+                        assertEquals( "22000", assertThrows( SQLException.class, () -> sql.executeQuery( raw ) ).getSQLState() );
+                        String multiple = insert + "3, " + casts + "), (4, " + casts + ")" + returning;
+                        assertEquals( "22000", assertThrows( SQLException.class, () -> sql.executeQuery( multiple ) ).getSQLState() );
+                    } else {
+                        TemporalValues expected = new TemporalValues( Timestamp.valueOf( "2024-12-31 23:59:59.990" ), LocalTime.parse( "12:34:56.780" ) );
+                        assertEquals( expected, readProjectedTemporalValues( sql.executeQuery( raw ) ) );
+                    }
+                    try ( PreparedStatement write = jdbc.getConnection().prepareStatement(
+                            insert + "2, CAST(? AS TIMESTAMP(2)), CAST(? AS TIME(2)))" + returning ) ) {
+                        bindTemporalSources( write );
+                        assertEquals( "22000", assertThrows( SQLException.class, write::executeQuery ).getSQLState() );
+                    }
+                    try ( ResultSet rows = sql.executeQuery( "SELECT id FROM " + table ) ) {
+                        assertEquals( !parameterize, rows.next() );
+                        if ( !parameterize ) {
+                            assertEquals( 1, rows.getInt( 1 ) );
+                            assertFalse( rows.next() );
+                        }
+                    }
+                } finally {
+                    sql.executeUpdate( "ALTER CONFIG 'runtime/parameterizeDML' SET " + previousParameterization );
+                    sql.executeUpdate( "DROP TABLE " + table );
+                }
+            } finally {
+                TestHelper.dropAdapter( "temporal_source_replica", sql );
+            }
+        }
+    }
+
+
+    private static void bindTemporalSources( PreparedStatement insert ) throws SQLException {
+        Calendar utc = Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) );
+        insert.setTimestamp( 1, Timestamp.valueOf( "2024-12-31 23:59:59.995" ), utc );
+        insert.setTime( 2, new Time( LocalTime.parse( "12:34:56.789" ).toNanoOfDay() / 1_000_000L ), utc );
+    }
+
+
+    private static TemporalValues readStoredTemporalValues( Statement sql, String table, int id ) throws SQLException {
+        try ( ResultSet stored = sql.executeQuery( "SELECT stamp, CAST(clock_val AS VARCHAR(24)) FROM " + table + " WHERE id = " + id ) ) {
+            assertTrue( stored.next() );
+            TemporalValues values = new TemporalValues( stored.getTimestamp( 1 ), LocalTime.parse( stored.getString( 2 ).trim() ) );
+            assertFalse( stored.next() );
+            return values;
+        }
+    }
+
+
+    private static TemporalValues readProjectedTemporalValues( ResultSet projected ) throws SQLException {
+        try ( projected ) {
+            assertTrue( projected.next() );
+            Calendar utc = Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) );
+            TemporalValues values = new TemporalValues( projected.getTimestamp( 1 ), fromSqlTime( projected.getTime( 2, utc ) ) );
+            assertFalse( projected.next() );
+            return values;
+        }
+    }
+
+
     private static void requireJdbcStore() {
         assumeTrue( List.of( "hsqldb", "postgresql" ).contains( PolyphenyDb.defaultStoreName ) );
     }
@@ -214,11 +414,20 @@ class IdentityTemporalAssignmentTest {
             assertTrue( projected.next() );
             Calendar utc = Calendar.getInstance( TimeZone.getTimeZone( "UTC" ) );
             List<LocalTime> values = List.of(
-                    LocalTime.ofNanoOfDay( Math.floorMod( projected.getTime( 1, utc ).getTime(), 86_400_000L ) * 1_000_000L ),
-                    LocalTime.ofNanoOfDay( Math.floorMod( projected.getTime( 2, utc ).getTime(), 86_400_000L ) * 1_000_000L ) );
+                    fromSqlTime( projected.getTime( 1, utc ) ),
+                    fromSqlTime( projected.getTime( 2, utc ) ) );
             assertFalse( projected.next() );
             return values;
         }
+    }
+
+
+    private static LocalTime fromSqlTime( Time time ) {
+        return LocalTime.ofNanoOfDay( Math.floorMod( time.getTime(), 86_400_000L ) * 1_000_000L );
+    }
+
+
+    private record TemporalValues( Timestamp stamp, LocalTime time ) {
     }
 
 }

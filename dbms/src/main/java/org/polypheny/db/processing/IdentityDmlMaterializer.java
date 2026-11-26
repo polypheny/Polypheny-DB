@@ -35,6 +35,7 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataStore;
 import org.polypheny.db.adapter.DataStore.NumericAssignment;
 import org.polypheny.db.adapter.DataStore.NumericExpression;
+import org.polypheny.db.adapter.DataStore.TemporalAssignment;
 import org.polypheny.db.adapter.index.Index;
 import org.polypheny.db.adapter.index.IndexManager;
 import org.polypheny.db.algebra.AlgNode;
@@ -87,6 +88,7 @@ import org.polypheny.db.type.entity.numerical.PolyFloat;
 import org.polypheny.db.type.entity.numerical.PolyInteger;
 import org.polypheny.db.type.entity.numerical.PolyLong;
 import org.polypheny.db.util.Pair;
+import org.polypheny.db.util.temporal.DateTimeUtils;
 
 
 /** Resolves identity defaults once, before constraint checking and write routing. */
@@ -177,11 +179,17 @@ final class IdentityDmlMaterializer {
             throw new GenericRuntimeException( "Invalid insert row layout for table '%s'.", table.name );
         }
 
+        Set<Long> nativeTemporalFields = new HashSet<>();
+        for ( LogicalColumn column : statement.getTransaction().getSnapshot().rel().getColumns( table.id ) ) {
+            if ( isTimeType( column.type ) && column.length == null && column.collectionsType == null ) {
+                nativeTemporalFields.add( column.id );
+            }
+        }
         List<List<AssignmentInput>> assignmentInputs = new ArrayList<>();
         Optional<List<List<PolyValue>>> nativeRows = Optional.empty();
         if ( identities.isEmpty() && !isScalarInsertSource( source )
                 && statement.getQueryProcessor() instanceof AbstractQueryProcessor processor ) {
-            nativeRows = processor.readNativeInsertSource( modify, table, parameterRowType );
+            nativeRows = processor.readNativeInsertSource( modify, table, parameterRowType, nativeTemporalFields );
         }
         List<List<PolyValue>> sourceRows = nativeRows.orElseGet( () -> readRows( source, statement, parameterRowType, assignmentInputs ) );
         for ( IdentityField identity : identities ) {
@@ -200,7 +208,7 @@ final class IdentityDmlMaterializer {
 
         List<AlgDataTypeField> temporalKey = statement.isInsertRowCaptureRequested()
                 ? temporalPrimaryKey( table, statement, targetFields ) : List.of();
-        convertInsertAssignments( modify, table, statement, targetFields, sourceRows, assignmentInputs, nativeRows.isPresent(), temporalKey );
+        convertInsertAssignments( modify, table, statement, targetFields, sourceRows, assignmentInputs, nativeRows.isPresent(), temporalKey, nativeTemporalFields );
         ImmutableList.Builder<ImmutableList<RexLiteral>> tuples = ImmutableList.builder();
         List<List<PolyValue>> capturedRows = new ArrayList<>();
         GeneratedKeySelection keySelection = statement.getGeneratedKeySelection();
@@ -248,13 +256,14 @@ final class IdentityDmlMaterializer {
 
     private static void convertInsertAssignments( LogicalRelModify modify, LogicalTable table, Statement statement,
             List<AlgDataTypeField> fields, List<List<PolyValue>> rows, List<List<AssignmentInput>> assignmentInputs,
-            boolean nativeNumeric, List<AlgDataTypeField> temporalKey ) {
+            boolean nativeNumeric, List<AlgDataTypeField> temporalKey, Set<Long> nativeTemporalFields ) {
         Map<AlgDataTypeField, Map<Integer, NumericAssignment>> numerics = new LinkedHashMap<>();
-        Map<AlgDataTypeField, Map<Integer, PolyValue>> times = new LinkedHashMap<>();
+        Map<AlgDataTypeField, Map<Integer, TemporalAssignment>> times = new LinkedHashMap<>();
         for ( AlgDataTypeField field : fields ) {
             PolyType target = field.getType().getPolyType();
             if ( isTimeType( target ) ) {
-                Map<Integer, PolyValue> assignments = temporalAssignments( field, rows );
+                Map<Integer, TemporalAssignment> assignments = temporalAssignments( field, rows, assignmentInputs,
+                        nativeTemporalFields.contains( field.getId() ) );
                 if ( !assignments.isEmpty() ) {
                     times.put( field, assignments );
                 }
@@ -272,7 +281,8 @@ final class IdentityDmlMaterializer {
                 AssignmentInput input = nativeNumeric ? null : assignmentInputs.get( i ).get( index );
                 boolean hasNumber = value != null && !value.isNull() && value.isNumber();
                 if ( input != null && requiresNativeAssignment( input, field.getType(), hasNumber ) ) {
-                    assignments.put( i, new NumericAssignment( value, input.type(), input.expression() ) );
+                    NumericExpression expression = input.expression() == null ? null : new NumericExpression( input.expression(), input.parameters() );
+                    assignments.put( i, new NumericAssignment( value, input.type(), expression ) );
                     continue;
                 }
                 if ( decimalKey && needsDecimalReadback( field, value ) ) {
@@ -309,7 +319,8 @@ final class IdentityDmlMaterializer {
         for ( AlgDataTypeField field : conversionOrder ) {
             if ( times.containsKey( field ) ) {
                 convertOnPlacement( modify, table, statement, field, partitionField, partitions, rows, times.get( field ),
-                        (store, values) -> store.castTemporalAssignments( statement.getTransaction(), modify.getCluster(), field.getType(), values ) );
+                        (store, values) -> store.castTemporalAssignments( statement.getTransaction(), modify.getCluster(), field.getType(),
+                                nativeTemporalFields.contains( field.getId() ), values ) );
             } else {
                 convertOnPlacement( modify, table, statement, field, partitionField, partitions, rows, numerics.get( field ),
                         (store, values) -> store.castNumericAssignments( statement.getTransaction(), modify.getCluster(), field.getType(), values ) );
@@ -323,23 +334,30 @@ final class IdentityDmlMaterializer {
     }
 
 
-    private static Map<Integer, PolyValue> temporalAssignments( AlgDataTypeField field, List<List<PolyValue>> rows ) {
-        int millisPerUnit = switch ( field.getType().getPrecision() ) {
+    private static int millisPerTimeUnit( int precision ) {
+        return switch ( precision ) {
             case 0 -> 1000;
             case 1 -> 100;
             case 2 -> 10;
             default -> 1;
         };
-        if ( millisPerUnit == 1 ) {
-            return Map.of();
-        }
-        Map<Integer, PolyValue> assignments = new LinkedHashMap<>();
+    }
+
+
+    private static Map<Integer, TemporalAssignment> temporalAssignments( AlgDataTypeField field, List<List<PolyValue>> rows,
+            List<List<AssignmentInput>> assignmentInputs, boolean nativePrecision ) {
+        int millisPerUnit = nativePrecision ? 1000 : millisPerTimeUnit( field.getType().getPrecision() );
+        Map<Integer, TemporalAssignment> assignments = new LinkedHashMap<>();
         for ( int i = 0; i < rows.size(); i++ ) {
             PolyValue value = rows.get( i ).get( field.getIndex() );
             if ( value != null && !value.isNull() ) {
                 PolyValue temporal = toLiteral( value, field ).getValue();
-                if ( temporal.asTemporal().getMillisSinceEpoch() % millisPerUnit != 0 ) {
-                    assignments.put( i, temporal );
+                AssignmentInput input = assignmentInputs.isEmpty() ? null : assignmentInputs.get( i ).get( field.getIndex() );
+                if ( input != null && isTimeType( input.type().getPolyType() ) ) {
+                    assignments.put( i, new TemporalAssignment( temporal, input.expression(), input.parameters() ) );
+                } else if ( temporal.asTemporal().getMillisSinceEpoch() % millisPerUnit != 0
+                        || (temporal.isTime() && temporal.asTime().getOfDay() == DateTimeUtils.MILLIS_PER_DAY) ) {
+                    assignments.put( i, new TemporalAssignment( temporal, null, Map.of() ) );
                 }
             }
         }
@@ -348,7 +366,7 @@ final class IdentityDmlMaterializer {
 
 
     private static boolean requiresNativeAssignment( AssignmentInput input, AlgDataType target, boolean hasNumber ) {
-        RexNode expression = input.expression() == null ? null : input.expression().node();
+        RexNode expression = input.expression();
         if ( expression instanceof RexCall ) {
             return true;
         }
@@ -965,9 +983,9 @@ final class IdentityDmlMaterializer {
         for ( int i = 0; i < row.size(); i++ ) {
             RexNode expression = i < expressions.size() ? expressions.get( i ) : null;
             PolyValue value = row.get( i );
-            if ( scalarProject && expression instanceof RexCall && PolyType.NUMERIC_TYPES.contains( expression.getType().getPolyType() )
-                    && RexUtil.isConstant( expression ) ) {
-                inputs.add( new AssignmentInput( expression.getType(), numericExpression( expression, binding, parameterizeLiterals ) ) );
+            if ( scalarProject && (expression instanceof RexCall && PolyType.NUMERIC_TYPES.contains( expression.getType().getPolyType() )
+                    && RexUtil.isConstant( expression ) || needsTemporalSourceEvaluation( expression, value )) ) {
+                inputs.add( assignmentInput( expression, binding, parameterizeLiterals ) );
                 continue;
             }
             if ( value == null || value.isNull() || !value.isNumber() ) {
@@ -977,17 +995,17 @@ final class IdentityDmlMaterializer {
             if ( parameterizedValues ) {
                 AlgDataType type = source.getTupleType().getFields().get( i ).getType();
                 inputs.add( PolyType.NUMERIC_TYPES.contains( type.getPolyType() )
-                        ? new AssignmentInput( type, new NumericExpression( new RexDynamicParam( type, 0 ), Map.of( 0L, value ) ) ) : null );
+                        ? new AssignmentInput( type, new RexDynamicParam( type, 0 ), Map.of( 0L, value ) ) : null );
                 continue;
             }
             if ( parameterizeLiterals && scalarProject && expression instanceof RexLiteral literal
                     && PolyType.NUMERIC_TYPES.contains( literal.getType().getPolyType() ) ) {
-                inputs.add( new AssignmentInput( literal.getType(), numericExpression( literal, binding, true ) ) );
+                inputs.add( assignmentInput( literal, binding, true ) );
                 continue;
             }
             if ( expression instanceof RexDynamicParam parameter ) {
                 inputs.add( PolyType.NUMERIC_TYPES.contains( parameter.getType().getPolyType() )
-                        ? new AssignmentInput( parameter.getType(), new NumericExpression( parameter, binding ) ) : null );
+                        ? new AssignmentInput( parameter.getType(), parameter, binding ) : null );
                 continue;
             }
             PolyType sourceType = expression != null && PolyType.APPROX_TYPES.contains( expression.getType().getPolyType() )
@@ -1007,15 +1025,39 @@ final class IdentityDmlMaterializer {
                     && RexUtil.isLiteral( expression, true ) ) {
                 literal = expression instanceof RexLiteral folded ? folded : new RexLiteral( value, expression.getType(), sourceType, true );
             }
-            inputs.add( new AssignmentInput( inputType, literal == null ? null : new NumericExpression( literal, Map.of() ) ) );
+            inputs.add( new AssignmentInput( inputType, literal, Map.of() ) );
         }
         assignmentInputs.add( inputs );
     }
 
 
-    private static NumericExpression numericExpression( RexNode expression, Map<Long, PolyValue> binding, boolean parameterizeLiterals ) {
+    private static boolean needsTemporalSourceEvaluation( RexNode expression, PolyValue value ) {
+        if ( expression == null || !isTimeType( expression.getType().getPolyType() ) ) {
+            return false;
+        }
+        if ( expression instanceof RexCall ) {
+            return expression.isA( Kind.CAST ) && hasNarrowTemporalPrecision( expression )
+                    && RexUtil.isConstant( expression ) && !AbstractQueryProcessor.isVolatileInsertExpression( expression );
+        }
+        // The planner can fold a CAST to a narrower literal while leaving its milliseconds untouched.
+        return (expression instanceof RexLiteral || expression instanceof RexDynamicParam)
+                && value != null && !value.isNull() && isTimeType( value.getType() )
+                && value.asTemporal().getMillisSinceEpoch() % millisPerTimeUnit( expression.getType().getPrecision() ) != 0;
+    }
+
+
+    private static boolean hasNarrowTemporalPrecision( RexNode expression ) {
+        if ( !isTimeType( expression.getType().getPolyType() ) ) {
+            return false;
+        }
+        return millisPerTimeUnit( expression.getType().getPrecision() ) != 1
+                || expression instanceof RexCall call && call.isA( Kind.CAST ) && hasNarrowTemporalPrecision( call.getOperands().get( 0 ) );
+    }
+
+
+    private static AssignmentInput assignmentInput( RexNode expression, Map<Long, PolyValue> binding, boolean parameterizeLiterals ) {
         if ( !parameterizeLiterals ) {
-            return new NumericExpression( expression, binding );
+            return new AssignmentInput( expression.getType(), expression, binding );
         }
         // Rewrite literals exactly as for ordinary INSERT, before rendering on the store.
         QueryParameterizer parameterizer = new QueryParameterizer( 0, List.of(), false );
@@ -1025,11 +1067,11 @@ final class IdentityDmlMaterializer {
             DataContext.ParameterValue parameter = parameters.get( 0 );
             values.put( parameter.index(), parameter.value() );
         } );
-        return new NumericExpression( parameterized, values );
+        return new AssignmentInput( expression.getType(), parameterized, values );
     }
 
 
-    private record AssignmentInput( AlgDataType type, NumericExpression expression ) {
+    private record AssignmentInput( AlgDataType type, RexNode expression, Map<Long, PolyValue> parameters ) {
     }
 
 

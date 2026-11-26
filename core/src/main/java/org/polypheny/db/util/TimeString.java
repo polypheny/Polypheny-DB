@@ -181,6 +181,10 @@ public class TimeString implements Comparable<TimeString>, Serializable {
 
 
     public static TimeString fromMillisOfDay( int i ) {
+        if ( i == DateTimeUtils.MILLIS_PER_DAY ) {
+            // A native store can round a TIME to the end of the day.
+            return new TimeString( "24:00:00", false );
+        }
         return new TimeString( DateTimeUtils.unixTimeToString( i ) ).withMillis( (int) DateTimeUtils.floorMod( i, 1000 ) );
     }
 

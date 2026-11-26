@@ -129,7 +129,8 @@ public class PostgresqlStore extends AbstractJdbcStore {
 
 
     private static String getConnectionUrl( final String dbHostname, final int dbPort, final String dbName ) {
-        return String.format( "jdbc:postgresql://%s:%d/%s", dbHostname, dbPort, dbName );
+        // PgJDBC's binary TIME decoder cannot represent the PostgreSQL value 24:00:00.
+        return String.format( "jdbc:postgresql://%s:%d/%s?binaryTransferDisable=TIME", dbHostname, dbPort, dbName );
     }
 
 
