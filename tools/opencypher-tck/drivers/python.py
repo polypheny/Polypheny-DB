@@ -8,6 +8,8 @@ import os
 from pathlib import Path
 import sys
 
+# The default upb decoder cannot decode the full TCK's depth-40 map.
+os.environ.setdefault("PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION", "python")
 import polypheny
 
 sys.path.insert(0, str(Path(__file__).absolute().parent.parent))

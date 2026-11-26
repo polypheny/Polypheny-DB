@@ -151,7 +151,8 @@ def normalize(value, unordered_lists=False):
                         directions.append("left")
                     else:
                         raise ValueError(f"Path edge {edge['id']} does not join adjacent nodes")
-            return (kind, tuple(map(normalize, nodes)), tuple(map(normalize, edges)), tuple(directions))
+            return (kind, tuple(normalize(node, unordered_lists) for node in nodes),
+                    tuple(normalize(edge, unordered_lists) for edge in edges), tuple(directions))
         if kind == "float":
             number = value["value"]
             if number not in ("NaN", "Infinity", "-Infinity"):

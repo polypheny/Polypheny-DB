@@ -33,10 +33,11 @@ import org.locationtech.jts.geom.PrecisionModel;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
-import org.polypheny.db.functions.CypherFunctions;
+import org.polypheny.db.cypher.cypher2alg.CypherSyntaxException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.cypher.parser.StringPos;
+import org.polypheny.db.functions.CypherFunctions;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
 import org.polypheny.db.languages.QueryLanguage;
@@ -104,9 +105,26 @@ public class CypherLiteral extends CypherExpression {
         if ( literalType == Literal.DECIMAL || literalType == Literal.HEX || literalType == Literal.OCTAL ) {
             int radix = literalType == Literal.HEX ? 16 : literalType == Literal.OCTAL ? 8 : 10;
             int start = literalType == Literal.HEX || image.startsWith( "0o" ) ? 2 : 0;
-            this.value = Long.parseLong( (negated ? "-" : "") + image.substring( start ).replace( "_", "" ), radix );
+            String digits = image.substring( start ).replace( "_", "" );
+            try {
+                this.value = Long.parseLong( (negated ? "-" : "") + digits, radix );
+            } catch ( NumberFormatException ex ) {
+                if ( digits.isEmpty() || digits.chars().anyMatch( digit -> Character.digit( digit, radix ) < 0 ) ) {
+                    throw new CypherSyntaxException( "InvalidNumberLiteral: Invalid integer literal: " + image );
+                }
+                throw new CypherSyntaxException( "IntegerOverflow: Integer literal is outside the signed 64-bit range: " + (negated ? "-" : "") + image );
+            }
         } else if ( literalType == Literal.DOUBLE ) {
-            this.value = Double.parseDouble( image ) * (negated ? -1 : 1);
+            double number;
+            try {
+                number = Double.parseDouble( image );
+            } catch ( NumberFormatException ex ) {
+                throw new CypherSyntaxException( "InvalidNumberLiteral: Invalid floating-point literal: " + image );
+            }
+            if ( !Double.isFinite( number ) ) {
+                throw new CypherSyntaxException( "FloatingPointOverflow: Floating-point literal is out of range: " + image );
+            }
+            this.value = negated ? -number : number;
         } else {
             throw new GenericRuntimeException( "Could not use provided format to creat cypher literal." );
         }

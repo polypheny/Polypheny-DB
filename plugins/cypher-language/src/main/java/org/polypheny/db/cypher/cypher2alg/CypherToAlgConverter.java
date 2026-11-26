@@ -84,6 +84,7 @@ import org.polypheny.db.catalog.snapshot.Snapshot;
 import org.polypheny.db.cypher.CypherCallResultItem;
 import org.polypheny.db.cypher.CypherNode;
 import org.polypheny.db.cypher.CypherParameter;
+import org.polypheny.db.cypher.CypherProcedures;
 import org.polypheny.db.cypher.CypherNode.CypherFamily;
 import org.polypheny.db.cypher.CypherNode.CypherKind;
 import org.polypheny.db.cypher.MergeActionType;
@@ -99,6 +100,7 @@ import org.polypheny.db.cypher.clause.CypherQuery;
 import org.polypheny.db.cypher.clause.CypherRemove;
 import org.polypheny.db.cypher.clause.CypherReturn;
 import org.polypheny.db.cypher.clause.CypherReturnClause;
+import org.polypheny.db.cypher.clause.CypherReturnClause.GraphProjection;
 import org.polypheny.db.cypher.clause.CypherReturnItem;
 import org.polypheny.db.cypher.clause.CypherSetClause;
 import org.polypheny.db.cypher.clause.CypherSubQuery;
@@ -106,6 +108,7 @@ import org.polypheny.db.cypher.clause.CypherUnwind;
 import org.polypheny.db.cypher.clause.CypherWhere;
 import org.polypheny.db.cypher.clause.CypherWith;
 import org.polypheny.db.cypher.expression.CypherAggregate;
+import org.polypheny.db.cypher.expression.CypherExistSubQuery;
 import org.polypheny.db.cypher.expression.CypherExpression;
 import org.polypheny.db.cypher.expression.CypherFunctionInvocation;
 import org.polypheny.db.cypher.expression.CypherLiteral;
@@ -123,6 +126,8 @@ import org.polypheny.db.cypher.query.CypherUnion;
 import org.polypheny.db.cypher.set.CypherSetItem;
 import org.polypheny.db.functions.CypherFunctions;
 import org.polypheny.db.functions.CypherMergeRows;
+import org.polypheny.db.languages.CypherTableProcedureProvider.Field;
+import org.polypheny.db.languages.CypherTableProcedureProvider.Table;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.QueryLanguage;
 import org.polypheny.db.plan.AlgCluster;
@@ -199,12 +204,12 @@ public class CypherToAlgConverter {
         convertQuery( query, context, !unionBranch );
 
         CypherGraphInputs graphInputs = new CypherGraphInputs( entity, cluster );
-        AlgNode output = context.build().accept( graphInputs );
+        AlgNode output = context.build().accept( new CypherSubqueryInputs( cluster ) ).accept( graphInputs );
         if ( context.returningInsert != null && graphInputs.usesGraphInput() ) {
             // Read the graph after each CREATE row is written, using the returning write pipeline.
             context = new CypherContext( query, entity, cluster, algBuilder, rexBuilder, snapshot );
             convertQuery( query, context, false );
-            output = context.build().accept( graphInputs );
+            output = context.build().accept( new CypherSubqueryInputs( cluster ) ).accept( graphInputs );
         }
         if ( context.returningInsert != null ) {
             // Execute the write to completion even when the RETURN projection produces no rows.
@@ -311,8 +316,22 @@ public class CypherToAlgConverter {
                         && clauses.get( 1 ).getCypherKind() == CypherKind.RETURN;
 
                 for ( int i = 0; i < clauses.size(); i++ ) {
+                    CypherClause clause = clauses.get( i );
+                    if ( clause instanceof CypherCreate create && isLiteralCreate( create ) ) {
+                        // Adjacent literal writes have no intervening reads. Plan them as one insert
+                        // so long CREATE scripts do not produce a deeply nested chain of modifications.
+                        List<CypherPattern> patterns = new ArrayList<>( create.getPatterns() );
+                        while ( i + 1 < clauses.size() && clauses.get( i + 1 ) instanceof CypherCreate next && isLiteralCreate( next ) ) {
+                            patterns.addAll( next.getPatterns() );
+                            i++;
+                        }
+                        context.writeHasConsumer = i + 1 < clauses.size();
+                        materializePathBindings( context );
+                        convertCreatePatterns( patterns, context );
+                        continue;
+                    }
                     context.writeHasConsumer = i + 1 < clauses.size();
-                    convertClauses( clauses.get( i ), context );
+                    convertClauses( clause, context );
                 }
 
                 break;
@@ -462,6 +481,38 @@ public class CypherToAlgConverter {
     }
 
 
+    private RexNode convertExistsSubquery( CypherExistSubQuery exists, CypherContext context ) {
+        List<CypherClause> clauses = exists.getClauses();
+        for ( CypherClause clause : clauses ) {
+            switch ( clause.getCypherKind() ) {
+                case MATCH, WITH, RETURN, UNWIND -> { }
+                default -> throw new CypherSyntaxException( "InvalidClauseComposition: EXISTS only accepts read-only clauses." );
+            }
+        }
+
+        AlgNode outer = context.hasInput() ? context.peek() : null;
+        Map<PolyString, RexNode> bindings = outer == null ? Map.of()
+                : matchBindings( new MatchRows( outer, 0 ), 0, context.implicitPathBindings );
+        CorrelationId correlation = cluster.createCorrel();
+        CypherContext body = new CypherContext( exists, context.graph, cluster, algBuilder, rexBuilder, snapshot );
+        if ( !bindings.isEmpty() ) {
+            AlgDataTypeFactory.Builder fields = context.typeFactory.builder();
+            bindings.forEach( ( name, value ) -> fields.add( name.value, null, value.getType() ) );
+            RexNode input = rexBuilder.makeCorrel( fields.build(), correlation );
+            List<RexNode> imports = new ArrayList<>();
+            for ( int i = 0; i < bindings.size(); i++ ) {
+                imports.add( rexBuilder.makeFieldAccess( input, i ) );
+            }
+            body.add( LogicalLpgProject.create( body.asValues( List.of() ), imports, new ArrayList<>( bindings.keySet() ) ) );
+        }
+        for ( CypherClause clause : clauses ) {
+            convertClauses( clause, body );
+        }
+        // Keep captures as operands so expression and MATCH scope rewrites remap them with the outer row.
+        return new CypherSubqueryInputs.Exists( context.booleanType, new ArrayList<>( bindings.values() ), body.build(), correlation );
+    }
+
+
     private void convertCallSubquery( CypherSubQuery call, CypherContext context ) {
         if ( call.getInTransactionsParams() != null ) {
             throw new CypherSyntaxException( "CALL subqueries cannot start independent transactions." );
@@ -518,6 +569,12 @@ public class CypherToAlgConverter {
 
     private void convertProcedureCall( CypherCall call, CypherContext context ) {
         if ( !call.getNamespace().equals( List.of( "db" ) ) || !call.getName().equals( "labels" ) ) {
+            String namespace = context.snapshot.getNamespace( context.graph.namespaceId ).orElseThrow().name;
+            Optional<Table> procedure = CypherProcedures.find( namespace, call );
+            if ( procedure.isPresent() ) {
+                convertTableProcedure( call, procedure.get(), context );
+                return;
+            }
             throw new CypherSyntaxException( "Unknown Cypher procedure: " + String.join( ".", call.getNamespace() )
                     + (call.getNamespace().isEmpty() ? "" : ".") + call.getName() );
         }
@@ -566,6 +623,192 @@ public class CypherToAlgConverter {
     }
 
 
+    private void convertTableProcedure( CypherCall call, Table procedure, CypherContext context ) {
+        AlgNode outer = popCallInput( context );
+        boolean standalone = outer == null && !context.writeHasConsumer;
+        if ( !standalone && call.isYieldAll() ) {
+            throw new CypherSyntaxException( "UnexpectedSyntax: YIELD * requires a standalone procedure call." );
+        }
+
+        AlgNode input = outer == null ? context.asValues( List.of() ) : outer;
+        List<AlgDataTypeField> inputFields = input.getTupleType().getFields();
+        List<RexNode> arguments = procedureArguments( call, procedure.inputs(), input, standalone, context );
+        if ( procedure.outputs().isEmpty() && call.getItems() == null ) {
+            if ( arguments.isEmpty() ) {
+                context.add( standalone
+                        ? LogicalLpgValues.create( cluster, cluster.traitSet(), new AlgRecordType( List.of() ), ImmutableList.of() )
+                        : input );
+            } else {
+                context.add( procedureArgumentFilter( input, arguments, !standalone, context ) );
+            }
+            setKindIfNull( context, Kind.SELECT );
+            return;
+        }
+
+        AlgNode rows = procedureRows( procedure, context );
+        List<AlgDataTypeField> procedureFields = rows.getTupleType().getFields();
+        boolean empty = procedure.rows().isEmpty() && !arguments.isEmpty();
+        int firstOutput = arguments.size();
+        if ( empty ) {
+            // An empty join would discard evaluation of the input, including invalid arguments.
+            rows = procedureArgumentFilter( input, arguments, false, context );
+        } else if ( outer != null || !arguments.isEmpty() ) {
+            // Evaluate each argument once, then match its value against every row in the procedure relation.
+            List<RexNode> values = new ArrayList<>();
+            List<PolyString> names = new ArrayList<>();
+            for ( AlgDataTypeField field : inputFields ) {
+                values.add( rexBuilder.makeInputRef( input, field.getIndex() ) );
+                names.add( PolyString.of( field.getName() ) );
+            }
+            for ( RexNode argument : arguments ) {
+                values.add( argument );
+                names.add( PolyString.of( "$procedure$argument" + names.size() ) );
+            }
+            AlgNode parameters = arguments.isEmpty() ? input : LogicalLpgProject.create( input, values, names );
+            List<RexNode> conditions = new ArrayList<>();
+            for ( int i = 0; i < arguments.size(); i++ ) {
+                RexNode expected = rexBuilder.makeInputRef( rows.getTupleType().getFields().get( i ).getType(), values.size() + i );
+                RexNode actual = rexBuilder.makeInputRef( parameters, inputFields.size() + i );
+                conditions.add( procedureInputMatches( expected, actual, context ) );
+            }
+            rows = LogicalLpgJoin.create( parameters, rows, RexUtil.composeConjunction( rexBuilder, conditions, false ), JoinAlgType.INNER );
+            firstOutput += values.size();
+        }
+
+        Map<String, RexNode> outputs = new LinkedHashMap<>();
+        for ( int i = 0; i < procedure.outputs().size(); i++ ) {
+            RexNode value = empty
+                    ? rexBuilder.makeNullLiteral( procedureFields.get( arguments.size() + i ).getType() )
+                    : rexBuilder.makeInputRef( rows, firstOutput + i );
+            outputs.put( procedure.outputs().get( i ).name(), value );
+        }
+        List<RexNode> values = new ArrayList<>();
+        List<PolyString> names = new ArrayList<>();
+        for ( AlgDataTypeField field : inputFields ) {
+            values.add( rexBuilder.makeInputRef( rows, field.getIndex() ) );
+            names.add( PolyString.of( field.getName() ) );
+        }
+        if ( call.getItems() != null ) {
+            for ( CypherCallResultItem item : call.getItems() ) {
+                String source = item.getExpression();
+                RexNode value = outputs.get( source );
+                if ( value == null ) {
+                    throw new CypherSyntaxException( "UndefinedVariable: Unknown procedure output " + source + "." );
+                }
+                String name = item.getInput() instanceof CypherVariable variable ? variable.getName() : source;
+                addProcedureOutput( value, name, values, names );
+            }
+        } else if ( standalone ) {
+            for ( Map.Entry<String, RexNode> output : outputs.entrySet() ) {
+                addProcedureOutput( output.getValue(), output.getKey(), values, names );
+            }
+        }
+        context.add( LogicalLpgProject.create( rows, values, names ) );
+        setKindIfNull( context, Kind.SELECT );
+        if ( call.getWhere() != null ) {
+            convertWhere( call.getWhere(), context );
+            context.combineFilter();
+        }
+    }
+
+
+    private AlgNode procedureArgumentFilter( AlgNode input, List<RexNode> arguments, boolean retainRow, CypherContext context ) {
+        List<RexNode> operands = new ArrayList<>();
+        operands.add( rexBuilder.makeLiteral( retainRow ) );
+        operands.addAll( arguments );
+        RexNode completed = rexBuilder.makeCall( context.booleanType,
+                OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EVALUATE_PROCEDURE_ARGUMENTS ), operands );
+        return LogicalLpgFilter.create( input, completed );
+    }
+
+
+    private List<RexNode> procedureArguments( CypherCall call, List<Field> inputs, AlgNode input, boolean standalone, CypherContext context ) {
+        List<RexNode> arguments = new ArrayList<>();
+        if ( call.getImplicitArguments() != null ) {
+            call.getImplicitArguments().forEach( value -> arguments.add( value.isNull()
+                    ? rexBuilder.makeNullLiteral( context.typeFactory.createPolyType( PolyType.NULL ) )
+                    : rexBuilder.makeLiteral( value ) ) );
+        } else if ( call.getArguments() != null ) {
+            List<String> variables = input.getTupleType().getFieldNames();
+            for ( CypherExpression expression : call.getArguments() ) {
+                arguments.add( context.resolveInScope( expression, RexType.PROJECT, name -> {
+                    int index = variables.indexOf( name );
+                    return index < 0 ? null : rexBuilder.makeInputRef( input, index );
+                }, null ) );
+            }
+        } else if ( !inputs.isEmpty() ) {
+            throw new CypherSyntaxException( standalone
+                    ? "MissingParameter: Missing Cypher parameter: $" + inputs.get( 0 ).name()
+                    : "InvalidArgumentPassingMode: A procedure composed with other clauses needs explicit arguments." );
+        }
+
+        if ( inputs.size() != arguments.size() ) {
+            throw new CypherSyntaxException( "InvalidNumberOfArguments: Expected " + inputs.size() + " procedure arguments." );
+        }
+        for ( int i = 0; i < inputs.size(); i++ ) {
+            Field parameter = inputs.get( i );
+            RexNode argument = arguments.get( i );
+            PolyType type = argument.getType().getPolyType();
+            if ( type != PolyType.ANY && !Field.accepts( parameter.type(), parameter.nullable(), type ) ) {
+                throw new CypherSyntaxException( "InvalidArgumentType: Procedure argument " + parameter.name()
+                        + " requires " + parameter.type() + ", got " + type + "." );
+            }
+            if ( type == PolyType.ANY || !parameter.nullable() && argument.getType().isNullable() ) {
+                arguments.set( i, rexBuilder.makeCall( context.typeFactory.createPolyType( PolyType.ANY ),
+                        OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_VALIDATE_PROCEDURE_ARGUMENT ),
+                        List.of( argument, rexBuilder.makeLiteral( parameter.name() ), rexBuilder.makeLiteral( parameter.type().name() ),
+                                rexBuilder.makeLiteral( parameter.nullable() ) ) ) );
+            }
+        }
+        return arguments;
+    }
+
+
+    private AlgNode procedureRows( Table procedure, CypherContext context ) {
+        List<Field> all = new ArrayList<>( procedure.inputs() );
+        all.addAll( procedure.outputs() );
+        List<AlgDataTypeField> fields = new ArrayList<>();
+        for ( int i = 0; i < all.size(); i++ ) {
+            Field field = all.get( i );
+            AlgDataType type = context.typeFactory.createTypeWithNullability(
+                    context.typeFactory.createPolyType( field.type() ), field.nullable() );
+            fields.add( new AlgDataTypeFieldImpl( -1L, "$procedure$field" + i, i, type ) );
+        }
+        ImmutableList.Builder<ImmutableList<RexLiteral>> tuples = ImmutableList.builder();
+        for ( List<PolyValue> row : procedure.rows() ) {
+            ImmutableList.Builder<RexLiteral> values = ImmutableList.builder();
+            for ( int i = 0; i < row.size(); i++ ) {
+                PolyValue value = row.get( i );
+                AlgDataType type = fields.get( i ).getType();
+                values.add( value.isNull() ? rexBuilder.makeNullLiteral( type )
+                        : rexBuilder.makeLiteral( value, context.typeFactory.createTypeWithNullability( type, false ) ) );
+            }
+            tuples.add( values.build() );
+        }
+        return LogicalLpgValues.create( cluster, cluster.traitSet(), new AlgRecordType( fields ), tuples.build() );
+    }
+
+
+    private RexNode procedureInputMatches( RexNode expected, RexNode actual, CypherContext context ) {
+        var isNull = OperatorRegistry.get( OperatorName.IS_NULL );
+        RexNode bothNull = rexBuilder.makeCall( OperatorRegistry.get( OperatorName.AND ),
+                rexBuilder.makeCall( isNull, expected ), rexBuilder.makeCall( isNull, actual ) );
+        RexNode sameValue = rexBuilder.makeCall( context.booleanType,
+                OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_EQUALS ), List.of( expected, actual ) );
+        return rexBuilder.makeCall( OperatorRegistry.get( OperatorName.OR ), bothNull, sameValue );
+    }
+
+
+    private static void addProcedureOutput( RexNode value, String name, List<RexNode> values, List<PolyString> names ) {
+        PolyString alias = PolyString.of( name );
+        if ( names.contains( alias ) ) {
+            throw new CypherSyntaxException( "VariableAlreadyBound: CALL cannot reuse the already bound variable " + name + "." );
+        }
+        names.add( alias );
+        values.add( value );
+    }
+
+
     private AlgNode popCallInput( CypherContext context ) {
         AlgNode input = context.pop();
         if ( input != null && input.getTupleType().getFieldNames().stream().anyMatch( Objects::isNull ) ) {
@@ -597,7 +840,7 @@ public class CypherToAlgConverter {
             if ( item instanceof CypherReturnItem expression && expression.getVariable() == null
                     && !(expression.getExpression() instanceof CypherVariable) ) {
                 String detail = orderedAggregation && !(expression.getExpression() instanceof CypherAggregate)
-                        ? "AmbiguousAggregationExpression: " : "UnexpectedSyntax: ";
+                        ? "AmbiguousAggregationExpression: " : "NoExpressionAlias: ";
                 throw new CypherSyntaxException( detail + "An expression in WITH must have an alias (use AS)." );
             }
         }
@@ -612,7 +855,8 @@ public class CypherToAlgConverter {
             materializePathBindings( context );
         }
         AlgNode source = context.stack.isEmpty() ? null : context.peek();
-        AlgNode projection = clause.getGraphProject( context, withClause );
+        GraphProjection graphProjection = clause.getGraphProject( context, withClause );
+        AlgNode projection = graphProjection.node();
         List<CypherOrderItem> order = clause.getOrder() == null ? List.of() : clause.getOrder();
         boolean sort = !order.isEmpty() || clause.getLimit() != null || clause.getSkip() != null;
         if ( order.isEmpty() && where == null ) {
@@ -658,10 +902,16 @@ public class CypherToAlgConverter {
                     outputValues.putIfAbsent( variable.getName(), outputValues.get( column ) );
                     outputRefs.putIfAbsent( variable.getName(), outputRefs.get( column ) );
                 }
+                if ( variable.getName().equals( column ) && sourceBindings.containsKey( column ) ) {
+                    unshadowedBindings.put( column, sourceBindings.get( column ) );
+                }
             }
         }
 
         List<Integer> sortFields = new ArrayList<>();
+        LogicalLpgProject aggregateProjection = graphProjection.sortAggregates().isEmpty() ? null : (LogicalLpgProject) projection;
+        List<RexNode> aggregateValues = aggregateProjection == null ? List.of() : new ArrayList<>( aggregateProjection.getProjects() );
+        List<PolyString> aggregateNames = aggregateProjection == null ? List.of() : new ArrayList<>( aggregateProjection.getNames() );
         if ( !order.isEmpty() ) {
             AlgNode aggregationInput = projection instanceof LogicalLpgProject projected ? projected.getInput() : projection;
             boolean grouped = aggregationInput instanceof LogicalLpgAggregate aggregate && !aggregate.aggCalls.isEmpty();
@@ -676,7 +926,8 @@ public class CypherToAlgConverter {
             };
             for ( CypherOrderItem item : order ) {
                 CypherExpression expression = item.getExpression();
-                RexNode projectedKey = projectedExpression( expression, projectedExpressions, sourceBindings, outputValues, context );
+                RexNode projectedKey = projectedSortExpression( expression, expressionKey( expression, sourceBindings, context ),
+                        projectedExpressions, outputValues, grouped );
                 RexNode value;
                 try {
                     // An exact projected expression is already a sort key. Inside another
@@ -686,17 +937,20 @@ public class CypherToAlgConverter {
                     } else {
                         value = context.resolveInScope( expression, RexType.PROJECT, sortBindings, part -> {
                             boolean aggregate = part instanceof CypherAggregate;
-                            // A compound grouping key must be named by its alias or recomputed from simple keys.
-                            if ( grouped && !aggregate && !(part instanceof CypherProperty property && property.getSubject() instanceof CypherVariable) ) {
-                                return null;
+                            // Aggregate operands still refer to the grouping input even when an output alias shadows that name.
+                            Optional<ProjectionExpressionKey> key = expressionKey( part,
+                                    name -> (context.insideAggregateOperand ? sourceBindings : unshadowedBindings).get( name ), context );
+                            RexNode projected = projectedSortExpression( part, key, projectedExpressions, outputValues, grouped );
+                            if ( projected != null || !aggregate ) {
+                                return projected;
                             }
-                            RexNode projected = projectedExpression( part, projectedExpressions,
-                                    aggregate ? sourceBindings : unshadowedBindings, outputValues, context );
-                            if ( aggregate && projected == null ) {
+                            RexNode atom = key.map( ProjectionExpressionKey::aggregateAtom ).map( graphProjection.sortAggregates()::get ).orElse( null );
+                            if ( atom == null ) {
                                 String detail = grouped ? "UndefinedVariable" : "InvalidAggregation";
                                 throw new CypherSyntaxException( detail + ": The aggregation used to order rows must also be projected." );
                             }
-                            return projected;
+                            int index = aggregateValues.indexOf( atom );
+                            return rexBuilder.makeInputRef( atom.getType(), index >= 0 ? index : appendHiddenColumn( atom, aggregateValues, aggregateNames ) );
                         } );
                     }
                 } catch ( CypherSyntaxException ex ) {
@@ -724,6 +978,9 @@ public class CypherToAlgConverter {
                 return rexBuilder.makeInputRef( originalValue.getType(), index );
             } ), part -> projectedExpression( part, projectedExpressions, unshadowedBindings, outputRefs, context ) );
             predicate = context.booleanPredicate( condition );
+        }
+        if ( aggregateProjection != null && aggregateValues.size() > width ) {
+            input = LogicalLpgProject.create( aggregateProjection.getInput(), aggregateValues, aggregateNames );
         }
         AlgNode result = values.size() == width ? projection
                 : LogicalLpgProject.create( input, values, names );
@@ -762,7 +1019,8 @@ public class CypherToAlgConverter {
                 String name = projection.columnName() == null && projection.getExpression() instanceof CypherAggregate aggregate
                         ? aggregate.op.name() : projection.columnName();
                 if ( name != null ) {
-                    expressionKey( projection.getExpression(), sourceBindings, context ).ifPresent( key -> expressions.putIfAbsent( key, name ) );
+                    expressionKey( projection.getExpression(), sourceBindings, context ).map( ProjectionExpressionKey::expression )
+                            .ifPresent( key -> expressions.putIfAbsent( key, name ) );
                 }
             }
         }
@@ -776,13 +1034,36 @@ public class CypherToAlgConverter {
         if ( projections.isEmpty() || expression instanceof CypherVariable ) {
             return null;
         }
-        return expressionKey( expression, sourceBindings, context ).map( projections::get ).map( output::get ).orElse( null );
+        return expressionKey( expression, sourceBindings, context ).map( ProjectionExpressionKey::expression ).map( projections::get ).map( output::get ).orElse( null );
     }
 
 
-    private static Optional<PlanKey> expressionKey( CypherExpression expression, Map<String, RexNode> sourceBindings, CypherContext context ) {
+    private record ProjectionExpressionKey( PlanKey expression, boolean aggregated, @Nullable PlanKey aggregateAtom ) {
+
+    }
+
+
+    @Nullable
+    private static RexNode projectedSortExpression( CypherExpression expression, Optional<ProjectionExpressionKey> key,
+            Map<PlanKey, String> projections, Map<String, RexNode> output, boolean grouped ) {
+        // Compound grouping keys remain available through their aliases or through their simple components.
+        return key.filter( match -> !grouped || match.aggregated()
+                        || expression instanceof CypherProperty property && property.getSubject() instanceof CypherVariable )
+                .map( ProjectionExpressionKey::expression ).map( projections::get ).map( output::get ).orElse( null );
+    }
+
+
+    private static Optional<ProjectionExpressionKey> expressionKey( CypherExpression expression, Map<String, RexNode> sourceBindings, CypherContext context ) {
+        return expressionKey( expression, sourceBindings::get, context );
+    }
+
+
+    private static Optional<ProjectionExpressionKey> expressionKey( CypherExpression expression, Function<String, RexNode> variables, CypherContext context ) {
+        if ( expression instanceof CypherVariable ) {
+            return Optional.empty();
+        }
         try {
-            return context.projectionExpressionKey( expression, sourceBindings::get );
+            return context.projectionExpressionKey( expression, variables );
         } catch ( GenericRuntimeException | UnsupportedOperationException ex ) {
             // A failed probe is not a query error. Resolve the expression normally to apply
             // output aliases and report any errors in the resulting scope.
@@ -923,17 +1204,28 @@ public class CypherToAlgConverter {
 
 
     private void convertCreate( CypherCreate clause, CypherContext context ) {
-        validateCreatePatterns( clause.getPatterns(), context.stack.isEmpty() ? null : context.peek() );
-        context.kind = Kind.INSERT;
+        convertCreatePatterns( clause.getPatterns(), context );
+    }
 
-        if ( context.stack.isEmpty() && (context.usesCreateExpressions() || clause.getPatterns().stream().anyMatch( CypherToAlgConverter::hasComputedCreateProperties )) ) {
+
+    private void convertCreatePatterns( List<CypherPattern> patterns, CypherContext context ) {
+        validateCreatePatterns( patterns, context.stack.isEmpty() ? null : context.peek() );
+        context.kind = Kind.INSERT;
+        boolean computed = patterns.stream().anyMatch( CypherToAlgConverter::hasComputedCreateProperties );
+
+        if ( context.stack.isEmpty() && (context.usesCreateExpressions() || computed) ) {
             context.add( context.asValues( List.of() ) );
         }
 
-        for ( CypherPattern pattern : clause.getPatterns() ) {
+        for ( CypherPattern pattern : patterns ) {
             convertPattern( pattern, context );
         }
         context.combineValues();
+    }
+
+
+    private static boolean isLiteralCreate( CypherCreate clause ) {
+        return clause.getPatterns().stream().noneMatch( CypherToAlgConverter::hasComputedCreateProperties );
     }
 
 
@@ -1004,17 +1296,17 @@ public class CypherToAlgConverter {
                 }
             }
             for ( CypherRelPattern edge : path.getEdges() ) {
+                if ( edge.getVariable() != null ) {
+                    registerCreatedVariable( bindings, edge.getVariable(), PolyType.EDGE );
+                }
                 if ( edge.getPathLength() != null ) {
-                    throw new CypherSyntaxException( "Variable-length relationships are not supported in CREATE" );
+                    throw new CypherSyntaxException( "CreatingVarLength: Variable-length relationships are not supported in CREATE" );
                 }
                 if ( edge.isLeft() == edge.isRight() ) {
                     throw new CypherSyntaxException( "RequiresDirectedRelationship: CREATE requires directed relationships" );
                 }
                 if ( edge.getRelTypes().size() != 1 ) {
                     throw new CypherSyntaxException( "NoSingleRelationshipType: CREATE relationships require exactly one type" );
-                }
-                if ( edge.getVariable() != null ) {
-                    registerCreatedVariable( bindings, edge.getVariable(), PolyType.EDGE );
                 }
             }
         }
@@ -1685,7 +1977,7 @@ public class CypherToAlgConverter {
     }
 
 
-    public static class CypherContext {
+    public class CypherContext {
 
         public final AlgCluster cluster;
         public final AlgBuilder algBuilder;
@@ -1706,7 +1998,8 @@ public class CypherToAlgConverter {
         private final Queue<Pair<PolyString, RexNode>> rexQueue = new LinkedList<>();
         private List<ProjectionAggregate> projectionAggregates = new ArrayList<>();
         private boolean acceptingAggregates;
-        private final Map<PolyString, PolyNode> nodes = new HashMap<>();
+        private boolean insideAggregateOperand;
+        private final Map<PolyString, PolyNode> nodes = new LinkedHashMap<>();
         // Paths still represented by a single match column. The value says whether the path itself has a user alias.
         private final Map<String, Boolean> implicitPathBindings = new HashMap<>();
         private final Map<String, RexNode> localBindings = new HashMap<>();
@@ -1720,7 +2013,7 @@ public class CypherToAlgConverter {
         private LogicalLpgModify returningInsert;
         private List<Pair<PolyString, EdgeVariableHolder>> edges = new LinkedList<>();
         private final Map<PolyString, PolyPath> createdPaths = new LinkedHashMap<>();
-        private final Map<PolyString, List<Pair<PolyString, RexNode>>> createProperties = new HashMap<>();
+        private final Map<PolyString, CypherLiteral> createProperties = new HashMap<>();
 
 
         private CypherContext(
@@ -1749,6 +2042,11 @@ public class CypherToAlgConverter {
 
         public RexNode graphValue() {
             return CypherGraphInputs.graphReference( graphType );
+        }
+
+
+        public RexNode existsSubquery( CypherExistSubQuery query ) {
+            return convertExistsSubquery( query, this );
         }
 
 
@@ -1954,7 +2252,23 @@ public class CypherToAlgConverter {
         }
 
 
-        public record ProjectionAggregate( RexNameRef reference, AggregateCall call, RexNode operand ) {
+        public record ProjectionAggregate( RexNameRef reference, AggregateCall call, RexNode operand, RexNode result ) {
+
+            private List<Object> computation() {
+                return Arrays.asList( call.getAggregation().getOperatorName(), call.isDistinct(), operand );
+            }
+
+
+            public Optional<PlanKey> expressionKey() {
+                // The same atom can have different aggregate ordinals in the projection and ORDER BY.
+                RexNode expression = result.accept( new RexShuttle() {
+                    @Override
+                    public RexNode visitNameRef( RexNameRef value ) {
+                        return reference.equals( value ) ? RexNameRef.scoped( "$aggregate", reference.getType() ) : value;
+                    }
+                } );
+                return PlanKey.of( expression, computation() );
+            }
 
         }
 
@@ -1970,27 +2284,44 @@ public class CypherToAlgConverter {
         }
 
 
-        private Optional<PlanKey> projectionExpressionKey( CypherExpression expression, Function<String, RexNode> variables ) {
+        public <T> T withAggregateOperand( Supplier<T> action ) {
+            boolean previous = insideAggregateOperand;
+            insideAggregateOperand = true;
+            try {
+                return withAggregates( false, action );
+            } finally {
+                insideAggregateOperand = previous;
+            }
+        }
+
+
+        private Optional<ProjectionExpressionKey> projectionExpressionKey( CypherExpression expression, Function<String, RexNode> variables ) {
             List<ProjectionAggregate> previous = projectionAggregates;
             projectionAggregates = new ArrayList<>();
             try {
                 RexNode value = withAggregates( true, () -> resolveInScope( expression, RexType.PROJECT, variables, null ) );
                 // The Rex tree contains positional aggregate references. Pair it with the calls they refer to.
-                return PlanKey.of( value, projectionAggregates.stream().map( aggregate -> Arrays.asList(
-                        aggregate.call().getAggregation().getOperatorName(), aggregate.call().isDistinct(), aggregate.operand() ) ).toList() );
+                PlanKey atom = expression instanceof CypherAggregate && projectionAggregates.size() == 1
+                        ? projectionAggregates.get( 0 ).expressionKey().orElse( null ) : null;
+                return PlanKey.of( value, projectionAggregates.stream().map( ProjectionAggregate::computation ).toList() )
+                        .map( key -> new ProjectionExpressionKey( key, !projectionAggregates.isEmpty(), atom ) );
             } finally {
                 projectionAggregates = previous;
             }
         }
 
 
-        public RexNode addAggregate( AggregateCall call, RexNode operand ) {
+        public RexNode addAggregate( AggregateCall call, RexNode operand, Function<RexNode, RexNode> finalizer ) {
+            if ( insideAggregateOperand ) {
+                throw new CypherSyntaxException( "NestedAggregation: An aggregate cannot be an operand of another aggregate." );
+            }
             if ( !acceptingAggregates ) {
                 throw new CypherSyntaxException( "InvalidAggregation: Aggregates are only allowed in projection expressions and cannot be nested." );
             }
             RexNameRef reference = RexNameRef.scoped( "$aggregate" + projectionAggregates.size(), call.getType() );
-            projectionAggregates.add( new ProjectionAggregate( reference, call, operand ) );
-            return reference;
+            RexNode result = finalizer.apply( reference );
+            projectionAggregates.add( new ProjectionAggregate( reference, call, operand, result ) );
+            return result;
         }
 
 
@@ -2155,13 +2486,20 @@ public class CypherToAlgConverter {
             if ( !(expression instanceof CypherLiteral literal) || literal.getLiteralType() != CypherLiteral.Literal.MAP ) {
                 throw new GenericRuntimeException( "CREATE graph properties require a map of expressions" );
             }
-            createProperties.put( id, literal.getMapValue().entrySet().stream().map( entry -> Pair.of(
-                    PolyString.of( entry.getKey() ), entry.getValue().getRex( this, RexType.PROJECT ).right ) ).toList() );
+            createProperties.put( id, literal );
         }
 
 
         private void createRows( List<Pair<PolyString, PolyNode>> nodes, List<Pair<PolyString, EdgeVariableHolder>> edges ) {
             AlgNode input = pop();
+            if ( input.getTupleType().getFieldNames().contains( null ) ) {
+                List<AlgDataTypeField> named = input.getTupleType().getFields().stream().filter( field -> field.getName() != null ).toList();
+                List<RexNode> values = new ArrayList<>();
+                for ( AlgDataTypeField field : named ) {
+                    values.add( rexBuilder.makeInputRef( input, field.getIndex() ) );
+                }
+                input = LogicalLpgProject.create( input, values, named.stream().map( field -> PolyString.of( field.getName() ) ).toList() );
+            }
             List<String> inputNames = input.getTupleType().getFieldNames();
             String rowIdName = privateName( inputNames, "$create$row" );
             AlgNode withRowId = new LogicalLpgWriteRow( input, rowIdName );
@@ -2173,14 +2511,21 @@ public class CypherToAlgConverter {
             List<PolyString> graphNames = fieldNames( withRowId );
             List<RexNode> graphValues = refs( withRowId );
             RexNode rowId = graphValues.get( inputNames.size() );
+            // Node properties see earlier nodes. Relationship properties see the endpoints and earlier relationships.
+            AlgNode nodeInput = withRowId;
             for ( Pair<PolyString, PolyNode> binding : nodes ) {
                 PolyNode node = binding.right;
                 PolyString name = node.getVariableName();
                 int slot = name == null ? -1 : inputNames.indexOf( name.value );
                 if ( slot < 0 ) {
+                    if ( hasPendingCreateBindings( node.id, nodeInput, graphValues ) ) {
+                        nodeInput = LogicalLpgProject.create( nodeInput, graphValues, graphNames );
+                        graphValues = refs( nodeInput );
+                        graphNames = fieldNames( nodeInput );
+                    }
                     slot = graphValues.size();
                     List<RexNode> args = new ArrayList<>( List.of( new RexLiteral( node, nodeType, PolyType.NODE ), rowId ) );
-                    args.addAll( createPropertyArrays( node.id ) );
+                    args.addAll( createPropertyArrays( node.id, nodeInput ) );
                     graphValues.add( createExpression( nodeType, OperatorName.CYPHER_CREATE_NODE, args ) );
                     graphNames.add( addCreateBinding( bindings, graphNames, name, slot ) );
                     writeSlots.add( slot );
@@ -2188,23 +2533,27 @@ public class CypherToAlgConverter {
                 graphSlots.put( node.id, slot );
             }
 
-            AlgNode withNodes = new LogicalLpgProject( cluster, cluster.traitSet(), withRowId, graphValues, graphNames );
-            graphValues = refs( withNodes );
-            graphNames = fieldNames( withNodes );
-            rowId = graphValues.get( inputNames.size() );
+            AlgNode edgeInput = LogicalLpgProject.create( nodeInput, graphValues, graphNames );
+            graphValues = refs( edgeInput );
+            graphNames = fieldNames( edgeInput );
             for ( Pair<PolyString, EdgeVariableHolder> binding : edges ) {
                 PolyEdge edge = orientCreatedEdge( binding.right.edge );
+                if ( hasPendingCreateBindings( edge.id, edgeInput, graphValues ) ) {
+                    edgeInput = LogicalLpgProject.create( edgeInput, graphValues, graphNames );
+                    graphValues = refs( edgeInput );
+                    graphNames = fieldNames( edgeInput );
+                }
                 int slot = graphValues.size();
                 RexNode source = graphValues.get( graphSlots.get( edge.left ) );
                 RexNode target = graphValues.get( graphSlots.get( edge.right ) );
                 List<RexNode> args = new ArrayList<>( List.of( new RexLiteral( edge, edgeType, PolyType.EDGE ), rowId, source, target ) );
-                args.addAll( createPropertyArrays( edge.id ) );
+                args.addAll( createPropertyArrays( edge.id, edgeInput ) );
                 graphValues.add( createExpression( edgeType, OperatorName.CYPHER_CREATE_EDGE, args ) );
                 graphNames.add( addCreateBinding( bindings, graphNames, edge.getVariableName(), slot ) );
                 graphSlots.put( edge.id, slot );
                 writeSlots.add( slot );
             }
-            AlgNode withEdges = new LogicalLpgProject( cluster, cluster.traitSet(), withNodes, graphValues, graphNames );
+            AlgNode withEdges = LogicalLpgProject.create( edgeInput, graphValues, graphNames );
             graphValues = refs( withEdges );
             graphNames = fieldNames( withEdges );
             for ( Map.Entry<PolyString, PolyPath> entry : createdPaths.entrySet() ) {
@@ -2251,11 +2600,29 @@ public class CypherToAlgConverter {
         }
 
 
-        private List<RexNode> createPropertyArrays( PolyString id ) {
-            List<Pair<PolyString, RexNode>> properties = createProperties.getOrDefault( id, List.of() );
+        private boolean hasPendingCreateBindings( PolyString id, AlgNode input, List<RexNode> values ) {
+            return values.size() > input.getTupleType().getFieldCount() && isComputedProperty( createProperties.get( id ) );
+        }
+
+
+        private List<RexNode> createPropertyArrays( PolyString id, AlgNode input ) {
+            CypherLiteral literal = createProperties.get( id );
+            List<PolyString> names = new ArrayList<>();
+            List<RexNode> properties = new ArrayList<>();
+            if ( literal != null ) {
+                add( input );
+                try {
+                    literal.getMapValue().forEach( (key, value) -> {
+                        names.add( PolyString.of( key ) );
+                        properties.add( value.getRex( this, RexType.PROJECT ).right );
+                    } );
+                } finally {
+                    pop();
+                }
+            }
             RexNode keys = rexBuilder.makeArray( typeFactory.createArrayType( typeFactory.createPolyType( PolyType.VARCHAR ), -1 ),
-                    new ArrayList<>( Pair.left( properties ) ) );
-            return List.of( keys, expressionArray( Pair.right( properties ) ) );
+                    new ArrayList<>( names ) );
+            return List.of( keys, expressionArray( properties ) );
         }
 
 

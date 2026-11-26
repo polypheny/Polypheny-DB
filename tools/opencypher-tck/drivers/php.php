@@ -90,11 +90,21 @@ try {
         throw new RuntimeException('Set M23_PHP_AUTOLOAD to the driver checkout’s vendor/autoload.php');
     }
     require $autoload;
+    $configuredTimeout = getenv('M23_REQUEST_TIMEOUT_SECONDS');
+    $timeout = filter_var(
+        $configuredTimeout === false || $configuredTimeout === '' ? '30' : $configuredTimeout,
+        FILTER_VALIDATE_INT,
+        ['options' => ['min_range' => 1, 'max_range' => 600]],
+    );
+    if ($timeout === false) {
+        throw new InvalidArgumentException('M23_REQUEST_TIMEOUT_SECONDS must be an integer between 1 and 600.');
+    }
     $connection = Connection::connectTcp(
         getenv('M23_HOST'),
         (int) getenv('M23_PORT'),
         getenv('M23_USERNAME'),
         getenv('M23_PASSWORD'),
+        timeout: (float) $timeout,
     );
     try {
         $connection->setClientInfoProperties(['CypherResultFormat' => 'relational']);

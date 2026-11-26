@@ -77,7 +77,9 @@ class CypherExpressionSemanticsTest extends CypherTestTemplate {
     void ordersByTheProjectedAggregateExpressionInReturnAndWith() {
         for ( String projection : List.of(
                 "RETURN n, count(*) + 1 AS score ORDER BY count(*) + 1 DESC",
-                "WITH n, count(*) + 1 AS score ORDER BY count(*) + 1 DESC RETURN n, score" ) ) {
+                "WITH n, count(*) + 1 AS score ORDER BY count(*) + 1 DESC RETURN n, score",
+                "RETURN n, count(*) + 1 AS score ORDER BY -(count(*) + 1)",
+                "WITH n, count(*) + 1 AS score ORDER BY -(count(*) + 1) RETURN n, score" ) ) {
             GraphResult result = execute( "UNWIND [2, 1, 1] AS n " + projection );
             assertEquals( 2, result.getData().length );
             assertEquals( 1, cell( result, 0, 0 ).asNumber().intValue() );
@@ -89,6 +91,25 @@ class CypherExpressionSemanticsTest extends CypherTestTemplate {
                 UNWIND [2, 1, 1] AS n
                 RETURN n, count(*) + 1 AS score ORDER BY sum(n) + 1 DESC
                 """, "The aggregation used to order rows must also be projected" );
+    }
+
+
+    @Test
+    void ordersByAggregateAtomsAlreadyComputedInsideProjectedExpressions() {
+        for ( String projection : List.of(
+                "RETURN n AS grouping, n - 1 + count(n) AS score ORDER BY grouping + 2 - count(n)",
+                "WITH n AS grouping, n - 1 + count(n) AS score ORDER BY grouping + 2 - count(n) RETURN grouping, score" ) ) {
+            GraphResult result = execute( "UNWIND [2, 1, 1] AS n " + projection );
+            assertEquals( 2, result.getData().length );
+            assertEquals( 1, cell( result, 0, 0 ).asNumber().intValue() );
+            assertEquals( 2, cell( result, 0, 1 ).asNumber().intValue() );
+            assertEquals( 2, cell( result, 1, 0 ).asNumber().intValue() );
+            assertEquals( 2, cell( result, 1, 1 ).asNumber().intValue() );
+        }
+        assertQueryError( "UNWIND [2, 1, 1] AS n RETURN n, count(n) + 1 AS score ORDER BY count(DISTINCT n)",
+                "The aggregation used to order rows must also be projected" );
+        assertQueryError( "UNWIND [2, 1, 1] AS n RETURN n + 1 AS bucket, count(*) AS total ORDER BY n + 1",
+                "AmbiguousAggregationExpression" );
     }
 
 

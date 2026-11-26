@@ -449,8 +449,8 @@ public interface CypherFactory {
         return new CypherMPAll( pos );
     }
 
-    static CypherExpression existsSubQuery( ParserPos pos, List<CypherPattern> patterns, CypherExpression where ) {
-        return new CypherExistSubQuery( pos, patterns, where );
+    static CypherExpression existsSubQuery( ParserPos pos, List<CypherClause> clauses ) {
+        return new CypherExistSubQuery( pos, clauses );
     }
 
     static CypherExpression listLiteral( ParserPos pos, List<CypherExpression> list ) {
@@ -483,7 +483,14 @@ public interface CypherFactory {
 
     static CypherExpression functionInvocation( ParserPos beforePos, ParserPos namePos, List<String> namespace, String image, boolean distinct, List<CypherExpression> arguments ) {
         if ( namespace.isEmpty() ) {
-            OperatorName deviation = switch ( image.toLowerCase( Locale.ROOT ) ) {
+            String function = image.toLowerCase( Locale.ROOT );
+            if ( function.equals( "percentilecont" ) || function.equals( "percentiledisc" ) ) {
+                if ( arguments.size() != 2 ) {
+                    throw new CypherSyntaxException( image + "() requires exactly two arguments." );
+                }
+                return new CypherAggregate( beforePos, arguments.get( 0 ), arguments.get( 1 ), distinct, function.equals( "percentilecont" ) );
+            }
+            OperatorName deviation = switch ( function ) {
                 case "stdev" -> OperatorName.STDDEV_SAMP;
                 case "stdevp" -> OperatorName.STDDEV_POP;
                 default -> null;

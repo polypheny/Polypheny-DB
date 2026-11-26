@@ -53,6 +53,8 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.runtime.SqlStateException;
+import org.polypheny.db.languages.CypherTableProcedureProvider.Field;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
@@ -327,6 +329,7 @@ public class CypherFunctions {
         if ( !(value instanceof PolyNode node) ) {
             throw new GenericRuntimeException( "Cypher label predicates require a NODE, got %s.", value.getType() );
         }
+        node.requireReadable();
         if ( labels instanceof PolyList<?> list ) {
             return PolyBoolean.of( node.labels.containsAll( list ) );
         }
@@ -374,6 +377,7 @@ public class CypherFunctions {
         }
         PolyValue value;
         if ( holder instanceof GraphPropertyHolder element ) {
+            element.requireReadable();
             value = element.getProperties().get( key );
         } else if ( holder.isMap() ) {
             value = holder.asMap().get( key );
@@ -397,7 +401,11 @@ public class CypherFunctions {
 
     @SuppressWarnings("unused")
     public static PolyValue extractProperties( GraphPropertyHolder holder ) {
-        return holder == null ? null : holder.getProperties();
+        if ( holder == null ) {
+            return null;
+        }
+        holder.requireReadable();
+        return holder.getProperties();
     }
 
 
@@ -406,6 +414,7 @@ public class CypherFunctions {
             return null;
         }
         if ( value instanceof GraphPropertyHolder element ) {
+            element.requireReadable();
             return PolyList.copyOf( element.getProperties().entrySet().stream()
                     .filter( entry -> !isNull( entry.getValue() ) ).map( Map.Entry::getKey ).toList() );
         }
@@ -418,6 +427,7 @@ public class CypherFunctions {
             return null;
         }
         if ( value instanceof GraphPropertyHolder element ) {
+            element.requireReadable();
             PolyDictionary result = new PolyDictionary();
             element.getProperties().forEach( (key, property) -> {
                 if ( !isNull( property ) ) {
@@ -585,11 +595,28 @@ public class CypherFunctions {
     }
 
 
+    public static PolyValue validateProcedureArgument( PolyValue value, PolyString name, PolyString type, PolyBoolean nullable ) {
+        PolyType actual = isNull( value ) ? PolyType.NULL : value.getType();
+        if ( !Field.accepts( PolyType.valueOf( type.value ), nullable.value, actual ) ) {
+            throw new SqlStateException( "InvalidArgumentType: Procedure argument " + name.value
+                    + " requires " + type.value + ", got " + actual + ".", "22023" );
+        }
+        return value;
+    }
+
+
+    public static PolyBoolean evaluateProcedureArguments( PolyBoolean retainRow, PolyValue[] arguments ) {
+        // Java evaluates arguments before entering this method, including calls that produce no output.
+        return retainRow;
+    }
+
+
     private static GraphPropertyHolder requireGraphUpdateTarget( PolyValue value ) {
         if ( isNull( value ) ) {
             return null;
         }
         if ( value instanceof GraphPropertyHolder target ) {
+            target.requireReadable();
             return target;
         }
         throw new GenericRuntimeException( "Graph writes require a node or relationship binding, got %s.", value.getType() );
@@ -624,7 +651,11 @@ public class CypherFunctions {
      */
     @SuppressWarnings("unused")
     public static List<PolyString> extractLabels( GraphPropertyHolder holder ) {
-        return holder == null ? null : holder.getLabels();
+        if ( holder == null ) {
+            return null;
+        }
+        holder.requireReadable();
+        return holder.getLabels();
     }
 
 
@@ -767,6 +798,7 @@ public class CypherFunctions {
         if ( !(targetValue instanceof PolyNode target) ) {
             throw new GenericRuntimeException( "SET label assignment requires a node binding" );
         }
+        target.requireReadable();
         if ( replace.value ) {
             target.labels.clear();
         }
@@ -792,6 +824,7 @@ public class CypherFunctions {
 
         Map<? extends PolyValue, ? extends PolyValue> sourceProperties;
         if ( source instanceof GraphPropertyHolder element ) {
+            element.requireReadable();
             sourceProperties = element.properties;
         } else if ( source instanceof PolyMap<?, ?> map && !map.isNull() ) {
             sourceProperties = map;
@@ -983,6 +1016,60 @@ public class CypherFunctions {
     }
 
 
+    public static PolyValue percentile( PolyValue pairs, PolyValue fallback, PolyBoolean continuous, PolyBoolean distinct ) {
+        PolyList<?> rows = pairs.asList();
+        if ( rows.isEmpty() ) {
+            if ( !isNull( fallback ) ) {
+                percentileFraction( fallback );
+            }
+            return null;
+        }
+
+        double fraction = percentileFraction( rows.get( 0 ).asList().get( 1 ) );
+        List<PolyNumber> values = new ArrayList<>();
+        Set<Object> seen = distinct.value ? new HashSet<>() : null;
+        for ( PolyValue row : rows ) {
+            PolyValue value = row.asList().get( 0 );
+            if ( isNull( value ) ) {
+                continue;
+            }
+            if ( !(value instanceof PolyNumber number) ) {
+                throw new SqlStateException( "InvalidArgumentValue: Percentile functions require numeric values.", "22023" );
+            }
+            if ( seen == null || seen.add( aggregationKey( number ) ) ) {
+                values.add( number );
+            }
+        }
+        if ( values.isEmpty() ) {
+            return null;
+        }
+
+        values.sort( CypherFunctions::compareNumbers );
+        if ( !continuous.value ) {
+            return values.get( Math.max( 0, (int) Math.ceil( fraction * values.size() ) - 1 ) );
+        }
+        double rank = fraction * (values.size() - 1);
+        int low = (int) rank;
+        int high = (int) Math.ceil( rank );
+        if ( low == high ) {
+            return values.get( low );
+        }
+        double weight = rank - low;
+        return PolyDouble.of( (1 - weight) * values.get( low ).doubleValue() + weight * values.get( high ).doubleValue() );
+    }
+
+
+    private static double percentileFraction( PolyValue value ) {
+        if ( value instanceof PolyNumber number && !isNull( number ) ) {
+            double fraction = number.doubleValue();
+            if ( fraction >= 0 && fraction <= 1 ) {
+                return fraction;
+            }
+        }
+        throw new SqlStateException( "NumberOutOfRange: A percentile must be a number between 0 and 1.", "22003" );
+    }
+
+
     public static PolyValue index( PolyValue subject, PolyValue index ) {
         if ( isNull( subject ) || isNull( index ) ) {
             return null;
@@ -995,11 +1082,11 @@ public class CypherFunctions {
         }
         if ( subject.isMap() || subject instanceof GraphPropertyHolder ) {
             if ( !index.isString() ) {
-                throw new GenericRuntimeException( "A map or property key must be a string." );
+                throw new SqlStateException( "MapElementAccessByNonString: A map or property key must be a string.", "2202E" );
             }
             return extractProperty( subject, index.asString() );
         }
-        throw new GenericRuntimeException( "Indexing requires a list, map, node, or relationship." );
+        throw new SqlStateException( "InvalidArgumentType: Indexing requires a list, map, node, or relationship.", "2202E" );
     }
 
 
@@ -1019,7 +1106,7 @@ public class CypherFunctions {
 
     private static long listOffset( PolyValue index, int length ) {
         if ( !PolyType.INT_TYPES.contains( index.getType() ) ) {
-            throw new GenericRuntimeException( "A list index or slice bound must be an integer." );
+            throw new SqlStateException( "InvalidArgumentType: A list index or slice bound must be an integer.", "2202E" );
         }
         long offset = index.asNumber().longValue();
         return offset < 0 ? length + offset : offset;
@@ -1155,13 +1242,13 @@ public class CypherFunctions {
         if ( !PolyType.INT_TYPES.contains( start.getType() )
                 || !PolyType.INT_TYPES.contains( end.getType() )
                 || !PolyType.INT_TYPES.contains( increment.getType() ) ) {
-            throw new GenericRuntimeException( "range() requires integer arguments." );
+            throw new SqlStateException( "InvalidArgumentType: range() requires integer arguments.", "22023" );
         }
         long first = start.asNumber().longValue();
         long last = end.asNumber().longValue();
         long step = increment.asNumber().longValue();
         if ( step == 0 ) {
-            throw new GenericRuntimeException( "range() requires a non-zero step." );
+            throw new SqlStateException( "NumberOutOfRange: range() requires a non-zero step.", "22003" );
         }
         PolyList<PolyLong> values = new PolyList<>();
         if ( (step > 0 && first > last) || (step < 0 && first < last) ) {
@@ -1171,7 +1258,7 @@ public class CypherFunctions {
         BigInteger count = BigInteger.valueOf( last ).subtract( BigInteger.valueOf( first ) )
                 .divide( BigInteger.valueOf( step ) ).add( BigInteger.ONE );
         if ( count.compareTo( BigInteger.valueOf( Integer.MAX_VALUE - 8L ) ) > 0 ) {
-            throw new GenericRuntimeException( "range() result is too large to represent as a list." );
+            throw new SqlStateException( "NumberOutOfRange: range() result is too large to represent as a list.", "22003" );
         }
         int length = count.intValue();
         long next = first;
@@ -1212,6 +1299,7 @@ public class CypherFunctions {
             return null;
         }
         if ( value instanceof PolyNode node ) {
+            node.requireReadable();
             return node.getLabels();
         }
         throw new GenericRuntimeException( "labels() requires a node." );

@@ -18,6 +18,7 @@ package org.polypheny.db.cypher.expression;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 import lombok.Getter;
 import org.polypheny.db.algebra.AlgCollations;
@@ -31,7 +32,10 @@ import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.CypherContext;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter.RexType;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.languages.ParserPos;
+import org.polypheny.db.languages.QueryLanguage;
+import org.polypheny.db.rex.RexLiteral;
 import org.polypheny.db.rex.RexNode;
+import org.polypheny.db.rex.RexUtil;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.util.Pair;
@@ -43,32 +47,81 @@ public class CypherAggregate extends CypherExpression {
     private final CypherExpression target;
     @Getter
     private final boolean distinct;
+    @Nullable
+    private final CypherExpression percentile;
+    private final boolean continuous;
 
 
     public CypherAggregate( ParserPos pos, OperatorName op, @Nullable CypherExpression target, boolean distinct ) {
+        this( pos, op, target, distinct, null, false );
+    }
+
+
+    public CypherAggregate( ParserPos pos, CypherExpression target, CypherExpression percentile, boolean distinct, boolean continuous ) {
+        this( pos, OperatorName.CYPHER_PERCENTILE, target, distinct, percentile, continuous );
+    }
+
+
+    private CypherAggregate( ParserPos pos, OperatorName op, @Nullable CypherExpression target, boolean distinct,
+            @Nullable CypherExpression percentile, boolean continuous ) {
         super( pos );
         this.op = op;
         this.target = target;
         this.distinct = distinct;
-        if ( distinct && op != OperatorName.COUNT && op != OperatorName.COLLECT && op != OperatorName.STDDEV_SAMP && op != OperatorName.STDDEV_POP ) {
-            throw new CypherSyntaxException( "DISTINCT is supported for count(), collect(), stDev(), and stDevP()." );
+        this.percentile = percentile;
+        this.continuous = continuous;
+        if ( distinct && op != OperatorName.COUNT && op != OperatorName.COLLECT && op != OperatorName.STDDEV_SAMP && op != OperatorName.STDDEV_POP
+                && op != OperatorName.CYPHER_PERCENTILE ) {
+            throw new CypherSyntaxException( "DISTINCT is supported for count(), collect(), stDev(), stDevP(), percentileCont(), and percentileDisc()." );
         }
     }
 
 
     @Override
     protected Pair<PolyString, RexNode> toRex( CypherContext context, RexType type ) {
-        RexNode operand = target == null ? null
-                : context.withAggregates( false, () -> target.getRex( context, RexType.PROJECT ).right );
+        RexNode operand = target == null ? null : aggregateOperand( context, target );
+        if ( percentile != null ) {
+            return Pair.of( PolyString.of( op.name() ), percentile( context, Objects.requireNonNull( operand ), aggregateOperand( context, percentile ) ) );
+        }
         if ( operand != null && operand.getType().getPolyType() == PolyType.NULL ) {
             operand = context.rexBuilder.makeNullLiteral( context.typeFactory.createPolyType( PolyType.ANY ) );
         }
         Pair<RexNode, AlgDataType> typeAndValue = getReturnType( context, operand );
+        return Pair.of( PolyString.of( op.name() ), addAggregate( context, op, distinct, typeAndValue.left, typeAndValue.right, value -> value ) );
+    }
+
+
+    private static RexNode aggregateOperand( CypherContext context, CypherExpression expression ) {
+        RexNode operand = context.withAggregateOperand( () -> expression.getRex( context, RexType.PROJECT ).right );
+        if ( RexUtil.findOperatorCall( OperatorRegistry.get( QueryLanguage.from( "cypher" ), OperatorName.CYPHER_RAND ), operand ) != null ) {
+            throw new CypherSyntaxException( "NonConstantExpression: Evaluate rand() in a preceding WITH clause before aggregating it." );
+        }
+        return operand;
+    }
+
+
+    private RexNode percentile( CypherContext context, RexNode value, RexNode fraction ) {
+        QueryLanguage language = QueryLanguage.from( "cypher" );
+        AlgDataType any = context.typeFactory.createPolyType( PolyType.ANY );
+        // Preserve order and both arguments through the unary collection aggregate.
+        // The finalizer selects the group's first fraction and applies DISTINCT to values only.
+        AlgDataType pairType = context.typeFactory.createArrayType( any, 2 );
+        RexNode pair = context.rexBuilder.makeCall( pairType, OperatorRegistry.get( language, OperatorName.CYPHER_LIST_CONSTRUCTOR ), List.of( value, fraction ) );
+        RexNode fallback = fraction instanceof RexLiteral ? fraction : context.rexBuilder.makeNullLiteral( any );
+        AlgDataType result = context.typeFactory.createTypeWithNullability( continuous ? any : value.getType(), true );
+        return addAggregate( context, OperatorName.COLLECT, false, pair, context.typeFactory.createArrayType( pairType, -1 ),
+                pairs -> context.rexBuilder.makeCall( result, OperatorRegistry.get( language, OperatorName.CYPHER_PERCENTILE ),
+                        List.of( pairs, fallback, context.rexBuilder.makeLiteral( continuous ), context.rexBuilder.makeLiteral( distinct ) ) ) );
+    }
+
+
+    private static RexNode addAggregate( CypherContext context, OperatorName op, boolean distinct, @Nullable RexNode operand, AlgDataType type,
+            Function<RexNode, RexNode> finalizer ) {
         AggregateCall call = AggregateCall.create(
                 OperatorRegistry.getAgg( op ), distinct, false, List.of(), -1,
-                AlgCollations.EMPTY, typeAndValue.right, op.name()
+                AlgCollations.EMPTY, type, op.name()
         );
-        return Pair.of( PolyString.of( op.name() ), context.addAggregate( call, typeAndValue.left ) );
+        return context.addAggregate( call, operand, finalizer );
     }
 
 

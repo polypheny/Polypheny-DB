@@ -7,6 +7,10 @@ string GetEnv(string name) => Environment.GetEnvironmentVariable(name) ?? throw 
 
 try
 {
+    // JSONL maps wrap their entries, so the transport uses two JSON levels per map level.
+    const int jsonDepthLimit = 256;
+    var jsonReaderOptions = new JsonDocumentOptions { MaxDepth = jsonDepthLimit };
+    var jsonWriterOptions = new JsonSerializerOptions { MaxDepth = jsonDepthLimit };
     var dsn = $"{GetEnv("M23_HOST")}:{GetEnv("M23_PORT")},{GetEnv("M23_USERNAME")}:{GetEnv("M23_PASSWORD")}";
     using var connection = new PolyphenyConnection(dsn, new PolyphenyConfig { AutoCommit = false });
     connection.Open();
@@ -16,7 +20,7 @@ try
         object response;
         try
         {
-            using var request = JsonDocument.Parse(line);
+            using var request = JsonDocument.Parse(line, jsonReaderOptions);
             response = ExecuteRequest(connection, request.RootElement);
         }
         catch (Exception failure)
@@ -28,7 +32,7 @@ try
             }
             response = new { error };
         }
-        Console.WriteLine(JsonSerializer.Serialize(response));
+        Console.WriteLine(JsonSerializer.Serialize(response, jsonWriterOptions));
     }
     connection.BeginTransaction().Rollback();
 }

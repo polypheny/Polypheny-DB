@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.annotation.Nullable;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.StopWatch;
 import org.polypheny.db.algebra.AlgDecorrelator;
@@ -31,11 +32,14 @@ import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.cypher.clause.CypherCall;
+import org.polypheny.db.cypher.cypher2alg.CypherSyntaxException;
 import org.polypheny.db.cypher.cypher2alg.CypherToAlgConverter;
 import org.polypheny.db.cypher.parser.CypherParser;
 import org.polypheny.db.cypher.parser.CypherParser.CypherParserConfig;
 import org.polypheny.db.cypher.query.CypherSingleQuery;
 import org.polypheny.db.languages.NodeParseException;
+import org.polypheny.db.languages.CypherTableProcedureProvider.Field;
 import org.polypheny.db.languages.QueryParameters;
 import org.polypheny.db.nodes.Node;
 import org.polypheny.db.plan.AlgCluster;
@@ -101,6 +105,12 @@ public class CypherProcessor extends Processor {
 
     @Override
     public PreparedNamedQuery prepareNamedQuery( String query ) {
+        return prepareNamedQuery( query, null );
+    }
+
+
+    @Override
+    public PreparedNamedQuery prepareNamedQuery( String query, @Nullable LogicalNamespace namespace ) {
         CypherParser parser = CypherParser.create( query, parserConfig );
         CypherStatement statement = parsePreparedStatement( parser );
         if ( statement.isDdl() ) {
@@ -113,11 +123,38 @@ public class CypherProcessor extends Processor {
             }
         }
         List<String> names = parameters.stream().map( CypherParameter::getName ).distinct().toList();
+        if ( namespace != null && names.isEmpty() && statement instanceof CypherSingleQuery single
+                && single.getClauses().size() == 1 && single.getClauses().get( 0 ) instanceof CypherCall call
+                && call.getArguments() == null ) {
+            var procedure = CypherProcedures.find( namespace.name, call );
+            if ( procedure.isPresent() && !procedure.get().inputs().isEmpty() ) {
+                List<String> implicitNames = procedure.get().inputs().stream().map( Field::name ).toList();
+                return new PreparedNamedQuery( implicitNames, values -> {
+                    for ( String name : implicitNames ) {
+                        if ( values.get( name ) == null ) {
+                            throw new CypherSyntaxException( "MissingParameter: Missing Cypher parameter: $" + name );
+                        }
+                    }
+                    Map<String, PolyValue> bindings = bindParameterValues( implicitNames, values );
+                    return new CypherSingleQuery( single.getPos(),
+                            List.of( call.withImplicitArguments( implicitNames.stream().map( bindings::get ).toList() ) ) );
+                } );
+            }
+        }
         return new PreparedNamedQuery( names, values -> bindNamedQuery( query, names, values ) );
     }
 
 
     private Node bindNamedQuery( String query, List<String> names, Map<String, PolyValue> values ) {
+        Map<String, PolyValue> bindings = bindParameterValues( names, values );
+        // Parse the original text again so each execution receives its own AST with typed values.
+        CypherParser parser = CypherParser.create( query, parserConfig );
+        parser.setBindings( Map.copyOf( bindings ) );
+        return parsePreparedStatement( parser );
+    }
+
+
+    private static Map<String, PolyValue> bindParameterValues( List<String> names, Map<String, PolyValue> values ) {
         Map<String, PolyValue> bindings = new HashMap<>();
         for ( String name : names ) {
             PolyValue value = values.get( name );
@@ -131,10 +168,7 @@ public class CypherProcessor extends Processor {
             throw new GenericRuntimeException( "Unexpected Cypher parameter: $" + name );
         } );
 
-        // Parse the original text again so each execution receives its own AST with typed values.
-        CypherParser parser = CypherParser.create( query, parserConfig );
-        parser.setBindings( Map.copyOf( bindings ) );
-        return parsePreparedStatement( parser );
+        return bindings;
     }
 
 

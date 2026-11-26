@@ -1377,14 +1377,24 @@ List<CypherStatement> Statements() throws Exception :
         }
     } catch ( ParseException e ) {
         Token t = e.currentToken.next;
-        if ( e.getMessage().contains( "Encountered \"<EOF>\"" ) )
-        {
-            throw new CypherParseException( t.image, e.expectedTokenSequences, e.tokenImage, e, t.endOffset + 1, t.endLine, t.endColumn + 1 );
+        if ( t.kind == EOF ) {
+            throw new CypherParseException( "UnexpectedSyntax: Unexpected end of query.",
+                    e.expectedTokenSequences, e.tokenImage, e, t.endOffset + 1, t.endLine, t.endColumn + 1 );
         }
-        else
-        {
-            throw new CypherParseException(t.image, e.expectedTokenSequences, e.tokenImage, e, t.beginOffset, t.beginLine, t.beginColumn);
+        String message;
+        switch ( t.kind ) {
+            case ARROW_LINE:
+                message = "InvalidUnicodeCharacter: Unexpected arrow character " + t.image;
+                break;
+            case MINUS:
+            case DOTDOT:
+                // These tokens retain the relationship-pattern diagnostic used by clients.
+                message = t.image;
+                break;
+            default:
+                message = "UnexpectedSyntax: Unexpected token " + t.image;
         }
+        throw new CypherParseException( message, e.expectedTokenSequences, e.tokenImage, e, t.beginOffset, t.beginLine, t.beginColumn );
     }
 }
 
@@ -2797,12 +2807,21 @@ CypherExpression ExistsSubQuery() :
 {
     Token t;
     List<CypherPattern> patterns;
-    CypherExpression where = null;
+    CypherWhere where = null;
+    CypherClause clause;
+    List<CypherClause> clauses = new ArrayList<>();
 }
 {
-    t=<EXISTS> <LCURLY> ( LOOKAHEAD( 2 ) <MATCH> )? patterns=PatternList() ( <WHERE> where=Expression() )? <RCURLY>
+    t=<EXISTS> <LCURLY>
+    (
+        LOOKAHEAD( <LPAREN> | Variable() <EQ> ) patterns=PatternList() ( where=WhereClause() )?
+        { clauses.add( CypherFactory.createMatch( pos( t ), false, patterns, pos( t ), List.of(), where, false ) ); }
+        |
+        ( clause=Clause() { clauses.add( clause ); } )+
+    )
+    <RCURLY>
     {
-        return CypherFactory.existsSubQuery( pos( t ), patterns, where );
+        return CypherFactory.existsSubQuery( pos( t ), clauses );
     }
 }
 

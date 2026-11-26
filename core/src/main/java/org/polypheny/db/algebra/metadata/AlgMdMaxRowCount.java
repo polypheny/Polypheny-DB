@@ -114,11 +114,11 @@ public class AlgMdMaxRowCount implements MetadataHandler<BuiltInMetadata.MaxRowC
         if ( rowCount == null ) {
             rowCount = Double.POSITIVE_INFINITY;
         }
-        final int offset = alg.offset == null ? 0 : RexLiteral.intValue( alg.offset );
+        final long offset = alg.offset == null ? 0L : RexLiteral.longValue( alg.offset );
         rowCount = Math.max( rowCount - offset, 0D );
 
         if ( alg.fetch != null ) {
-            final int limit = RexLiteral.intValue( alg.fetch );
+            final long limit = RexLiteral.longValue( alg.fetch );
             if ( limit < rowCount ) {
                 return (double) limit;
             }
@@ -132,11 +132,11 @@ public class AlgMdMaxRowCount implements MetadataHandler<BuiltInMetadata.MaxRowC
         if ( rowCount == null ) {
             rowCount = Double.POSITIVE_INFINITY;
         }
-        final int offset = alg.offset == null ? 0 : RexLiteral.intValue( alg.offset );
+        final long offset = alg.offset == null ? 0L : RexLiteral.longValue( alg.offset );
         rowCount = Math.max( rowCount - offset, 0D );
 
         if ( alg.fetch != null ) {
-            final int limit = RexLiteral.intValue( alg.fetch );
+            final long limit = RexLiteral.longValue( alg.fetch );
             if ( limit < rowCount ) {
                 return (double) limit;
             }
@@ -190,7 +190,7 @@ public class AlgMdMaxRowCount implements MetadataHandler<BuiltInMetadata.MaxRowC
         for ( AlgNode node : alg.getAlgs() ) {
             if ( node instanceof Sort sort ) {
                 if ( sort.fetch != null ) {
-                    return (double) RexLiteral.intValue( sort.fetch );
+                    return (double) RexLiteral.longValue( sort.fetch );
                 }
             }
         }

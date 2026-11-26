@@ -139,6 +139,25 @@ class CypherValueAccessTest extends CypherTestTemplate {
 
 
     @Test
+    void countsGroupedRowsAndDistinctGroupingValuesIndependently() {
+        GraphResult result = execute( """
+                UNWIND [2, null, 1, 1, null] AS n
+                RETURN n, count(*) AS rows, count(DISTINCT n) AS distinctValues ORDER BY n
+                """ );
+        assertEquals( 3, result.getData().length );
+        assertEquals( 1, cell( result, 0, 0 ).asNumber().longValue() );
+        assertEquals( 2, cell( result, 0, 1 ).asNumber().longValue() );
+        assertEquals( 1, cell( result, 0, 2 ).asNumber().longValue() );
+        assertEquals( 2, cell( result, 1, 0 ).asNumber().longValue() );
+        assertEquals( 1, cell( result, 1, 1 ).asNumber().longValue() );
+        assertEquals( 1, cell( result, 1, 2 ).asNumber().longValue() );
+        assertNull( cell( result, 2, 0 ) );
+        assertEquals( 2, cell( result, 2, 1 ).asNumber().longValue() );
+        assertEquals( 0, cell( result, 2, 2 ).asNumber().longValue() );
+    }
+
+
+    @Test
     void namesUnaliasedScalarColumnsFromTheirSourceAndRejectsDistinct() {
         GraphResult result = execute( "RETURN last([1,2]),\n\tlast([3, 4]), [[1]][0][0]" );
         assertEquals( List.of( "last([1,2])", "last([3, 4])", "[[1]][0][0]" ),
@@ -172,6 +191,55 @@ class CypherValueAccessTest extends CypherTestTemplate {
         assertNull( cell( result, 3 ) );
         assertEquals( false, cell( result, 4 ).asBoolean().value );
         assertEquals( List.of( 1L, 2L ), numbers( result, 5 ) );
+    }
+
+
+    @Test
+    void comparesAdjacentOperandsInChains() {
+        GraphResult result = execute( """
+                RETURN 1 < 2 <= 2 <> 3 AS allTrue, 'a' < 'c' < 'b' AS falseComparison,
+                       1 < null < 3 AS unknownComparison, 1 < null < 3 < 2 AS falseWithNull
+                """ );
+        assertEquals( true, cell( result, 0 ).asBoolean().value );
+        assertEquals( false, cell( result, 1 ).asBoolean().value );
+        assertNull( cell( result, 2 ) );
+        assertEquals( false, cell( result, 3 ).asBoolean().value );
+    }
+
+
+    @Test
+    void distinguishesMalformedLiteralsFromNumericOverflow() {
+        assertError( "RETURN 0x1j", "InvalidNumberLiteral" );
+        assertError( "RETURN -0x8000000000000001", "IntegerOverflow" );
+        assertError( "RETURN 1.34E999", "FloatingPointOverflow" );
+        assertError( "RETURN '" + "\\" + "uH'", "InvalidUnicodeLiteral" );
+        assertError( "RETURN 42 — 41", "InvalidUnicodeCharacter" );
+    }
+
+
+    @Test
+    void validatesAggregateOperandsAndGroupingKeys() {
+        assertError( "RETURN count(count(*))", "NestedAggregation" );
+        assertError( "RETURN count(rand())", "NonConstantExpression" );
+        assertError( "UNWIND [1] AS n RETURN n + 1, n + 1 + count(*)", "AmbiguousAggregationExpression" );
+        assertError( "UNWIND [1] AS n WITH n + 1 AS key, n + 1 + count(*) AS total RETURN total", "AmbiguousAggregationExpression" );
+        assertEquals( 2, number( execute( "UNWIND [1, 2] AS n WITH rand() AS r RETURN count(r)" ), 0 ) );
+        assertEquals( 1, number( execute( "RETURN count(date('2020-01-01'))" ), 0 ) );
+    }
+
+
+    @Test
+    void appliesSigned64BitSkipAndLimitWithAndWithoutOrdering() {
+        for ( String bound : List.of( "2147483648", "4294967296", "9223372036854775807" ) ) {
+            assertEquals( 1, number( execute( "RETURN 1 AS n LIMIT " + bound ), 0 ) );
+            assertEquals( 0, execute( "RETURN 1 AS n SKIP " + bound ).getData().length );
+            assertEquals( 0, execute( "UNWIND [1, 3, 2] AS n RETURN n ORDER BY n DESC SKIP " + bound + " LIMIT 1" ).getData().length );
+
+            GraphResult ordered = execute( "UNWIND [1, 3, 2] AS n WITH n ORDER BY n DESC SKIP 1 LIMIT " + bound + " RETURN n" );
+            assertEquals( 2, ordered.getData().length );
+            assertEquals( 2, cell( ordered, 0, 0 ).asNumber().longValue() );
+            assertEquals( 1, cell( ordered, 1, 0 ).asNumber().longValue() );
+        }
     }
 
 

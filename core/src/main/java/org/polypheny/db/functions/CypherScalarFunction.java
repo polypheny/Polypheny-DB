@@ -31,7 +31,9 @@ import javax.annotation.Nullable;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
+import org.polypheny.db.runtime.SqlStateException;
 import org.polypheny.db.type.PolyType;
+import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
 import org.polypheny.db.type.entity.PolyString;
 import org.polypheny.db.type.entity.PolyValue;
@@ -79,6 +81,7 @@ public enum CypherScalarFunction {
     RADIANS( "radians", 1, PolyType.DOUBLE ),
     SIN( "sin", 1, PolyType.DOUBLE ),
     TAN( "tan", 1, PolyType.DOUBLE ),
+    TO_BOOLEAN( "toBoolean", 1, PolyType.BOOLEAN ),
     TO_INTEGER( "toInteger", 1, PolyType.BIGINT ),
     TO_FLOAT( "toFloat", 1, PolyType.DOUBLE );
 
@@ -216,6 +219,7 @@ public enum CypherScalarFunction {
             case RADIANS -> Functions.radians( requireNumber( arguments[0], 1 ) );
             case SIN -> Functions.sin( requireNumber( arguments[0], 1 ) );
             case TAN -> Functions.tan( requireNumber( arguments[0], 1 ) );
+            case TO_BOOLEAN -> toBoolean( arguments[0] );
             case TO_INTEGER -> toInteger( arguments[0] );
             case TO_FLOAT -> toFloat( arguments[0] );
         };
@@ -325,7 +329,7 @@ public enum CypherScalarFunction {
         if ( PolyType.NUMERIC_TYPES.contains( value.getType() ) || value.isBoolean() ) {
             return PolyString.of( value.toString() );
         }
-        throw new GenericRuntimeException( "toString() requires a string, number, boolean, or temporal value." );
+        throw invalidConversionArgument( "toString() requires a string, number, boolean, or temporal value." );
     }
 
 
@@ -394,6 +398,21 @@ public enum CypherScalarFunction {
     }
 
 
+    private static PolyBoolean toBoolean( PolyValue value ) {
+        if ( value.isBoolean() ) {
+            return value.asBoolean();
+        }
+        if ( value.isString() ) {
+            return switch ( value.asString().value.toLowerCase( Locale.ROOT ) ) {
+                case "true" -> PolyBoolean.TRUE;
+                case "false" -> PolyBoolean.FALSE;
+                default -> null;
+            };
+        }
+        throw invalidConversionArgument( "toBoolean() requires a string or boolean." );
+    }
+
+
     private static PolyLong toInteger( PolyValue value ) {
         BigDecimal number;
         if ( value.isString() ) {
@@ -413,7 +432,7 @@ public enum CypherScalarFunction {
             }
             number = operand.bigDecimalValue();
         } else {
-            throw new GenericRuntimeException( "toInteger() requires a string or number." );
+            throw invalidConversionArgument( "toInteger() requires a string or number." );
         }
         // Check before truncating to avoid expanding a string with a very large exponent.
         if ( number.compareTo( INTEGER_LOWER_LIMIT ) <= 0 || number.compareTo( INTEGER_UPPER_LIMIT ) >= 0 ) {
@@ -434,7 +453,12 @@ public enum CypherScalarFunction {
         if ( PolyType.NUMERIC_TYPES.contains( value.getType() ) ) {
             return PolyDouble.of( value.asNumber().doubleValue() );
         }
-        throw new GenericRuntimeException( "toFloat() requires a string or number." );
+        throw invalidConversionArgument( "toFloat() requires a string or number." );
+    }
+
+
+    private static SqlStateException invalidConversionArgument( String message ) {
+        return new SqlStateException( "InvalidArgumentValue: " + message, "22023" );
     }
 
 

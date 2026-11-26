@@ -19,7 +19,7 @@ from urllib.request import Request, urlopen
 from uuid import uuid4
 from zipfile import ZipFile
 
-from run import TOTAL
+from run import PROCEDURE_FIXTURES_ENV, SUITE_TOTALS
 from values import wire_json
 
 
@@ -147,7 +147,7 @@ def startup_lock(path):
 
 
 @contextmanager
-def fixture(args, jar, store, store_version, logs):
+def fixture(args, jar, store, store_version, logs, procedure_fixtures=None):
     with ZipFile(jar) as archive:
         settings = dict(line.split("=", 1) for line in archive.read("version.properties").decode().splitlines() if "=" in line)
     prefix = f'{settings["version"]}-{settings["hash"]}'
@@ -158,7 +158,13 @@ def fixture(args, jar, store, store_version, logs):
         config = home / ".polypheny" / prefix / "config/polypheny.conf"
         config.parent.mkdir(parents=True)
         config.write_text(f'"runtime/webuiServerPort" = {args.web_port}\n', encoding="utf-8")
-        command = [args.java, "-ea", "-Xmx2g", "-jar", str(jar), "-mode", "dev", "-daemon", "-defaultStore", store]
+        command = [args.java, "-ea", "-Xmx2g"]
+        if procedure_fixtures is None:
+            command.extend(["-jar", str(jar)])
+        else:
+            classpath = os.pathsep.join([str(jar), args.procedure_fixture_classpath])
+            command.extend(["-cp", classpath, "org.polypheny.db.PolyphenyDb"])
+        command.extend(["-mode", "dev", "-daemon", "-defaultStore", store])
         container_prefix = None
         if store in EMBEDDED:
             command.append("-noAutoDocker")
@@ -167,6 +173,9 @@ def fixture(args, jar, store, store_version, logs):
             (home / ".polypheny/uuid").write_text(fixture_uuid, encoding="utf-8")
             container_prefix = f"polypheny_{fixture_uuid}_"
         environment = dict(os.environ, POLYPHENY_HOME=temporary, TZ="UTC")
+        environment.pop(PROCEDURE_FIXTURES_ENV, None)
+        if procedure_fixtures is not None:
+            environment[PROCEDURE_FIXTURES_ENV] = str(procedure_fixtures)
         with server_log.open("w", encoding="utf-8") as output, ExitStack() as cleanup:
             with startup_lock(args.startup_lock), ExitStack() as startup:
                 process = startup.enter_context(fixture_process(command, home, environment, output, container_prefix))
@@ -193,7 +202,7 @@ def stop_driver_group(process):
     process.wait()
 
 
-def run_driver(args, store, store_version, logs, driver):
+def run_driver(args, store, store_version, logs, driver, procedure_fixtures=None):
     label = driver["name"]
     detail = logs / f"{label}.jsonl"
     output_path = logs / f"{label}.log"
@@ -206,6 +215,7 @@ def run_driver(args, store, store_version, logs, driver):
         bridge = [*bridge[:run + 1], "--label", label_value, *bridge[run + 1:]]
     command = [
         sys.executable, str(SUITE / "run.py"), "--features", str(args.features),
+        "--suite", getattr(args, "suite", "full"),
         "--driver-command", shlex.join(bridge), "--driver-version", driver["version"],
         "--server-version", args.server_version, "--store", store, "--store-version", store_version,
         "--jsonl", str(detail),
@@ -213,6 +223,9 @@ def run_driver(args, store, store_version, logs, driver):
     environment = dict(os.environ, **driver.get("env", {}))
     environment.update(M23_HOST="127.0.0.1", M23_PORT=str(args.prism_port), M23_USERNAME="pa", M23_PASSWORD="")
     environment.pop("M23_SOCKET", None)
+    environment.pop(PROCEDURE_FIXTURES_ENV, None)
+    if procedure_fixtures is not None:
+        environment[PROCEDURE_FIXTURES_ENV] = str(procedure_fixtures)
     exit_status, reason = None, None
     with output_path.open("w", encoding="utf-8") as output:
         try:
@@ -243,7 +256,8 @@ def run_driver(args, store, store_version, logs, driver):
                 summary = {key: event[key] for key in ("passed", "failed", "skipped", "excluded")}
     if not summary and reason is None:
         reason = f"Runner exited with {exit_status} before reporting a summary"
-    status = "blocked" if reason else "passed" if summary["passed"] == TOTAL and exit_status == 0 else "failed"
+    total = SUITE_TOTALS[getattr(args, "suite", "full")]
+    status = "blocked" if reason else "passed" if summary["passed"] == total and exit_status == 0 else "failed"
     return {
         "store": store, "store_version": store_version, "driver": label, "driver_version": driver["version"],
         "status": status, "reason": reason, "log": str(output_path), **summary,
@@ -254,6 +268,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--jar", type=Path, required=True)
     parser.add_argument("--features", type=Path, required=True)
+    parser.add_argument("--suite", default="full", choices=SUITE_TOTALS, help="Pinned M23 scenario suite")
     parser.add_argument("--drivers", type=Path, required=True, help="JSON array of drivers (name, version, command and optional env)")
     parser.add_argument("--stores", type=Path, required=True, help="JSON object mapping store names to exact versions or image digests")
     parser.add_argument("--out", type=Path, required=True, help="New directory for run, server and evidence logs")
@@ -266,8 +281,12 @@ def main():
     parser.add_argument("--startup-lock", type=Path, help="Shared lock for concurrent fixtures using distinct Prism and web ports")
     parser.add_argument("--driver-timeout", type=int, default=1200)
     parser.add_argument("--parallel-drivers", type=int, default=2)
+    parser.add_argument("--procedure-fixture-classpath", help="Classpath for the opt-in M23 procedure fixture provider")
     args = parser.parse_args()
     args.features = args.features.resolve()
+    if args.procedure_fixture_classpath:
+        args.procedure_fixture_classpath = os.pathsep.join(str(Path(entry).resolve())
+                                                           for entry in args.procedure_fixture_classpath.split(os.pathsep))
     drivers = json.loads(args.drivers.read_text(encoding="utf-8"))
     stores = json.loads(args.stores.read_text(encoding="utf-8"))
     if not stores or not stores.keys() <= STORE_NAMES.keys() or not drivers:
@@ -287,17 +306,22 @@ def main():
             digest = sha256()
             for chunk in iter(lambda: source.read(1024 * 1024), b""):
                 digest.update(chunk)
-        print(wire_json({"event": "run", "server_version": args.server_version, "jar_sha256": digest.hexdigest()}),
+        print(wire_json({"event": "run", "suite": args.suite,
+                         "server_version": args.server_version, "jar_sha256": digest.hexdigest()}),
               file=summary, flush=True)
         for store, store_version in stores.items():
             logs = args.out / store
             logs.mkdir()
             pending = set(driver_names)
             try:
-                with fixture(args, jar, store, store_version, logs) as adapter:
+                procedure_fixtures = None
+                if args.procedure_fixture_classpath:
+                    procedure_fixtures = Path(temporary) / "procedures" / store
+                    procedure_fixtures.mkdir(parents=True)
+                with fixture(args, jar, store, store_version, logs, procedure_fixtures) as adapter:
                     (logs / "adapter.json").write_text(wire_json(adapter) + "\n", encoding="utf-8")
                     with ThreadPoolExecutor(max_workers=args.parallel_drivers) as workers:
-                        results = workers.map(lambda driver: run_driver(args, store, store_version, logs, driver), drivers)
+                        results = workers.map(lambda driver: run_driver(args, store, store_version, logs, driver, procedure_fixtures), drivers)
                         for result in results:
                             pending.remove(result["driver"])
                             print(wire_json(result), file=summary, flush=True)

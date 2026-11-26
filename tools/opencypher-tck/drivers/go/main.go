@@ -9,6 +9,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -37,6 +38,14 @@ func main() {
 }
 
 func run() error {
+	requestTimeout := 60 * time.Second
+	if configured := os.Getenv("M23_REQUEST_TIMEOUT_SECONDS"); configured != "" {
+		seconds, err := strconv.Atoi(configured)
+		if err != nil || seconds < 1 || seconds > 600 {
+			return errors.New("M23_REQUEST_TIMEOUT_SECONDS must be an integer between 1 and 600")
+		}
+		requestTimeout = time.Duration(seconds) * time.Second
+	}
 	address := net.JoinHostPort(os.Getenv("M23_HOST"), os.Getenv("M23_PORT"))
 	connector, err := (polypheny.PolyphenyDriver{}).OpenConnector(address + "," + os.Getenv("M23_USERNAME") + ":" + os.Getenv("M23_PASSWORD"))
 	if err != nil {
@@ -72,7 +81,7 @@ func run() error {
 		} else if err != nil {
 			return err
 		}
-		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 		response, queryErr := handleRequest(ctx, conn, &tx, req)
 		cancel()
 		if queryErr != nil {

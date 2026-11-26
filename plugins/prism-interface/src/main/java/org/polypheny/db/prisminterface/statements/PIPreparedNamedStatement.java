@@ -64,7 +64,7 @@ public class PIPreparedNamedStatement extends PIPreparedStatement {
         if ( language.dataModel() == DataModel.GRAPH ) {
             this.query = query;
             this.namedValueProcessor = null;
-            this.graphQuery = language.processorSupplier().get().prepareNamedQuery( query );
+            this.graphQuery = language.processorSupplier().get().prepareNamedQuery( query, namespace );
             this.parameterMetas = graphQuery.parameterNames().stream()
                     .map( name -> ParameterMeta.newBuilder()
                             .setName( name )

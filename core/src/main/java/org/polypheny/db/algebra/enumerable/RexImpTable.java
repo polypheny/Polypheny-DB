@@ -862,6 +862,11 @@ public class RexImpTable {
                 ( translator, call, operands ) -> Types.castIfNecessary( translator.typeFactory.getJavaClass( call.getType() ),
                         Expressions.call( BuiltInMethod.CYPHER_SCALAR_FUNCTION.method, operands.get( 0 ),
                                 Expressions.newArrayInit( PolyValue.class, operands.subList( 1, operands.size() ) ) ) ), false );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_VALIDATE_PROCEDURE_ARGUMENT ),
+                BuiltInMethod.CYPHER_VALIDATE_PROCEDURE_ARGUMENT.method, NullPolicy.NONE );
+        defineImplementor( OperatorRegistry.get( cypher, OperatorName.CYPHER_EVALUATE_PROCEDURE_ARGUMENTS ), NullPolicy.NONE,
+                ( translator, call, operands ) -> Expressions.call( BuiltInMethod.CYPHER_EVALUATE_PROCEDURE_ARGUMENTS.method,
+                        operands.get( 0 ), Expressions.newArrayInit( PolyValue.class, operands.subList( 1, operands.size() ) ) ), false );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_RAND ), BuiltInMethod.CYPHER_RAND.method, NullPolicy.NONE );
         defineImplementor( OperatorRegistry.get( cypher, OperatorName.CYPHER_TEMPORAL_FUNCTION ), NullPolicy.NONE,
                 ( translator, call, operands ) -> Types.castIfNecessary( translator.typeFactory.getJavaClass( call.getType() ),
@@ -869,6 +874,7 @@ public class RexImpTable {
                                 Expressions.newArrayInit( PolyValue.class, operands.subList( 2, operands.size() ) ),
                                 translator.getRoot(), operands.get( 1 ) ) ), false );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_RANGE ), BuiltInMethod.CYPHER_RANGE.method, NullPolicy.NONE );
+        defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_PERCENTILE ), BuiltInMethod.CYPHER_PERCENTILE.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_TYPE ), BuiltInMethod.CYPHER_TYPE.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_ID ), BuiltInMethod.CYPHER_ID.method, NullPolicy.NONE );
         defineMethod( OperatorRegistry.get( cypher, OperatorName.CYPHER_LABELS ), BuiltInMethod.CYPHER_LABELS.method, NullPolicy.NONE );

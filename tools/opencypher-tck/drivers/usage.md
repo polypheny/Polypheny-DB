@@ -8,7 +8,7 @@ send Cypher statements and named bindings via their own driver APIs. Set
 Use an isolated Polypheny instance with a single writable store. The tests
 create and drop graph namespaces.
 
-| Driver | Release base | Source for this matrix | Prism | Adapter prerequisites |
+| Driver | Release base | Driver source baseline | Prism | Adapter prerequisites |
 | --- | --- | --- | --- | --- |
 | Python | [2.2.0](https://github.com/polypheny/Polypheny-Connector-Python/releases/tag/v2.2.0) | [Python #7](https://github.com/polypheny/Polypheny-Connector-Python/pull/7), exact revision in the run metadata | 2.4 | Python 3.9+, installed Polypheny package and its dependencies |
 | Go | [0.3.0](https://github.com/polypheny/Polypheny-Go-Driver/releases/tag/v0.3.0) | [89ac731](https://github.com/polypheny/Polypheny-Go-Driver/commit/89ac7319331999437dac16f1aa34daa83126b75a) | 2.4 | Go 1.23+ and a checkout of the named-parameter changes |
@@ -24,6 +24,33 @@ server errors through Prism 2.4. The [MATLAB repository](https://github.com/poly
 contains a README, license, and `.gitignore`. Its initial commit supplies no
 driver to execute. The legacy Polypheny Client uses JDBC and the Polypheny
 IPython extension uses the HTTP interface.
+
+## Full M23 transport requirements
+
+The source revisions above reproduce the previous 1,747-scenario selection.
+For the full suite, apply the bounded Prism response-decoding changes to the
+JDBC, .NET, C++ and PHP driver checkouts before rebuilding them. A 40-level
+Cypher map has more than 100 Protobuf message levels in a Prism response.
+
+| Driver | Full-suite change |
+| --- | --- |
+| JDBC | Set a recursion limit of 256 on the `CodedInputStream` in `RpcService.receiveMessage`. |
+| .NET | Set a recursion limit of 256 in `PolyphenyConnection.Receive`. The current JSONL adapter also allows 256 JSON levels for its map representation. |
+| C++ | Set a recursion limit of 256 in `PrismInterfaceClient::receive_message` and check that the Protobuf reader consumed the whole frame. |
+| PHP | Use Composer Protobuf 5.36 or later and pass a recursion limit of 256 to `Response::mergeFromString`. Use version 5.36 or later of the optional PHP Protobuf extension when it is loaded. |
+| Python | Use Protobuf 5.27.2 with `PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python` in the adapter process. |
+| Go | Build from the source baseline above. |
+
+Put the Python setting in the driver manifest's `env` object for a matrix
+run. The Python adapter remains the Polypheny connector over Prism.
+Record the base revision and the transport patch revision or digest for
+each rebuilt driver in the full-suite manifest.
+
+The PHP and Go adapters accept `M23_REQUEST_TIMEOUT_SECONDS` as a positive
+integer from 1 to 600. The default is 30 seconds for a PHP socket operation
+and 60 seconds for a Go query. Set a longer timeout in the matrix manifest
+when running several stores concurrently. A transport timeout is reported as
+a failed scenario.
 
 ## Build and run
 

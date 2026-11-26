@@ -164,6 +164,39 @@ class CypherExistsTest extends CypherTestTemplate {
     }
 
 
+    @Test
+    void evaluatesSubqueryCardinalityInsteadOfProjectedValues() {
+        GraphResult result = execute( """
+                RETURN EXISTS { RETURN false } AS present,
+                       EXISTS { MATCH (:Missing) RETURN true } AS absent,
+                       EXISTS { MATCH (:Missing) RETURN count(*) } AS aggregatesOnEmptyInput
+                """ );
+        assertEquals( List.of( true, false, true ), flags( result ) );
+    }
+
+
+    @Test
+    void preservesBothScopesAndOptionalRows() {
+        GraphResult result = execute( """
+                MATCH (a:Person {name:'Ada'})
+                OPTIONAL MATCH (b:Person)
+                WHERE EXISTS { (a)-[:KNOWS]->(b) WHERE EXISTS { (b)-[:SELF]->() } }
+                RETURN b.name AS matched
+                """ );
+        assertEquals( 1, result.getData().length );
+        assertEquals( "Lin", cell( result, 0, 0 ).asString().value );
+
+        GraphResult unmatched = execute( """
+                MATCH (a:Person {name:'Ada'})
+                OPTIONAL MATCH (b:Person)
+                WHERE EXISTS { (a)-[:MISSING]->(b) }
+                RETURN EXISTS { (b)-[:SELF]->() } AS present
+                """ );
+        assertEquals( List.of( false ), flags( unmatched ) );
+        assertError( "MATCH (a) WHERE EXISTS { (a)-->(local) } RETURN local", "variable" );
+    }
+
+
     private static void assertError( String query, String message ) {
         String error = CypherConnection.executeGetResponse( query ).getError();
         assertNotNull( error, query );

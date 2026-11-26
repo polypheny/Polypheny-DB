@@ -1,10 +1,12 @@
 # openCypher M23 conformance
 
-The suite runs 1,747 active scenarios from the selected graph, pattern,
-boolean, conditional, quantifier, MATCH, MERGE, SET and ORDER BY features.
-It uses the upstream openCypher tag `1.0.0-M23` at
-`007895aff5f33097d67b2e48a0a2babd6bd18590`. The runner verifies a digest of
-the 70 feature files. It records the one upstream `@ignore` scenario as excluded.
+The default `full` suite runs 3,896 active scenarios across all 220 feature
+files at the upstream openCypher `1.0.0-M23` revision
+`007895aff5f33097d67b2e48a0a2babd6bd18590`. The runner verifies the feature
+digest and the two named graph scripts. It records the one upstream `@ignore`
+scenario as excluded. Use `--suite legacy` to reproduce the earlier selection
+of 1,747 active scenarios across 70 graph, pattern, boolean, conditional,
+quantifier, MATCH, MERGE, SET and ORDER BY features.
 
 The tests create and drop a fresh graph namespace for each scenario. The
 client submits setup, tested statements, control statements and graph
@@ -31,20 +33,41 @@ See [native driver builds](drivers/usage.md) for driver revisions and build
 commands. JDBC 3.3 from the Prism 2.4 follow-up supplies the error details
 required by strict mode.
 
+The full suite supplies table-backed procedures to its CALL scenarios through
+a test-only provider. Compile that provider against the server jar.
+
+```sh
+DBMS_JAR="$PWD/dbms/build/libs/dbms-0.10.1-SNAPSHOT.jar"
+TCK_PROCEDURE_CLASSES=$(mktemp -d)
+javac -cp "$DBMS_JAR" -d "$TCK_PROCEDURE_CLASSES" \
+    tools/opencypher-tck/procedures/org/polypheny/tck/FixtureProcedureProvider.java
+cp -R tools/opencypher-tck/procedures/META-INF "$TCK_PROCEDURE_CLASSES/"
+```
+
+`matrix.py --procedure-fixture-classpath` loads the provider and creates an
+isolated fixture directory for each store. For a standalone fixture server,
+add the provider to the Java classpath when launching `org.polypheny.db.PolyphenyDb`
+and give the server and runner the same existing private directory through
+`POLYPHENY_TCK_PROCEDURES_DIR`.
+
 ## Run one driver against a test instance
 
 ```sh
 export M23_HOST=127.0.0.1 M23_PORT=20590 M23_USERNAME=pa M23_PASSWORD=
+export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
 python tools/opencypher-tck/run.py --features openCypher/tck/features \
     --server-version "$SERVER_REVISION" --driver-version "$DRIVER_REVISION" \
     --store hsqldb --store-version 2.7.3 --jsonl m23-python-hsqldb.jsonl
 ```
 
 The default driver is Python. Pass `--driver-command` to use one of the
-other adapters. Append feature path globs to run a subset of the selected
-suite. Use `--list` to validate the selection and all expected value
-literals without connecting. `--legacy-errors` reproduces the historical
-check for a raised error and is reserved for baseline comparisons.
+other adapters. The test bridge defaults to the pure Python Protobuf
+implementation so it can decode the depth-40 map in `Literals8`. The
+connector's regular Protobuf 5.27.2 upb decoder rejected this shape at depth 32.
+Append feature path globs to run a subset of the selected suite. Use `--list`
+to validate the fixture digests, step forms and value literals without
+connecting. `--legacy-errors` reproduces the historical check for a raised
+error and is reserved for baseline comparisons.
 
 ## Run the store and driver matrix
 
@@ -57,7 +80,8 @@ Add all six driver commands from the driver build guide.
   {
     "name": "python",
     "version": "99e3934ff4c05b56457fe2bfd4abc143329d0b75",
-    "command": ["python", "tools/opencypher-tck/drivers/python.py"]
+    "command": ["python", "tools/opencypher-tck/drivers/python.py"],
+    "env": {"PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION": "python"}
   }
 ]
 ```
@@ -98,6 +122,7 @@ python tools/opencypher-tck/matrix.py \
     --jar dbms/build/libs/dbms-0.10.1-SNAPSHOT.jar \
     --features openCypher/tck/features --drivers drivers.json \
     --stores tools/opencypher-tck/stores-m23.json \
+    --procedure-fixture-classpath "$TCK_PROCEDURE_CLASSES" \
     --server-version "$SERVER_REVISION" --out m23-results
 ```
 
@@ -106,8 +131,8 @@ sole writable adapter through the catalog before running the clients.
 It saves the DB jar's SHA-256, the observed adapter and image identity, a
 server log, and text and JSONL scenario reports. Each JSONL scenario uses
 the upstream path and the scenario and example line numbers. The aggregated
-`matrix.jsonl` marks an entry passed only when all 1,747 active scenarios
-pass. Use a dedicated host or CI worker with the regular Polypheny HTTP
+`matrix.jsonl` marks an entry passed only when all active scenarios in the
+requested suite pass. Use a dedicated host or CI worker with the regular Polypheny HTTP
 and REST ports free. Prism clients use the launcher port, configurable via
 `--prism-port`. If the host requires a shorter temporary directory for
 Unix sockets, set `--fixture-root` accordingly. To run several store groups

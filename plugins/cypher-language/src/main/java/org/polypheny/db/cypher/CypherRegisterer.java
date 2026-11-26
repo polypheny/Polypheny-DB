@@ -54,6 +54,15 @@ public class CypherRegisterer {
         register( OperatorName.CYPHER_LENGTH, new LangFunctionOperator( OperatorName.CYPHER_LENGTH.name(), Kind.CYPHER_FUNCTION, PolyType.BIGINT ) );
         register( OperatorName.CYPHER_SIZE, new LangFunctionOperator( OperatorName.CYPHER_SIZE.name(), Kind.CYPHER_FUNCTION, PolyType.BIGINT ) );
         register( OperatorName.CYPHER_SCALAR_FUNCTION, new LangFunctionOperator( OperatorName.CYPHER_SCALAR_FUNCTION.name(), Kind.CYPHER_FUNCTION, PolyType.ANY ) );
+        register( OperatorName.CYPHER_VALIDATE_PROCEDURE_ARGUMENT,
+                new LangFunctionOperator( OperatorName.CYPHER_VALIDATE_PROCEDURE_ARGUMENT.name(), Kind.CYPHER_FUNCTION, PolyType.ANY ) );
+        register( OperatorName.CYPHER_EVALUATE_PROCEDURE_ARGUMENTS,
+                new LangFunctionOperator( OperatorName.CYPHER_EVALUATE_PROCEDURE_ARGUMENTS.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) {
+                    @Override
+                    public boolean isDeterministic() {
+                        return false;
+                    }
+                } );
         register( OperatorName.CYPHER_TEMPORAL_FUNCTION, new LangFunctionOperator( OperatorName.CYPHER_TEMPORAL_FUNCTION.name(), Kind.CYPHER_FUNCTION, PolyType.ANY ) {
             @Override
             public boolean isDeterministic() {
@@ -79,6 +88,7 @@ public class CypherRegisterer {
             }
         } );
         register( OperatorName.CYPHER_RANGE, new LangFunctionOperator( OperatorName.CYPHER_RANGE.name(), Kind.CYPHER_FUNCTION, PolyType.ARRAY ) );
+        register( OperatorName.CYPHER_PERCENTILE, new LangFunctionOperator( OperatorName.CYPHER_PERCENTILE.name(), Kind.CYPHER_FUNCTION, PolyType.ANY ) );
         register( OperatorName.CYPHER_TYPE, new LangFunctionOperator( OperatorName.CYPHER_TYPE.name(), Kind.CYPHER_FUNCTION, PolyType.VARCHAR ) );
         register( OperatorName.CYPHER_ID, new LangFunctionOperator( OperatorName.CYPHER_ID.name(), Kind.CYPHER_FUNCTION, PolyType.VARCHAR ) );
         register( OperatorName.CYPHER_LABELS, new LangFunctionOperator( OperatorName.CYPHER_LABELS.name(), Kind.CYPHER_FUNCTION, PolyType.ARRAY, PolyType.VARCHAR ) );
@@ -98,6 +108,12 @@ public class CypherRegisterer {
         register( OperatorName.CYPHER_HAS_PROPERTY, new LangFunctionOperator( OperatorName.CYPHER_HAS_PROPERTY.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
         register( OperatorName.CYPHER_PROPERTY_EXISTS, new LangFunctionOperator( OperatorName.CYPHER_PROPERTY_EXISTS.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
         register( OperatorName.CYPHER_PATTERN_EXISTS, new LangFunctionOperator( OperatorName.CYPHER_PATTERN_EXISTS.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) );
+        register( OperatorName.CYPHER_EXISTS_SUBQUERY, new LangFunctionOperator( OperatorName.CYPHER_EXISTS_SUBQUERY.name(), Kind.CYPHER_FUNCTION, PolyType.BOOLEAN ) {
+            @Override
+            public boolean isDeterministic() {
+                return false;
+            }
+        } );
         register( OperatorName.CYPHER_PATTERN_PATHS, new LangFunctionOperator( OperatorName.CYPHER_PATTERN_PATHS.name(), Kind.CYPHER_FUNCTION, PolyType.ARRAY ) );
         register( OperatorName.CYPHER_GRAPH_VALUE, new LangFunctionOperator( OperatorName.CYPHER_GRAPH_VALUE.name(), Kind.CYPHER_FUNCTION, PolyType.GRAPH ) );
 

@@ -16,13 +16,16 @@
 
 package org.polypheny.db.type.entity.graph;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.List;
 import java.util.Map.Entry;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import org.polypheny.db.functions.CypherFunctions;
+import org.polypheny.db.runtime.SqlStateException;
 import org.polypheny.db.type.PolyType;
 import org.polypheny.db.type.entity.PolyBoolean;
 import org.polypheny.db.type.entity.PolyList;
@@ -42,11 +45,37 @@ public abstract class GraphPropertyHolder extends GraphObject {
     @JsonDeserialize(using = PolyListDeserializer.class)
     public final PolyList<@NonNull PolyString> labels;
 
+    @JsonIgnore
+    @Getter(AccessLevel.NONE)
+    private boolean deleted;
+
 
     public GraphPropertyHolder( PolyString id, PolyType type, PolyDictionary properties, List<PolyString> labels, PolyString variableName ) {
         super( id, type, variableName );
         this.properties = properties;
         this.labels = PolyList.of( labels );
+    }
+
+
+    public GraphPropertyHolder copyAsDeleted() {
+        if ( deleted ) {
+            return this;
+        }
+        GraphPropertyHolder copy;
+        if ( this instanceof PolyEdge edge ) {
+            copy = new PolyEdge( id, properties, labels, edge.left, edge.right, edge.direction, variableName ).fromTo( edge.fromTo );
+        } else {
+            copy = new PolyNode( id, properties, labels, variableName );
+        }
+        copy.deleted = true;
+        return copy;
+    }
+
+
+    public void requireReadable() {
+        if ( deleted ) {
+            throw new SqlStateException( "DeletedEntityAccess: The graph entity has been deleted in this query.", "55000" );
+        }
     }
 
 

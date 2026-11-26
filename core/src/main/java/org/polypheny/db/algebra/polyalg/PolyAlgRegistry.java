@@ -96,7 +96,6 @@ import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.Parameter;
 import org.polypheny.db.algebra.polyalg.PolyAlgDeclaration.SimpleType;
 import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
 import org.polypheny.db.algebra.polyalg.arguments.EnumArg;
-import org.polypheny.db.algebra.polyalg.arguments.IntArg;
 import org.polypheny.db.algebra.polyalg.arguments.ListArg;
 import org.polypheny.db.algebra.polyalg.arguments.RexArg;
 import org.polypheny.db.algebra.polyalg.arguments.StringArg;
@@ -322,8 +321,8 @@ public class PolyAlgRegistry {
                 .creator( LogicalLpgSort::create ).model( DataModel.GRAPH )
                 .opName( "LPG_SORT" ).numInputs( 1 ).opTags( logAllTags )
                 .param( Parameter.builder().name( "order" ).aliases( List.of( "collation", "key", "sort" ) ).type( ParamType.COLLATION ).simpleType( SimpleType.SIMPLE_COLLATION ).multiValued( 1 ).defaultValue( ListArg.EMPTY ).build() )
-                .param( Parameter.builder().name( "limit" ).alias( "fetch" ).tag( ParamTag.NON_NEGATIVE ).type( ParamType.INTEGER ).defaultValue( IntArg.NULL ).build() )
-                .param( Parameter.builder().name( "skip" ).alias( "offset" ).tag( ParamTag.NON_NEGATIVE ).type( ParamType.INTEGER ).simpleType( SimpleType.HIDDEN ).defaultValue( IntArg.NULL ).build() )
+                .param( Parameter.builder().name( "limit" ).alias( "fetch" ).type( ParamType.REX ).simpleType( SimpleType.REX_UINT ).defaultValue( RexArg.NULL ).build() )
+                .param( Parameter.builder().name( "skip" ).alias( "offset" ).type( ParamType.REX ).simpleType( SimpleType.HIDDEN ).defaultValue( RexArg.NULL ).build() )
                 .build() );
         declarations.put( LogicalLpgUnion.class, PolyAlgDeclaration.builder()
                 .creator( LogicalLpgUnion::create ).model( DataModel.GRAPH )

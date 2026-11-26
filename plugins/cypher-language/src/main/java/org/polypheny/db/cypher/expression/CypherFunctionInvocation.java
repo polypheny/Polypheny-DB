@@ -351,7 +351,7 @@ public class CypherFunctionInvocation extends CypherExpression {
         RexNode path = arguments.get( 0 ).getRex( context, type ).right;
         PolyType pathType = path.getType().getPolyType();
         if ( pathType != PolyType.PATH && pathType != PolyType.NULL && pathType != PolyType.ANY ) {
-            throw new CypherSyntaxException( function + "() requires a path." );
+            throw new CypherSyntaxException( "InvalidArgumentType: " + function + "() requires a path." );
         }
         AlgDataType result = op == OperatorName.CYPHER_LENGTH
                 ? context.typeFactory.createPolyType( PolyType.BIGINT )
@@ -402,7 +402,7 @@ public class CypherFunctionInvocation extends CypherExpression {
     private void requireOperand( RexNode operand, List<PolyType> allowed, String message ) {
         PolyType type = operand.getType().getPolyType();
         if ( type != PolyType.ANY && type != PolyType.NULL && !allowed.contains( type ) ) {
-            throw new CypherSyntaxException( message );
+            throw new CypherSyntaxException( "InvalidArgumentType: " + message );
         }
     }
 

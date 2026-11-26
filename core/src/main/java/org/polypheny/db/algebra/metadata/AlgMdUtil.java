@@ -759,8 +759,8 @@ public class AlgMdUtil {
         boolean alreadySmaller = true;
         final Double rowCount = mq.getMaxRowCount( input );
         if ( rowCount != null && fetch != null ) {
-            final int offsetVal = offset == null ? 0 : RexLiteral.intValue( offset );
-            final int limit = RexLiteral.intValue( fetch );
+            final long offsetVal = offset == null ? 0L : RexLiteral.longValue( offset );
+            final long limit = RexLiteral.longValue( fetch );
             if ( (double) offsetVal + (double) limit < rowCount ) {
                 alreadySmaller = false;
             }

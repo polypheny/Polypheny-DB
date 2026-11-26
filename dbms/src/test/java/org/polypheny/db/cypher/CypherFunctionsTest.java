@@ -246,6 +246,23 @@ class CypherFunctionsTest extends CypherTestTemplate {
 
 
     @Test
+    void convertsBooleansAndCaseInsensitiveBooleanStrings() {
+        GraphResult result = execute( """
+                RETURN toBoolean(false) AS existing, toBoolean('TRUE') AS parsedTrue,
+                       toBoolean('FaLsE') AS parsedFalse, toBoolean('wrong') AS invalid,
+                       toBoolean(' true ') AS padded, toBoolean(null) AS missing
+                """ );
+        assertEquals( false, cell( result, 0 ).asBoolean().value );
+        assertEquals( true, cell( result, 1 ).asBoolean().value );
+        assertEquals( false, cell( result, 2 ).asBoolean().value );
+        assertNull( cell( result, 3 ) );
+        assertNull( cell( result, 4 ) );
+        assertNull( cell( result, 5 ) );
+        assertError( "RETURN [x IN [true, 1.0] | toBoolean(x)]", "InvalidArgumentValue: toBoolean() requires a string or boolean" );
+    }
+
+
+    @Test
     void generatesIndependentRandomValuesAcrossRowsAndCallSites() {
         GraphResult result = execute( "UNWIND range(1, 24) AS x RETURN rand() AS first, rand() AS second" );
         assertEquals( 24, result.getData().length );
@@ -404,6 +421,28 @@ class CypherFunctionsTest extends CypherTestTemplate {
                 RETURN spread
                 """ );
         assertEquals( 0.5, cell( adjacentBigints, 0 ).asNumber().doubleValue() );
+    }
+
+
+    @Test
+    void computesDiscreteAndContinuousPercentilesPerGroup() {
+        GraphResult result = execute( """
+                UNWIND [0.25, 0.5] AS p
+                UNWIND [4, 1, 2, 3, null] AS n
+                RETURN p, percentileDisc(n, p) AS discrete, percentileCont(n, p) AS continuous
+                ORDER BY p
+                """ );
+        assertEquals( 2, result.getData().length );
+        assertEquals( 1, integer( result.getData()[0][1] ) );
+        assertEquals( 1.75, PolyValue.fromTypedJson( result.getData()[0][2], PolyValue.class ).asNumber().doubleValue() );
+        assertEquals( 2, integer( result.getData()[1][1] ) );
+        assertEquals( 2.5, PolyValue.fromTypedJson( result.getData()[1][2], PolyValue.class ).asNumber().doubleValue() );
+
+        GraphResult distinct = execute( "UNWIND [1, 1, 2, 4] AS n RETURN percentileDisc(DISTINCT n, 0.5) AS p" );
+        assertEquals( 2, cell( distinct, 0 ).asNumber().longValue() );
+        GraphResult empty = execute( "UNWIND [] AS n RETURN percentileCont(n, 0.5) AS p" );
+        assertNull( cell( empty, 0 ) );
+        assertError( "UNWIND [1] AS n RETURN percentileDisc(n, n + 1)", "NumberOutOfRange" );
     }
 
 
