@@ -38,7 +38,7 @@ import org.polypheny.db.TestHelper;
 import org.polypheny.db.TestHelper.JdbcConnection;
 import org.polypheny.db.TestHelper.MongoConnection;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.mapping.rules.DocumentIdentityMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.DocumentCopyEntireMappingRule;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.config.RuntimeConfig;
 import org.polypheny.db.webui.HttpServer;
@@ -77,7 +77,7 @@ class DocumentMappingIntegrationTest {
             var source = Catalog.snapshot().doc().getCollection( Catalog.snapshot().getNamespace( adapter ).orElseThrow().id, "customers" ).orElseThrow();
             long adapterId = Catalog.snapshot().getAdapter( adapter ).orElseThrow().id;
             var defaultMapping = Catalog.snapshot().mappings().getMappingsForLogicalEntity( source.id ).get( 0 );
-            assertEquals( List.of( new DocumentIdentityMappingRule() ), defaultMapping.rules() );
+            assertEquals( List.of( new DocumentCopyEntireMappingRule() ), defaultMapping.rules() );
             var initial = documents( adapter, "customers" );
             assertEquals( 2, initial.size() );
             assertEquals( HttpServer.mapper.readTree( contents ), HttpServer.mapper.valueToTree( initial ) );
@@ -118,9 +118,16 @@ class DocumentMappingIntegrationTest {
             assertEquals( 409, request( "/updateDocumentMapping", update ).getStatus() );
             assertEquals( "renamed_customers", post( "/getMapping", Map.of( "mappingId", mappingId ) ).get( "logicalCollectionName" ).asText() );
 
+            var remainingDraft = post( "/getDocumentMappingDraft", Map.of( "adapterId", adapterId, "sourceEntityId", source.id ) );
+            var remaining = post( "/createDocumentMapping", Map.of( "adapterId", adapterId, "sourceEntityId", source.id,
+                    "sourceAllocationId", remainingDraft.get( "sourceAllocationId" ).asLong(), "expectedRevision", remainingDraft.get( "revision" ).asText(),
+                    "mappingName", "Remaining " + suffix, "logicalCollectionName", "remaining_customers", "targetNamespaceId", namespaceId ) );
+
             post( "/removeMapping", Map.of( "mappingId", mappingId, "expectedRevision", saved.get( "revision" ).asText() ) );
             assertTrue( Catalog.snapshot().doc().getCollection( saved.get( "targetEntityId" ).asLong() ).isEmpty() );
             assertEquals( initial, documents( adapter, "customers" ) );
+            assertEquals( initial, documents( targetNamespace, "remaining_customers" ) );
+            post( "/removeMapping", Map.of( "mappingId", remaining.get( "mappingId" ).asLong(), "expectedRevision", remaining.get( "revision" ).asText() ) );
             assertEquals( 409, request( "/removeMapping", Map.of( "mappingId", defaultMapping.id(),
                     "expectedRevision", post( "/getMapping", Map.of( "mappingId", defaultMapping.id() ) ).get( "revision" ).asText() ) ).getStatus() );
 
@@ -160,7 +167,7 @@ class DocumentMappingIntegrationTest {
             execute( "ALTER ADAPTERS ADD \"" + adapter + "\" USING 'JSON' AS 'Source' WITH '" + settings.replace( "'", "''" ) + "'" );
             long adapterId = Catalog.snapshot().getAdapter( adapter ).orElseThrow().id;
             var source = Catalog.snapshot().doc().getCollection( Catalog.snapshot().getNamespace( adapter ).orElseThrow().id, "empty" ).orElseThrow();
-            assertEquals( List.of( new DocumentIdentityMappingRule() ), Catalog.snapshot().mappings().getMappingsForLogicalEntity( source.id ).get( 0 ).rules() );
+            assertEquals( List.of( new DocumentCopyEntireMappingRule() ), Catalog.snapshot().mappings().getMappingsForLogicalEntity( source.id ).get( 0 ).rules() );
             var draft = post( "/getDocumentMappingDraft", Map.of( "adapterId", adapterId, "sourceEntityId", source.id ) );
             post( "/createDocumentMapping", Map.of( "adapterId", adapterId, "sourceEntityId", source.id,
                     "expectedRevision", draft.get( "revision" ).asText(), "mappingName", "Empty " + adapter,

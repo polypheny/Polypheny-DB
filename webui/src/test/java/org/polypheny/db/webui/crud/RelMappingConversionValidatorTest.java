@@ -36,7 +36,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
-import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.RelCopyColumnMappingRule;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.MappingValidationException;
@@ -76,7 +76,7 @@ class RelMappingConversionValidatorTest {
         var physical = new PhysicalColumn( "source_amount", 50, 60, 7, 0, column );
         return new RelMappingState( new LogicalAdapter( 7, "csv_source", "CSV", AdapterType.SOURCE, DeployMode.EMBEDDED, Map.of() ),
                 new SchemaMapping( 31, "Import", MappingKind.PHYSICAL_TO_LOGICAL, null, 50, DataModel.RELATIONAL, DataModel.RELATIONAL,
-                        List.of( new DirectColumnMappingRule( column.id ) ), 60L ),
+                        List.of( new RelCopyColumnMappingRule( column.id ) ), 60L ),
                 new LogicalNamespace( 1, "public", DataModel.RELATIONAL, false, false ),
                 new LogicalTable( 50, "amounts", 1, EntityType.SOURCE, null, false ), List.of( column ),
                 List.of( new PhysicalTable( 70, 60, 50, "amounts.csv", List.of( physical ), 1, "files", List.of(), 7 ) ), "original", null, null );
@@ -105,7 +105,7 @@ class RelMappingConversionValidatorTest {
     @Test
     void collectsAllFailuresAndChecksOnlyTenRecords() {
         var state = state();
-        var target = state.previewColumn( new ColumnName( column.id, column.name, true, PolyType.INTEGER, true, null, null, "CONVERT_COLUMN" ) );
+        var target = state.previewColumn( new ColumnName( column.id, column.name, true, PolyType.INTEGER, true, null, null, "REL_CONVERT_COLUMN" ) );
         List<List<PolyValue>> rows = IntStream.rangeClosed( 1, 11 ).mapToObj( i -> List.<PolyValue>of(
                 PolyString.of( i == 3 || i == 7 || i == 11 ? "bad" + i : String.valueOf( i ) ) ) ).toList();
         var result = RelMappingConversionValidator.checkColumn( state, target, column.getAlgDataType( factory ), 0, rows, context );
@@ -121,7 +121,7 @@ class RelMappingConversionValidatorTest {
     @Test
     void checksPrecisionWithoutApplyingTargetNullability() {
         var state = state();
-        var target = state.previewColumn( new ColumnName( column.id, column.name, true, PolyType.DECIMAL, false, 3, 1, "CONVERT_COLUMN" ) );
+        var target = state.previewColumn( new ColumnName( column.id, column.name, true, PolyType.DECIMAL, false, 3, 1, "REL_CONVERT_COLUMN" ) );
         List<List<PolyValue>> rows = List.of( Collections.singletonList( null ), List.of( PolyString.of( "1234.5" ) ), List.of( PolyString.of( "1.2" ) ) );
         var result = RelMappingConversionValidator.checkColumn( state, target, column.getAlgDataType( factory ), 0, rows, context );
         assertEquals( 3, result.checkedRecords() );
@@ -129,7 +129,7 @@ class RelMappingConversionValidatorTest {
         assertEquals( 2, result.errors().get( 0 ).recordNumber() );
         assertTrue( result.errors().get( 0 ).error().message().contains( "DECIMAL(3, 1)" ) );
         assertThrows( MappingValidationException.class,
-                () -> state.previewColumn( new ColumnName( column.id, column.name, true, PolyType.DECIMAL, false, 2, 3, "CONVERT_COLUMN" ) ) );
+                () -> state.previewColumn( new ColumnName( column.id, column.name, true, PolyType.DECIMAL, false, 2, 3, "REL_CONVERT_COLUMN" ) ) );
     }
 
 
@@ -138,7 +138,7 @@ class RelMappingConversionValidatorTest {
         var state = state();
         var sourceType = column.getAlgDataType( factory );
         for ( boolean nullable : List.of( true, false ) ) {
-            var target = state.previewColumn( new ColumnName( column.id, column.name, true, PolyType.INTEGER, nullable, null, null, "CONVERT_COLUMN" ) );
+            var target = state.previewColumn( new ColumnName( column.id, column.name, true, PolyType.INTEGER, nullable, null, null, "REL_CONVERT_COLUMN" ) );
             var result = RelMappingConversionValidator.checkColumn( state, target, sourceType, 0,
                     List.of( Collections.singletonList( null ), List.of( PolyString.of( "42" ) ) ), context );
             assertEquals( 2, result.checkedRecords() );
@@ -151,7 +151,7 @@ class RelMappingConversionValidatorTest {
     @Test
     void acceptsShortAndEmptySamplesAndNullableValues() {
         var state = state();
-        var target = state.previewColumn( new ColumnName( column.id, column.name, true, PolyType.INTEGER, true, null, null, "CONVERT_COLUMN" ) );
+        var target = state.previewColumn( new ColumnName( column.id, column.name, true, PolyType.INTEGER, true, null, null, "REL_CONVERT_COLUMN" ) );
         var sourceType = column.getAlgDataType( factory );
         var shortSample = RelMappingConversionValidator.checkColumn( state, target, sourceType, 0,
                 List.of( List.of( PolyString.of( "42" ) ), Collections.singletonList( null ) ), context );

@@ -529,72 +529,15 @@ public class DdlManagerImpl extends DdlManager {
                     continue;
                 }
                 if ( allocation.unwrap( AllocationCollection.class ).isPresent() ) {
-                    // One physical source collection can be mapped to several logical collections, each in its own namespace.
-                    // drops only the collections backed by that adapter and cleans up their mappings.
-                    dropCollection( catalog.getSnapshot().doc().getCollection( allocation.logicalId ).orElseThrow(), statement );
+                    var current = catalog.getSnapshot();
+                    var collection = current.doc().getCollection( allocation.logicalId ).orElseThrow();
+                    removeDocumentSource( collection, allocation, statement );
                     continue;
                 }
                 if ( allocation.unwrap( AllocationTable.class ).isPresent() ) {
                     LogicalTable table = catalog.getSnapshot().rel().getTable( allocation.logicalId ).orElseThrow();
-
-                    // Handle target with multiple mappings:
-                    // perform selective cleanup: remove only the current source’s mapping,
-                    // allocation, physical registration, and placement metadata
-                    // Skips deletion of the shared logical table
-                    if ( table.entityType == EntityType.SOURCE && catalog.getSnapshot().mappings().getMappingsForLogicalEntity( table.id ).size() > 1 ) {
-                        // Removes the mapping associated with the adapter’s current allocation
-                        catalog.removeSchemaMappingsForAllocation( allocation.id );
-                        // Removes that allocation’s physical metadata registration
-                        catalog.getAdapterCatalog( allocation.adapterId ).orElseThrow().removeAllocAndPhysical( allocation.id );
-                        // Deletes its allocation, placement-column records, and placement
-                        var allocationCatalog = catalog.getAllocRel( allocation.namespaceId );
-                        allocationCatalog.deleteAllocation( allocation.id );
-                        catalog.getSnapshot().alloc().getColumns( allocation.placementId ).forEach( column -> allocationCatalog.deleteColumn( allocation.placementId, column.columnId ) );
-                        allocationCatalog.deletePlacement( allocation.placementId );
-                        // Updates the catalog snapshot
-                        catalog.updateSnapshot();
-                        // Clears query caches
-                        statement.getQueryProcessor().resetCaches();
-                        continue;
-                    }
-
-                    // Make sure that there is only one adapter
-                    if ( catalog.getSnapshot().alloc().getPlacementsFromLogical( allocation.logicalId ).size() != 1 ) {
-                        throw new GenericRuntimeException( "The data source contains tables with more than one placement. This should not happen!" );
-                    }
-
-                    if ( table.entityType != EntityType.SOURCE ) {
-                        throw new GenericRuntimeException( "Trying to drop a table located on a data source which is not of table type SOURCE. This should not happen!" );
-                    }
-
-                    // When dropping a source adapter or a table, it removes that table’s mapping before deleting its allocation columns.
-                    catalog.removeSchemaMappingsForEntity( table.id );
-
-                    // Delete column placement in catalog
-                    for ( AllocationColumn column : allocation.unwrap( AllocationTable.class ).get().getColumns() ) {
-                        catalog.getAllocRel( allocation.namespaceId ).deleteColumn( allocation.id, column.columnId );
-                    }
-
-                    catalog.getAllocRel( allocation.namespaceId ).deleteAllocation( allocation.id );
-
-                    catalog.getLogicalRel( allocation.namespaceId ).deletePrimaryKey( table.id );
-
-                    for ( LogicalConstraint constraint : catalog.getSnapshot().rel().getConstraints( table.id ) ) {
-                        catalog.getLogicalRel( allocation.namespaceId ).deleteConstraint( constraint.id );
-                    }
-                    for ( LogicalKey key : catalog.getSnapshot().rel().getTableKeys( table.id ) ) {
-                        catalog.getLogicalRel( allocation.namespaceId ).deleteKey( key.id );
-                    }
-
-                    for ( LogicalColumn column : catalog.getSnapshot().rel().getColumns( allocation.logicalId ) ) {
-                        catalog.getLogicalRel( allocation.namespaceId ).deleteColumn( column.id );
-                    }
-
-                    catalog.getLogicalRel( allocation.namespaceId ).deleteTable( table.id );
-                    statement.getQueryProcessor().resetCaches();
+                    removeRelSource( table, allocation, statement );
                 }
-
-
             }
         }
         if ( adapter.type == AdapterType.STORE ) {
@@ -828,17 +771,22 @@ public class DdlManagerImpl extends DdlManager {
         List<SourceRefreshSummary> summaries = new ArrayList<>();
         String sourceName = discovery.sourceAdapter().getUniqueName();
 
-        List<LogicalCollection> removedCollections = snapshot.doc().getCollections( null, null ).stream()
+        var removedCollections = snapshot.doc().getCollections( null, null ).stream()
                 .filter( collection -> collection.entityType == EntityType.SOURCE )
-                .filter( collection -> snapshot.alloc().getFromLogical( collection.id ).stream().anyMatch( a -> a.adapterId == sourceId ) )
-                .filter( collection -> !discovery.exportedCollectionsByIdentifier().containsKey( getKnownSourceCollectionIdentifier( collection, snapshot ) ) )
                 .filter( collection -> !isSynchronizedMaterializedSource( collection, snapshot ) )
                 .sorted( Comparator.comparing( LogicalCollection::getName ) )
+                .flatMap( collection -> snapshot.alloc().getFromLogical( collection.id ).stream()
+                        .filter( allocation -> allocation.adapterId == sourceId )
+                        .filter( allocation -> !discovery.exportedCollectionsByIdentifier().containsKey( getSourceCollectionIdentifier( collection, allocation ) ) )
+                        .map( allocation -> Map.entry( collection, allocation ) ) )
                 .toList();
 
-        for ( LogicalCollection removedCollection : removedCollections ) {
-            dropCollection( removedCollection, statement );
-            summaries.add( new SourceRefreshSummary( sourceName, removedCollection.name, DataModel.DOCUMENT, List.of( "Removed source collection" ) ) );
+        for ( var removed : removedCollections ) {
+            var collection = removed.getKey();
+            removeDocumentSource( collection, removed.getValue(), statement );
+            boolean survives = catalog.getSnapshot().doc().getCollection( collection.id ).isPresent();
+            summaries.add( new SourceRefreshSummary( sourceName, collection.name, DataModel.DOCUMENT,
+                    List.of( survives ? "Removed source mapping from collection" : "Removed source collection" ) ) );
         }
 
         long namespaceId = getDocumentSourceNamespaceId( sourceId, discovery.sourceAdapter(), snapshot );
@@ -988,9 +936,9 @@ public class DdlManagerImpl extends DdlManager {
     private Map<String, LogicalCollection> getKnownSourceCollectionsByIdentifier( Long sourceId, Snapshot snapshot ) {
         return snapshot.doc().getCollections( null, null ).stream()
                 .filter( collection -> collection.entityType == EntityType.SOURCE )
-                .filter( collection -> snapshot.alloc().getFromLogical( collection.id ).stream().anyMatch( alloc -> alloc.adapterId == sourceId ) )
-                .map( collection -> Map.entry( getKnownSourceCollectionIdentifier( collection, snapshot ), collection ) )
-                .filter( entry -> entry.getKey() != null )
+                .flatMap( collection -> snapshot.alloc().getFromLogical( collection.id ).stream()
+                        .filter( allocation -> allocation.adapterId == sourceId )
+                        .map( allocation -> Map.entry( getSourceCollectionIdentifier( collection, allocation ), collection ) ) )
                 .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue, ( left, right ) -> left, LinkedHashMap::new ) );
     }
 
@@ -1022,10 +970,9 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
-    private String getKnownSourceCollectionIdentifier( LogicalCollection collection, Snapshot snapshot ) {
-        return snapshot.alloc().getFromLogical( collection.id ).stream().findFirst()
-                .flatMap( allocation -> catalog.getAdapterCatalog( allocation.adapterId )
-                        .flatMap( adapter -> adapter.getPhysicalsFromAllocs( allocation.id ).stream().findFirst() ) )
+    private String getSourceCollectionIdentifier( LogicalCollection collection, AllocationEntity allocation ) {
+        return catalog.getAdapterCatalog( allocation.adapterId )
+                .flatMap( adapter -> adapter.getPhysicalsFromAllocs( allocation.id ).stream().findFirst() )
                 .map( physical -> formatSourceCollectionIdentifier( physical.name ) )
                 .orElseGet( () -> formatSourceCollectionIdentifier( collection.name ) );
     }
@@ -1358,29 +1305,25 @@ public class DdlManagerImpl extends DdlManager {
             return List.of();
         }
 
-        List<AllocationEntity> allocs = snapshot.alloc().getFromLogical( collection.id );
-        if ( allocs.size() != 1 ) {
-            throw new GenericRuntimeException(
-                    "Expected exactly one placement for collection '" + collection.name +
-                            "', but found " + allocs.size()
-            );
-        }
-
-        long sourceId = allocs.get( 0 ).adapterId;
-        SourceCollectionDiscovery discovery = buildSourceCollectionDiscovery( sourceId, snapshot );
-        if ( discovery == null ) {
+        var allocations = snapshot.alloc().getFromLogical( collection.id );
+        Map<Long, SourceCollectionDiscovery> discoveries = new HashMap<>();
+        var deleted = allocations.stream().filter( allocation -> {
+            var discovery = discoveries.computeIfAbsent( allocation.adapterId, id -> buildSourceCollectionDiscovery( id, snapshot ) );
+            return discovery != null && !discovery.exportedCollectionsByIdentifier().containsKey( getSourceCollectionIdentifier( collection, allocation ) );
+        } ).toList();
+        if ( deleted.isEmpty() ) {
             return List.of();
         }
 
-        String collectionIdentifier = getKnownSourceCollectionIdentifier( collection, snapshot );
-        if ( collectionIdentifier != null && !discovery.exportedCollectionsByIdentifier().containsKey( collectionIdentifier ) ) {
-            if ( dropDeletedCollection ) {
+        if ( dropDeletedCollection ) {
+            if ( deleted.size() == allocations.size() ) {
                 dropCollection( collection, statement );
+            } else {
+                deleted.forEach( allocation -> removeDocumentSource( collection, allocation, statement ) );
             }
-            return List.of( sourceCollectionDeletedMessage( collection, snapshot ) );
         }
-
-        return List.of();
+        return deleted.size() == allocations.size() ? List.of( sourceCollectionDeletedMessage( collection, snapshot ) )
+                : List.of( "Removed source mapping from collection " + collection.name + "." );
     }
 
 
@@ -4167,23 +4110,46 @@ public class DdlManagerImpl extends DdlManager {
         state.validateRemoval( expectedRevision );
         runMappingChange( statement, () -> {
             catalog.removeSchemaMapping( mappingId );
-            removeDocumentMappingTarget( state.collection() );
+            if ( state.fixedTargetEntityId() != null ) {
+                var allocation = catalog.getSnapshot().alloc().getFromLogical( state.collection().id ).stream()
+                        .filter( a -> a.id == state.physical().allocationId ).findFirst()
+                        .orElseThrow( () -> MappingError.Missing.sourceAllocation( mappingId, state.physical().allocationId ) );
+                removeDocumentAllocation( allocation );
+            } else {
+                removeDocumentMappingTarget( state.collection() );
+            }
         } );
     }
 
 
     @Override
-    public DocumentMappingState createDocumentMapping( long sourceEntityId, DocumentMappingUpdate update, Statement statement ) {
+    public DocumentMappingState createDocumentMapping( long sourceEntityId, DocumentMappingUpdate draft, Statement statement ) {
         statement.getQueryProcessor().lock( statement );
         synchronized ( catalog ) {
-            var source = DocumentMappingState.draft( catalog, update.adapterId(), sourceEntityId, update.sourceAllocationId() );
-            var validated = source.validate( update, catalog.getSnapshot() );
+            Long existingTargetEntityId = draft.existingTargetEntityId();
+            var source = DocumentMappingState.draft( catalog, draft.adapterId(), sourceEntityId, draft.sourceAllocationId(), existingTargetEntityId );
+            var validated = source.validate( draft, catalog.getSnapshot() );
             long mappingId = IdBuilder.getInstance().getNewMappingId();
             runMappingChange( statement, () -> {
-                var logical = catalog.getLogicalDoc( validated.targetNamespaceId() );
                 var allocations = catalog.getAllocDoc( validated.targetNamespaceId() );
-                var target = logical.addCollection( validated.logicalCollectionName(), EntityType.SOURCE, false );
-                var partition = allocations.addPartition( target, PartitionType.NONE, null );
+                var target = existingTargetEntityId == null
+                        ? catalog.getLogicalDoc( validated.targetNamespaceId() ).addCollection( validated.logicalCollectionName(), EntityType.SOURCE, false )
+                        : source.collection();
+                var partition = existingTargetEntityId == null
+                        ? allocations.addPartition( target, PartitionType.NONE, null )
+                        : catalog.getSnapshot().alloc().getPartitionsFromLogical( target.id ).get( 0 );
+                if ( existingTargetEntityId != null ) {
+                    var snapshot = catalog.getSnapshot();
+                    for ( var mapping : snapshot.mappings().getMappingsForLogicalEntity( target.id ) ) {
+                        if ( mapping.sourceAllocationId() == null ) {
+                            var existing = snapshot.alloc().getFromLogical( target.id );
+                            if ( existing.size() != 1 ) {
+                                throw MappingError.Algebra.sourceBindingsAmbiguous();
+                            }
+                            catalog.updateSchemaMapping( mapping.withSourceAllocation( existing.get( 0 ).id ) );
+                        }
+                    }
+                }
                 var placement = allocations.addPlacement( target, source.adapter().id );
                 var allocation = allocations.addAllocation( target, placement.id, partition.id, source.adapter().id );
                 var physical = new PhysicalCollection( IdBuilder.getInstance().getNewPhysicalId(), allocation.id,
@@ -4205,7 +4171,11 @@ public class DdlManagerImpl extends DdlManager {
             var state = DocumentMappingState.load( catalog, update.mappingId() );
             var validated = state.validate( update, catalog.getSnapshot() );
             runMappingChange( statement, () -> {
-                catalog.getLogicalDoc( state.namespace().id ).renameCollection( state.collection(), validated.logicalCollectionName() );
+                if ( state.namespace().id != validated.targetNamespaceId() ) {
+                    moveDocumentMappingTarget( state, validated.targetNamespaceId(), validated.logicalCollectionName(), statement );
+                } else if ( !state.collection().name.equals( validated.logicalCollectionName() ) ) {
+                    catalog.getLogicalDoc( state.namespace().id ).renameCollection( state.collection(), validated.logicalCollectionName() );
+                }
                 catalog.updateSchemaMapping( SchemaMappingManager.renameMapping( state.mapping(), validated.mappingName() ) );
             } );
             return DocumentMappingState.load( catalog, update.mappingId() );
@@ -4213,17 +4183,113 @@ public class DdlManagerImpl extends DdlManager {
     }
 
 
+    private void moveDocumentMappingTarget( DocumentMappingState state, long namespaceId, String name, Statement statement ) {
+        LogicalCollection collection = state.collection();
+        long sourceNamespaceId = collection.namespaceId;
+        var snapshot = catalog.getSnapshot();
+        if ( snapshot.alloc().getFromLogical( collection.id ).size() != 1 ) {
+            throw MappingError.Algebra.sourceBindingsAmbiguous();
+        }
+        var sourceAlloc = catalog.getAllocDoc( sourceNamespaceId );
+        var targetAlloc = catalog.getAllocDoc( namespaceId );
+
+        catalog.getLogicalDoc( sourceNamespaceId ).getCollections().remove( collection.id );
+        catalog.getLogicalDoc( namespaceId ).getCollections().put( collection.id, collection.toBuilder().namespaceId( namespaceId ).name( name ).build() );
+        for ( var placement : snapshot.alloc().getPlacementsFromLogical( collection.id ) ) {
+            sourceAlloc.getPlacements().remove( placement.id );
+            targetAlloc.getPlacements().put( placement.id, new AllocationPlacement( placement.id, collection.id, namespaceId, placement.adapterId ) );
+        }
+        for ( var partition : snapshot.alloc().getPartitionsFromLogical( collection.id ) ) {
+            sourceAlloc.getPartitions().remove( partition.id );
+            targetAlloc.getPartitions().put( partition.id, new AllocationPartition( partition.id, namespaceId, collection.id, partition.groupId,
+                    partition.placementType, partition.name, partition.role, partition.isUnbound, partition.qualifiers, partition.partitionType ) );
+        }
+        // The mapping state resolves exactly one allocation, and shared targets cannot be moved here.
+        var allocation = sourceAlloc.getCollections().remove( state.physical().allocationId );
+        var moved = allocation.toBuilder().namespaceId( namespaceId ).build();
+        targetAlloc.getCollections().put( moved.id, moved );
+        var physical = state.physical().toBuilder().namespaceId( namespaceId ).build();
+        AdapterManager.getInstance().getAdapter( moved.adapterId ).orElseThrow( () -> MappingError.Missing.adapter( moved.adapterId ) )
+                .restoreCollection( moved, List.of( physical ), statement.getPrepareContext() );
+    }
+
+
     private void removeDocumentMappingTarget( LogicalCollection collection ) {
         var snapshot = catalog.getSnapshot();
         var allocations = catalog.getAllocDoc( collection.namespaceId );
         for ( var allocation : snapshot.alloc().getFromLogical( collection.id ) ) {
-            catalog.getAdapterCatalog( allocation.adapterId ).orElseThrow( () -> MappingError.Missing.adapterCatalog( allocation.adapterId ) )
-                    .removeAllocAndPhysical( allocation.id );
-            allocations.removeAllocation( allocation.id );
-            allocations.removePlacement( allocation.placementId );
+            removeDocumentAllocation( allocation );
         }
         snapshot.alloc().getPartitionsFromLogical( collection.id ).forEach( partition -> allocations.removePartition( partition.id ) );
         catalog.getLogicalDoc( collection.namespaceId ).deleteCollection( collection.id );
+    }
+
+
+    private void removeDocumentAllocation( AllocationEntity allocation ) {
+        catalog.getAdapterCatalog( allocation.adapterId ).orElseThrow( () -> MappingError.Missing.adapterCatalog( allocation.adapterId ) )
+                .removeAllocAndPhysical( allocation.id );
+        var allocations = catalog.getAllocDoc( allocation.namespaceId );
+        allocations.removeAllocation( allocation.id );
+        allocations.removePlacement( allocation.placementId );
+    }
+
+
+    private void removeRelSource( LogicalTable table, AllocationEntity allocation, Statement statement ) {
+        var snapshot = catalog.getSnapshot();
+        if ( table.entityType == EntityType.SOURCE && snapshot.mappings().getMappingsForLogicalEntity( table.id ).size() > 1 ) {
+            catalog.removeSchemaMappingsForAllocation( allocation.id );
+            catalog.getAdapterCatalog( allocation.adapterId ).orElseThrow().removeAllocAndPhysical( allocation.id );
+            var allocations = catalog.getAllocRel( allocation.namespaceId );
+            allocations.deleteAllocation( allocation.id );
+            catalog.getSnapshot().alloc().getColumns( allocation.placementId ).forEach( column -> allocations.deleteColumn( allocation.placementId, column.columnId ) );
+            allocations.deletePlacement( allocation.placementId );
+            catalog.updateSnapshot();
+            statement.getQueryProcessor().resetCaches();
+            return;
+        }
+
+        if ( snapshot.alloc().getPlacementsFromLogical( allocation.logicalId ).size() != 1 ) {
+            throw new GenericRuntimeException( "The data source contains tables with more than one placement. This should not happen!" );
+        }
+        if ( table.entityType != EntityType.SOURCE ) {
+            throw new GenericRuntimeException( "Trying to drop a table located on a data source which is not of table type SOURCE. This should not happen!" );
+        }
+
+        catalog.removeSchemaMappingsForEntity( table.id );
+        var allocations = catalog.getAllocRel( allocation.namespaceId );
+        for ( AllocationColumn column : allocation.unwrapOrThrow( AllocationTable.class ).getColumns() ) {
+            allocations.deleteColumn( allocation.id, column.columnId );
+        }
+        allocations.deleteAllocation( allocation.id );
+
+        var relational = catalog.getLogicalRel( allocation.namespaceId );
+        relational.deletePrimaryKey( table.id );
+        for ( LogicalConstraint constraint : catalog.getSnapshot().rel().getConstraints( table.id ) ) {
+            relational.deleteConstraint( constraint.id );
+        }
+        for ( LogicalKey key : catalog.getSnapshot().rel().getTableKeys( table.id ) ) {
+            relational.deleteKey( key.id );
+        }
+        for ( LogicalColumn column : catalog.getSnapshot().rel().getColumns( allocation.logicalId ) ) {
+            relational.deleteColumn( column.id );
+        }
+        relational.deleteTable( table.id );
+        statement.getQueryProcessor().resetCaches();
+    }
+
+
+    private void removeDocumentSource( LogicalCollection collection, AllocationEntity allocation, Statement statement ) {
+        var snapshot = catalog.getSnapshot();
+        if ( snapshot.mappings().getMappingsForLogicalEntity( collection.id ).size() <= 1 ) {
+            dropCollection( collection, statement );
+            return;
+        }
+        catalog.removeSchemaMappingsForAllocation( allocation.id );
+        var adapter = AdapterManager.getInstance().getAdapter( allocation.adapterId ).orElseThrow();
+        adapter.dropCollection( statement.getPrepareContext(), allocation.unwrapOrThrow( AllocationCollection.class ) );
+        removeDocumentAllocation( allocation );
+        catalog.updateSnapshot();
+        statement.getQueryProcessor().resetCaches();
     }
 
 

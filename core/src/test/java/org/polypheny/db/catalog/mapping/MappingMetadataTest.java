@@ -32,7 +32,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
-import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.RelCopyColumnMappingRule;
 import org.polypheny.db.catalog.entity.mapping.rules.MappingRule;
 import org.polypheny.db.catalog.exceptions.MappingValidationException;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -41,13 +41,13 @@ import org.polypheny.db.catalog.logistic.MappingKind;
 
 class MappingMetadataTest {
 
-    private static final DirectColumnMappingRule NAME_RULE = new DirectColumnMappingRule( 304 );
-    private static final DirectColumnMappingRule ID_RULE = new DirectColumnMappingRule( 302 );
+    private static final RelCopyColumnMappingRule NAME_RULE = new RelCopyColumnMappingRule( 304 );
+    private static final RelCopyColumnMappingRule ID_RULE = new RelCopyColumnMappingRule( 302 );
 
 
     @Test
     void preservesDirectRuleLogicalColumnIdentity() {
-        assertEquals( NAME_RULE, roundTrip( NAME_RULE, DirectColumnMappingRule.class ) );
+        assertEquals( NAME_RULE, roundTrip( NAME_RULE, RelCopyColumnMappingRule.class ) );
         assertEquals( 304, NAME_RULE.targetLogicalColumnId() );
     }
 
@@ -56,7 +56,7 @@ class MappingMetadataTest {
     void preservesDirectColumnRuleThroughInterface() {
         MappingRule restored = roundTrip( NAME_RULE, MappingRule.class );
 
-        assertInstanceOf( DirectColumnMappingRule.class, restored );
+        assertInstanceOf( RelCopyColumnMappingRule.class, restored );
         assertEquals( NAME_RULE, restored );
     }
 

@@ -102,6 +102,8 @@ public class EnumerableRules {
 
     public static final EnumerableUnionRule ENUMERABLE_UNION_RULE = new EnumerableUnionRule();
 
+    public static final EnumerableDocumentUnionRule ENUMERABLE_DOCUMENT_UNION_RULE = new EnumerableDocumentUnionRule();
+
     public static final EnumerableModifyCollectRule ENUMERABLE_MODIFY_COLLECT_RULE = new EnumerableModifyCollectRule();
 
     public static final EnumerableIntersectRule ENUMERABLE_INTERSECT_RULE = new EnumerableIntersectRule();

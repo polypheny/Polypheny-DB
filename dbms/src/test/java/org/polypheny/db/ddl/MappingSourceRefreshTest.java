@@ -66,7 +66,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
 import org.polypheny.db.catalog.entity.mapping.SchemaMappingManager;
-import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.RelCopyColumnMappingRule;
 import org.polypheny.db.catalog.impl.PolyCatalog;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.processing.QueryProcessor;
@@ -177,7 +177,7 @@ class MappingSourceRefreshTest {
         catalog.commit();
         assertEquals( List.of( "id", "name", "age" ), catalog.getSnapshot().rel().getColumns( table.id ).stream().map( c -> c.name ).toList() );
         assertEquals( "Customer import", mapping().name() );
-        assertEquals( catalog.getSnapshot().rel().getColumns( table.id ).stream().map( c -> new DirectColumnMappingRule( c.id ) ).toList(), mapping().rules() );
+        assertEquals( catalog.getSnapshot().rel().getColumns( table.id ).stream().map( c -> new RelCopyColumnMappingRule( c.id ) ).toList(), mapping().rules() );
     }
 
     @Test

@@ -53,6 +53,7 @@ import org.polypheny.db.algebra.logical.common.LogicalTransformer;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentAggregate;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentFilter;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentMappingTransform;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentUnion;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentModify;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentProject;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
@@ -126,6 +127,11 @@ public class PolyAlgRegistry {
         ImmutableList<OperatorTag> logAllProTags = ImmutableList.of( OperatorTag.LOGICAL, OperatorTag.ALLOCATION, OperatorTag.ADVANCED );
 
         // DOCUMENT
+        declarations.put( LogicalDocumentUnion.class, PolyAlgDeclaration.builder()
+                .creator( LogicalDocumentUnion::create ).model( DataModel.DOCUMENT )
+                .opName( "DOC_UNION" ).numInputs( -1 ).opTags( List.of( OperatorTag.ALLOCATION ) )
+                .param( Parameter.builder().name( "all" ).type( ParamType.BOOLEAN ).build() )
+                .build() );
         declarations.put( LogicalDocumentMappingTransform.class, PolyAlgDeclaration.builder()
                 .creator( LogicalDocumentMappingTransform::create ).model( DataModel.DOCUMENT )
                 .opName( "DOC_MAPPING" ).numInputs( 1 ).opTags( List.of( OperatorTag.ALLOCATION ) )

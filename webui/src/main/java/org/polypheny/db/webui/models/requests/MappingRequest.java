@@ -93,7 +93,7 @@ public final class MappingRequest {
 
 
     public record DocumentDraftRequest( @JsonProperty(value = "adapterId", required = true) long adapterId,
-                                        @JsonProperty(value = "sourceEntityId", required = true) long sourceEntityId, Long sourceAllocationId ) {
+                                        @JsonProperty(value = "sourceEntityId", required = true) long sourceEntityId, Long sourceAllocationId, Long existingTargetEntityId ) {
     }
 
 
@@ -103,10 +103,11 @@ public final class MappingRequest {
                                          @JsonProperty(value = "mappingName", required = true) String mappingName,
                                          @JsonProperty(value = "logicalCollectionName", required = true) String logicalCollectionName,
                                          @JsonProperty(value = "targetNamespaceId", required = true) long targetNamespaceId,
-                                         Long sourceAllocationId ) {
+                                         Long sourceAllocationId, Long existingTargetEntityId ) {
 
         public DocumentMappingUpdate toCommand() {
-            return new DocumentMappingUpdate( adapterId, -1, expectedRevision, mappingName, logicalCollectionName, targetNamespaceId, sourceAllocationId );
+            return new DocumentMappingUpdate( adapterId, -1, expectedRevision, mappingName, logicalCollectionName,
+                    targetNamespaceId, existingTargetEntityId, sourceAllocationId );
         }
 
     }
@@ -116,10 +117,11 @@ public final class MappingRequest {
                                          @JsonProperty(value = "mappingId", required = true) long mappingId,
                                          @JsonProperty(value = "expectedRevision", required = true) String expectedRevision,
                                          @JsonProperty(value = "mappingName", required = true) String mappingName,
-                                         @JsonProperty(value = "logicalCollectionName", required = true) String logicalCollectionName ) {
+                                         @JsonProperty(value = "logicalCollectionName", required = true) String logicalCollectionName,
+                                         Long targetNamespaceId ) {
 
         public DocumentMappingUpdate toCommand() {
-            return new DocumentMappingUpdate( adapterId, mappingId, expectedRevision, mappingName, logicalCollectionName, null, null );
+            return new DocumentMappingUpdate( adapterId, mappingId, expectedRevision, mappingName, logicalCollectionName, targetNamespaceId, null, null );
         }
 
     }

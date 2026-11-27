@@ -39,12 +39,16 @@ import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.tree.BlockBuilder;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
+import org.jetbrains.annotations.Nullable;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.core.Union;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentUnion;
 import org.polypheny.db.algebra.polyalg.arguments.BooleanArg;
 import org.polypheny.db.algebra.polyalg.arguments.PolyAlgArgs;
+import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.AlgTraitSet;
+import org.polypheny.db.schema.trait.ModelTrait;
 import org.polypheny.db.util.BuiltInMethod;
 
 
@@ -53,19 +57,36 @@ import org.polypheny.db.util.BuiltInMethod;
  */
 public class EnumerableUnion extends Union implements EnumerableAlg {
 
+    private final @Nullable AlgDataType declaredRowType;
+
+
     public EnumerableUnion( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
+        this( cluster, traitSet, inputs, all, null );
+    }
+
+
+    EnumerableUnion( AlgCluster cluster, AlgTraitSet traitSet, List<AlgNode> inputs, boolean all, @Nullable AlgDataType declaredRowType ) {
         super( cluster, traitSet, inputs, all );
+        this.declaredRowType = declaredRowType;
     }
 
 
     public static EnumerableUnion create( PolyAlgArgs args, List<AlgNode> children, AlgCluster cluster ) {
-        return new EnumerableUnion( cluster, cluster.traitSet(), children, args.getArg( "all", BooleanArg.class ).toBool() );
+        AlgTraitSet traits = cluster.traitSet();
+        AlgDataType declaredRowType = traits.contains( ModelTrait.DOCUMENT ) ? LogicalDocumentUnion.sharedInputRowType( children ) : null;
+        return new EnumerableUnion( cluster, traits, children, args.getArg( "all", BooleanArg.class ).toBool(), declaredRowType );
+    }
+
+
+    @Override
+    protected AlgDataType deriveRowType() {
+        return declaredRowType != null ? declaredRowType : super.deriveRowType();
     }
 
 
     @Override
     public EnumerableUnion copy( AlgTraitSet traitSet, List<AlgNode> inputs, boolean all ) {
-        return new EnumerableUnion( getCluster(), traitSet, inputs, all );
+        return new EnumerableUnion( getCluster(), traitSet, inputs, all, declaredRowType );
     }
 
 

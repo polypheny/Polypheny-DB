@@ -36,7 +36,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.polypheny.db.PolyphenyDb;
 import org.polypheny.db.TestHelper;
 import org.polypheny.db.catalog.Catalog;
-import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.RelCopyColumnMappingRule;
 import org.polypheny.db.catalog.mapping.RelMappingState;
 import org.polypheny.db.ddl.DdlManager;
 import org.polypheny.db.ddl.RelMappingUpdate;
@@ -91,7 +91,7 @@ class RelMappedTablePreviewIntegrationTest {
             var draft = RelMappingState.draft( Catalog.getInstance(), adapterId, source.id );
             var columns = draft.columns().stream().map( column -> switch ( column.name ) {
                 case "amount" -> new RelMappingUpdate.ColumnName( column.id, column.name, true, PolyType.INTEGER, true );
-                case "optional" -> new RelMappingUpdate.ColumnName( column.id, column.name, true, null, true, null, null, DirectColumnMappingRule.DEFINITION.id() );
+                case "optional" -> new RelMappingUpdate.ColumnName( column.id, column.name, true, null, true, null, null, RelCopyColumnMappingRule.DEFINITION.id() );
                 default -> new RelMappingUpdate.ColumnName( column.id, column.name, true );
             } ).toList();
             var update = new RelMappingUpdate( adapterId, -1, draft.revision(), draft.mapping().name(), draft.table().name, columns, draft.namespace().id );
@@ -99,7 +99,7 @@ class RelMappedTablePreviewIntegrationTest {
             var mapped = DdlManager.getInstance().createRelMapping( source.id, update, transaction.createStatement() );
             var optional = mapped.columns().stream().filter( column -> column.name.equals( "optional" ) ).findFirst().orElseThrow();
             assertTrue( optional.nullable );
-            assertTrue( mapped.mapping().rules().contains( new DirectColumnMappingRule( optional.id ) ) );
+            assertTrue( mapped.mapping().rules().contains( new RelCopyColumnMappingRule( optional.id ) ) );
 
             var request = UIRequest.builder().entityId( mapped.table().id ).namespace( Catalog.DEFAULT_NAMESPACE_NAME ).currentPage( 1 ).build();
             var first = crud.getTable( request );

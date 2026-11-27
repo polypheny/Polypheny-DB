@@ -21,7 +21,7 @@ import org.polypheny.db.catalog.catalogs.DocAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.allocation.AllocationEntity;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
-import org.polypheny.db.catalog.entity.mapping.rules.DocumentIdentityMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.DocumentCopyEntireMappingRule;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.exceptions.MappingError;
 import org.polypheny.db.catalog.logistic.DataModel;
@@ -35,14 +35,14 @@ public record DocumentMappingBinding( long allocationId, long logicalEntityId, l
 
     /**
      * checks that the mapping is physical-to-logical and document-to-document,
-     * contains exactly one DocumentIdentityMappingRule, and has no excluded-column settings.
+     * contains exactly one DocumentCopyEntireMappingRule, and has no excluded-column settings.
      */
     public static void validateIdentity( SchemaMapping mapping ) {
         if ( mapping.kind() != MappingKind.PHYSICAL_TO_LOGICAL
                 || mapping.sourceModel() != DataModel.DOCUMENT || mapping.targetModel() != DataModel.DOCUMENT ) {
             throw MappingError.Unsupported.documentMappingRequired( mapping.id() );
         }
-        if ( mapping.rules().size() != 1 || !(mapping.rules().get( 0 ) instanceof DocumentIdentityMappingRule)
+        if ( mapping.rules().size() != 1 || !(mapping.rules().get( 0 ) instanceof DocumentCopyEntireMappingRule)
                 || !mapping.excludedColumnRules().isEmpty() ) {
             throw MappingError.Validation.documentIdentityRequired( mapping.id() );
         }

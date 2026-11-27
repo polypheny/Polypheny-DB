@@ -49,7 +49,7 @@ import org.polypheny.db.algebra.type.AlgDataTypeFactory;
 import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
-import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.RelCopyColumnMappingRule;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
 import org.polypheny.db.catalog.exceptions.MappingMissingException;
@@ -223,7 +223,7 @@ class MappingScanBuilderTest {
 
     private static SchemaMapping mapping( long id, Long allocationId ) {
         return new SchemaMapping( id, "mapping_" + id, MappingKind.PHYSICAL_TO_LOGICAL, null, TARGET_ID,
-                DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( new DirectColumnMappingRule( COLUMN_ID ) ), allocationId );
+                DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( new RelCopyColumnMappingRule( COLUMN_ID ) ), allocationId );
     }
 
 

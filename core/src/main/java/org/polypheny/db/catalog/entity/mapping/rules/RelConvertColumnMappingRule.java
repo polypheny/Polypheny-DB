@@ -16,17 +16,21 @@
 
 package org.polypheny.db.catalog.entity.mapping.rules;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.annotations.SerializeRecord;
+import org.polypheny.db.algebra.type.AlgDataType;
+import org.polypheny.db.type.ScalarConversions;
 
-/**
- * DocumentIdentityMappingRule exposes each physical source document unchanged in the logical collection,
- * preserving all fields, nested objects, arrays, identifiers, and value types.
- * It makes the source document available to query through the logical collection, with its structure and values unchanged.
- */
+
 @SerializeRecord
-public record DocumentIdentityMappingRule() implements MappingRule {
+public record RelConvertColumnMappingRule( @JsonProperty long targetLogicalColumnId ) implements ColumnMappingRule {
 
-    public static final RuleDefinition<DocumentIdentityMappingRule> DEFINITION =
-            new RuleDefinition<>( "DOCUMENT_IDENTITY", "Entire document", DocumentIdentityMappingRule.class );
+    public static final RuleDefinition<RelConvertColumnMappingRule> DEFINITION =
+            new RuleDefinition<>( "REL_CONVERT_COLUMN", "Convert", RelConvertColumnMappingRule.class );
+
+
+    public static boolean supports( AlgDataType source, AlgDataType target ) {
+        return ScalarConversions.supports( source, target );
+    }
 
 }

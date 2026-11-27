@@ -18,7 +18,7 @@ package org.polypheny.db.algebra.mapping;
 
 import java.util.Objects;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.RelCopyColumnMappingRule;
 import org.polypheny.db.catalog.exceptions.MappingError;
 import org.polypheny.db.rex.RexNode;
 import org.polypheny.db.type.PolyTypeUtil;
@@ -27,11 +27,11 @@ import org.polypheny.db.type.PolyTypeUtil;
 /**
  * Copies an allocation's column unchanged, including an already collection-valued column.
  */
-public final class RelDirectColumnTransformer implements RelFieldMappingTransformer<DirectColumnMappingRule> {
+public final class RelDirectColumnTransformer implements RelFieldMappingTransformer<RelCopyColumnMappingRule> {
 
     @Override
-    public Class<DirectColumnMappingRule> ruleType() {
-        return DirectColumnMappingRule.class;
+    public Class<RelCopyColumnMappingRule> ruleType() {
+        return RelCopyColumnMappingRule.class;
     }
 
 
@@ -40,7 +40,7 @@ public final class RelDirectColumnTransformer implements RelFieldMappingTransfor
      * the target column receives the source column’s value for each row
      */
     @Override
-    public RexNode transform( DirectColumnMappingRule rule, AlgDataTypeField targetField, RelFieldMappingContext context ) {
+    public RexNode transform( RelCopyColumnMappingRule rule, AlgDataTypeField targetField, RelFieldMappingContext context ) {
         // get source field
         AlgDataTypeField sourceField = context.resolveSourceField( rule.targetLogicalColumnId() );
 

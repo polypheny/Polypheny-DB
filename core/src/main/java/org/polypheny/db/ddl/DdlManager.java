@@ -525,7 +525,7 @@ public abstract class DdlManager {
 
     public abstract void removeMapping( long mappingId, String expectedRevision, Statement statement );
 
-    public abstract DocumentMappingState createDocumentMapping( long sourceEntityId, DocumentMappingUpdate update, Statement statement );
+    public abstract DocumentMappingState createDocumentMapping( long sourceEntityId, DocumentMappingUpdate draft, Statement statement );
 
     public abstract DocumentMappingState updateDocumentMapping( DocumentMappingUpdate update, Statement statement );
 

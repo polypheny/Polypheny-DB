@@ -49,7 +49,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalNamespace;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
 import org.polypheny.db.catalog.entity.mapping.SchemaMappingManager;
-import org.polypheny.db.catalog.entity.mapping.rules.ConversionColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.RelConvertColumnMappingRule;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.exceptions.MappingConflictException;
@@ -318,7 +318,7 @@ class CsvMappingIntegrationTest {
             var amount = created.columns().stream().filter( column -> column.name.equals( "amount" ) ).findFirst().orElseThrow();
             assertEquals( PolyType.INTEGER, amount.type );
             assertTrue( amount.nullable );
-            assertTrue( created.mapping().rules().contains( new ConversionColumnMappingRule( amount.id ) ) );
+            assertTrue( created.mapping().rules().contains( new RelConvertColumnMappingRule( amount.id ) ) );
             assertEquals( PolyType.VARCHAR, created.physicalTables().get( 0 ).columns.stream()
                     .filter( column -> column.id == amount.id ).findFirst().orElseThrow().type );
             String sql = "SELECT amount + 1 FROM " + created.table().name;
@@ -371,7 +371,7 @@ class CsvMappingIntegrationTest {
         var column = new PhysicalColumn( 1, "amount", "amount", 2, 3, 4, 0,
                 PolyType.VARCHAR, null, 40, null, null, null, true, true, null, null );
         var input = factory.builder().add( column.id, column.logicalName, column.name, column.getAlgDataType( factory ) ).build();
-        var rule = new ConversionColumnMappingRule( column.id );
+        var rule = new RelConvertColumnMappingRule( column.id );
         var mapping = new SchemaMapping( 5, "Amount conversion", MappingKind.PHYSICAL_TO_LOGICAL, null, 3,
                 DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( rule ), 2L );
         var binding = new RelMappingBinding( 2, 3, 4, 6, Map.of( column.id, column ) );

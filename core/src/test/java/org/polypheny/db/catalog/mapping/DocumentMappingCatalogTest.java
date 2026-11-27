@@ -40,9 +40,9 @@ import org.polypheny.db.catalog.entity.allocation.AllocationCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
 import org.polypheny.db.catalog.entity.mapping.SchemaMappingManager;
-import org.polypheny.db.catalog.entity.mapping.rules.ConversionColumnMappingRule;
-import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
-import org.polypheny.db.catalog.entity.mapping.rules.DocumentIdentityMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.RelConvertColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.RelCopyColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.DocumentCopyEntireMappingRule;
 import org.polypheny.db.catalog.entity.mapping.rules.MappingRule;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
@@ -108,7 +108,7 @@ class DocumentMappingCatalogTest {
         catalog.commit();
         var restored = PolySerializable.deserialize( catalog.serialize(), PolyCatalog.class );
         assertEquals( mapping, restored.getSchemaMappings().get( mapping.id() ) );
-        assertEquals( List.of( new DocumentIdentityMappingRule() ), mapping.rules() );
+        assertEquals( List.of( new DocumentCopyEntireMappingRule() ), mapping.rules() );
         assertTrue( adapter.fields.isEmpty() );
         assertEquals( mapping, catalog.getSnapshot().mappings().getMapping( mapping.id() ).orElseThrow() );
         assertEquals( physical.id, DocumentMappingBinding.create( mapping, allocation, adapter ).physicalEntityId() );
@@ -120,8 +120,8 @@ class DocumentMappingCatalogTest {
     @Test
     void rejectsInvalidRulesAndModelsWithoutPublishingChanges() {
         var before = catalog.getSnapshot();
-        for ( var rules : List.<List<MappingRule>>of( List.of(), List.of( new DocumentIdentityMappingRule(), new DocumentIdentityMappingRule() ),
-                List.of( new DirectColumnMappingRule( 99 ) ) ) ) {
+        for ( var rules : List.<List<MappingRule>>of( List.of(), List.of( new DocumentCopyEntireMappingRule(), new DocumentCopyEntireMappingRule() ),
+                List.of( new RelCopyColumnMappingRule( 99 ) ) ) ) {
             var invalid = new SchemaMapping( mapping.id(), mapping.name(), mapping.kind(), null, collection.id,
                     DataModel.DOCUMENT, DataModel.DOCUMENT, List.copyOf( rules ), allocation.id );
             assertThrows( MappingException.class, () -> catalog.addSchemaMapping( invalid ) );
@@ -137,7 +137,7 @@ class DocumentMappingCatalogTest {
     @Test
     void documentTargetCannotUseColumnTransformations() {
         var invalid = new SchemaMapping( mapping.id(), mapping.name(), mapping.kind(), null, collection.id,
-                DataModel.RELATIONAL, DataModel.DOCUMENT, List.of( new ConversionColumnMappingRule( 99 ) ), allocation.id );
+                DataModel.RELATIONAL, DataModel.DOCUMENT, List.of( new RelConvertColumnMappingRule( 99 ) ), allocation.id );
 
         assertFalse( SchemaMappingManager.usesColumnTransformations( catalog.getSnapshot(), invalid ) );
     }

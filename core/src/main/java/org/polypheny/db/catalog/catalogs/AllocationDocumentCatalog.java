@@ -38,6 +38,6 @@ public interface AllocationDocumentCatalog extends AllocationCatalog {
 
     void removePartition( long partitionId );
 
-    Map<Long, ? extends AllocationCollection> getCollections();
+    Map<Long, AllocationCollection> getCollections();
 
 }

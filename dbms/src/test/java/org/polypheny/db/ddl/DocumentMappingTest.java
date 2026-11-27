@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
@@ -36,22 +37,34 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.javalin.http.Context;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
+import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.adapter.DataSource;
 import org.polypheny.db.adapter.DeployMode;
 import org.polypheny.db.adapter.DocumentDataSource;
 import org.polypheny.db.adapter.DocumentDataSource.ExportedDocument;
+import org.polypheny.db.algebra.AlgWriter;
 import org.polypheny.db.algebra.core.AlgFactories;
+import org.polypheny.db.algebra.enumerable.EnumerableAlg;
+import org.polypheny.db.algebra.enumerable.EnumerableConvention;
+import org.polypheny.db.algebra.enumerable.EnumerableInterpretable;
+import org.polypheny.db.algebra.enumerable.EnumerableRules;
+import org.polypheny.db.algebra.enumerable.EnumerableUnion;
+import org.polypheny.db.algebra.enumerable.document.EnumerableDocumentValues;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentMappingTransform;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentScan;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentUnion;
 import org.polypheny.db.algebra.mapping.MappingScanBuilder;
 import org.polypheny.db.algebra.rules.MappingTransformRule;
 import org.polypheny.db.algebra.type.AlgDataTypeFactory;
@@ -63,6 +76,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.mapping.SchemaMappingManager;
 import org.polypheny.db.catalog.entity.physical.PhysicalCollection;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
+import org.polypheny.db.catalog.exceptions.MappingDuplicateException;
 import org.polypheny.db.catalog.exceptions.MappingConflictException;
 import org.polypheny.db.catalog.exceptions.MappingOperationException;
 import org.polypheny.db.catalog.exceptions.MappingRevisionException;
@@ -75,13 +89,17 @@ import org.polypheny.db.catalog.mapping.DocumentMappingState;
 import org.polypheny.db.plan.AlgCluster;
 import org.polypheny.db.plan.ConventionTraitDef;
 import org.polypheny.db.plan.volcano.VolcanoPlanner;
+import org.polypheny.db.prepare.JavaTypeFactoryImpl;
 import org.polypheny.db.processing.QueryProcessor;
 import org.polypheny.db.rex.RexBuilder;
 import org.polypheny.db.schema.trait.ModelTraitDef;
 import org.polypheny.db.transaction.Statement;
 import org.polypheny.db.transaction.Transaction;
+import org.polypheny.db.type.entity.document.PolyDocument;
 import org.polypheny.db.util.PolyphenyHomeDirManager;
 import org.polypheny.db.util.RunMode;
+import org.polypheny.db.webui.crud.MappingCrud;
+import org.polypheny.db.webui.models.mapping.MappingModel;
 
 
 class DocumentMappingTest {
@@ -164,6 +182,26 @@ class DocumentMappingTest {
 
 
     @Test
+    void returnsDeclaredModelsForAnAdapterWithoutMappings() {
+        long emptyAdapterId = catalog.createAdapter( "empty_source", "test", AdapterType.SOURCE, Map.of(), DeployMode.EMBEDDED );
+        catalog.commit();
+        var sourceAdapter = mock( DataSource.class );
+        when( sourceAdapter.getSupportedDataModels() ).thenReturn( Set.of( DataModel.DOCUMENT, DataModel.RELATIONAL ) );
+        when( manager.getSource( emptyAdapterId ) ).thenReturn( Optional.of( sourceAdapter ) );
+        var context = mock( Context.class );
+        when( context.body() ).thenReturn( "{\"adapterId\":" + emptyAdapterId + "}" );
+
+        new MappingCrud( null ).getMappings( context );
+
+        var result = ArgumentCaptor.forClass( MappingModel.OverviewResponse.class );
+        verify( context ).json( result.capture() );
+        assertTrue( result.getValue().mappings().isEmpty() );
+        assertEquals( List.of( DataModel.values() ), result.getValue().dataModels() );
+        assertEquals( List.of( DataModel.RELATIONAL, DataModel.DOCUMENT ), result.getValue().adapterSourceModels() );
+    }
+
+
+    @Test
     void createsIndependentTargetsAcrossNamespacesAndExecutesTheirIdentityMappings() {
         var first = create( "First", "FIRST" );
         var second = create( "Second", "SECOND" );
@@ -193,7 +231,8 @@ class DocumentMappingTest {
 
     @Test
     void updatesNamesWithoutChangingThePhysicalSourceAndRejectsStaleUpdates() {
-        var update = new DocumentMappingUpdate( adapterId, original.mapping().id(), original.revision(), "Renamed mapping", "renamed_customers", null, null );
+        var update = new DocumentMappingUpdate( adapterId, original.mapping().id(), original.revision(),
+                "Renamed mapping", "renamed_customers", null, null, null );
         var saved = ddl.updateDocumentMapping( update, statement );
         assertEquals( "Renamed mapping", saved.mapping().name() );
         assertEquals( "renamed_customers", saved.collection().name );
@@ -206,6 +245,121 @@ class DocumentMappingTest {
 
 
     @Test
+    void movesAndRenamesTheTargetPreservingTheSourceBinding() {
+        var before = catalog.getSnapshot();
+        var originalAllocation = before.alloc().getFromLogical( source.id ).get( 0 );
+        var update = new DocumentMappingUpdate( adapterId, original.mapping().id(), original.revision(),
+                original.mapping().name(), "Customers_Archive", targetNamespaceId, null, null );
+        var saved = ddl.updateDocumentMapping( update, statement );
+        var after = catalog.getSnapshot();
+
+        assertEquals( original.mapping(), saved.mapping() );
+        assertEquals( source.id, saved.collection().id );
+        assertEquals( targetNamespaceId, saved.namespace().id );
+        assertTrue( after.doc().getCollection( source.namespaceId, source.name ).isEmpty() );
+        assertEquals( saved.collection(), after.doc().getCollection( targetNamespaceId, "customers_archive" ).orElseThrow() );
+        var moved = after.alloc().getFromLogical( source.id ).get( 0 );
+        assertEquals( originalAllocation.id, moved.id );
+        assertEquals( originalAllocation.placementId, moved.placementId );
+        assertEquals( originalAllocation.partitionId, moved.partitionId );
+        assertEquals( targetNamespaceId, moved.namespaceId );
+        assertEquals( targetNamespaceId, after.alloc().getPlacement( adapterId, source.id ).orElseThrow().namespaceId );
+        assertEquals( targetNamespaceId, after.alloc().getPartition( moved.partitionId ).orElseThrow().namespaceId );
+        assertEquals( moved, physicalCatalog.getAlloc( moved.id ) );
+        assertEquals( physical.toBuilder().namespaceId( targetNamespaceId ).build(), saved.physical() );
+        assertNotEquals( original.revision(), saved.revision() );
+
+        installDiscovery();
+        assertTrue( ddl.refreshSourceCollectionIfNeeded( source.id, statement ).isEmpty() );
+        assertEquals( saved, DocumentMappingState.load( catalog, saved.mapping().id() ) );
+    }
+
+
+    @Test
+    void addsADistinctSourceToAnExistingCollectionAndPreservesItWhenRemovingTheMapping() {
+        var second = catalog.getLogicalDoc( source.namespaceId ).addCollection( "orders", EntityType.SOURCE, false );
+        var allocations = catalog.getAllocDoc( source.namespaceId );
+        var partition = allocations.addPartition( second, PartitionType.NONE, null );
+        var placement = allocations.addPlacement( second, adapterId );
+        var sourceAllocation = allocations.addAllocation( second, placement.id, partition.id, adapterId );
+        physicalCatalog.createCollection( "physical_database", "orders", second, sourceAllocation );
+        catalog.addSchemaMapping( SchemaMappingManager.createMapping( "Orders import", second.id, DataModel.DOCUMENT, List.of() )
+                .withSourceAllocation( sourceAllocation.id ) );
+        catalog.commit();
+
+        var sourcesContext = mock( Context.class );
+        when( sourcesContext.body() ).thenReturn( "{\"targetEntityId\":" + source.id + "}" );
+        new MappingCrud( null ).getDocumentMappingSources( sourcesContext );
+        var available = ArgumentCaptor.forClass( MappingModel.DocumentSourcesResponse.class );
+        verify( sourcesContext ).json( available.capture() );
+        assertEquals( List.of( "orders" ), available.getValue().sources().stream().map( MappingModel.DocumentSource::physicalName ).toList() );
+
+        var draft = DocumentMappingState.draft( catalog, adapterId, second.id, sourceAllocation.id, source.id );
+        assertEquals( source.id, draft.fixedTargetEntityId() );
+        var renameTarget = new DocumentMappingUpdate( adapterId, -1, draft.revision(), "Attach orders", "renamed", source.namespaceId, source.id, sourceAllocation.id );
+        assertThrows( MappingValidationException.class, () -> ddl.createDocumentMapping( second.id, renameTarget, statement ) );
+        var update = new DocumentMappingUpdate( adapterId, -1, draft.revision(), "Attach orders", source.name, source.namespaceId, source.id, sourceAllocation.id );
+        var added = ddl.createDocumentMapping( second.id, update, statement );
+        assertEquals( source.id, added.collection().id );
+        assertFalse( MappingModel.Summary.from( added ).removesTarget() );
+        assertEquals( 2, catalog.getSnapshot().mappings().getMappingsForLogicalEntity( source.id ).size() );
+        assertEquals( 1, catalog.getSnapshot().alloc().getPartitionsFromLogical( source.id ).size() );
+        assertThrows( MappingDuplicateException.class, () -> DocumentMappingState.draft( catalog, adapterId, second.id, sourceAllocation.id, source.id ) );
+        var moveSharedTarget = new DocumentMappingUpdate( adapterId, added.mapping().id(), added.revision(), added.mapping().name(),
+                source.name, targetNamespaceId, null, null );
+        var sharedTargetError = assertThrows( MappingValidationException.class, () -> ddl.updateDocumentMapping( moveSharedTarget, statement ) );
+        assertTrue( sharedTargetError.fieldErrors.containsKey( "targetNamespaceId" ) );
+
+        var planner = new VolcanoPlanner();
+        planner.addAlgTraitDef( ConventionTraitDef.INSTANCE );
+        planner.addAlgTraitDef( ModelTraitDef.INSTANCE );
+        planner.addRule( MappingTransformRule.DOC_INSTANCE );
+        planner.addRule( EnumerableRules.ENUMERABLE_DOCUMENT_UNION_RULE );
+        var cluster = AlgCluster.createDocument( planner, new RexBuilder( new JavaTypeFactoryImpl() ), catalog.getSnapshot() );
+        var customer = PolyDocument.fromJson( "{\"name\":\"Ada\"}" ).asDocument();
+        var order = PolyDocument.fromJson( "{\"quantity\":2}" ).asDocument();
+        var documentsByAllocation = Map.of( physical.allocationId, customer, added.physical().allocationId, order );
+        when( adapter.getDocumentScan( anyLong(), any() ) ).thenAnswer( invocation -> {
+            long allocationId = invocation.getArgument( 0 );
+            return new EnumerableDocumentValues( cluster, cluster.traitSet(), List.of( documentsByAllocation.get( allocationId ) ), List.of() ) {
+                @Override
+                public AlgWriter explainTerms( AlgWriter writer ) {
+                    return super.explainTerms( writer ).item( "allocation", allocationId );
+                }
+            };
+        } );
+        var snapshot = catalog.getSnapshot();
+        var start = snapshot.alloc().getFromLogical( source.id ).get( 0 );
+        var scan = assertInstanceOf( LogicalDocumentUnion.class,
+                new MappingScanBuilder( snapshot, () -> AlgFactories.LOGICAL_BUILDER.create( cluster, snapshot ) ).build( start ) );
+        assertTrue( scan.all );
+        planner.setRoot( planner.changeTraits( scan, scan.getTraitSet().replace( EnumerableConvention.INSTANCE ) ) );
+        var plan = assertInstanceOf( EnumerableUnion.class, planner.findBestExp() );
+        assertEquals( DataModel.DOCUMENT, plan.getModel() );
+        assertSame( scan.getTupleType(), plan.getTupleType() );
+        assertSame( plan.getTupleType(), plan.copy( plan.getTraitSet(), plan.getInputs(), plan.all ).getTupleType() );
+        assertEquals( plan.getTupleType(), EnumerableUnion.create( plan.bindArguments(), plan.getInputs(), cluster ).getTupleType() );
+        var rows = EnumerableInterpretable.toBindable( new java.util.HashMap<>(), plan, EnumerableAlg.Prefer.ARRAY, statement )
+                .left.bind( mock( DataContext.class ) ).toList();
+        assertEquals( 2, rows.size() );
+        var documents = rows.stream().map( row -> row instanceof Object[] values ? values[0] : row ).toList();
+        assertTrue( documents.containsAll( List.of( customer, order ) ) );
+
+        ddl.removeMapping( added.mapping().id(), added.revision(), statement );
+        assertTrue( catalog.getSnapshot().doc().getCollection( source.id ).isPresent() );
+        assertEquals( 1, catalog.getSnapshot().alloc().getFromLogical( source.id ).size() );
+        assertTrue( catalog.getSnapshot().doc().getCollection( second.id ).isPresent() );
+
+        var nextDraft = DocumentMappingState.draft( catalog, adapterId, second.id, sourceAllocation.id, source.id );
+        var reattach = new DocumentMappingUpdate( adapterId, -1, nextDraft.revision(), "Attach orders", source.name, source.namespaceId, source.id, sourceAllocation.id );
+        ddl.createDocumentMapping( second.id, reattach, statement );
+        installDiscovery();
+        assertEquals( List.of( "Removed source mapping from collection customers." ), ddl.refreshSourceCollectionIfNeeded( source.id, statement ) );
+        assertEquals( List.of( original.mapping() ), catalog.getSnapshot().mappings().getMappingsForLogicalEntity( source.id ) );
+    }
+
+
+    @Test
     void validatesNamesNamespacesAndSourceSelectionBeforeCreatingAnything() {
         var first = create( "First", "first" );
         var before = catalog.getSnapshot();
@@ -213,11 +367,33 @@ class DocumentMappingTest {
         assertThrows( MappingValidationException.class, () -> create( "First", "other" ) );
         var draft = DocumentMappingState.draft( catalog, adapterId, source.id, null );
         long relational = catalog.createNamespace( "relational", DataModel.RELATIONAL, false, false );
-        var invalid = new DocumentMappingUpdate( adapterId, -1, draft.revision(), "Invalid", "other", relational, null );
+        var invalid = new DocumentMappingUpdate( adapterId, -1, draft.revision(), "Invalid", "other", relational, null, null );
         assertThrows( MappingValidationException.class, () -> ddl.createDocumentMapping( source.id, invalid, statement ) );
         assertEquals( 2, catalog.getSchemaMappings().size() );
         assertEquals( first.mapping(), catalog.getSnapshot().mappings().getMapping( first.mapping().id() ).orElseThrow() );
         assertEquals( physical, physicalCatalog.physicals.get( physical.id ) );
+    }
+
+
+    @Test
+    void rejectsMovesToAnOccupiedOrUnavailableNamespace() {
+        var existing = create( "Alternative", "customers" );
+        long relational = catalog.createNamespace( "relational", DataModel.RELATIONAL, false, false );
+        long hidden = catalog.createNamespace( "hidden", DataModel.DOCUMENT, false, true );
+        catalog.commit();
+        var before = catalog.getSnapshot();
+        var collision = new DocumentMappingUpdate( adapterId, original.mapping().id(), original.revision(), original.mapping().name(),
+                "CUSTOMERS", targetNamespaceId, null, null );
+        assertTrue( assertThrows( MappingValidationException.class, () -> ddl.updateDocumentMapping( collision, statement ) )
+                .fieldErrors.containsKey( "logicalCollectionName" ) );
+        for ( long namespaceId : List.of( relational, hidden ) ) {
+            var invalid = new DocumentMappingUpdate( adapterId, original.mapping().id(), original.revision(), original.mapping().name(),
+                    source.name, namespaceId, null, null );
+            assertTrue( assertThrows( MappingValidationException.class, () -> ddl.updateDocumentMapping( invalid, statement ) )
+                    .fieldErrors.containsKey( "targetNamespaceId" ) );
+        }
+        assertSame( before, catalog.getSnapshot() );
+        assertEquals( existing.collection(), before.doc().getCollection( targetNamespaceId, "customers" ).orElseThrow() );
     }
 
 
@@ -251,7 +427,7 @@ class DocumentMappingTest {
     void staleRemovalDoesNotDeleteTheTarget() {
         var alternative = create( "Alternative", "alternative" );
         var saved = ddl.updateDocumentMapping( new DocumentMappingUpdate( adapterId, alternative.mapping().id(), alternative.revision(),
-                "Updated", "alternative", null, null ), statement );
+                "Updated", "alternative", null, null, null ), statement );
         assertThrows( MappingRevisionException.class, () -> ddl.removeMapping( saved.mapping().id(), alternative.revision(), statement ) );
         assertTrue( catalog.getSnapshot().doc().getCollection( saved.collection().id ).isPresent() );
     }
@@ -261,7 +437,7 @@ class DocumentMappingTest {
     void discoveryKeepsRenamedTargetsAndRegistersNewCollectionsOnlyOnce() {
         var exported = installDiscovery();
         var renamed = ddl.updateDocumentMapping( new DocumentMappingUpdate( adapterId, original.mapping().id(), original.revision(),
-                "Renamed", "logical_customers", null, null ), statement );
+                "Renamed", "logical_customers", null, null, null ), statement );
         when( exported.getExportedCollections() ).thenReturn( List.of(
                 new ExportedDocument( "customers", false, EntityType.SOURCE ), new ExportedDocument( "orders", false, EntityType.SOURCE ) ) );
         assertTrue( ddl.refreshSourceCollectionIfNeeded( source.id, statement ).isEmpty() );
@@ -285,7 +461,9 @@ class DocumentMappingTest {
         catalog.commit();
         assertThrows( MappingConflictException.class, () -> ddl.removeMapping( alternative.mapping().id(), alternative.revision(), statement ) );
         assertThrows( MappingConflictException.class, () -> ddl.updateDocumentMapping( new DocumentMappingUpdate( adapterId,
-                alternative.mapping().id(), alternative.revision(), "Alternative", "renamed", null, null ), statement ) );
+                alternative.mapping().id(), alternative.revision(), "Alternative", "renamed", null, null, null ), statement ) );
+        assertThrows( MappingConflictException.class, () -> ddl.updateDocumentMapping( new DocumentMappingUpdate( adapterId,
+                alternative.mapping().id(), alternative.revision(), "Alternative", alternative.collection().name, source.namespaceId, null, null ), statement ) );
         assertTrue( catalog.getSnapshot().doc().getCollection( alternative.collection().id ).isPresent() );
     }
 
@@ -296,8 +474,10 @@ class DocumentMappingTest {
         var before = catalog.getSnapshot();
         doThrow( new IllegalStateException( "Injected commit failure" ) ).when( transaction ).commit();
         assertThrows( MappingOperationException.class, () -> ddl.updateDocumentMapping( new DocumentMappingUpdate( adapterId,
-                alternative.mapping().id(), alternative.revision(), "Changed", "changed", null, null ), statement ) );
+                alternative.mapping().id(), alternative.revision(), "Changed", "changed", source.namespaceId, null, null ), statement ) );
         assertSame( before, catalog.getSnapshot() );
+        assertEquals( alternative.collection(), catalog.getLogicalDoc( targetNamespaceId ).getCollections().get( alternative.collection().id ) );
+        assertFalse( catalog.getLogicalDoc( source.namespaceId ).getCollections().containsKey( alternative.collection().id ) );
         assertEquals( alternative.mapping(), catalog.getSchemaMappings().get( alternative.mapping().id() ) );
         assertThrows( MappingOperationException.class, () -> ddl.removeMapping( alternative.mapping().id(), alternative.revision(), statement ) );
         assertSame( before, catalog.getSnapshot() );
@@ -321,18 +501,20 @@ class DocumentMappingTest {
 
 
     @Test
-    void restoresDocumentBindingsAndAlternativeTargetsFromTheCommittedCatalog() {
-        var alternative = create( "Alternative", "alternative" );
+    void restoresMovedTargetsAndBindingsFromTheCommittedCatalog() {
+        var alternative = ddl.updateDocumentMapping( new DocumentMappingUpdate( adapterId, original.mapping().id(), original.revision(),
+                original.mapping().name(), source.name, targetNamespaceId, null, null ), statement );
         physicalCatalog.physicals.clear();
         physicalCatalog.allocations.clear();
         physicalCatalog.allocToPhysicals.clear();
         catalog.restore( transaction );
         var restored = DocumentMappingState.load( catalog, alternative.mapping().id() );
         assertEquals( alternative.mapping(), restored.mapping() );
+        assertEquals( targetNamespaceId, restored.collection().namespaceId );
         assertEquals( alternative.revision(), restored.revision() );
         assertEquals( alternative.physical().id, restored.physical().id );
         assertEquals( physical.name, restored.physical().name );
-        assertEquals( 2, physicalCatalog.physicals.size() );
+        assertEquals( 1, physicalCatalog.physicals.size() );
         verify( manager ).restoreAdapters( anyList() );
     }
 
@@ -359,7 +541,7 @@ class DocumentMappingTest {
     private DocumentMappingState create( String name, String target ) {
         var draft = DocumentMappingState.draft( catalog, adapterId, source.id, null );
         return ddl.createDocumentMapping( source.id, new DocumentMappingUpdate( adapterId, -1, draft.revision(), name, target,
-                targetNamespaceId, draft.physical().allocationId ), statement );
+                targetNamespaceId, null, draft.physical().allocationId ), statement );
     }
 
 }

@@ -39,7 +39,7 @@ import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
-import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.RelCopyColumnMappingRule;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
@@ -77,7 +77,7 @@ class CatalogRestoreRollbackTest {
         savedAdapter.addPhysical( allocation, new PhysicalTable( saved.idBuilder.getNewPhysicalId(), allocation.id, table.id,
                 table.name, List.of( physicalColumn ), namespaceId, "source", List.of(), adapterId ) );
         var mapping = new SchemaMapping( saved.idBuilder.getNewMappingId(), savedName, MappingKind.PHYSICAL_TO_LOGICAL,
-                null, table.id, DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( new DirectColumnMappingRule( column.id ) ), null );
+                null, table.id, DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( new RelCopyColumnMappingRule( column.id ) ), null );
         saved.addSchemaMapping( mapping );
         saved.commit();
         String image = saved.serialize();

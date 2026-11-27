@@ -41,7 +41,7 @@ import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
-import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.RelCopyColumnMappingRule;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.exceptions.MappingDuplicateException;
 import org.polypheny.db.catalog.impl.PolyCatalog;
@@ -135,7 +135,7 @@ class CsvSourceRegistrationTest {
             assertEquals( "employees", source.adapterCatalog.fromAllocation( allocationId ).name );
             var logicalColumns = catalog.getSnapshot().rel().getColumns( mapping.targetEntityId() );
             assertEquals( 2, logicalColumns.size() );
-            assertEquals( logicalColumns.stream().map( column -> new DirectColumnMappingRule( column.id ) ).toList(), mapping.rules() );
+            assertEquals( logicalColumns.stream().map( column -> new RelCopyColumnMappingRule( column.id ) ).toList(), mapping.rules() );
 
             catalog.commit();
             assertEquals( mapping, catalog.getSnapshot().mappings().getMappingsForLogicalEntity( mapping.targetEntityId() ).get( 0 ) );
@@ -202,7 +202,7 @@ class CsvSourceRegistrationTest {
             var scan = (CsvFilterableTable) source.adapterCatalog.fromAllocation( targetAllocation.id );
             try ( var rows = scan.scan( context, new ArrayList<>() ).enumerator() ) {
                 assertTrue( rows.moveNext() );
-                var rule = (DirectColumnMappingRule) created.mapping().rules().get( 0 );
+                var rule = (RelCopyColumnMappingRule) created.mapping().rules().get( 0 );
                 int sourcePosition = binding.columns().get( rule.targetLogicalColumnId() ).position;
                 assertEquals( "Ada", rows.current()[sourcePosition].asString().value );
                 assertTrue( !rows.moveNext() );

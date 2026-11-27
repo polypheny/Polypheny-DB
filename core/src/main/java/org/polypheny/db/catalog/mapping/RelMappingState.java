@@ -47,8 +47,8 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
 import org.polypheny.db.catalog.entity.mapping.SchemaMappingManager;
 import org.polypheny.db.catalog.entity.mapping.rules.ColumnMappingRule;
-import org.polypheny.db.catalog.entity.mapping.rules.ConversionColumnMappingRule;
-import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.RelConvertColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.RelCopyColumnMappingRule;
 import org.polypheny.db.catalog.entity.mapping.rules.MappingRule;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
@@ -154,7 +154,7 @@ public record RelMappingState(
         var snapshot = catalog.getSnapshot();
         var table = snapshot.rel().getTable( targetEntityId ).orElseThrow( MappingError.Missing::resource );
         var rules = catalog.getLogicalRel( table.namespaceId ).getColumns().values().stream().filter( c -> c.tableId == table.id )
-                .sorted( Comparator.comparingInt( c -> c.position ) ).<MappingRule>map( column -> new DirectColumnMappingRule( column.id ) ).toList();
+                .sorted( Comparator.comparingInt( c -> c.position ) ).<MappingRule>map( column -> new RelCopyColumnMappingRule( column.id ) ).toList();
         var mapping = new SchemaMapping( -1, "New mapping", MappingKind.PHYSICAL_TO_LOGICAL, null, table.id,
                 DataModel.RELATIONAL, DataModel.RELATIONAL, rules, null );
         long allocationId = snapshot.alloc().getFromLogical( table.id ).stream().filter( allocation -> allocation.adapterId == adapterId
@@ -178,7 +178,7 @@ public record RelMappingState(
         List<LogicalColumn> draftColumns = source.physicalTables().get( 0 ).columns.stream().map( column -> new LogicalColumn(
                 column.id, column.name, table.id, table.namespaceId, column.position + 1, column.type, column.collectionsType,
                 column.length, column.scale, column.dimension, column.cardinality, column.nullable, column.elementsNullable, column.collation, column.defaultValue ) ).toList();
-        rules = draftColumns.stream().<MappingRule>map( column -> new DirectColumnMappingRule( column.id ) ).toList();
+        rules = draftColumns.stream().<MappingRule>map( column -> new RelCopyColumnMappingRule( column.id ) ).toList();
         mapping = new SchemaMapping( -1, mapping.name(), mapping.kind(), null, table.id, mapping.sourceModel(), mapping.targetModel(), rules, allocationId );
         if ( existingTargetEntityId != null ) {
             var target = snapshot.rel().getTable( existingTargetEntityId ).orElseThrow( MappingError.Missing::resource );
@@ -470,11 +470,11 @@ public record RelMappingState(
         }
         if ( update.ruleType() != null ) {
             var rule = RuleRepository.definitionForId( update.ruleType() ).orElse( null );
-            if ( rule == null || (rule.ruleClass() != DirectColumnMappingRule.class && rule.ruleClass() != ConversionColumnMappingRule.class) ) {
+            if ( rule == null || (rule.ruleClass() != RelCopyColumnMappingRule.class && rule.ruleClass() != RelConvertColumnMappingRule.class) ) {
                 errors.put( field, "Unsupported column mapping rule '%s'.".formatted( update.ruleType() ) );
                 return;
             }
-            if ( rule.ruleClass() == DirectColumnMappingRule.class ) {
+            if ( rule.ruleClass() == RelCopyColumnMappingRule.class ) {
                 var target = type == null ? column : column.toBuilder().type( type ).length( update.targetPrecision() ).scale( update.targetScale() ).build();
                 if ( physicalColumns( column.id ).anyMatch( source -> !SchemaMappingManager.hasMatchingValueType( target, source ) ) ) {
                     errors.put( field, "Copy requires the source type, length and scale. Choose Convert to change the type." );

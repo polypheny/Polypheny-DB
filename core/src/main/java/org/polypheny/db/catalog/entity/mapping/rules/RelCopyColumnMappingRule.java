@@ -24,9 +24,9 @@ import io.activej.serializer.annotations.SerializeRecord;
  * Maps a physical column to logical column.
  */
 @SerializeRecord
-public record DirectColumnMappingRule ( @JsonProperty long targetLogicalColumnId ) implements ColumnMappingRule {
+public record RelCopyColumnMappingRule( @JsonProperty long targetLogicalColumnId ) implements ColumnMappingRule {
 
-    public static final RuleDefinition<DirectColumnMappingRule> DEFINITION =
-            new RuleDefinition<>( "DIRECT_COLUMN", "Copy", DirectColumnMappingRule.class );
+    public static final RuleDefinition<RelCopyColumnMappingRule> DEFINITION =
+            new RuleDefinition<>( "REL_COPY_COLUMN", "Copy", RelCopyColumnMappingRule.class );
 
 }

@@ -47,7 +47,7 @@ import org.polypheny.db.catalog.catalogs.RelAdapterCatalog;
 import org.polypheny.db.catalog.entity.allocation.AllocationTable;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
 import org.polypheny.db.catalog.entity.mapping.rules.ColumnMappingRule;
-import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.RelCopyColumnMappingRule;
 import org.polypheny.db.catalog.entity.mapping.rules.MappingRule;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
@@ -326,7 +326,7 @@ class MappingTransformRuleTest {
     void dispatchesMixedRuleTypesAndRejectsUnregisteredTypes() {
         Fixture fixture = fixture( 111, true );
         AlgNode input = LogicalRelScan.create( cluster(), fixture.table );
-        SchemaMapping mixed = mapping( List.of( new DirectColumnMappingRule( FIRST_ID ), new SourceColumnRule( SECOND_ID, FIRST_ID ) ) );
+        SchemaMapping mixed = mapping( List.of( new RelCopyColumnMappingRule( FIRST_ID ), new SourceColumnRule( SECOND_ID, FIRST_ID ) ) );
         LogicalRelMappingTransform transform = transform( fixture, input, logicalType( FIRST_ID, SECOND_ID ), mixed );
         MappingTransformRule rule = new MappingTransformRule( LogicalRelMappingTransform.class, new RelFieldMappingTransformers( List.of( new RelDirectColumnTransformer(), new SourceColumnTransformer() ) ) );
 
@@ -497,7 +497,7 @@ class MappingTransformRuleTest {
 
     private static SchemaMapping mapping( long... columnIds ) {
         return new SchemaMapping( 1, "direct", MappingKind.PHYSICAL_TO_LOGICAL, null, LOGICAL_ID,
-                DataModel.RELATIONAL, DataModel.RELATIONAL, java.util.Arrays.stream( columnIds ).mapToObj( id -> (MappingRule) new DirectColumnMappingRule( id ) ).toList(), null );
+                DataModel.RELATIONAL, DataModel.RELATIONAL, java.util.Arrays.stream( columnIds ).mapToObj( id -> (MappingRule) new RelCopyColumnMappingRule( id ) ).toList(), null );
     }
 
 

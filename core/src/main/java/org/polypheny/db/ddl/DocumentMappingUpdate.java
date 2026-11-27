@@ -19,8 +19,8 @@ package org.polypheny.db.ddl;
 /**
  * DocumentMappingUpdate is the backend request to create or edit a document mapping.
  * It carries the requested mapping and logical collection names, the expected revision,
- * and the IDs needed to identify the mapping or select its source allocation and target namespace.
+ * and the IDs needed to identify the mapping, its source allocation, and its target.
  */
 public record DocumentMappingUpdate( long adapterId, long mappingId, String expectedRevision, String mappingName,
-                                     String logicalCollectionName, Long targetNamespaceId, Long sourceAllocationId ) {
+                                     String logicalCollectionName, Long targetNamespaceId, Long existingTargetEntityId, Long sourceAllocationId ) {
 }

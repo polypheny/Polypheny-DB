@@ -31,8 +31,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
 import org.polypheny.db.catalog.entity.mapping.rules.ColumnMappingRule;
-import org.polypheny.db.catalog.entity.mapping.rules.ConversionColumnMappingRule;
-import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.RelConvertColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.RelCopyColumnMappingRule;
 import org.polypheny.db.catalog.exceptions.GenericRuntimeException;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.MappingKind;
@@ -42,8 +42,8 @@ import org.polypheny.db.catalog.snapshot.impl.MappingSnapshotImpl;
 
 class MappingSnapshotTest {
 
-    private static final ConversionColumnMappingRule SECOND_RULE = new ConversionColumnMappingRule( 304 );
-    private static final DirectColumnMappingRule FIRST_RULE = new DirectColumnMappingRule( 302 );
+    private static final RelConvertColumnMappingRule SECOND_RULE = new RelConvertColumnMappingRule( 304 );
+    private static final RelCopyColumnMappingRule FIRST_RULE = new RelCopyColumnMappingRule( 302 );
     private static final SchemaMapping MAPPING_A = mapping( 101, 201 );
     private static final SchemaMapping MAPPING_B = mapping( 102, 202 );
     private static final SchemaMapping MAPPING_C = mapping( 103, 203 );
@@ -129,7 +129,7 @@ class MappingSnapshotTest {
     @Test
     void rejectsDifferentRuleTypesForTheSameLogicalColumn() {
         SchemaMapping mapping = new SchemaMapping( 101, "mapping_101", MappingKind.PHYSICAL_TO_LOGICAL, null, 201,
-                DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( FIRST_RULE, new ConversionColumnMappingRule( FIRST_RULE.targetLogicalColumnId() ) ), null );
+                DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( FIRST_RULE, new RelConvertColumnMappingRule( FIRST_RULE.targetLogicalColumnId() ) ), null );
 
         assertInvalid( () -> new MappingSnapshotImpl( List.of( mapping ) ),
                 "duplicate logical column ID", Long.toString( FIRST_RULE.targetLogicalColumnId() ) );

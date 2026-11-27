@@ -85,7 +85,7 @@ public final class MappingModel {
             return new Summary( state.mapping().id(), state.adapter().id, state.adapter().uniqueName, state.mapping().name(),
                     state.namespace().name, state.collection().name, state.editable(), state.readOnlyReason(),
                     state.mapping().kind(), null, state.collection().id, DataModel.DOCUMENT, DataModel.DOCUMENT,
-                    List.of( new PhysicalSource( p.allocationId, p.id, p.namespaceName, p.name ) ), state.revision(), state.removable(), state.removalBlockedReason(), true );
+                    List.of( new PhysicalSource( p.allocationId, p.id, p.namespaceName, p.name ) ), state.revision(), state.removable(), state.removalBlockedReason(), state.fixedTargetEntityId() == null );
         }
 
         public static Summary from( RelMappingState state ) {
@@ -110,7 +110,12 @@ public final class MappingModel {
 
 
     @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
-    public record OverviewResponse( List<Summary> mappings ) {
+    public record OverviewResponse( List<Summary> mappings, List<DataModel> dataModels, List<DataModel> adapterSourceModels ) {
+
+        public OverviewResponse( List<Summary> mappings, List<DataModel> adapterSourceModels ) {
+            this( mappings, List.of( DataModel.values() ), adapterSourceModels );
+        }
+
     }
 
 
@@ -301,7 +306,7 @@ public final class MappingModel {
                                   boolean namespaceCaseSensitive, String logicalCollectionName, long targetEntityId, long sourceAllocationId,
                                   DataModel sourceModel, DataModel targetModel, MappingKind kind, List<PhysicalSource> physicalSources,
                                   List<Rule> rules, String revision, boolean editable, String readOnlyReason,
-                                  boolean removable, String removalBlockedReason, Validation validation ) {
+                                  boolean removable, String removalBlockedReason, Long fixedTargetEntityId, Validation validation ) {
 
         public static DocumentDetail from( DocumentMappingState state ) {
             var p = state.physical();
@@ -310,7 +315,7 @@ public final class MappingModel {
                     state.mapping().targetEntityId(), p.allocationId, DataModel.DOCUMENT, DataModel.DOCUMENT, state.mapping().kind(),
                     List.of( new PhysicalSource( p.allocationId, p.id, p.namespaceName, p.name ) ),
                     state.mapping().rules().stream().map( Rule::from ).toList(), state.revision(), state.editable(), state.readOnlyReason(),
-                    state.removable(), state.removalBlockedReason(), Validation.current() );
+                    state.removable(), state.removalBlockedReason(), state.fixedTargetEntityId(), Validation.current() );
         }
 
     }

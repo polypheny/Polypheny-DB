@@ -20,7 +20,7 @@ import org.polypheny.db.adapter.DataContext;
 import org.polypheny.db.algebra.operators.OperatorName;
 import org.polypheny.db.algebra.type.AlgDataType;
 import org.polypheny.db.algebra.type.AlgDataTypeField;
-import org.polypheny.db.catalog.entity.mapping.rules.ConversionColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.RelConvertColumnMappingRule;
 import org.polypheny.db.catalog.exceptions.MappingError;
 import org.polypheny.db.languages.OperatorRegistry;
 import org.polypheny.db.rex.RexNode;
@@ -33,19 +33,19 @@ import org.polypheny.db.type.entity.PolyValue;
 /**
  * Turns a column conversion rule into an expression the query can execute.
  */
-public final class RelConversionColumnTransformer implements RelFieldMappingTransformer<ConversionColumnMappingRule> {
+public final class RelConversionColumnTransformer implements RelFieldMappingTransformer<RelConvertColumnMappingRule> {
 
     @Override
-    public Class<ConversionColumnMappingRule> ruleType() {
-        return ConversionColumnMappingRule.class;
+    public Class<RelConvertColumnMappingRule> ruleType() {
+        return RelConvertColumnMappingRule.class;
     }
 
 
     @Override
-    public RexNode transform( ConversionColumnMappingRule rule, AlgDataTypeField targetField, RelFieldMappingContext context ) {
+    public RexNode transform( RelConvertColumnMappingRule rule, AlgDataTypeField targetField, RelFieldMappingContext context ) {
         AlgDataTypeField source = context.resolveSourceField( rule.targetLogicalColumnId() );
         AlgDataType targetType = targetField.getType();
-        if ( !ConversionColumnMappingRule.supports( source.getType(), targetType ) ) {
+        if ( !RelConvertColumnMappingRule.supports( source.getType(), targetType ) ) {
             throw MappingError.Unsupported.conversion( context.getMapping().id(), targetField.getName(), source.getType(), targetType );
         }
         return project( source, targetField, context );

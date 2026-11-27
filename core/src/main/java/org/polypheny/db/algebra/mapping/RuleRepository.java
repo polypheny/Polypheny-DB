@@ -20,9 +20,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.jetbrains.annotations.Nullable;
-import org.polypheny.db.catalog.entity.mapping.rules.ConversionColumnMappingRule;
-import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
-import org.polypheny.db.catalog.entity.mapping.rules.DocumentIdentityMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.RelConvertColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.RelCopyColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.DocumentCopyEntireMappingRule;
 import org.polypheny.db.catalog.entity.mapping.rules.MappingRule;
 import org.polypheny.db.catalog.entity.mapping.rules.RuleDefinition;
 
@@ -32,9 +32,9 @@ import org.polypheny.db.catalog.entity.mapping.rules.RuleDefinition;
 public final class RuleRepository {
 
     private static final List<Registration<?>> RULES = List.of(
-            new Registration<>( DirectColumnMappingRule.DEFINITION, new RelDirectColumnTransformer() ),
-            new Registration<>( ConversionColumnMappingRule.DEFINITION, new RelConversionColumnTransformer() ),
-            new Registration<>( DocumentIdentityMappingRule.DEFINITION ) );
+            new Registration<>( RelCopyColumnMappingRule.DEFINITION, new RelDirectColumnTransformer() ),
+            new Registration<>( RelConvertColumnMappingRule.DEFINITION, new RelConversionColumnTransformer() ),
+            new Registration<>( DocumentCopyEntireMappingRule.DEFINITION ) );
 
     private static final List<RuleDefinition<?>> DEFINITIONS = RULES.stream().<RuleDefinition<?>>map( Registration::definition ).toList();
 

@@ -24,6 +24,7 @@ import org.polypheny.db.adapter.Adapter;
 import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.algebra.AlgNode;
 import org.polypheny.db.algebra.logical.document.LogicalDocumentMappingTransform;
+import org.polypheny.db.algebra.logical.document.LogicalDocumentUnion;
 import org.polypheny.db.algebra.logical.relational.LogicalRelMappingTransform;
 import org.polypheny.db.algebra.logical.relational.LogicalRelProject;
 import org.polypheny.db.algebra.type.AlgDataType;
@@ -39,7 +40,7 @@ import org.polypheny.db.tools.AlgBuilder;
 
 /**
  * Builds source scans from the query snapshot and attaches their mappings before combining them.
- * Relational targets can combine branches with UNION ALL. Document targets currently use one source.
+ * Targets with multiple sources combine their mapped results with UNION ALL.
  */
 public final class MappingScanBuilder {
 
@@ -79,11 +80,14 @@ public final class MappingScanBuilder {
                     .orElseThrow( () -> MappingError.Missing.adapter( target.adapterId ) );
             return createPhysicalScan( adapter, target );
         }
-        if ( mappings.size() != 1 ) {
-            throw MappingError.Algebra.sourceBindingsAmbiguous();
-        }
-        var mapping = mappings.get( 0 );
-        var source = resolveAllocation( mapping, target, true );
+        List<AlgNode> branches = mappings.stream()
+                .map( mapping -> buildDocumentMappedScan( mapping, resolveAllocation( mapping, target, mappings.size() == 1 ) ) )
+                .toList();
+        return branches.size() == 1 ? branches.get( 0 ) : LogicalDocumentUnion.create( branches, true );
+    }
+
+
+    private AlgNode buildDocumentMappedScan( SchemaMapping mapping, AllocationEntity source ) {
         var adapter = AdapterManager.getInstance().getAdapter( source.adapterId )
                 .orElseThrow( () -> MappingError.Missing.adapter( source.adapterId ) );
         var binding = DocumentMappingBinding.create( mapping, source, adapter.getCatalog() );

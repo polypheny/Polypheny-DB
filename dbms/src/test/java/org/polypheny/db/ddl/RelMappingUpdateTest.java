@@ -60,8 +60,8 @@ import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
 import org.polypheny.db.catalog.entity.mapping.SchemaMappingManager;
-import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
-import org.polypheny.db.catalog.entity.mapping.rules.ConversionColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.RelCopyColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.RelConvertColumnMappingRule;
 import org.polypheny.db.catalog.entity.mapping.rules.MappingRule;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
@@ -138,7 +138,7 @@ class RelMappingUpdateTest {
                 "source_file", physicalColumns, namespaceId, "files", List.of(), adapterId ) );
         catalog.updateSnapshot();
         var mapping = new SchemaMapping( catalog.idBuilder.getNewMappingId(), "Source import", MappingKind.PHYSICAL_TO_LOGICAL, null, table.id,
-                DataModel.RELATIONAL, DataModel.RELATIONAL, columns.stream().<MappingRule>map( c -> new DirectColumnMappingRule( c.id ) ).toList(), null );
+                DataModel.RELATIONAL, DataModel.RELATIONAL, columns.stream().<MappingRule>map( c -> new RelCopyColumnMappingRule( c.id ) ).toList(), null );
         catalog.addSchemaMapping( mapping );
         catalog.commit();
         original = RelMappingState.load( catalog, adapterId, mapping.id() );
@@ -342,7 +342,7 @@ class RelMappingUpdateTest {
         assertFalse( saved.columns().get( 1 ).nullable );
         assertEquals( PolyType.VARCHAR, saved.physicalTables().get( 0 ).columns.stream()
                 .filter( column -> column.id == name.id ).findFirst().orElseThrow().type );
-        assertTrue( saved.mapping().rules().stream().anyMatch( ConversionColumnMappingRule.class::isInstance ) );
+        assertTrue( saved.mapping().rules().stream().anyMatch( RelConvertColumnMappingRule.class::isInstance ) );
 
         var reverted = new RelMappingUpdate( adapterId, saved.mapping().id(), saved.revision(), saved.mapping().name(), table.name,
                 List.of( requested.get( 0 ), new RelMappingUpdate.ColumnName( name.id, name.name, true, PolyType.VARCHAR, true ) ) );
@@ -350,7 +350,7 @@ class RelMappingUpdateTest {
         assertEquals( PolyType.VARCHAR, restored.columns().get( 1 ).type );
         assertEquals( 40, restored.columns().get( 1 ).length );
         assertTrue( restored.columns().get( 1 ).nullable );
-        assertTrue( restored.mapping().rules().stream().allMatch( DirectColumnMappingRule.class::isInstance ) );
+        assertTrue( restored.mapping().rules().stream().allMatch( RelCopyColumnMappingRule.class::isInstance ) );
     }
 
 
@@ -359,23 +359,23 @@ class RelMappingUpdateTest {
         var ddl = new DdlManagerImpl( catalog );
         var target = original.columns().get( 1 );
         var keepId = new RelMappingUpdate.ColumnName( columns.get( 0 ).id, columns.get( 0 ).name, true );
-        var convert = new RelMappingUpdate.ColumnName( target.id, target.name, true, null, null, null, null, ConversionColumnMappingRule.DEFINITION.id() );
+        var convert = new RelMappingUpdate.ColumnName( target.id, target.name, true, null, null, null, null, RelConvertColumnMappingRule.DEFINITION.id() );
         var saved = ddl.updateRelMapping( new RelMappingUpdate( adapterId, original.mapping().id(), original.revision(),
                 original.mapping().name(), table.name, List.of( keepId, convert ) ), statement );
-        assertTrue( saved.mapping().rules().contains( new ConversionColumnMappingRule( target.id ) ) );
+        assertTrue( saved.mapping().rules().contains( new RelConvertColumnMappingRule( target.id ) ) );
         assertEquals( target.type, saved.columns().get( 1 ).type );
 
         var excluded = ddl.updateRelMapping( selection( saved, true, false ), statement );
         assertFalse( excluded.isIncluded( target.id ) );
         assertEquals( convert.ruleType(), excluded.mapping().excludedColumnRules().get( target.id ) );
         var restored = ddl.updateRelMapping( selection( excluded, true, true ), statement );
-        assertTrue( restored.mapping().rules().contains( new ConversionColumnMappingRule( target.id ) ) );
+        assertTrue( restored.mapping().rules().contains( new RelConvertColumnMappingRule( target.id ) ) );
         assertTrue( restored.mapping().excludedColumnRules().isEmpty() );
 
-        var copy = new RelMappingUpdate.ColumnName( target.id, target.name, true, null, false, null, null, DirectColumnMappingRule.DEFINITION.id() );
+        var copy = new RelMappingUpdate.ColumnName( target.id, target.name, true, null, false, null, null, RelCopyColumnMappingRule.DEFINITION.id() );
         var copied = ddl.updateRelMapping( new RelMappingUpdate( adapterId, restored.mapping().id(), restored.revision(),
                 restored.mapping().name(), table.name, List.of( keepId, copy ) ), statement );
-        assertTrue( copied.mapping().rules().contains( new DirectColumnMappingRule( target.id ) ) );
+        assertTrue( copied.mapping().rules().contains( new RelCopyColumnMappingRule( target.id ) ) );
         assertFalse( copied.columns().get( 1 ).nullable );
         assertTrue( SchemaMappingManager.usesColumnTransformations( catalog.getSnapshot(), copied.mapping() ) );
     }
@@ -1054,7 +1054,7 @@ class RelMappingUpdateTest {
         physicalCatalog.addPhysical( allocation, new PhysicalTable( catalog.idBuilder.getNewPhysicalId(), allocation.id, otherTable.id,
                 "other_source", List.of( physicalColumn ), namespaceId, "files", List.of(), adapterId ) );
         catalog.addSchemaMapping( new SchemaMapping( catalog.idBuilder.getNewMappingId(), name, MappingKind.PHYSICAL_TO_LOGICAL, null, otherTable.id,
-                DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( new DirectColumnMappingRule( column.id ) ), null ) );
+                DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( new RelCopyColumnMappingRule( column.id ) ), null ) );
         catalog.commit();
     }
 

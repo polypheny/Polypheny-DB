@@ -22,10 +22,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.http.Context;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
+import org.polypheny.db.adapter.AdapterManager;
 import org.polypheny.db.catalog.Catalog;
 import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.mapping.SchemaMappingManager;
@@ -39,6 +41,7 @@ import org.polypheny.db.catalog.exceptions.MappingMissingException;
 import org.polypheny.db.catalog.exceptions.MappingRevisionException;
 import org.polypheny.db.catalog.exceptions.MappingUnsupportedException;
 import org.polypheny.db.catalog.exceptions.MappingValidationException;
+import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.catalog.logistic.EntityType;
 import org.polypheny.db.catalog.logistic.MappingKind;
 import org.polypheny.db.catalog.logistic.Pattern;
@@ -89,12 +92,15 @@ public class MappingCrud {
             synchronized ( catalog ) {
                 validateAdapterFilter( catalog, request.adapterId() );
                 var snapshot = catalog.getSnapshot();
-                return new MappingModel.OverviewResponse( snapshot.mappings().getMappings().stream()
+                List<DataModel> adapterSourceModels = request.adapterId() == null ? List.of() : AdapterManager.getInstance().getSource( request.adapterId() )
+                        .map( source -> source.getSupportedDataModels().stream().sorted().toList() ).orElseGet( List::of );
+                var mappings = snapshot.mappings().getMappings().stream()
                         .filter( mapping -> request.targetEntityId() == null || mapping.targetEntityId() == request.targetEntityId() )
                         .filter( mapping -> request.adapterId() == null || SchemaMappingManager.sourceAllocations( catalog, mapping ).stream()
                                 .anyMatch( allocation -> allocation.adapterId == request.adapterId() ) )
                         .map( mapping -> summary( catalog, mapping.id() ) )
-                        .sorted( Comparator.comparing( MappingModel.Summary::mappingName ).thenComparingLong( MappingModel.Summary::mappingId ) ).toList() );
+                        .sorted( Comparator.comparing( MappingModel.Summary::mappingName ).thenComparingLong( MappingModel.Summary::mappingId ) ).toList();
+                return new MappingModel.OverviewResponse( mappings, adapterSourceModels );
             }
         } );
     }
@@ -146,7 +152,10 @@ public class MappingCrud {
             synchronized ( catalog ) {
                 var snapshot = catalog.getSnapshot();
                 if ( request.targetEntityId() != null ) {
-                    throw MappingError.Unsupported.editor( "Attaching sources to existing document targets is not supported yet." );
+                    var target = snapshot.doc().getCollection( request.targetEntityId() ).orElseThrow( MappingError.Missing::resource );
+                    if ( !DocumentMappingState.supportsExistingTarget( snapshot, target ) ) {
+                        return new MappingModel.DocumentSourcesResponse( List.of() );
+                    }
                 }
                 if ( request.adapterId() != null && snapshot.getAdapter( request.adapterId() ).filter( a -> a.type == AdapterType.SOURCE ).isEmpty() ) {
                     throw MappingError.Missing.resource();
@@ -160,6 +169,8 @@ public class MappingCrud {
                         .filter( a -> snapshot.getAdapter( a.adapterId ).filter( adapter -> adapter.type == AdapterType.SOURCE ).isPresent() )
                         .map( a -> DocumentMappingState.draft( catalog, a.adapterId, a.logicalId, a.id ) )
                         .filter( DocumentMappingState::editable )
+                        .filter( s -> request.targetEntityId() == null
+                                || !SchemaMappingManager.isPhysicalSourceMappedToTarget( catalog, s.mapping(), request.targetEntityId() ) )
                         .filter( s -> seen.add( new PhysicalSource( s.adapter().id, s.physical().namespaceName, s.physical().name ) ) )
                         .map( s -> new MappingModel.DocumentSource( s.adapter().id, s.adapter().uniqueName, s.mapping().targetEntityId(), s.physical().allocationId,
                                 s.physical().namespaceName, s.physical().name ) ).toList();
@@ -174,7 +185,7 @@ public class MappingCrud {
             var request = read( context, DocumentDraftRequest.class );
             var catalog = Catalog.getInstance();
             synchronized ( catalog ) {
-                var state = DocumentMappingState.draft( catalog, request.adapterId(), request.sourceEntityId(), request.sourceAllocationId() );
+                var state = DocumentMappingState.draft( catalog, request.adapterId(), request.sourceEntityId(), request.sourceAllocationId(), request.existingTargetEntityId() );
                 if ( !state.editable() ) {
                     throw MappingError.Unsupported.editor( state.readOnlyReason() );
                 }

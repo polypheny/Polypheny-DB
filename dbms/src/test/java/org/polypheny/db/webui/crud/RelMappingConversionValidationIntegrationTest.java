@@ -71,7 +71,7 @@ class RelMappingConversionValidationIntegrationTest {
             var source = Catalog.snapshot().rel().getTable( Catalog.DEFAULT_NAMESPACE_NAME, sourceName ).orElseThrow();
             var draft = RelMappingState.draft( Catalog.getInstance(), adapterId, source.id );
             var amount = draft.columns().stream().filter( column -> column.name.equals( "amount" ) ).findFirst().orElseThrow();
-            var conversion = new ColumnName( amount.id, amount.name, true, PolyType.INTEGER, true, null, null, "CONVERT_COLUMN" );
+            var conversion = new ColumnName( amount.id, amount.name, true, PolyType.INTEGER, true, null, null, "REL_CONVERT_COLUMN" );
             int mappingsBefore = Catalog.snapshot().mappings().getMappings().size();
             var result = check( draft, conversion );
             assertEquals( 10, result.checkedRecords() );
@@ -93,7 +93,7 @@ class RelMappingConversionValidationIntegrationTest {
             var savedAmount = saved.columns().stream().filter( column -> column.name.equals( "amount" ) ).findFirst().orElseThrow();
             var savedResult = check( saved, new ColumnName( savedAmount.id, savedAmount.name, true ) );
             assertEquals( List.of( 3, 7 ), savedResult.errors().stream().map( error -> error.recordNumber() ).toList() );
-            var repaired = check( saved, new ColumnName( savedAmount.id, savedAmount.name, true, PolyType.VARCHAR, true, 40, null, "CONVERT_COLUMN" ) );
+            var repaired = check( saved, new ColumnName( savedAmount.id, savedAmount.name, true, PolyType.VARCHAR, true, 40, null, "REL_CONVERT_COLUMN" ) );
             assertEquals( 10, repaired.checkedRecords() );
             assertTrue( repaired.errors().isEmpty() );
             assertEquals( saved.revision(), RelMappingState.load( Catalog.getInstance(), saved.mapping().id() ).revision() );

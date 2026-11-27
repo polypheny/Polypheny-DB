@@ -16,21 +16,15 @@
 
 package org.polypheny.db.catalog.entity.mapping.rules;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.annotations.SerializeRecord;
-import org.polypheny.db.algebra.type.AlgDataType;
-import org.polypheny.db.type.ScalarConversions;
 
-
+/**
+ * Copies each physical source document into the logical mapping, preserving its structure and values.
+ */
 @SerializeRecord
-public record ConversionColumnMappingRule( @JsonProperty long targetLogicalColumnId ) implements ColumnMappingRule {
+public record DocumentCopyEntireMappingRule() implements MappingRule {
 
-    public static final RuleDefinition<ConversionColumnMappingRule> DEFINITION =
-            new RuleDefinition<>( "CONVERT_COLUMN", "Convert", ConversionColumnMappingRule.class );
-
-
-    public static boolean supports( AlgDataType source, AlgDataType target ) {
-        return ScalarConversions.supports( source, target );
-    }
+    public static final RuleDefinition<DocumentCopyEntireMappingRule> DEFINITION =
+            new RuleDefinition<>( "DOCUMENT_COPY_ENTIRE", "Copy entire document", DocumentCopyEntireMappingRule.class );
 
 }

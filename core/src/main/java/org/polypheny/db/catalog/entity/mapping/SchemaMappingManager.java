@@ -46,9 +46,9 @@ import org.polypheny.db.catalog.entity.logical.LogicalCollection;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.logical.LogicalView;
 import org.polypheny.db.catalog.entity.mapping.rules.ColumnMappingRule;
-import org.polypheny.db.catalog.entity.mapping.rules.ConversionColumnMappingRule;
-import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
-import org.polypheny.db.catalog.entity.mapping.rules.DocumentIdentityMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.RelConvertColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.RelCopyColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.DocumentCopyEntireMappingRule;
 import org.polypheny.db.catalog.entity.mapping.rules.MappingRule;
 import org.polypheny.db.catalog.entity.mapping.rules.RuleDefinition;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
@@ -176,7 +176,7 @@ public final class SchemaMappingManager {
         if ( readOnlyReason != null ) {
             return readOnlyReason;
         }
-        if ( !documentDependencies( snapshot, collection.id ).isEmpty() ) {
+        if ( snapshot.mappings().getMappingsForLogicalEntity( collection.id ).size() == 1 && !documentDependencies( snapshot, collection.id ).isEmpty() ) {
             return "Dependent objects prevent dropping this mapping's logical collection.";
         }
         var sources = physicalSources( catalog, mapping );
@@ -215,7 +215,7 @@ public final class SchemaMappingManager {
 
     public static SchemaMapping createMapping( String name, long logicalEntityId, DataModel dataModel, List<Long> columnIds ) {
         long id = IdBuilder.getInstance().getNewMappingId();
-        List<MappingRule> rules = dataModel == DataModel.DOCUMENT ? List.of( new DocumentIdentityMappingRule() )
+        List<MappingRule> rules = dataModel == DataModel.DOCUMENT ? List.of( new DocumentCopyEntireMappingRule() )
                 : columnIds.stream().map( SchemaMappingManager::defaultColumnRule ).toList();
 
         return new SchemaMapping( id, name, MappingKind.PHYSICAL_TO_LOGICAL, null, logicalEntityId, dataModel, dataModel, rules, null );
@@ -288,7 +288,7 @@ public final class SchemaMappingManager {
 
 
     public static MappingRule defaultColumnRule( long columnId ) {
-        return new DirectColumnMappingRule( columnId );
+        return new RelCopyColumnMappingRule( columnId );
     }
 
 
@@ -307,24 +307,24 @@ public final class SchemaMappingManager {
      * Create appropriate mapping rule according to if conversion needed
      */
     public static MappingRule chooseColumnRule( LogicalColumn target, Stream<PhysicalColumn> physicalColumns, String ruleType ) {
-        if ( DirectColumnMappingRule.DEFINITION.id().equals( ruleType ) ) {
+        if ( RelCopyColumnMappingRule.DEFINITION.id().equals( ruleType ) ) {
             return defaultColumnRule( target.id );
         }
-        if ( ConversionColumnMappingRule.DEFINITION.id().equals( ruleType ) ) {
-            return new ConversionColumnMappingRule( target.id );
+        if ( RelConvertColumnMappingRule.DEFINITION.id().equals( ruleType ) ) {
+            return new RelConvertColumnMappingRule( target.id );
         }
         if ( ruleType != null ) {
             throw MappingError.Unsupported.columnRule( ruleType );
         }
         boolean requiresConversion = physicalColumns.anyMatch( column -> !hasMatchingValueType( target, column ) );
         return requiresConversion
-                ? new ConversionColumnMappingRule( target.id ) // when the validated request changes the type
+                ? new RelConvertColumnMappingRule( target.id ) // when the validated request changes the type
                 : defaultColumnRule( target.id ); // otherwise
     }
 
 
     public static boolean requiresExplicitSourceAllocation( List<MappingRule> rules, Map<Long, LogicalColumn> targets, Stream<PhysicalColumn> sources ) {
-        return SchemaMapping.hasRule( rules, ConversionColumnMappingRule.class ) || sources.anyMatch( source -> {
+        return SchemaMapping.hasRule( rules, RelConvertColumnMappingRule.class ) || sources.anyMatch( source -> {
             LogicalColumn target = targets.get( source.id );
             return target != null && target.nullable != source.nullable;
         } );
@@ -332,7 +332,7 @@ public final class SchemaMappingManager {
 
 
     public static boolean preservesTargetSchemaOnRefresh( SchemaMapping mapping ) {
-        return mapping.sourceAllocationId() != null || mapping.hasRule( ConversionColumnMappingRule.class );
+        return mapping.sourceAllocationId() != null || mapping.hasRule( RelConvertColumnMappingRule.class );
     }
 
 
@@ -340,7 +340,7 @@ public final class SchemaMappingManager {
         if ( mapping.sourceModel() != DataModel.RELATIONAL || mapping.targetModel() != DataModel.RELATIONAL ) {
             return false;
         }
-        if ( mapping.hasRule( ConversionColumnMappingRule.class ) ) {
+        if ( mapping.hasRule( RelConvertColumnMappingRule.class ) ) {
             return true;
         }
         if ( mapping.sourceAllocationId() == null ) {
@@ -390,11 +390,11 @@ public final class SchemaMappingManager {
 
     private static boolean isCompatibleRefreshedSourceColumn( ColumnMappingRule rule, LogicalColumn target, ExportedColumn exported,
             BiPredicate<LogicalColumn, ExportedColumn> matchesSourceType ) {
-        if ( rule instanceof ConversionColumnMappingRule ) {
+        if ( rule instanceof RelConvertColumnMappingRule ) {
             AlgDataTypeFactory factory = AlgDataTypeFactory.DEFAULT;
             AlgDataType sourceType = LogicalColumn.getAlgDataType( factory, exported.length(), exported.scale(), exported.type(),
                     exported.collectionsType(), exported.cardinality(), exported.dimension(), exported.nullable(), exported.elementsNullable() );
-            return ConversionColumnMappingRule.supports( sourceType, target.getAlgDataType( factory ) );
+            return RelConvertColumnMappingRule.supports( sourceType, target.getAlgDataType( factory ) );
         }
         return matchesSourceType.test( target, exported ) && target.elementsNullable == exported.elementsNullable();
     }
@@ -531,8 +531,17 @@ public final class SchemaMappingManager {
     private static void validateDocumentMapping( SchemaMapping mapping, MappingSnapshot mappings, LogicalDocSnapshot docs, AllocSnapshot alloc, Catalog catalog ) {
         DocumentMappingBinding.validateIdentity( mapping );
         var collection = docs.getCollection( mapping.targetEntityId() ).orElseThrow( () -> MappingError.Missing.collection( mapping.targetEntityId() ) );
-        if ( mappings.getMappingsForLogicalEntity( mapping.targetEntityId() ).size() != 1 ) {
-            throw MappingError.Unsupported.editor( "Multiple sources per document target are not supported yet." );
+        var siblings = mappings.getMappingsForLogicalEntity( mapping.targetEntityId() );
+        if ( siblings.size() > 1 ) {
+            if ( mapping.sourceAllocationId() == null ) {
+                throw MappingError.Missing.explicitSourceAllocation( mapping.id() );
+            }
+            if ( siblings.stream().anyMatch( other -> other.id() != mapping.id() && Objects.equals( other.sourceAllocationId(), mapping.sourceAllocationId() ) ) ) {
+                throw MappingError.Duplicate.sourceAllocation( mapping.id(), mapping.sourceAllocationId() );
+            }
+            if ( alloc.getPartitionsFromLogical( collection.id ).size() != 1 ) {
+                throw MappingError.Unsupported.singleTargetPartitionRequired();
+            }
         }
         var allocations = validateAllocationPresence( mapping, alloc );
         if ( allocations.size() != 1 ) {
@@ -716,8 +725,8 @@ public final class SchemaMappingManager {
             // An excluded field on a bound allocation still has a physical column, but produces no logical value.
             return;
         }
-        boolean compatible = rule instanceof ConversionColumnMappingRule
-                ? ConversionColumnMappingRule.supports( physicalColumn.getAlgDataType( AlgDataTypeFactory.DEFAULT ), logicalColumn.getAlgDataType( AlgDataTypeFactory.DEFAULT ) )
+        boolean compatible = rule instanceof RelConvertColumnMappingRule
+                ? RelConvertColumnMappingRule.supports( physicalColumn.getAlgDataType( AlgDataTypeFactory.DEFAULT ), logicalColumn.getAlgDataType( AlgDataTypeFactory.DEFAULT ) )
                 : hasMatchingValueType( logicalColumn, physicalColumn );
         if ( !compatible ) {
             throw MappingError.Incompatible.physicalColumn( mapping.id(), columnId, allocation.id );

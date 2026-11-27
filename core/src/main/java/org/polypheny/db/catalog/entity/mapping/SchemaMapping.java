@@ -20,8 +20,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.activej.serializer.annotations.Deserialize;
 import io.activej.serializer.annotations.Serialize;
 import io.activej.serializer.annotations.SerializeNullable;
-import io.activej.serializer.annotations.SerializeRecord;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -36,16 +34,16 @@ import org.polypheny.db.catalog.logistic.MappingKind;
  * Mapping definition
  */
 public record SchemaMapping(
-        @JsonProperty long id,
-        @JsonProperty String name, // human-readable label for the mapping
-        @JsonProperty MappingKind kind,
-        @JsonProperty Long sourceEntityId,
-        @JsonProperty long targetEntityId,
-        @JsonProperty DataModel sourceModel,
-        @JsonProperty DataModel targetModel,
-        @JsonProperty List<MappingRule> rules,
-        @JsonProperty Long sourceAllocationId,
-        @JsonProperty Map<Long, String> excludedColumnRules ) {
+        @JsonProperty @Deserialize("id") long id,
+        @JsonProperty @Deserialize("name") String name, // human-readable label for the mapping
+        @JsonProperty @Deserialize("kind") MappingKind kind,
+        @JsonProperty @Deserialize("sourceEntityId") Long sourceEntityId,
+        @JsonProperty @Deserialize("targetEntityId") long targetEntityId,
+        @JsonProperty @Deserialize("sourceModel") DataModel sourceModel,
+        @JsonProperty @Deserialize("targetModel") DataModel targetModel,
+        @JsonProperty @Deserialize("rules") List<MappingRule> rules,
+        @JsonProperty @Deserialize("sourceAllocationId") Long sourceAllocationId,
+        @JsonProperty @Deserialize("excludedColumnRules") Map<Long, String> excludedColumnRules ) {
 
     public SchemaMapping( long id, String name, MappingKind kind, Long sourceEntityId, long targetEntityId, DataModel sourceModel,
             DataModel targetModel, List<MappingRule> rules, Long sourceAllocationId ) {
@@ -69,6 +67,9 @@ public record SchemaMapping(
             Objects.requireNonNull( sourceEntityId, "sourceEntityId is required for " + kind );
         }
         rules = List.copyOf( rules );
+        // Remember the last rule for each excluded relational column.
+        // For exclude column, save, include flow the editor restores last saved rule for this column.
+        // While the column is excluded, its saved rule is only editor metadata and does not run.
         excludedColumnRules = excludedColumnRules == null ? Map.of() : Map.copyOf( excludedColumnRules );
     }
 
@@ -115,15 +116,9 @@ public record SchemaMapping(
         return targetModel;
     }
 
-    // Store editor metadata in the existing serialized list so older catalog records remain readable.
     @Serialize(order = 8)
-    public List<MappingRule> serializedRules() {
-        if ( excludedColumnRules.isEmpty() ) {
-            return rules;
-        }
-        var stored = new ArrayList<>( rules );
-        stored.add( new ExcludedColumnRules( excludedColumnRules ) );
-        return stored;
+    public List<MappingRule> rules() {
+        return rules;
     }
 
     @Serialize(order = 9)
@@ -131,19 +126,8 @@ public record SchemaMapping(
         return sourceAllocationId;
     }
 
-    public static SchemaMapping fromSerialized(
-            @Deserialize("id") long id, @Deserialize("name") String name, @Deserialize("kind") MappingKind kind,
-            @Deserialize("sourceEntityId") Long sourceEntityId, @Deserialize("targetEntityId") long targetEntityId,
-            @Deserialize("sourceModel") DataModel sourceModel, @Deserialize("targetModel") DataModel targetModel,
-            @Deserialize("serializedRules") List<MappingRule> stored, @Deserialize("sourceAllocationId") Long sourceAllocationId ) {
-        if ( !stored.isEmpty() && stored.get( stored.size() - 1 ) instanceof ExcludedColumnRules excluded ) {
-            return new SchemaMapping( id, name, kind, sourceEntityId, targetEntityId, sourceModel, targetModel,
-                    stored.subList( 0, stored.size() - 1 ), sourceAllocationId, excluded.ids() );
-        }
-        return new SchemaMapping( id, name, kind, sourceEntityId, targetEntityId, sourceModel, targetModel, stored, sourceAllocationId );
-    }
-
-    @SerializeRecord
-    public record ExcludedColumnRules( Map<Long, String> ids ) implements MappingRule {
+    @Serialize(order = 10)
+    public Map<Long, String> excludedColumnRules() {
+        return excludedColumnRules;
     }
 }

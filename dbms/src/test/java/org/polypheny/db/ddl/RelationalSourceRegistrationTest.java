@@ -43,7 +43,7 @@ import org.polypheny.db.catalog.entity.LogicalAdapter.AdapterType;
 import org.polypheny.db.catalog.entity.allocation.AllocationTableWrapper;
 import org.polypheny.db.catalog.entity.logical.LogicalTableWrapper;
 import org.polypheny.db.catalog.entity.mapping.SchemaMappingManager;
-import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.RelCopyColumnMappingRule;
 import org.polypheny.db.catalog.impl.PolyCatalog;
 import org.polypheny.db.catalog.logistic.DataModel;
 import org.polypheny.db.transaction.Transaction;
@@ -69,7 +69,7 @@ class RelationalSourceRegistrationTest {
             var logicalColumns = catalog.getSnapshot().rel().getColumns( table.id );
             assertEquals( "exported_source_" + tableName + "_mapping", mapping.name() );
             assertEquals( 2, logicalColumns.size() );
-            assertEquals( logicalColumns.stream().map( c -> new DirectColumnMappingRule( c.id ) ).toList(), mapping.rules() );
+            assertEquals( logicalColumns.stream().map( c -> new RelCopyColumnMappingRule( c.id ) ).toList(), mapping.rules() );
             assertEquals( List.of( PolyType.INTEGER, PolyType.VARCHAR ), logicalColumns.stream().map( c -> c.type ).toList() );
             assertEquals( 40, logicalColumns.get( 1 ).length );
             assertTrue( logicalColumns.get( 1 ).nullable );

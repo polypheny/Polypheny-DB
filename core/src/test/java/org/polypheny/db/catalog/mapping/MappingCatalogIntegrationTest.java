@@ -36,7 +36,7 @@ import org.polypheny.db.catalog.entity.logical.LogicalColumn;
 import org.polypheny.db.catalog.entity.logical.LogicalTable;
 import org.polypheny.db.catalog.entity.mapping.SchemaMapping;
 import org.polypheny.db.catalog.entity.mapping.SchemaMappingManager;
-import org.polypheny.db.catalog.entity.mapping.rules.DirectColumnMappingRule;
+import org.polypheny.db.catalog.entity.mapping.rules.RelCopyColumnMappingRule;
 import org.polypheny.db.catalog.entity.physical.PhysicalColumn;
 import org.polypheny.db.catalog.entity.physical.PhysicalEntity;
 import org.polypheny.db.catalog.entity.physical.PhysicalTable;
@@ -80,7 +80,7 @@ class MappingCatalogIntegrationTest {
         assertEquals( mapping, fixture.catalog.getSnapshot().mappings().getMappingsForLogicalEntity( fixture.table.id ).get( 0 ) );
         assertEquals( "mapping_source_0_source_table_mapping", mapping.name() );
         assertEquals( fixture.table.id, mapping.targetEntityId() );
-        assertEquals( List.of( new DirectColumnMappingRule( fixture.column.id ) ), mapping.rules() );
+        assertEquals( List.of( new RelCopyColumnMappingRule( fixture.column.id ) ), mapping.rules() );
         before = fixture.catalog.getSnapshot();
 
         SchemaMapping duplicate = SchemaMappingManager.createDefaultMapping(
@@ -318,7 +318,7 @@ class MappingCatalogIntegrationTest {
                         DataModel.RELATIONAL, DataModel.RELATIONAL, List.of(), null ) ) );
         assertThrows( GenericRuntimeException.class, () -> fixture.catalog.addSchemaMapping(
                 new SchemaMapping( fixture.catalog.idBuilder.getNewMappingId(), "missing column", MappingKind.PHYSICAL_TO_LOGICAL, null, fixture.table.id,
-                        DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( new DirectColumnMappingRule( -1 ) ), null ) ) );
+                        DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( new RelCopyColumnMappingRule( -1 ) ), null ) ) );
 
         var placement = fixture.catalog.getSnapshot().alloc().getPlacementsFromLogical( fixture.table.id ).get( 0 );
         fixture.catalog.getAllocRel( fixture.namespaceId ).deleteColumn( placement.id, fixture.column.id );
@@ -505,7 +505,7 @@ class MappingCatalogIntegrationTest {
         fixture.allocate( List.of( secondColumn ), true );
 
         SchemaMapping mapping = new SchemaMapping( fixture.catalog.idBuilder.getNewMappingId(), "partial", MappingKind.PHYSICAL_TO_LOGICAL, null, fixture.table.id,
-                DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( new DirectColumnMappingRule( fixture.column.id ), new DirectColumnMappingRule( secondColumn.id ) ), null );
+                DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( new RelCopyColumnMappingRule( fixture.column.id ), new RelCopyColumnMappingRule( secondColumn.id ) ), null );
         fixture.catalog.addSchemaMapping( mapping );
 
         assertEquals( mapping, fixture.catalog.getSnapshot().mappings().getMapping( mapping.id() ).orElseThrow() );
@@ -522,7 +522,7 @@ class MappingCatalogIntegrationTest {
         fixture.allocate( List.of( secondColumn ), true, 2 );
 
         SchemaMapping mapping = new SchemaMapping( fixture.catalog.idBuilder.getNewMappingId(), "incomplete", MappingKind.PHYSICAL_TO_LOGICAL, null, fixture.table.id,
-                DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( new DirectColumnMappingRule( fixture.column.id ), new DirectColumnMappingRule( secondColumn.id ) ), null );
+                DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( new RelCopyColumnMappingRule( fixture.column.id ), new RelCopyColumnMappingRule( secondColumn.id ) ), null );
         assertThrows( GenericRuntimeException.class, () -> fixture.catalog.addSchemaMapping( mapping ) );
     }
 
@@ -583,7 +583,7 @@ class MappingCatalogIntegrationTest {
         adapter.addPhysical( allocation, new PhysicalTable( table.id, table.allocationId, table.logicalId, table.name,
                 List.of( table.columns.get( 0 ), secondPhysical ), table.namespaceId, table.namespaceName, table.uniqueFieldIds, table.adapterId ) );
         SchemaMapping mapping = new SchemaMapping( fixture.catalog.idBuilder.getNewMappingId(), "ambiguous", MappingKind.PHYSICAL_TO_LOGICAL, null, fixture.table.id,
-                DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( new DirectColumnMappingRule( fixture.column.id ), new DirectColumnMappingRule( secondColumn.id ) ), null );
+                DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( new RelCopyColumnMappingRule( fixture.column.id ), new RelCopyColumnMappingRule( secondColumn.id ) ), null );
 
         GenericRuntimeException error = assertThrows( GenericRuntimeException.class, () -> fixture.catalog.addSchemaMapping( mapping ) );
         assertTrue( error.getMessage().contains( "duplicate physical column position" ) );
@@ -639,7 +639,7 @@ class MappingCatalogIntegrationTest {
 
         private SchemaMapping mapping() {
             return new SchemaMapping( catalog.idBuilder.getNewMappingId(), "direct_" + table.id, MappingKind.PHYSICAL_TO_LOGICAL, null, table.id,
-                    DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( new DirectColumnMappingRule( column.id ) ), null );
+                    DataModel.RELATIONAL, DataModel.RELATIONAL, List.of( new RelCopyColumnMappingRule( column.id ) ), null );
         }
 
 
